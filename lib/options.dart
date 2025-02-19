@@ -39,9 +39,9 @@ class Position {
   Position operator +(double size) => Position(asset, this.size + size);
   Position operator *(double size) => Position(asset, this.size * size);
 
-  Position withSize(double size) => Position(this.asset, size);
+  Position withSize(double size) => Position(asset, size);
 
-  bool get isZero => this.size == 0.0;
+  bool get isZero => size == 0.0;
 
   @override
   String toString() => '($size $asset)';
@@ -57,11 +57,10 @@ class NamedAsset extends Asset {
   String get name => _name;
 
   @override
-  Iterable<Position> decompose() => [this.position(1.0)];
+  Iterable<Position> decompose() => [position(1.0)];
 
   @override
-  bool operator ==(Object other) =>
-      other is NamedAsset && this.name == other.name;
+  bool operator ==(Object other) => other is NamedAsset && name == other.name;
 
   @override
   int get hashCode => _name.hashCode;
@@ -76,7 +75,7 @@ class Commodity extends NamedAsset implements Comparable<Commodity> {
 
   @override
   int compareTo(Commodity that) {
-    return this.name.compareTo(that.name);
+    return name.compareTo(that.name);
   }
 }
 
@@ -117,7 +116,7 @@ class SyntheticAsset extends Asset {
 
   @override
   bool operator ==(Object other) =>
-      other is SyntheticAsset && this._assetPositions == other._assetPositions;
+      other is SyntheticAsset && _assetPositions == other._assetPositions;
   int get hashCode => _assetPositions.hashCode;
 }
 
@@ -153,13 +152,13 @@ abstract class ExpirableContract extends NamedAsset {
   bool operator ==(Object that) {
     if (identical(this, that)) return true;
     if (that is! ExpirableContract) return false;
-    return this.name == that.name &&
-        this.underlying == that.underlying &&
-        this.money == that.money &&
-        this.strike == that.strike &&
-        this.contractLot == that.contractLot &&
-        this.expiration == that.expiration &&
-        this._isBuy == that._isBuy;
+    return name == that.name &&
+        underlying == that.underlying &&
+        money == that.money &&
+        strike == that.strike &&
+        contractLot == that.contractLot &&
+        expiration == that.expiration &&
+        _isBuy == that._isBuy;
   }
 
   @override
@@ -296,16 +295,19 @@ abstract class Market {
   Market concatenate(Market that) {
     return _SyntheticMarket(this, that);
   }
-  
+
   // In case this market is a synthetic one, this would return all the intermediate markets
   // that are required to be combined in order for this market to be offered.
   Iterable<Market> decompose() => [this];
 
   @override
   String toString() =>
-    '$asset/$money, bid: $bidPrice($money), ask: $askPrice($money) ['
-      + [asset].followedBy(decompose().map((m) => m.money))
-         .map((a) => a.toString()).join("->") + ']';
+      '$asset/$money, bid: $bidPrice($money), ask: $askPrice($money) [' +
+      [asset]
+          .followedBy(decompose().map((m) => m.money))
+          .map((a) => a.toString())
+          .join("->") +
+      ']';
 }
 
 class _DirectMarket extends Market {
@@ -331,13 +333,14 @@ class _DirectMarket extends Market {
 }
 
 class _IdentityMarket extends _DirectMarket {
-  _IdentityMarket(Asset asset) : super(
-      asset: asset,
-      money: asset,
-      bidPrice: 1.0,
-      askPrice: 1.0,
-      bidSize: double.infinity,
-      askSize: double.infinity);
+  _IdentityMarket(Asset asset)
+      : super(
+            asset: asset,
+            money: asset,
+            bidPrice: 1.0,
+            askPrice: 1.0,
+            bidSize: double.infinity,
+            askSize: double.infinity);
 
   @override
   Iterable<Market> decompose() => [];
@@ -383,9 +386,10 @@ class _SyntheticMarket extends Market {
   double get askPrice => _a2bMarket.askPrice * _b2cMarket.askPrice;
   double get askSize =>
       min(_a2bMarket.askSize * _a2bMarket.askPrice, _b2cMarket.askSize);
-  
+
   @override
-  Iterable<Market> decompose() => _a2bMarket.decompose().followedBy(_b2cMarket.decompose());  
+  Iterable<Market> decompose() =>
+      _a2bMarket.decompose().followedBy(_b2cMarket.decompose());
 }
 
 class _FutureAndOptions {
@@ -579,11 +583,15 @@ void main() async {
   print("======================");
   print(allMarkets._markets[Commodity("ETH")]![Commodity("BTC")]!);
   print(allMarkets._markets[Commodity("BTC")]![Commodity("ETH")]!);
-  print(allMarkets.withMoney(Commodity("ETH")).withAsset(Commodity("BTC")).spot);
-  print(allMarkets.withMoney(Commodity("USDT")).withAsset(Commodity("BTC")).spot);
+  print(
+      allMarkets.withMoney(Commodity("ETH")).withAsset(Commodity("BTC")).spot);
+  print(
+      allMarkets.withMoney(Commodity("USDT")).withAsset(Commodity("BTC")).spot);
 
-  print(allMarkets.withMoney(Commodity("USDC")).withAsset(Commodity("ETH")).spot);
-  print(allMarkets.withMoney(Commodity("ETH")).withAsset(Commodity("USDC")).spot);
+  print(
+      allMarkets.withMoney(Commodity("USDC")).withAsset(Commodity("ETH")).spot);
+  print(
+      allMarkets.withMoney(Commodity("ETH")).withAsset(Commodity("USDC")).spot);
 }
 
 class DeribitInstrument {
