@@ -43,8 +43,9 @@ function chartViaApache(data) {
 async function jsMain() {
   console.log("Hello from JS!");
 
-  const gccs = JSON.parse(await processTickerData("BTC"));
+  const gccs = JSON.parse(await analyzeMarket("BTC"));
   console.log({gccs});
+
   // data = [['BreakEven ($)', 'Max Yield', 'Max Yield At ($)', 'Contract'],
   //   ...gccs.map(gcc => 
   //     [
