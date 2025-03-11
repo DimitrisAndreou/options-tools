@@ -76,7 +76,7 @@ abstract class Market {
 
   @override
   String toString() =>
-      '$asset/$money, bid: $bidPrice($money), ask: $askPrice($money) [${[
+      '$asset, bid: $bidPrice $money, ask: $askPrice $money [${[
         asset
       ].followedBy(decompose().map((m) => m.money)).map((a) => a.toString()).join("->")}]';
 }

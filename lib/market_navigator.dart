@@ -18,14 +18,14 @@ class _PutAndCall {
   }
 }
 
-class AllMarkets {
+class MarketsNavigator {
   // asset -> money -> corresponding spot Market
   final Map<Asset, Map<Asset, Market>> _markets = HashMap();
   // expiration -> asset -> money --> corresponding future Market
   final Map<DateTime, Map<Commodity, Map<Commodity, _FutureAndOptions>>>
       _expirables = SplayTreeMap();
 
-  AllMarkets.from(Iterable<Market> allAvailableMarkets) {
+  MarketsNavigator.from(Iterable<Market> allAvailableMarkets) {
     for (final market in allAvailableMarkets) {
       // TODO: if we're indexing reverse markets, why not do call-put parity too?
       // I.e. add synthetic calls or puts if they are missing.
@@ -92,7 +92,7 @@ class AllMarkets {
 //   .withAsset("BTC")
 //     .spot  --> Market
 //     .dates[]
-//       .future
+//       .future    // --> also compute implied interest
 //       .strikes[]
 //         .strike
 //         .put()
@@ -101,7 +101,7 @@ class AllMarkets {
 }
 
 class MarketsWithMoney {
-  final AllMarkets allMarkets;
+  final MarketsNavigator allMarkets;
   final Commodity money;
 
   MarketsWithMoney(this.allMarkets, this.money);
@@ -116,7 +116,7 @@ class MarketsWithMoney {
 }
 
 class MarketsWithMoneyAndAsset {
-  final AllMarkets allMarkets;
+  final MarketsNavigator allMarkets;
   final Commodity asset;
   final Commodity money;
   final Market spot;
@@ -142,3 +142,43 @@ abstract class StrikeAccessor {
   Market get put;
   Market get call;
 }
+
+/*
+
+BTC-26SEP25-140000-C
+strike is in USD
+market is in BTC
+underlying is in BTC
+
+for all markets
+keep btc options, calls
+order by date
+order by strike
+
+IDEA:
+Create all markets in a "context" (or universe).
+Each market then is able to change its money.
+
+Via extension methods:
+
+Primitives:
+findBestMarket(asset, money) -> Market
+findFuture(asset, money, date) -> Market
+.over(), under(), probability(), 
+
+markets.
+.expirations( < 30 days)
+.calls()
+.atm()   // or .at(+30%)
+.where(...)
+.withMoney(usd)
+.sortByDate()
+.sortByStrike()
+
+.groupByDate?
+.groupByStrike?
+.scatterPlot?
+
+// Each expiration could reference its future (synthetic or not), and interest rate.
+// Each option/future references its expiration.
+*/

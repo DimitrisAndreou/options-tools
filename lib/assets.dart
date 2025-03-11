@@ -185,8 +185,6 @@ class DatedFuture extends ExpirableContract {
       'Future($name,money=$money,underlying=$underlying,strike=$strike)';
 }
 
-// Two option types: one with money premium, one with underlying as money?
-// Or one type: but helper code to easily model both.
 class Option extends ExpirableContract {
   final bool isPut;
   final bool isCall;
@@ -218,5 +216,5 @@ class Option extends ExpirableContract {
       expiration: expiration);
 
   @override
-  String toString() => '$name[$money]';
+  String toString() => '$name[strike=$money]';
 }
