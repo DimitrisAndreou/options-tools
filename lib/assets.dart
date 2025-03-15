@@ -1,6 +1,6 @@
 import 'dart:collection';
 
-abstract class Asset {
+sealed class Asset {
   @override
   String toString() => name;
 
@@ -10,6 +10,12 @@ abstract class Asset {
   Iterable<Position> decompose();
 
   Position position(double size) => Position(this, size);
+
+  Commodity? get underlying;
+
+  bool get isExpirable => this is Expirable;
+  bool get isDatedFuture => this is DatedFuture;
+  bool get isOption => this is Option;
 }
 
 class Position {
@@ -45,7 +51,7 @@ class Position {
 
 // NamedAsset is an asset that can be traded directly;
 // it doesn't consist of a combination of other assets.
-class NamedAsset extends Asset {
+abstract class NamedAsset extends Asset {
   final String _name;
   NamedAsset(String name) : _name = name;
 
@@ -73,6 +79,9 @@ class Commodity extends NamedAsset implements Comparable<Commodity> {
   int compareTo(Commodity that) {
     return name.compareTo(that.name);
   }
+
+  @override
+  Commodity get underlying => this;
 }
 
 // A SyntheticAsset is an Asset that is a combination of other assets
@@ -111,13 +120,17 @@ class SyntheticAsset extends Asset {
   String get name => "SyntheticAsset: ${_assetPositions.entries}";
 
   @override
+  Commodity? get underlying => null;
+
+  @override
   bool operator ==(Object other) =>
       other is SyntheticAsset && _assetPositions == other._assetPositions;
   @override
   int get hashCode => _assetPositions.hashCode;
 }
 
-abstract class ExpirableContract extends NamedAsset {
+abstract class Expirable extends NamedAsset {
+  @override
   final Commodity underlying;
   final Commodity money;
   // price at which the exchange is exercised. Quoted in money.
@@ -129,7 +142,7 @@ abstract class ExpirableContract extends NamedAsset {
   // for futures & call options, but not for puts (those are sells).
   final bool _isBuy;
 
-  ExpirableContract(
+  Expirable(
     super.name, {
     required this.underlying,
     required this.money,
@@ -147,7 +160,7 @@ abstract class ExpirableContract extends NamedAsset {
   @override
   bool operator ==(Object that) {
     if (identical(this, that)) return true;
-    if (that is! ExpirableContract) return false;
+    if (that is! Expirable) return false;
     return name == that.name &&
         underlying == that.underlying &&
         money == that.money &&
@@ -162,7 +175,7 @@ abstract class ExpirableContract extends NamedAsset {
       name, underlying, money, strike, contractLot, expiration, _isBuy);
 }
 
-class DatedFuture extends ExpirableContract {
+class DatedFuture extends Expirable {
   DatedFuture(super.name,
       {required super.underlying,
       required super.money,
@@ -185,7 +198,7 @@ class DatedFuture extends ExpirableContract {
       'Future($name,money=$money,underlying=$underlying,strike=$strike)';
 }
 
-class Option extends ExpirableContract {
+class Option extends Expirable {
   final bool isPut;
   final bool isCall;
 

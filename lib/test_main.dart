@@ -1,7 +1,3 @@
-import 'dart:collection';
-
-import 'dart:convert';
-import 'package:http/http.dart';
 import 'package:options_tools/url_fetcher.dart';
 import 'assets.dart';
 import 'markets.dart';
@@ -15,53 +11,82 @@ String dollarify(double x) => "\$${x.toStringAsFixed(0)}";
 void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       DeribitCoin.BTC, UrlFetcher(Duration(minutes: 15)));
-
-  final marketsNavigator = MarketsNavigator.from(markets);
-  final slippage = 0.5 + 0.14;
-  for (final market in markets.take(20)) {
-    final option = market.asset;
-    if (option is Option &&
-        option.isCall &&
-        ["BTC", "ETH"].contains(option.underlying.name)) {
-      final spot = marketsNavigator
-          .withMoney(Commodity("USD"))
-          .withAsset(option.underlying)
-          .spot
-          .buyPrice(slippage);
-
-      // riskFreeYield =
-      //     1.0 + max(0.0, contract.futurePrice / contract.spotPrice - 1);
-
-      final bid = market.sellPrice(slippage);
-      final strike = option.strike;
-      final minimumContracts =
-          Deribit.getMinimumContract(option.underlying.name);
-      final callsToSell = minimumContracts;
-      final premium = callsToSell * bid;
-      final initialHeld = minimumContracts - premium;
-
-      // final strikeAsChange = option.strike / spot - 1.0;
-      final breakEven = spot * (1.0 - bid);
-      final breakEvenAsChange = breakEven / spot - 1.0;
-      final maxYield = strike / spot / (1.0 - bid);
-      final equivalentSellPrice = spot * maxYield;
-      // print("$market:\n   ${option.name.toString().padLeft(21)}: " +
-      //     "breakeven ${percentify(breakEvenAsChange).padLeft(6)} " +
-      //     "(${dollarify(breakEven).padLeft(7)}), " +
-      //     "max yield ${percentify(maxYield - 1.0).padLeft(6)} " +
-      //     "(like selling at: ${dollarify(equivalentSellPrice).padLeft(7)})" +
-      //     ", achieved at >= ${dollarify(option.strike).padLeft(7)}). " +
-      //     "Buy ${initialHeld.toStringAsFixed(5)} ${option.underlying} (${dollarify(initialHeld * spot)})");
-      print(
-          "### $market\n  market.money=${market.money}, option.underlying=${option.underlying}, "
-          "option.money=${option.money}, "
-          "spot=$spot, slippage=$slippage, bid=$bid, "
-          "strike=$strike, minimumContracts=$minimumContracts, premium=$premium, "
-          "initialHeld=$initialHeld, breakEven=$breakEven, "
-          "breakEvenAsChange=$breakEvenAsChange, maxYield=$maxYield, "
-          "equivalentSellPrice=$equivalentSellPrice\n\n");
+  final usd = Commodity("USD");
+  final btc = Commodity("BTC");
+  final spotMarket =
+      MarketsNavigator(markets).findBestMarket(asset: btc, money: usd);
+  final spotPrice = spotMarket.midPrice;
+  List<(DateTime, List<Market>)> callsByExpiration = markets
+      .whereUnderlyingIs(btc)
+      .options(
+          callsOnly: true,
+          minStrike: 80000,
+          maxStrike: 85000,
+          earliestExpiration: 1.DTE,
+          latestExpiration: 7.DTE)
+      // TODO: really need stable sort!!!
+      .sortByStrikeDesc
+      .sortByExpirationDesc
+      .groupByExpiration;
+  print("SPOT PRICE: $spotPrice");
+  for (final (expiration, marketsOfExpiration) in callsByExpiration) {
+    print("Expiration: $expiration");
+    for (final market in marketsOfExpiration) {
+      print("   $market");
     }
   }
+  // final slippage = 0.5 + 0.14;
+  // final spotBuyPrice = spotMarket.buyPrice(slippage);
+  // for (final market in markets
+  //     .whereUnderlyingIs(btc)
+  //     .options(
+  //         callsOnly: true,
+  //         minStrike: 70000,
+  //         maxStrike: 90000,
+  //         earliestExpiration: 7.DTE)
+  //     .sortByStrikeDesc
+  //     .sortByExpirationDesc
+  //     .groupByExpiration) {
+  //   final option = market.asset as Option;
+
+  //   // riskFreeYield =
+  //   //     1.0 + max(0.0, contract.futurePrice / contract.spotPrice - 1);
+
+  //   final premiumPerContract = market.sellPrice(slippage);
+  //   final strike = option.strike;
+  //   final minimumContracts = Deribit.getMinimumContract(option.underlying.name);
+  //   final callsToSell = minimumContracts;
+  //   final premium = callsToSell * premiumPerContract;
+  //   final initialHeld = minimumContracts - premium;
+
+  //   // final strikeAsChange = option.strike / spot - 1.0;
+  //   final breakEven = spotBuyPrice * (1.0 - premiumPerContract);
+  //   final breakEvenAsChange = breakEven / spotBuyPrice - 1.0;
+  //   final maxYield = strike / spotPrice / (1.0 - premiumPerContract);
+  //   final equivalentSellPrice = spotPrice * maxYield;
+  //   // print("$market:\n   ${option.name.toString().padLeft(21)}: " +
+  //   //     "breakeven ${percentify(breakEvenAsChange).padLeft(6)} " +
+  //   //     "(${dollarify(breakEven).padLeft(7)}), " +
+  //   //     "max yield ${percentify(maxYield - 1.0).padLeft(6)} " +
+  //   //     "(like selling at: ${dollarify(equivalentSellPrice).padLeft(7)})" +
+  //   //     ", achieved at >= ${dollarify(option.strike).padLeft(7)}). " +
+  //   //     "Buy ${initialHeld.toStringAsFixed(5)} ${option.underlying} (${dollarify(initialHeld * spot)})");
+  //   print(
+  //       "### $market\n  market.money=${market.money}, option.underlying=${option.underlying}, "
+  //       "option.money=${option.money}, "
+  //       "spot=$spotPrice, slippage=$slippage, premium=$premium, "
+  //       "strike=$strike, minimumContracts=$minimumContracts, premium=$premium, "
+  //       "initialHeld=$initialHeld, breakEven=$breakEven, "
+  //       "breakEvenAsChange=$breakEvenAsChange, maxYield=$maxYield, "
+  //       "equivalentSellPrice=$equivalentSellPrice\n\n");
+  // }
+
+  // Iterable<(DateTime, Iterable<MarketsWithStrike>)> s = markets
+  //     .whereUnderlyingIs(btc)
+  //     .calls
+  //     .byExpiration
+  //     .map((marketsWithExpiration) =>
+  //         (marketsWithExpiration.expiration, marketsWithExpiration.byStrike));
 
   // final btc = Commodity("BTC");
   // final marketsNavigator = MarketsNavigator.from(markets);

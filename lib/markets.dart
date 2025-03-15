@@ -1,5 +1,8 @@
-import 'dart:math';
 import 'assets.dart';
+
+import 'dart:collection';
+import 'dart:math';
+import 'package:collection/collection.dart';
 
 abstract class Market {
   Asset get asset;
@@ -63,9 +66,6 @@ abstract class Market {
   }
 
   // Given a market A-B, and a B-C, create a market A-C.
-  // TODO: maybe a helper to concatenate A-B + A-C
-  //       (by first reversing "this"), and also A-B + C-A
-  //       (by reverse reversing "that", making them compatible).
   Market concatenate(Market that) {
     return _SyntheticMarket(this, that);
   }
@@ -148,11 +148,11 @@ class _SyntheticMarket extends Market {
       : _a2bMarket = a2bMarket,
         _b2cMarket = b2cMarket {
     if (_a2bMarket.money != _b2cMarket.asset) {
-      throw ArgumentError("The <money> of the first market: $_a2bMarket, " +
+      throw ArgumentError("The <money> of the first market: $_a2bMarket, "
           "must be the <asset> of the second market: $_b2cMarket");
     }
     if (_a2bMarket.asset == _b2cMarket.money) {
-      throw ArgumentError("The <asset> of the first market: $_a2bMarket, " +
+      throw ArgumentError("The <asset> of the first market: $_a2bMarket, "
           "cannot also be the <money> of the second market: $_b2cMarket");
     }
   }
@@ -177,3 +177,87 @@ class _SyntheticMarket extends Market {
   Iterable<Market> decompose() =>
       _a2bMarket.decompose().followedBy(_b2cMarket.decompose());
 }
+
+extension ListOfMarketOperations on Iterable<Market> {
+  Iterable<Market> whereUnderlyingIs(Commodity underlying) =>
+      where((market) => market.asset.underlying == underlying);
+
+  Iterable<Market> get futures => where((market) => market.asset.isDatedFuture);
+
+  Iterable<Market> options(
+          {bool callsOnly = false,
+          bool putsOnly = false,
+          double minStrike = 0.0,
+          double maxStrike = double.infinity,
+          DateTime? earliestExpiration,
+          DateTime? latestExpiration}) =>
+      where((market) {
+        if (!market.asset.isOption) return false;
+        final option = market.asset as Option;
+        return (callsOnly ? option.isCall : true) &&
+            (putsOnly ? option.isPut : true) &&
+            option.strike >= minStrike &&
+            option.strike <= maxStrike &&
+            (earliestExpiration == null ||
+                earliestExpiration == option.expiration ||
+                earliestExpiration.isBefore(option.expiration)) &&
+            (latestExpiration == null ||
+                latestExpiration == option.expiration ||
+                latestExpiration.isAfter(option.expiration));
+      });
+
+  Iterable<Market> get sortByExpirationAsc =>
+      _sort((Expirable expirable) => expirable.expiration, ascending: true);
+  Iterable<Market> get sortByExpirationDesc =>
+      _sort((Expirable expirable) => expirable.expiration, ascending: false);
+  Iterable<Market> get sortByStrikeAsc =>
+      _sort<num>((Expirable expirable) => expirable.strike, ascending: true);
+  Iterable<Market> get sortByStrikeDesc =>
+      _sort<num>((Expirable expirable) => expirable.strike, ascending: false);
+
+  Iterable<Market> _sort<T extends Comparable<T>>(
+      T Function(Expirable) keyExtractor,
+      {required bool ascending}) {
+    List<Market> markets = where((market) => market.asset.isExpirable).toList();
+    markets.sort((Market a, Market b) {
+      final keyA = keyExtractor(a.asset as Expirable);
+      final keyB = keyExtractor(b.asset as Expirable);
+      int comparison = keyA.compareTo(keyB);
+      if (!ascending) comparison = -comparison;
+      return comparison;
+    });
+    return markets;
+  }
+
+  List<(DateTime, List<Market>)> get groupByExpiration =>
+      _groupBy((Expirable expirable) => expirable.expiration);
+
+  List<(double, List<Market>)> get groupByStrike =>
+      _groupBy((Expirable expirable) => expirable.strike);
+
+  List<(T, List<Market>)> _groupBy<T>(T Function(Expirable) keyExtractor) =>
+      where((market) => market.asset.isExpirable)
+          .groupListsBy((market) => keyExtractor(market.asset as Expirable))
+          .entries
+          .map((entry) => (entry.key, entry.value))
+          .toList(growable: false);
+}
+
+/*
+How do I organize by Expiration & Strike?
+I.e. Map<(DateTime, double), (Put, Call)>
+
+
+.over(), under(), probability(), 
+
+θα εχω και τετοια για να ζευγαρωνω συμβολαια (ειτε με καποια αποσταση 
+στα strikes, ειτε με καποια αποσταση στα dates)
+οποτε απο κει που εχω χυμα τα calls, με λιγα keystrokes πιο περα, 
+να εχω ολα τα spreads που με ενδιαφερουν, και με ένα map() ακόμα --> 
+over/under στοιχηματα
+
+Ολα τα box spreads!
+
+// Each expiration could reference its future (synthetic or not), and interest rate.
+// Each option/future references its expiration.
+*/
