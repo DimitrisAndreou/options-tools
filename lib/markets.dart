@@ -1,6 +1,5 @@
 import 'assets.dart';
 
-import 'dart:collection';
 import 'dart:math';
 import 'package:collection/collection.dart';
 
@@ -215,32 +214,34 @@ extension ListOfMarketOperations on Iterable<Market> {
   Iterable<Market> get sortByStrikeDesc =>
       _sort<num>((Expirable expirable) => expirable.strike, ascending: false);
 
+  // Stable sort!
   Iterable<Market> _sort<T extends Comparable<T>>(
-      T Function(Expirable) keyExtractor,
-      {required bool ascending}) {
-    List<Market> markets = where((market) => market.asset.isExpirable).toList();
-    markets.sort((Market a, Market b) {
-      final keyA = keyExtractor(a.asset as Expirable);
-      final keyB = keyExtractor(b.asset as Expirable);
-      int comparison = keyA.compareTo(keyB);
-      if (!ascending) comparison = -comparison;
-      return comparison;
-    });
-    return markets;
-  }
+          T Function(Expirable) keyExtractor,
+          {required bool ascending}) =>
+      where((market) => market.asset.isExpirable)
+          .indexed
+          .toList()
+          .sorted(((int, Market) a, (int, Market) b) {
+        final (marketIndexA, marketA) = a;
+        final (marketIndexB, marketB) = b;
 
-  List<(DateTime, List<Market>)> get groupByExpiration =>
+        final keyA = keyExtractor(marketA.asset as Expirable);
+        final keyB = keyExtractor(marketB.asset as Expirable);
+        int comparison = keyA.compareTo(keyB);
+        if (!ascending) comparison = -comparison;
+        if (comparison != 0) return comparison;
+        return marketIndexA.compareTo(marketIndexB);
+      }).map((indexedMarket) => indexedMarket.$2);
+
+  Map<DateTime, List<Market>> get groupByExpiration =>
       _groupBy((Expirable expirable) => expirable.expiration);
 
-  List<(double, List<Market>)> get groupByStrike =>
+  Map<double, List<Market>> get groupByStrike =>
       _groupBy((Expirable expirable) => expirable.strike);
 
-  List<(T, List<Market>)> _groupBy<T>(T Function(Expirable) keyExtractor) =>
+  Map<T, List<Market>> _groupBy<T>(T Function(Expirable) keyExtractor) =>
       where((market) => market.asset.isExpirable)
-          .groupListsBy((market) => keyExtractor(market.asset as Expirable))
-          .entries
-          .map((entry) => (entry.key, entry.value))
-          .toList(growable: false);
+          .groupListsBy((market) => keyExtractor(market.asset as Expirable));
 }
 
 /*
@@ -257,7 +258,4 @@ I.e. Map<(DateTime, double), (Put, Call)>
 over/under στοιχηματα
 
 Ολα τα box spreads!
-
-// Each expiration could reference its future (synthetic or not), and interest rate.
-// Each option/future references its expiration.
 */

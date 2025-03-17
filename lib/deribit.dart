@@ -165,6 +165,7 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
     final dd = int.parse(dateMatch.group(1)!);
     final mmm = dateMatch.group(2)!;
     final yy = int.parse(dateMatch.group(3)!);
-    return DateTime.utc(2000 + yy, _monthToNum[mmm]!, dd);
+    return DateTime.utc(2000 + yy, _monthToNum[mmm]!, dd, /*hour: */ 9)
+        .toLocal();
   }
 }
