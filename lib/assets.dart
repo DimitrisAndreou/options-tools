@@ -1,6 +1,8 @@
 import 'dart:collection';
 
 sealed class Asset {
+  const Asset();
+
   @override
   String toString() => name;
 
@@ -14,8 +16,11 @@ sealed class Asset {
   Commodity? get underlying;
 
   bool get isExpirable => this is Expirable;
+  Expirable get toExpirable => this as Expirable;
   bool get isDatedFuture => this is DatedFuture;
+  DatedFuture get toDatedFuture => this as DatedFuture;
   bool get isOption => this is Option;
+  Option get toOption => this as Option;
 }
 
 class Position {
@@ -53,7 +58,7 @@ class Position {
 // it doesn't consist of a combination of other assets.
 abstract class NamedAsset extends Asset {
   final String _name;
-  NamedAsset(String name) : _name = name;
+  const NamedAsset(String name) : _name = name;
 
   @override
   String get name => _name;
@@ -71,9 +76,9 @@ abstract class NamedAsset extends Asset {
 // USDC, BTC etc.
 class Commodity extends NamedAsset implements Comparable<Commodity> {
   static final Map<String, Commodity> _cache = {};
-  Commodity._internal(super.name);
-  factory Commodity(String name) =>
-      _cache.putIfAbsent(name, () => Commodity._internal(name));
+  const Commodity(super.name);
+  factory Commodity.fromName(String name) =>
+      _cache.putIfAbsent(name, () => Commodity(name));
 
   @override
   int compareTo(Commodity that) {

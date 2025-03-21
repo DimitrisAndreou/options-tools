@@ -7,17 +7,27 @@ import 'listed_instruments.dart';
 import 'url_fetcher.dart';
 
 enum DeribitCoin {
-  BTC,
-  ETH,
+  BTC(Commodity("BTC")),
+  ETH(Commodity("ETH")),
+  USDC(Commodity("USDC")),
+  USDT(Commodity("USDT")),
+  BNB(Commodity("BNB")),
+  PAXG(Commodity("PAXG")),
+  SOL(Commodity("SOL")),
+  XPR(Commodity("XRP"));
+
+  final Commodity commodity;
+  const DeribitCoin(this.commodity);
 }
 
 class Deribit {
   Deribit._();
 
   static Future<List<Market>> fetchMarkets(
-      DeribitCoin coin, UrlFetcher urlFetcher) async {
+      List<DeribitCoin> coins, UrlFetcher urlFetcher) async {
     final coinInstrumentsJson = await urlFetcher.fetch(
-        'https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=${coin.name}');
+        'https://www.deribit.com/api/v2/public/get_book_summary_by_currency'
+        '?currency=${coin.name}');
     final data = json.decode(coinInstrumentsJson) as Map<String, dynamic>;
     final rawInstruments = (data["result"] as List<dynamic>);
     return rawInstruments

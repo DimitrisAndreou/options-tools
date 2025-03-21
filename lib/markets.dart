@@ -177,42 +177,25 @@ class _SyntheticMarket extends Market {
       _a2bMarket.decompose().followedBy(_b2cMarket.decompose());
 }
 
-extension ListOfMarketOperations on Iterable<Market> {
+enum Order { asc, desc }
+
+extension MarketListExtension on Iterable<Market> {
   Iterable<Market> whereUnderlyingIs(Commodity underlying) =>
       where((market) => market.asset.underlying == underlying);
 
   Iterable<Market> get futures => where((market) => market.asset.isDatedFuture);
+  Iterable<Market> get options => where((market) => market.asset.isOption);
+  Iterable<Market> get calls =>
+      where((market) => market.asset.isOption && market.asset.toOption.isCall);
+  Iterable<Market> get puts =>
+      where((market) => market.asset.isOption && market.asset.toOption.isPut);
 
-  Iterable<Market> options(
-          {bool callsOnly = false,
-          bool putsOnly = false,
-          double minStrike = 0.0,
-          double maxStrike = double.infinity,
-          DateTime? earliestExpiration,
-          DateTime? latestExpiration}) =>
-      where((market) {
-        if (!market.asset.isOption) return false;
-        final option = market.asset as Option;
-        return (callsOnly ? option.isCall : true) &&
-            (putsOnly ? option.isPut : true) &&
-            option.strike >= minStrike &&
-            option.strike <= maxStrike &&
-            (earliestExpiration == null ||
-                earliestExpiration == option.expiration ||
-                earliestExpiration.isBefore(option.expiration)) &&
-            (latestExpiration == null ||
-                latestExpiration == option.expiration ||
-                latestExpiration.isAfter(option.expiration));
-      });
-
-  Iterable<Market> get sortByExpirationAsc =>
-      _sort((Expirable expirable) => expirable.expiration, ascending: true);
-  Iterable<Market> get sortByExpirationDesc =>
-      _sort((Expirable expirable) => expirable.expiration, ascending: false);
-  Iterable<Market> get sortByStrikeAsc =>
-      _sort<num>((Expirable expirable) => expirable.strike, ascending: true);
-  Iterable<Market> get sortByStrikeDesc =>
-      _sort<num>((Expirable expirable) => expirable.strike, ascending: false);
+  Iterable<Market> sortByExpiration(Order order) =>
+      _sort((Expirable expirable) => expirable.expiration,
+          ascending: order == Order.asc);
+  Iterable<Market> sortByStrike(Order order) =>
+      _sort<num>((Expirable expirable) => expirable.strike,
+          ascending: order == Order.asc);
 
   // Stable sort!
   Iterable<Market> _sort<T extends Comparable<T>>(
@@ -233,22 +216,27 @@ extension ListOfMarketOperations on Iterable<Market> {
         return marketIndexA.compareTo(marketIndexB);
       }).map((indexedMarket) => indexedMarket.$2);
 
-  Map<DateTime, List<Market>> get groupByExpiration =>
-      _groupBy((Expirable expirable) => expirable.expiration);
+  Map<DateTime, Iterable<Market>> groupByExpiration([Order? order]) =>
+      (order == null ? this : sortByExpiration(order))
+          ._groupBy((Expirable expirable) => expirable.expiration);
 
-  Map<double, List<Market>> get groupByStrike =>
-      _groupBy((Expirable expirable) => expirable.strike);
+  Map<double, Iterable<Market>> groupByStrike([Order? order]) =>
+      (order == null ? this : sortByStrike(order))
+          ._groupBy((Expirable expirable) => expirable.strike);
 
-  Map<T, List<Market>> _groupBy<T>(T Function(Expirable) keyExtractor) =>
+  // Remember that the keys of the returned Map are in insertion order;
+  // thus the ordering of markets is respected.
+  Map<T, Iterable<Market>> _groupBy<T>(T Function(Expirable) keyExtractor) =>
       where((market) => market.asset.isExpirable)
           .groupListsBy((market) => keyExtractor(market.asset as Expirable));
 }
 
+extension MarketsMapExtension<T> on Map<T, Iterable<Market>> {
+  Map<T, R> mapValues<R>(R Function(Iterable<Market>) fn) =>
+      map((key, markets) => MapEntry(key, fn(markets)));
+}
+
 /*
-How do I organize by Expiration & Strike?
-I.e. Map<(DateTime, double), (Put, Call)>
-
-
 .over(), under(), probability(), 
 
 θα εχω και τετοια για να ζευγαρωνω συμβολαια (ειτε με καποια αποσταση 

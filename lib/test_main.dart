@@ -24,15 +24,14 @@ void main() async {
   final Map<DateTime, Market> futures = markets
       .whereUnderlyingIs(btc)
       .futures
-      .groupByExpiration
-      .map((key, value) => MapEntry(key, value.first));
+      .groupByExpiration()
+      .mapValues((ms) => ms.single);
 
-  for (final MapEntry<DateTime, List<Market>> optionsByExpiration in markets
+  for (final optionsByExpiration in markets
       .whereUnderlyingIs(btc)
-      .options(callsOnly: true)
-      .sortByStrikeAsc
-      .sortByExpirationDesc
-      .groupByExpiration
+      .calls
+      .groupByExpiration(Order.desc)
+      .mapValues((ms) => ms.sortByStrike(Order.asc))
       .entries) {
     final expiration = optionsByExpiration.key;
     final options = optionsByExpiration.value;
@@ -73,6 +72,27 @@ void main() async {
           "(like selling at: ${dollarify(equivalentSellPrice).padLeft(7)})" +
           ", achieved at >= ${dollarify(option.strike).padLeft(7)}). " +
           "Buy ${initialHeld.toStringAsFixed(5)} ${option.underlying} (${dollarify(initialHeld * spotPrice)})");
+    }
+  }
+
+  print("========================");
+  print("========================");
+  print("========================");
+  for (final MapEntry<DateTime,
+          Map<double, ({Market? call, Market? put})>> expirationToStrike
+      in markets
+          .whereUnderlyingIs(btc)
+          .options
+          .sortByExpiration(Order.desc)
+          .groupByExpiration()
+          .mapValues((ms) => ms.groupByStrike(Order.desc).mapValues(
+              (ms) => (call: ms.calls.singleOrNull, put: ms.puts.singleOrNull)))
+          .entries) {
+    print("Date: ${expirationToStrike.key}");
+    for (final strikeToOptions in expirationToStrike.value.entries) {
+      final options = strikeToOptions.value;
+      print(
+          "  Strike: ${strikeToOptions.key} Call: ${options.call},  put: ${options.put}");
     }
   }
 }
