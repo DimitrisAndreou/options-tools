@@ -10,6 +10,7 @@ enum DeribitCoin {
   BTC(Commodity("BTC")),
   ETH(Commodity("ETH")),
   USDC(Commodity("USDC")),
+  // The rest aren't needed; all of them can be fetched via USDC.
   USDT(Commodity("USDT")),
   BNB(Commodity("BNB")),
   PAXG(Commodity("PAXG")),
@@ -25,15 +26,27 @@ class Deribit {
 
   static Future<List<Market>> fetchMarkets(
       List<DeribitCoin> coins, UrlFetcher urlFetcher) async {
-    final coinInstrumentsJson = await urlFetcher.fetch(
-        'https://www.deribit.com/api/v2/public/get_book_summary_by_currency'
-        '?currency=${coin.name}');
-    final data = json.decode(coinInstrumentsJson) as Map<String, dynamic>;
-    final rawInstruments = (data["result"] as List<dynamic>);
-    return rawInstruments
-        .map((rawInstrument) => ListedInstrument.fromJson(rawInstrument))
-        .where((instrument) => instrument != null)
-        .cast<ListedInstrument>()
+    final coinToResponse = {};
+    for (final coin in coins) {
+      // Hit Deribit sequentially; maybe less likely to get throttled.
+      final coinInstrumentsJson = await urlFetcher.fetch(
+          'https://www.deribit.com/api/v2/public/get_book_summary_by_currency'
+          '?currency=${coin.name}');
+      coinToResponse[coin] = coinInstrumentsJson;
+    }
+    final Iterable<ListedInstrument> instruments =
+        coinToResponse.values.expand((rawJson) {
+      final data = json.decode(rawJson) as Map<String, dynamic>;
+      final rawInstruments = (data["result"] as List<dynamic>);
+      return rawInstruments
+          .map((rawInstrument) => ListedInstrument.fromJson(rawInstrument))
+          .where((instrument) => instrument != null)
+          .cast<ListedInstrument>();
+    });
+    final mostRecents = {
+      for (final instr in instruments) instr.instrument_name: instr
+    };
+    return mostRecents.values
         .followedBy(_implicitUsdInstruments(["USDC", "USDT"]))
         .map((instrument) => instrument.toMarket())
         .nonNulls
