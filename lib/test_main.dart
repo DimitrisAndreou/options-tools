@@ -10,9 +10,43 @@ String percentify(double x, {int decimals = 1}) =>
 String dollarify(double x) => "\$${x.toStringAsFixed(0)}";
 
 void main() async {
-  // TODO: make it simpler to fetch BTC and ETH together (and merge the markets).
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
+//   printGeometricCoveredCalls(markets);
+//   printOptionChain(markets);
+
+  Iterable<Market> calls = markets
+      .whereUnderlyingIs(DeribitCoin.BTC.commodity)
+      .calls
+      .sortByStrike(Order.asc)
+      .sortByExpiration(Order.asc);
+  for (final call in calls.take(10)) {
+    print(
+        "Asset: [${call.asset}], sell price: ${call.sellPrice()} of ${call.money}");
+  }
+}
+
+void printOptionChain(List<Market> markets) {
+  for (final MapEntry<DateTime,
+          Map<double, ({Market? call, Market? put})>> expirationToStrike
+      in markets
+          .whereUnderlyingIs(Commodity("BTC"))
+          .options
+          .sortByExpiration(Order.desc)
+          .groupByExpiration()
+          .mapValues((ms) => ms.groupByStrike(Order.desc).mapValues(
+              (ms) => (call: ms.calls.singleOrNull, put: ms.puts.singleOrNull)))
+          .entries) {
+    print("Date: ${expirationToStrike.key}");
+    for (final strikeToOptions in expirationToStrike.value.entries) {
+      final options = strikeToOptions.value;
+      print(
+          "  Strike: ${strikeToOptions.key} Call: ${options.call},  put: ${options.put}");
+    }
+  }
+}
+
+void printGeometricCoveredCalls(List<Market> markets) {
   final usd = Commodity("USD");
   for (final underlying in [Commodity("BTC"), Commodity("ETH")]) {
     final spotMarket =
@@ -55,7 +89,8 @@ void main() async {
         final option = market.asset as Option;
 
         final premiumPerContract = market.sellPrice(slippage);
-        final soldCalls = Deribit.getMinimumContract(option.underlying.name);
+        final soldCalls = Deribit.getMinimumContract(
+            DeribitCoin.values.byName(option.underlying.name));
         final premium = soldCalls * premiumPerContract;
         final initialHeld = soldCalls - premium;
 
@@ -77,25 +112,4 @@ void main() async {
       }
     }
   }
-
-//   print("========================");
-//   print("========================");
-//   print("========================");
-//   for (final MapEntry<DateTime,
-//           Map<double, ({Market? call, Market? put})>> expirationToStrike
-//       in markets
-//           .whereUnderlyingIs(btc)
-//           .options
-//           .sortByExpiration(Order.desc)
-//           .groupByExpiration()
-//           .mapValues((ms) => ms.groupByStrike(Order.desc).mapValues(
-//               (ms) => (call: ms.calls.singleOrNull, put: ms.puts.singleOrNull)))
-//           .entries) {
-//     print("Date: ${expirationToStrike.key}");
-//     for (final strikeToOptions in expirationToStrike.value.entries) {
-//       final options = strikeToOptions.value;
-//       print(
-//           "  Strike: ${strikeToOptions.key} Call: ${options.call},  put: ${options.put}");
-//     }
-//   }
 }

@@ -1,7 +1,21 @@
-import 'contracts.dart';
+// GCC: what's the bare minimum needed?
+// just a call, and a spot market.
+// Give it the market navigator, the commodity, and the markets.
+// Then you can group by Expiration -> Strike -> Call
+// and via an inner mapValues(), map to GCC.
+// How to map to JSON? Maybe keep it flat?
+
+// Call -> SyntheticAsset (spot - call).
+// max risk: value at $0
+// max yield: value at $strike / value at $spot
+// breakEven: solve Analytically
+
+// Engine that can compute interesting points automatically.
+// Who owns "markToMarket"? With a hypothetical spot market.
+// Can such an engine find interesting points?
+// What about a simple short put, paid in BTC?
 
 class GeometricCoveredCall {
-  final Contract contract;
   late final double minimumContract;
   late final double initialHeld;
   late final double premium;

@@ -3,8 +3,9 @@ import 'package:web/web.dart' as web;
 import 'dart:convert';
 import 'dart:js_interop';
 
-import 'deribit.dart';
-import 'geometric_covered_calls.dart';
+import 'package:options_tools/deribit.dart';
+import 'package:options_tools/markets.dart';
+import 'package:options_tools/strategies.dart';
 import 'package:options_tools/url_fetcher.dart';
 
 @JS()
@@ -14,20 +15,17 @@ external void jsMain();
 @JS()
 external set analyzeMarket(JSFunction value);
 
-UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 15));
+UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 5));
 
 Future<String> analyzeMarketDart(String ticker) async {
-  String json = await _urlFetcher.fetch(deribitUriForOptionChain(ticker));
-  DeribitResponse parsed = DeribitResponse.createFromJson(json);
+  List<Market> markets = await Deribit.fetchMarkets(
+      [DeribitCoin.BTC, DeribitCoin.ETH], _urlFetcher);
+
   // DeribitResponse -> List<GeometricCoveredCalls> --> JSON
   // DeribitResponse -> List<Spread> --> JSON (over, under, touch bets, dont touch bets)
 
   // TODOs:
-  // Reimplement parsing of contracts
   // reimplement GCCs
-  // create a combined set of JSONs
-  // BTC -> gcc
-  // ETH -> gcc
   // BTC -> touch bets, etc
   // Maybe not as a big fat json, but via a wider API
 

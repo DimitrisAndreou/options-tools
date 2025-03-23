@@ -20,6 +20,8 @@ enum DeribitCoin {
 
   final Commodity commodity;
   const DeribitCoin(this.commodity);
+
+  // Reminder: DeribitCoin.values.byName("BTC")
 }
 
 class Deribit {
@@ -67,9 +69,9 @@ class Deribit {
     }
   }
 
-  static double getMinimumContract(String ticker) {
-    switch (ticker) {
-      case "BTC":
+  static double getMinimumContract(DeribitCoin coin) {
+    switch (coin) {
+      case DeribitCoin.BTC:
         return 0.1;
       default:
         return 1.0;

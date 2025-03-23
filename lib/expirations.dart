@@ -13,3 +13,7 @@ extension IntAsExpirationOperations on int {
   DateTime get DTE => DateTime.now().add(Duration(days: this));
   DateTime get HTE => DateTime.now().add(Duration(hours: this));
 }
+
+// TODO: move to extensions above
+double annualizedYield(double yield, Duration duration) =>
+    1.0 + (yield - 1.0) * Duration(days: 365).inMinutes / duration.inMinutes;
