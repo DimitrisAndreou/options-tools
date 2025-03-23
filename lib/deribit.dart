@@ -11,6 +11,7 @@ enum DeribitCoin {
   ETH(Commodity("ETH")),
   USDC(Commodity("USDC")),
   // The rest aren't needed; all of them can be fetched via USDC.
+  // Note that "USD" itself is not supported.
   USDT(Commodity("USDT")),
   BNB(Commodity("BNB")),
   PAXG(Commodity("PAXG")),

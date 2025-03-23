@@ -177,7 +177,16 @@ class _SyntheticMarket extends Market {
       _a2bMarket.decompose().followedBy(_b2cMarket.decompose());
 }
 
-enum Order { asc, desc }
+enum Order {
+  asc,
+  desc;
+
+  int compare<T extends Comparable<T>>(T t1, T t2) {
+    int comparison = t1.compareTo(t2);
+    if (this == desc) comparison = -comparison;
+    return comparison;
+  }
+}
 
 extension MarketListExtension on Iterable<Market> {
   Iterable<Market> whereUnderlyingIs(Commodity underlying) =>
@@ -191,16 +200,13 @@ extension MarketListExtension on Iterable<Market> {
       where((market) => market.asset.isOption && market.asset.toOption.isPut);
 
   Iterable<Market> sortByExpiration(Order order) =>
-      _sort((Expirable expirable) => expirable.expiration,
-          ascending: order == Order.asc);
+      _sort((Expirable expirable) => expirable.expiration, order);
   Iterable<Market> sortByStrike(Order order) =>
-      _sort<num>((Expirable expirable) => expirable.strike,
-          ascending: order == Order.asc);
+      _sort<num>((Expirable expirable) => expirable.strike, order);
 
   // Stable sort!
   Iterable<Market> _sort<T extends Comparable<T>>(
-          T Function(Expirable) keyExtractor,
-          {required bool ascending}) =>
+          T Function(Expirable) keyExtractor, Order order) =>
       where((market) => market.asset.isExpirable)
           .indexed
           .toList()
@@ -208,10 +214,8 @@ extension MarketListExtension on Iterable<Market> {
         final (marketIndexA, marketA) = a;
         final (marketIndexB, marketB) = b;
 
-        final keyA = keyExtractor(marketA.asset as Expirable);
-        final keyB = keyExtractor(marketB.asset as Expirable);
-        int comparison = keyA.compareTo(keyB);
-        if (!ascending) comparison = -comparison;
+        int comparison = order.compare(keyExtractor(marketA.asset as Expirable),
+            keyExtractor(marketB.asset as Expirable));
         if (comparison != 0) return comparison;
         return marketIndexA.compareTo(marketIndexB);
       }).map((indexedMarket) => indexedMarket.$2);
