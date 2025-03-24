@@ -158,8 +158,8 @@ abstract class Expirable extends NamedAsset {
   }) : _isBuy = isBuy;
 
   Asset exercise() => SyntheticAsset([
-        underlying.position(contractLot * (_isBuy ? 1 : -1)),
-        money.position(strike * (_isBuy ? -1 : 1))
+        underlying.position(_isBuy ? contractLot : -contractLot),
+        money.position(_isBuy ? -strike : strike)
       ]);
 
   @override

@@ -23,6 +23,7 @@ void main() async {
   for (final call in calls.take(10)) {
     print(
         "Asset: [${call.asset}], sell price: ${call.sellPrice()} of ${call.money}");
+    // Do it in dollars? Underlying?
   }
 }
 
