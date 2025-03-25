@@ -122,7 +122,7 @@ class SyntheticAsset extends Asset {
   }
 
   @override
-  String get name => "SyntheticAsset: ${_assetPositions.entries}";
+  String get name => "SyntheticAsset: ${_assetPositions.values}";
 
   @override
   Commodity? get underlying => null;

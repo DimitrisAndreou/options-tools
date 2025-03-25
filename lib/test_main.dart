@@ -1,7 +1,6 @@
 import 'package:options_tools/url_fetcher.dart';
 import 'assets.dart';
 import 'markets.dart';
-import 'market_navigator.dart';
 import 'deribit.dart';
 import 'dart:math';
 
@@ -12,19 +11,19 @@ String dollarify(double x) => "\$${x.toStringAsFixed(0)}";
 void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
-//   printGeometricCoveredCalls(markets);
+  printGeometricCoveredCalls(markets);
 //   printOptionChain(markets);
 
-  Iterable<Market> calls = markets
-      .whereUnderlyingIs(DeribitCoin.BTC.commodity)
-      .calls
-      .sortByStrike(Order.asc)
-      .sortByExpiration(Order.asc);
-  for (final call in calls.take(10)) {
-    print(
-        "Asset: [${call.asset}], sell price: ${call.sellPrice()} of ${call.money}");
-    // Do it in dollars? Underlying?
-  }
+//   Iterable<Market> calls = markets
+//       .whereUnderlyingIs(DeribitCoin.BTC.commodity)
+//       .calls
+//       .sortByStrike(Order.asc)
+//       .sortByExpiration(Order.asc);
+//   for (final call in calls.take(10)) {
+//     print(
+//         "Asset: [${call.asset}], sell price: ${call.sellPrice()} of ${call.money}");
+//     // Do it in dollars? Underlying?
+//   }
 }
 
 void printOptionChain(List<Market> markets) {
@@ -49,15 +48,18 @@ void printOptionChain(List<Market> markets) {
 
 void printGeometricCoveredCalls(List<Market> markets) {
   final usd = Commodity("USD");
-  for (final underlying in [Commodity("BTC"), Commodity("ETH")]) {
+  final marketsNavigator = MarketsNavigator(markets);
+//   for (final underlying in [Commodity("BTC"), Commodity("ETH")]) {
+  for (final underlying in [Commodity("BTC")]) {
     final spotMarket =
-        MarketsNavigator(markets).findBestMarket(asset: underlying, money: usd);
+        marketsNavigator.findBestMarket(asset: underlying, money: usd);
     final spotPrice = spotMarket.midPrice;
     final slippage = 0.5 + 0.14;
     final spotBuyPrice = spotMarket.buyPrice(slippage);
     final Map<DateTime, Market> futures = markets
         .whereUnderlyingIs(underlying)
         .futures
+        .withMoney(usd, marketsNavigator)
         .groupByExpiration()
         .mapValues((ms) => ms.single);
 
@@ -67,6 +69,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
     for (final optionsByExpiration in markets
         .whereUnderlyingIs(underlying)
         .calls
+        .withMoney(usd, marketsNavigator)
         .groupByExpiration(Order.desc)
         .mapValues((ms) => ms.sortByStrike(Order.asc))
         .entries) {
@@ -88,28 +91,48 @@ void printGeometricCoveredCalls(List<Market> markets) {
 
       for (final market in options) {
         final option = market.asset as Option;
-
-        final premiumPerContract = market.sellPrice(slippage);
-        final soldCalls = Deribit.getMinimumContract(
+        final size = Deribit.getMinimumContract(
             DeribitCoin.values.byName(option.underlying.name));
-        final premium = soldCalls * premiumPerContract;
-        final initialHeld = soldCalls - premium;
 
-        // final strikeAsChange = option.strike / spot - 1.0;
-        final breakEven = spotBuyPrice * (1.0 - premiumPerContract);
-        final breakEvenAsChange = breakEven / spotBuyPrice - 1.0;
-        final maxYield = option.strike / spotPrice / (1.0 - premiumPerContract);
+        // includes +premium ($)
+        final shortCall = market.trade(size: -size, slippage: slippage);
+        // includes -cost basis ($)
+        final longSpot = spotMarket.trade(size: size, slippage: slippage);
 
-        if (maxYield <= riskFreeYield) continue;
+        // Simplifies! Should only have -1 call and -X money ($)
+        final coveredCall = SyntheticAsset.mergeAssets([shortCall, longSpot]);
 
-        final equivalentSellPrice = spotPrice * maxYield;
-        print("${option.name.toString().padLeft(21)}: " +
-            "breakeven ${percentify(breakEvenAsChange).padLeft(6)} " +
-            "(${dollarify(breakEven).padLeft(7)}), " +
-            "max yield ${percentify(maxYield - 1.0).padLeft(6)} " +
-            "(like selling at: ${dollarify(equivalentSellPrice).padLeft(7)})" +
-            ", achieved at >= ${dollarify(option.strike).padLeft(7)}). " +
-            "Buy ${initialHeld.toStringAsFixed(5)} ${option.underlying} (${dollarify(initialHeld * spotPrice)})");
+        // Synthetic assets are not canonicalized...
+        //
+        // SyntheticAsset: (MapEntry(BTC: (0.082792 BTC)), MapEntry(SyntheticAsset: (MapEntry(BTC: (0.017208 BTC)), MapEntry(BTC-26DEC25-95000-C[strike=USD]: (-0.1 BTC-26DEC25-95000-C[strike=USD]))): (1.0 SyntheticAsset: (MapEntry(BTC: (0.017208 BTC)), MapEntry(BTC-26DEC25-95000-C[strike=USD]: (-0.1 BTC-26DEC25-95000-C[strike=USD]))))))
+
+        print("${option.name.toString().padLeft(21)}:\n   $coveredCall");
+
+        ///////////////////////////////////////////////////
+        // max risk, max yield
+        // max risk when? breakeven when? max yield when?
+        // max yield as spot?
+        ///////////////////////////////////////////////////
+
+        // final premiumPerContract = market.sellPrice(slippage);
+        // final premium = soldCalls * premiumPerContract;
+        // final initialHeld = soldCalls - premium;
+
+        // // final strikeAsChange = option.strike / spot - 1.0;
+        // final breakEven = spotBuyPrice * (1.0 - premiumPerContract);
+        // final breakEvenAsChange = breakEven / spotBuyPrice - 1.0;
+        // final maxYield = option.strike / spotPrice / (1.0 - premiumPerContract);
+
+        // if (maxYield <= riskFreeYield) continue;
+
+        // final equivalentSellPrice = spotPrice * maxYield;
+        // print("${option.name.toString().padLeft(21)}: "
+        //     "breakeven ${percentify(breakEvenAsChange).padLeft(6)} "
+        //     "(${dollarify(breakEven).padLeft(7)}), "
+        //     "max yield ${percentify(maxYield - 1.0).padLeft(6)} "
+        //     "(like selling at: ${dollarify(equivalentSellPrice).padLeft(7)})"
+        //     ", achieved at >= ${dollarify(option.strike).padLeft(7)}). "
+        //     "Buy ${initialHeld.toStringAsFixed(5)} ${option.underlying} (${dollarify(initialHeld * spotPrice)})");
       }
     }
   }
