@@ -9,6 +9,8 @@ sealed class Asset {
   String get name;
 
   // Decompose this asset into a list of SimpleAsset positions.
+  // Iterable of Positions instead of Assets because it's important
+  // to capture the *sign* and the *proportion* of the composed assets.
   Iterable<Position> decompose();
 
   Position position(double size) => Position(this, size);
@@ -99,22 +101,17 @@ class SyntheticAsset extends Asset {
 
   SyntheticAsset(Iterable<Position> positions) {
     for (final position in positions) {
-      _assetPositions.update(
-          position.asset, (existing) => existing + position.size,
-          ifAbsent: () => position);
-    }
-  }
-
-  SyntheticAsset get simplify => SyntheticAsset(decompose());
-
-  @override
-  Iterable<Position> decompose() sync* {
-    for (final position in _assetPositions.values) {
       for (final innerPosition in position.asset.decompose()) {
-        yield innerPosition.asset.position(position.size);
+        final asset = innerPosition.asset;
+        final impliedSize = innerPosition.size * position.size;
+        _assetPositions[asset] =
+            (_assetPositions[asset] ?? Position(asset)) + impliedSize;
       }
     }
   }
+
+  @override
+  Iterable<Position> decompose() => _assetPositions.values;
 
   @override
   String get name => "SyntheticAsset: ${_assetPositions.values}";

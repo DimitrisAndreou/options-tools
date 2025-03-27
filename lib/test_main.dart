@@ -100,7 +100,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
         final longSpot = spotMarket.long(slippage).position(size);
 
         // Simplifies! Should only have -1 call and -X money ($)
-        final coveredCall = SyntheticAsset([shortCall, longSpot]).simplify;
+        final coveredCall = SyntheticAsset([shortCall, longSpot]);
 
         print("${option.name.toString().padLeft(21)}:\n   $coveredCall");
 
