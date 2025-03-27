@@ -102,10 +102,6 @@ void printGeometricCoveredCalls(List<Market> markets) {
         // Simplifies! Should only have -1 call and -X money ($)
         final coveredCall = SyntheticAsset([shortCall, longSpot]).simplify;
 
-        // Synthetic assets are not canonicalized...
-        //
-        // SyntheticAsset: (MapEntry(BTC: (0.082792 BTC)), MapEntry(SyntheticAsset: (MapEntry(BTC: (0.017208 BTC)), MapEntry(BTC-26DEC25-95000-C[strike=USD]: (-0.1 BTC-26DEC25-95000-C[strike=USD]))): (1.0 SyntheticAsset: (MapEntry(BTC: (0.017208 BTC)), MapEntry(BTC-26DEC25-95000-C[strike=USD]: (-0.1 BTC-26DEC25-95000-C[strike=USD]))))))
-
         print("${option.name.toString().padLeft(21)}:\n   $coveredCall");
 
         ///////////////////////////////////////////////////
