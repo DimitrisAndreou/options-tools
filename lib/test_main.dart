@@ -90,17 +90,17 @@ void printGeometricCoveredCalls(List<Market> markets) {
           "===========\n");
 
       for (final market in options) {
-        final option = market.asset as Option;
+        final option = market.asset.toOption;
         final size = Deribit.getMinimumContract(
             DeribitCoin.values.byName(option.underlying.name));
 
         // includes +premium ($)
-        final shortCall = market.trade(size: -size, slippage: slippage);
+        final shortCall = market.short(slippage).position(size);
         // includes -cost basis ($)
-        final longSpot = spotMarket.trade(size: size, slippage: slippage);
+        final longSpot = spotMarket.long(slippage).position(size);
 
         // Simplifies! Should only have -1 call and -X money ($)
-        final coveredCall = SyntheticAsset.mergeAssets([shortCall, longSpot]);
+        final coveredCall = SyntheticAsset([shortCall, longSpot]).simplify;
 
         // Synthetic assets are not canonicalized...
         //

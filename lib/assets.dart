@@ -105,12 +105,7 @@ class SyntheticAsset extends Asset {
     }
   }
 
-  // Given a strategy, you trade() each leg, get a synthetic asset
-  // for each leg, then you just merge them all via this constructor,
-  // and you end up with a position of the strategy, including a
-  // single (merged) money position (the cost basis).
-  SyntheticAsset.mergeAssets(Iterable<Asset> assets)
-      : this(assets.expand((a) => a.decompose()));
+  SyntheticAsset get simplify => SyntheticAsset(decompose());
 
   @override
   Iterable<Position> decompose() sync* {

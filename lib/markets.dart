@@ -34,20 +34,19 @@ abstract class Market {
           askSize: askSize);
   factory Market.createIdentity(Asset asset) => _IdentityMarket(asset);
 
-  Asset trade({required double size, double slippage = 0.5}) {
-    final price = size > 0.0 ? buyPrice(slippage) : sellPrice(slippage);
-    return SyntheticAsset(
-        [asset.position(size), money.position(-size * price)]);
-  }
+  // Given a strategy, you trade() each leg, get a synthetic asset
+  // for each leg, then you just merge them all,
+  // and you end up with a position of the strategy, including a
+  // single (merged) money position (the cost basis).
+  Asset long([double slippage = 0.5]) => SyntheticAsset(
+      [asset.position(1.0), money.position(-buyPrice(slippage))]);
+  Asset short([double slippage = 0.5]) => SyntheticAsset(
+      [asset.position(-1.0), money.position(-sellPrice(slippage))]);
 
   double buyPrice([double slippageRatio = 0.5]) =>
       bidPrice + _slippage(slippageRatio);
   double sellPrice([double slippageRatio = 0.5]) =>
       askPrice - _slippage(slippageRatio);
-  Position buy({required double size, double slippage = 0.5}) =>
-      money.position(-size * buyPrice(slippage));
-  Position sell({required double size, double slippage = 0.5}) =>
-      money.position(size * sellPrice(slippage));
 
   double _slippage(double slippageRatio) {
     if (!(slippageRatio >= 0.0 && slippageRatio <= 1.0)) {
@@ -312,7 +311,8 @@ class MarketsNavigator {
           double slippage = 0.5}) =>
       Position.merge(asset.decompose().map((subposition) =>
           findBestMarket(asset: subposition.asset, money: money)
-              .sell(size: subposition.size, slippage: slippage)));
+              .short(slippage)
+              .position(subposition.size)));
 
   // TODO: implement
   // findFuture(asset, money, date) --> Market (either future or synthetic?)
