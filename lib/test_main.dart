@@ -1,8 +1,10 @@
-import 'package:options_tools/url_fetcher.dart';
-import 'assets.dart';
-import 'markets.dart';
-import 'deribit.dart';
 import 'dart:math';
+
+import 'assets.dart';
+import 'deribit.dart';
+import 'markets.dart';
+import 'position_analyzer.dart';
+import 'url_fetcher.dart';
 
 String percentify(double x, {int decimals = 1}) =>
     "${(100.0 * x).toStringAsFixed(decimals)}%";
@@ -12,6 +14,7 @@ void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
   printGeometricCoveredCalls(markets);
+
 //   printOptionChain(markets);
 
 //   Iterable<Market> calls = markets
@@ -103,6 +106,8 @@ void printGeometricCoveredCalls(List<Market> markets) {
         final coveredCall = SyntheticAsset([shortCall, longSpot]);
 
         print("${option.name.toString().padLeft(21)}:\n   $coveredCall");
+        final analyzer = PositionAnalyzer(coveredCall.position(1), usd);
+        print(analyzer);
 
         ///////////////////////////////////////////////////
         // max risk, max yield
