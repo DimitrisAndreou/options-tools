@@ -1,10 +1,18 @@
 import 'dart:collection';
+import 'dart:math';
 
 abstract class Decomposable {
   // Decompose this asset into a list of SimpleAsset positions.
   // Iterable of Positions instead of Assets because it's important
   // to capture the *sign* and the *proportion* of the composed assets.
   Iterable<Position> decompose();
+}
+
+abstract class OfIntrinsicValue {
+  Commodity get underlying;
+  // Assume that the underlying price (in whatever money) is the one specified:
+  // what would be the intrinsic value of this asset (in the same money)?
+  double intrinsicValue(double underlyingPrice);
 }
 
 sealed class Asset implements Decomposable {
@@ -16,8 +24,6 @@ sealed class Asset implements Decomposable {
   String get name;
 
   Position position(double size) => Position(this, size);
-
-  Commodity? get underlying;
 
   bool get isExpirable => this is Expirable;
   Expirable get toExpirable => this as Expirable;
@@ -83,7 +89,8 @@ abstract class NamedAsset extends Asset {
 }
 
 // USDC, BTC etc.
-class Commodity extends NamedAsset implements Comparable<Commodity> {
+class Commodity extends NamedAsset
+    implements Comparable<Commodity>, OfIntrinsicValue {
   static final Map<String, Commodity> _cache = {};
   const Commodity(super.name);
   factory Commodity.fromName(String name) =>
@@ -96,6 +103,9 @@ class Commodity extends NamedAsset implements Comparable<Commodity> {
 
   @override
   Commodity get underlying => this;
+
+  @override
+  double intrinsicValue(double underlyingPrice) => underlyingPrice;
 }
 
 // A SyntheticAsset is an Asset that is a combination of other assets
@@ -120,16 +130,13 @@ class SyntheticAsset extends Asset {
   String get name => "SyntheticAsset: ${_assetPositions.values}";
 
   @override
-  Commodity? get underlying => null;
-
-  @override
   bool operator ==(Object other) =>
       other is SyntheticAsset && _assetPositions == other._assetPositions;
   @override
   int get hashCode => _assetPositions.hashCode;
 }
 
-abstract class Expirable extends NamedAsset {
+abstract class Expirable extends NamedAsset implements OfIntrinsicValue {
   @override
   final Commodity underlying;
   final Commodity money;
@@ -194,6 +201,10 @@ class DatedFuture extends Expirable {
       expiration: expiration);
 
   @override
+  double intrinsicValue(double underlyingPrice) =>
+      underlyingPrice - underlyingPrice;
+
+  @override
   String toString() =>
       'Future($name,money=$money,underlying=$underlying,strike=$strike)';
 }
@@ -216,6 +227,11 @@ class Option extends Expirable {
           "isPut: $isPut, isCall: $isCall");
     }
   }
+
+  @override
+  double intrinsicValue(double underlyingPrice) => isPut
+      ? max(0.0, strike - underlyingPrice)
+      : max(0.0, underlyingPrice - strike);
 
   // TODO: replace with ReversedOption wrapper implementation
   // TODO: unused

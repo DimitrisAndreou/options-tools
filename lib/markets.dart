@@ -192,8 +192,11 @@ enum Order {
 }
 
 extension MarketListExtension on Iterable<Market> {
-  Iterable<Market> whereUnderlyingIs(Commodity underlying) =>
-      where((market) => market.asset.underlying == underlying);
+  Iterable<Market> whereUnderlyingIs(Commodity underlying) => where((market) {
+        final asset = market.asset;
+        return asset is OfIntrinsicValue &&
+            (asset as OfIntrinsicValue).underlying == underlying;
+      });
 
   Iterable<Market> withMoney(Commodity money, MarketsNavigator helper) =>
       map((market) => helper.findBestMarket(asset: market.asset, money: money));

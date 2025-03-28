@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
+
 import 'assets.dart';
 import 'markets.dart';
 
@@ -9,13 +11,16 @@ class PositionAnalyzer {
       {};
 
   PositionAnalyzer(Position p, Commodity money) {
+    _underlyingsToInterestingPoints[money] = SplayTreeSet.from([1.0]);
+    Set<DateTime> expirations = {};
     for (final inner in p.decompose()) {
-      if (inner.asset == money) continue;
-      Commodity? underlying = inner.asset.underlying;
-      if (underlying == null) {
-        throw AssertionError("Internal error: decompose() returned a position "
-            "of an asset: ${inner.asset} which has a null underlying!");
+      final innerAsset = inner.asset;
+      if (innerAsset == money) continue;
+      if (innerAsset is! OfIntrinsicValue) {
+        throw AssertionError("decompose() for position $p returned asset "
+            "which is not OfIntrinsicValue: $innerAsset");
       }
+      Commodity underlying = (innerAsset as OfIntrinsicValue).underlying;
       if (underlying == money) {
         // Can't handle derivatives that depend on the "price of money",
         // because the price of money would be in terms of what?
@@ -25,23 +30,39 @@ class PositionAnalyzer {
       }
       final interestingPoints = _underlyingsToInterestingPoints.putIfAbsent(
           underlying, () => SplayTreeSet<double>());
-      // TMP
+      if (innerAsset.isExpirable) {
+        expirations.add(innerAsset.toExpirable.expiration);
+        if (expirations.length >= 2) {
+          throw ArgumentError("At least 2 different option expirations "
+              "involved in position: $p, impossible to analyze");
+        }
+      }
+      // TODO: TMP
       interestingPoints.add(0.0);
-      if (inner.asset.isOption) {
-        interestingPoints.add(inner.asset.toOption.strike);
-        // TMP
-        interestingPoints.add(inner.asset.toOption.strike * 2);
+      if (innerAsset.isOption) {
+        final o = innerAsset.toOption;
+        interestingPoints.add(o.strike);
+        // TODO: TMP
+        // interestingPoints.add(o.strike * 2);
       }
     }
-    for (final Iterable<MapEntry<Commodity, double>> x
+
+    print("Position: $p");
+    for (final Map<Commodity, double> prices
         in _cartesianProduct(_underlyingsToInterestingPoints)) {
-      print(x);
+      final double value = p.decompose().map((inner) {
+        final innerAsset = inner.asset as OfIntrinsicValue;
+        return inner.size *
+            innerAsset.intrinsicValue(prices[innerAsset.underlying]!);
+      }).sum;
+      print("  with prices: $prices --> value: $value ($money)");
     }
   }
 
-  static Iterable<Iterable<MapEntry<K, V>>> _cartesianProduct<K, V>(
+  static Iterable<Map<K, V>> _cartesianProduct<K, V>(
       Map<K, Iterable<V>> choicesPerKey) {
-    return _cartesianProductRecursion(choicesPerKey.entries.toList());
+    return _cartesianProductRecursion(choicesPerKey.entries.toList())
+        .map((entries) => Map.fromEntries(entries));
   }
 
   static Iterable<Iterable<MapEntry<K, V>>> _cartesianProductRecursion<K, V>(

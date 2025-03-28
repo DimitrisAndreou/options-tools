@@ -98,16 +98,15 @@ void printGeometricCoveredCalls(List<Market> markets) {
             DeribitCoin.values.byName(option.underlying.name));
 
         // includes +premium ($)
-        final shortCall = market.short(slippage).position(size);
+        final shortCall = market.short(slippage).position(-1.0);
         // includes -cost basis ($)
-        final longSpot = spotMarket.long(slippage).position(size);
+        final longSpot = spotMarket.long(slippage).position(1.0);
 
         // Simplifies! Should only have -1 call and -X money ($)
         final coveredCall = SyntheticAsset([shortCall, longSpot]);
 
         print("${option.name.toString().padLeft(21)}:\n   $coveredCall");
-        final analyzer = PositionAnalyzer(coveredCall.position(1), usd);
-        print(analyzer);
+        final analyzer = PositionAnalyzer(coveredCall.position(size), usd);
 
         ///////////////////////////////////////////////////
         // max risk, max yield
