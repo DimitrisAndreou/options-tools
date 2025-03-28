@@ -309,10 +309,10 @@ class MarketsNavigator {
           {required Asset asset,
           required Commodity money,
           double slippage = 0.5}) =>
-      Position.merge(asset.decompose().map((subposition) =>
-          findBestMarket(asset: subposition.asset, money: money)
+      Position.merge(asset.decompose().map((innerPosition) =>
+          findBestMarket(asset: innerPosition.asset, money: money)
               .short(slippage)
-              .position(subposition.size)));
+              .position(innerPosition.size)));
 
   // TODO: implement
   // findFuture(asset, money, date) --> Market (either future or synthetic?)

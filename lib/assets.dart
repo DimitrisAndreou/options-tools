@@ -1,17 +1,19 @@
 import 'dart:collection';
 
-sealed class Asset {
+abstract class Decomposable {
+  // Decompose this asset into a list of SimpleAsset positions.
+  // Iterable of Positions instead of Assets because it's important
+  // to capture the *sign* and the *proportion* of the composed assets.
+  Iterable<Position> decompose();
+}
+
+sealed class Asset implements Decomposable {
   const Asset();
 
   @override
   String toString() => name;
 
   String get name;
-
-  // Decompose this asset into a list of SimpleAsset positions.
-  // Iterable of Positions instead of Assets because it's important
-  // to capture the *sign* and the *proportion* of the composed assets.
-  Iterable<Position> decompose();
 
   Position position(double size) => Position(this, size);
 
@@ -25,7 +27,7 @@ sealed class Asset {
   Option get toOption => this as Option;
 }
 
-class Position {
+class Position implements Decomposable {
   final Asset asset;
   // TODO: double is not a great type for money.
   final double size;
@@ -49,8 +51,13 @@ class Position {
   Position operator *(double size) => Position(asset, this.size * size);
 
   Position withSize(double size) => Position(asset, size);
+  Position empty() => Position(asset);
 
   bool get isZero => size == 0.0;
+
+  @override
+  Iterable<Position> decompose() =>
+      asset.decompose().map((innerPosition) => innerPosition * size);
 
   @override
   String toString() => '($size $asset)';
@@ -100,13 +107,9 @@ class SyntheticAsset extends Asset {
   final Map<Asset, Position> _assetPositions = HashMap();
 
   SyntheticAsset(Iterable<Position> positions) {
-    for (final position in positions) {
-      for (final innerPosition in position.asset.decompose()) {
-        final asset = innerPosition.asset;
-        final impliedSize = innerPosition.size * position.size;
-        _assetPositions[asset] =
-            (_assetPositions[asset] ?? Position(asset)) + impliedSize;
-      }
+    for (final inner in positions.expand((p) => p.decompose())) {
+      _assetPositions[inner.asset] =
+          (_assetPositions[inner.asset] ?? inner.empty()) + inner.size;
     }
   }
 
