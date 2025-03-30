@@ -1,24 +1,26 @@
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:collection/collection.dart';
-
 import 'assets.dart';
-import 'markets.dart';
 
 class PositionAnalyzer {
-  // map each underlying to interesting price point (where the PNL chart bends).
-  final Map<Commodity, SplayTreeSet<double>> _underlyingsToInterestingPoints =
-      {};
+  final Position position;
+  final Commodity underlying;
+  final Commodity money;
+  late final List<StrategySegment> segments;
 
-  PositionAnalyzer(Position p, Commodity money) {
-    _underlyingsToInterestingPoints[money] = SplayTreeSet.from([1.0]);
-    Set<DateTime> expirations = {};
-    for (final inner in p.decompose()) {
+  PositionAnalyzer(this.position,
+      {required this.underlying, required this.money}) {
+    final Set<DateTime> expirations = {};
+    final interestingPoints = SplayTreeSet<double>();
+
+    for (final inner in position.decompose()) {
       final innerAsset = inner.asset;
       if (innerAsset == money) continue;
       if (innerAsset is! OfIntrinsicValue) {
-        throw AssertionError("decompose() for position $p returned asset "
-            "which is not OfIntrinsicValue: $innerAsset");
+        throw AssertionError("decompose() for position $position returned asset"
+            " which is not OfIntrinsicValue: $innerAsset");
       }
       Commodity underlying = (innerAsset as OfIntrinsicValue).underlying;
       if (underlying == money) {
@@ -28,83 +30,137 @@ class PositionAnalyzer {
         throw ArgumentError("Cannot analyze asset: ${inner.asset}, which "
             "appears to be a derivative of money ($money)");
       }
-      final interestingPoints = _underlyingsToInterestingPoints.putIfAbsent(
-          underlying, () => SplayTreeSet<double>());
+      if (underlying != this.underlying) {
+        throw ArgumentError("Unexpected underlying asset: $underlying, expected"
+            ": ${this.underlying} (in position to be analyzed: $position)");
+      }
       if (innerAsset.isExpirable) {
         expirations.add(innerAsset.toExpirable.expiration);
         if (expirations.length >= 2) {
           throw ArgumentError("At least 2 different option expirations "
-              "involved in position: $p, impossible to analyze");
+              "involved in position: $position, impossible to analyze");
         }
       }
-      // TODO: TMP
-      interestingPoints.add(0.0);
       if (innerAsset.isOption) {
-        final o = innerAsset.toOption;
-        interestingPoints.add(o.strike);
-        // TODO: TMP
-        // interestingPoints.add(o.strike * 2);
+        interestingPoints.add(innerAsset.toOption.strike);
       }
     }
 
-    print("Position: $p");
-    for (final Map<Commodity, double> prices
-        in _cartesianProduct(_underlyingsToInterestingPoints)) {
-      final double value = p.decompose().map((inner) {
-        final innerAsset = inner.asset as OfIntrinsicValue;
-        return inner.size *
-            innerAsset.intrinsicValue(prices[innerAsset.underlying]!);
-      }).sum;
-      print("  with prices: $prices --> value: $value ($money)");
+    double evaluateAtPrice(double price) => position.decompose().map((inner) {
+          final innerAsset = inner.asset as OfIntrinsicValue;
+          final priceOfInnerAsset = innerAsset == money ? 1.0 : price;
+          return inner.size * innerAsset.intrinsicValue(priceOfInnerAsset);
+        }).sum;
+
+    final List<StrategySegment> segments = [];
+    double prevPrice = 0.0;
+    double prevValue = evaluateAtPrice(prevPrice);
+    for (final nextPrice in interestingPoints) {
+      double nextValue = evaluateAtPrice(nextPrice);
+      segments.add(_ClosedSegment(
+          minPrice: prevPrice,
+          valueAtMinPrice: prevValue,
+          maxPrice: nextPrice,
+          valueAtMaxPrice: nextValue));
+      prevPrice = nextPrice;
+      prevValue = nextValue;
     }
+    segments.add(_SemiSegment(
+        minPrice: prevPrice,
+        valueAtMinPrice: prevValue,
+        nextPrice: prevPrice + 1.0,
+        valueAtNextPrice: evaluateAtPrice(prevPrice + 1.0)));
+    this.segments = List.unmodifiable(segments);
   }
 
-  static Iterable<Map<K, V>> _cartesianProduct<K, V>(
-      Map<K, Iterable<V>> choicesPerKey) {
-    return _cartesianProductRecursion(choicesPerKey.entries.toList())
-        .map((entries) => Map.fromEntries(entries));
-  }
+  @override
+  String toString() =>
+      "PositionAnalyzer(position: $position, underlying: $underlying, money: $money, "
+      "segments: $segments)";
+}
 
-  static Iterable<Iterable<MapEntry<K, V>>> _cartesianProductRecursion<K, V>(
-      List<MapEntry<K, Iterable<V>>> choicesPerKey,
-      [int depth = 0]) sync* {
-    if (choicesPerKey.isEmpty || depth == choicesPerKey.length) {
-      yield [];
-      return;
-    }
-    final entryToIterate = choicesPerKey[depth]!;
-    for (final choice in entryToIterate.value) {
-      final chosen = MapEntry(entryToIterate.key, choice);
-      for (Iterable<MapEntry<K, V>> restCombinations
-          in _cartesianProductRecursion(choicesPerKey, depth + 1)) {
-        yield [chosen, ...restCombinations];
-      }
+abstract class StrategySegment {
+  // Price of the underlying (in money).
+  final double minPrice;
+  final double valueAtMinPrice;
+  double get maxPrice;
+  double get valueAtMaxPrice;
+
+  StrategySegment({required this.minPrice, required this.valueAtMinPrice});
+
+  // Value of position (in money).
+  double get minValue => min(valueAtMinPrice, valueAtMaxPrice);
+  double get maxValue => max(valueAtMinPrice, valueAtMaxPrice);
+
+  List<double> get breakevenPrices;
+
+  @override
+  String toString() => "$minPrice ($valueAtMinPrice)-->";
+}
+
+class _ClosedSegment extends StrategySegment {
+  @override
+  final double maxPrice;
+  @override
+  final double valueAtMaxPrice;
+
+  _ClosedSegment(
+      {required super.minPrice,
+      required super.valueAtMinPrice,
+      required this.maxPrice,
+      required this.valueAtMaxPrice}) {
+    if (maxPrice <= minPrice) {
+      throw ArgumentError(
+          "Max price ($maxPrice) must be > min price ($minPrice)");
     }
   }
 
   @override
-  String toString() => "PositionAnalyzer($_underlyingsToInterestingPoints)";
+  List<double> get breakevenPrices => [
+        if (valueAtMinPrice == 0.0) minPrice,
+        if (valueAtMinPrice.sign != valueAtMaxPrice.sign)
+          minPrice -
+              (valueAtMinPrice * (maxPrice - minPrice)) /
+                  (valueAtMaxPrice - valueAtMinPrice),
+        if (valueAtMaxPrice == 0.0) maxPrice,
+      ];
 }
 
-  // find underlyings (ignoring money).
-  // If one, easy. If more?
+class _SemiSegment extends StrategySegment {
+  final double _nextPrice;
+  final double _valueAtNextPrice;
+  // value change for a unit of price change
+  late final double _delta;
 
-  // Find expirations. If one, easy. If more?
+  _SemiSegment(
+      {required super.minPrice,
+      required super.valueAtMinPrice,
+      required double nextPrice,
+      required double valueAtNextPrice})
+      : _nextPrice = nextPrice,
+        _valueAtNextPrice = valueAtMinPrice {
+    if (nextPrice <= minPrice) {
+      throw ArgumentError(
+          "Next price ($nextPrice) must be > min price ($minPrice)");
+    }
+    _delta = (_valueAtNextPrice - valueAtMinPrice) / (_nextPrice - minPrice);
+  }
 
-  // if both are single, then:
-  // find all interesting points:
-  // $0 and all strikes.
-  // Mark to market the position forEach (spotPrice: interesting)
-  // max gain / max loss
-  //
-  // after last strike (interesting point): what then?
-  // maybe just double price (or price++), and see what's the effect on the
-  // position. flat? Up? Down? Value = price * a + b;
-  // This is enough. 
-  // 
-  // Then you have the valuation for all the range of price: [0.0 ... +oo]
-  // Then you can find max gain, max loss etc, for all of it,
-  // or for *some* of it!
+  @override
+  double get maxPrice => double.infinity;
+  @override
+  double get valueAtMaxPrice => switch (_delta.sign) {
+        1.0 => double.infinity,
+        -1.0 => double.negativeInfinity,
+        _ => valueAtMinPrice
+      };
 
-  // If you have two underlyings? It's a 2d space. You can still support it!
-  // No need to provide price via an entire Market. Just pass the price
+  // TODO: simplify with _ClosedSegment.breakevenPrices
+  @override
+  List<double> get breakevenPrices => [
+        if (valueAtMinPrice == 0.0) minPrice,
+        if (valueAtMinPrice.sign != valueAtMaxPrice.sign)
+          minPrice - valueAtMinPrice / _delta,
+        if (valueAtMaxPrice == 0.0) maxPrice,
+      ];
+}

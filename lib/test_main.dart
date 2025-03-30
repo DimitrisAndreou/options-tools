@@ -75,7 +75,9 @@ void printGeometricCoveredCalls(List<Market> markets) {
         .withMoney(usd, marketsNavigator)
         .groupByExpiration(Order.desc)
         .mapValues((ms) => ms.sortByStrike(Order.asc))
-        .entries) {
+        .entries
+        // TODO: tmp
+        .take(1)) {
       final expiration = optionsByExpiration.key;
       final options = optionsByExpiration.value;
       final future = futures[expiration];
@@ -106,7 +108,13 @@ void printGeometricCoveredCalls(List<Market> markets) {
         final coveredCall = SyntheticAsset([shortCall, longSpot]);
 
         print("${option.name.toString().padLeft(21)}:\n   $coveredCall");
-        final analyzer = PositionAnalyzer(coveredCall.position(size), usd);
+        final analyzer = PositionAnalyzer(coveredCall.position(size),
+            underlying: option.underlying, money: usd);
+        print(analyzer);
+        Set<double> breakevens = analyzer.segments
+            .expand((segment) => segment.breakevenPrices)
+            .toSet();
+        print("  Breakevens: $breakevens");
 
         ///////////////////////////////////////////////////
         // max risk, max yield
