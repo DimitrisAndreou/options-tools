@@ -41,7 +41,7 @@ abstract class Market {
   Asset long([double slippage = 0.5]) => SyntheticAsset(
       [asset.position(1.0), money.position(-buyPrice(slippage))]);
   Asset short([double slippage = 0.5]) => SyntheticAsset(
-      [asset.position(-1.0), money.position(-sellPrice(slippage))]);
+      [asset.position(-1.0), money.position(sellPrice(slippage))]);
 
   double buyPrice([double slippageRatio = 0.5]) =>
       bidPrice + _slippage(slippageRatio);

@@ -57,8 +57,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
     final spotMarket =
         marketsNavigator.findBestMarket(asset: underlying, money: usd);
     final spotPrice = spotMarket.midPrice;
-    final slippage = 0.5 + 0.14;
-    final spotBuyPrice = spotMarket.buyPrice(slippage);
+    final slippage = 0.5;
     final Map<DateTime, Market> futures = markets
         .whereUnderlyingIs(underlying)
         .futures
@@ -75,9 +74,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
         .withMoney(usd, marketsNavigator)
         .groupByExpiration(Order.desc)
         .mapValues((ms) => ms.sortByStrike(Order.asc))
-        .entries
-        // TODO: tmp
-        .take(1)) {
+        .entries) {
       final expiration = optionsByExpiration.key;
       final options = optionsByExpiration.value;
       final future = futures[expiration];
@@ -100,21 +97,19 @@ void printGeometricCoveredCalls(List<Market> markets) {
             DeribitCoin.values.byName(option.underlying.name));
 
         // includes +premium ($)
-        final shortCall = market.short(slippage).position(-1.0);
+        final shortCall = market.short(slippage).position(1.0);
         // includes -cost basis ($)
         final longSpot = spotMarket.long(slippage).position(1.0);
 
-        // Simplifies! Should only have -1 call and -X money ($)
+        // Simplifies! +Underlying, -call, -$
         final coveredCall = SyntheticAsset([shortCall, longSpot]);
-
-        print("${option.name.toString().padLeft(21)}:\n   $coveredCall");
         final analyzer = PositionAnalyzer(coveredCall.position(size),
             underlying: option.underlying, money: usd);
-        print(analyzer);
-        Set<double> breakevens = analyzer.segments
-            .expand((segment) => segment.breakevenPrices)
-            .toSet();
-        print("  Breakevens: $breakevens");
+        print("${option.name.toString().padLeft(21)}: "
+            "breakeven=${analyzer.breakevens}, "
+            "maxYield=${percentify(analyzer.maxYield)} "
+            "achieved at ${analyzer.maxValue.first.price} "
+            "(${percentify(analyzer.maxValue.first.price.fromPrice / spotPrice - 1.0)} from spot)");
 
         ///////////////////////////////////////////////////
         // max risk, max yield
