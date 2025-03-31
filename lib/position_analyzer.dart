@@ -95,6 +95,9 @@ class PositionAnalyzer {
 
   double get maxYield => -maxValue.first.value / minValue.first.value;
 
+  double valueAt(double price) =>
+      _segments.map((segment) => segment.valueAt(price)).nonNulls.first;
+
   @override
   String toString() =>
       "PositionAnalyzer(position: $position, underlying: $underlying, money: $money, "
