@@ -9,7 +9,6 @@ class UrlFetcher {
 
   Future<String> fetch(String uri) async {
     String? cached = _cache.read<String>(uri);
-
     if (cached != null) {
       return cached;
     }

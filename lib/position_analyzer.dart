@@ -1,5 +1,4 @@
 import 'dart:collection';
-import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'assets.dart';
@@ -46,32 +45,19 @@ class PositionAnalyzer {
       }
     }
 
-    double evaluateAtPrice(double price) => position.decompose().map((inner) {
+    double priceToValue(double price) => position.decompose().map((inner) {
           final innerAsset = inner.asset as OfIntrinsicValue;
           final priceOfInnerAsset = innerAsset == money ? 1.0 : price;
           return inner.size * innerAsset.intrinsicValue(priceOfInnerAsset);
         }).sum;
 
     double prevPrice = 0.0;
-    double prevValue = evaluateAtPrice(prevPrice);
     for (final nextPrice in interestingPoints) {
-      double nextValue = evaluateAtPrice(nextPrice);
-      _segments.add(_PnLSegment(
-          minPrice: prevPrice,
-          valueAtMinPrice: prevValue,
-          nextPrice: nextPrice,
-          valueAtNextPrice: nextValue,
-          maxPrice: nextPrice));
+      _segments.add(_PnLSegment.closed(priceToValue,
+          minPrice: prevPrice, maxPrice: nextPrice));
       prevPrice = nextPrice;
-      prevValue = nextValue;
     }
-    // To handle the remaining space from the last interesting point to infinity
-    _segments.add(_PnLSegment(
-        minPrice: prevPrice,
-        valueAtMinPrice: prevValue,
-        nextPrice: prevPrice * 1.5,
-        valueAtNextPrice: evaluateAtPrice(prevPrice * 1.5),
-        maxPrice: double.infinity));
+    _segments.add(_PnLSegment.open(priceToValue, minPrice: prevPrice));
   }
 
   Iterable<PriceAndValue> get minValue {
@@ -114,6 +100,11 @@ class PriceRange {
 
   bool get isPoint => fromPrice == toPrice;
 
+  double get price {
+    if (!isPoint) throw ArgumentError("isPoint == false");
+    return fromPrice;
+  }
+
   @override
   String toString() => isPoint ? "$fromPrice" : "[$fromPrice..$toPrice]";
 }
@@ -149,47 +140,82 @@ class PriceAndValue {
 class _PnLSegment {
   // Price of the underlying (in money).
   final double minPrice;
-  final double valueAtMinPrice;
-  final double nextPrice;
-  final double valueAtNextPrice;
   final double maxPrice;
-  // value change for a unit of price change
-  late final double delta;
+  late final double valueAtMinPrice;
   late final double valueAtMaxPrice;
+  // Value change for a unit of price change
+  // Critical to have correct sign here, i.e. if it is zero, it must be
+  // zero, not 0.00000000009
+  late final double delta;
 
   _PnLSegment(
       {required this.minPrice,
       required this.valueAtMinPrice,
-      required this.nextPrice,
-      required this.valueAtNextPrice,
-      required this.maxPrice}) {
-    if (!minPrice.isFinite ||
-        !valueAtMinPrice.isFinite ||
-        !nextPrice.isFinite ||
-        !valueAtNextPrice.isFinite) {
-      throw ArgumentError("All these numbers were assumed to be finited: "
-          "minPrice: $minPrice, valueAtMinPrice: $valueAtMinPrice, "
-          "nextPrice: $nextPrice, valueAtNextPrice: $valueAtNextPrice");
+      required this.maxPrice,
+      required this.valueAtMaxPrice,
+      required this.delta}) {
+    if (!minPrice.isFinite) {
+      throw ArgumentError("minPrice ($minPrice) must be finite");
     }
-    if (nextPrice <= minPrice) {
-      throw ArgumentError(
-          "Next price ($nextPrice) must be > min price ($minPrice)");
-    }
-    // Not using maxPrice for delta computation because that might be +oo.
-    delta = (valueAtNextPrice - valueAtMinPrice) / (nextPrice - minPrice);
-
-    if (nextPrice == maxPrice) {
-      valueAtMaxPrice = valueAtNextPrice;
-    } else if (maxPrice.isInfinite) {
-      valueAtMaxPrice = switch (delta.sign) {
-        1.0 => double.infinity,
-        -1.0 => double.negativeInfinity,
-        _ => valueAtMinPrice
-      };
-    } else {
-      valueAtMaxPrice = valueAtMinPrice + delta * (maxPrice - minPrice);
+    if (minPrice >= maxPrice) {
+      throw ArgumentError("minPrice ($minPrice) >= maxPrice ($maxPrice)");
     }
   }
+
+  factory _PnLSegment.closed(double Function(double) priceToValue,
+      {required double minPrice, required double maxPrice}) {
+    if (!maxPrice.isFinite) {
+      throw ArgumentError("maxPrice ($maxPrice) must be finite");
+    }
+    double valueAtMinPrice = priceToValue(minPrice);
+    double valueAtMaxPrice = priceToValue(maxPrice);
+    return _PnLSegment(
+        minPrice: minPrice,
+        valueAtMinPrice: valueAtMinPrice,
+        maxPrice: maxPrice,
+        valueAtMaxPrice: valueAtMaxPrice,
+        delta: calcDelta(
+            x1: minPrice,
+            x2: maxPrice,
+            y1: valueAtMinPrice,
+            y2: valueAtMaxPrice));
+  }
+
+  factory _PnLSegment.open(double Function(double) priceToValue,
+      {required double minPrice}) {
+    double valueAtMinPrice = priceToValue(minPrice);
+    final List<double> deltas = [];
+    double prevPrice = minPrice;
+    double prevValue = valueAtMinPrice;
+    for (int i = 0; i < 5; ++i) {
+      double nextPrice = (prevPrice + 1.0) * 1.5;
+      double nextValue = priceToValue(nextPrice);
+      deltas.add(calcDelta(
+          x1: prevPrice, x2: nextPrice, y1: prevValue, y2: nextValue));
+      prevPrice = nextPrice;
+      prevValue = nextValue;
+    }
+    double delta =
+        deltas.every((delta) => delta == deltas[0]) ? deltas[0] : 0.0;
+
+    return _PnLSegment(
+        minPrice: minPrice,
+        valueAtMinPrice: valueAtMinPrice,
+        maxPrice: double.infinity,
+        valueAtMaxPrice: switch (delta.sign) {
+          1.0 => double.infinity,
+          -1.0 => double.negativeInfinity,
+          _ => valueAtMinPrice
+        },
+        delta: delta);
+  }
+
+  static double calcDelta(
+          {required double x1,
+          required double x2,
+          required double y1,
+          required double y2}) =>
+      (y2 - y1) / (x2 - x1);
 
   PriceAndValue get minValue => minOrMaxValue(delta);
   PriceAndValue get maxValue => minOrMaxValue(-delta);
@@ -212,5 +238,6 @@ class _PnLSegment {
 
   @override
   String toString() => "[($minPrice..$maxPrice), "
-      "minValue=$minValue, maxValue=$maxValue, breakeven=$breakeven]";
+      "minValue=$minValue, maxValue=$maxValue, breakeven=$breakeven, "
+      "delta=$delta]";
 }

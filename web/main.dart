@@ -3,6 +3,7 @@ import 'package:web/web.dart' as web;
 import 'dart:convert';
 import 'dart:js_interop';
 
+import 'package:options_tools/assets.dart';
 import 'package:options_tools/deribit.dart';
 import 'package:options_tools/markets.dart';
 import 'package:options_tools/strategies.dart';
@@ -17,26 +18,22 @@ external set analyzeMarket(JSFunction value);
 
 UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 5));
 
-Future<String> analyzeMarketDart(String ticker) async {
-  List<Market> markets = await Deribit.fetchMarkets(
+Future<List<Market>> deribitMarkets() async {
+  return await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], _urlFetcher);
+}
 
-  // DeribitResponse -> List<GeometricCoveredCalls> --> JSON
-  // DeribitResponse -> List<Spread> --> JSON (over, under, touch bets, dont touch bets)
-
-  // TODOs:
-  // reimplement GCCs
-  // BTC -> touch bets, etc
-  // Maybe not as a big fat json, but via a wider API
-
-  final contracts = parsed.contracts;
-
-  final gccs = contracts
-      .where((contract) => contract.isCall())
-      .map((contract) => GeometricCoveredCall(contract, 1.0))
+Future<String> analyzeMarketDart(String ticker) async {
+  List<Market> markets = await deribitMarkets();
+  Iterable<CoveredCall> ccs = CoveredCall.generateAll(MarketsNavigator(markets),
+          underlying: Commodity("BTC"), money: Commodity("USD"))
+      .take(30)
       .toList();
-
-  return jsonEncode(gccs);
+  for (final cc in ccs) {
+    print("maxValue: ${cc.analyzer.maxValue}");
+    print(jsonEncode(cc));
+  }
+  return jsonEncode(ccs);
 }
 
 void main() {

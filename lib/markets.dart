@@ -199,8 +199,10 @@ extension MarketListExtension on Iterable<Market> {
       });
 
   Iterable<Market> withMoney(Commodity money, MarketsNavigator helper) =>
-      map((market) => helper.findBestMarket(asset: market.asset, money: money));
+      map((market) => helper.bestMarket(asset: market.asset, money: money));
 
+  Iterable<Market> get spotMarkets =>
+      where((market) => market.asset is Commodity);
   Iterable<Market> get futures => where((market) => market.asset.isDatedFuture);
   Iterable<Market> get options => where((market) => market.asset.isOption);
   Iterable<Market> get calls =>
@@ -249,18 +251,6 @@ extension MarketsMapExtension<T> on Map<T, Iterable<Market>> {
       map((key, markets) => MapEntry(key, fn(markets)));
 }
 
-/*
-.over(), under(), probability(), 
-
-θα εχω και τετοια για να ζευγαρωνω συμβολαια (ειτε με καποια αποσταση 
-στα strikes, ειτε με καποια αποσταση στα dates)
-οποτε απο κει που εχω χυμα τα calls, με λιγα keystrokes πιο περα, 
-να εχω ολα τα spreads που με ενδιαφερουν, και με ένα map() ακόμα --> 
-over/under στοιχηματα
-
-Ολα τα box spreads!
-*/
-
 class MarketsNavigator {
   final Iterable<Market> allMarkets;
 
@@ -277,7 +267,7 @@ class MarketsNavigator {
     }
   }
 
-  Market findBestMarket({required Asset asset, required Commodity money}) {
+  Market bestMarket({required Asset asset, required Commodity money}) {
     Set<Asset> visitedAssets = HashSet();
     SplayTreeSet<Market> candidateMarkets = SplayTreeSet((Market a, Market b) {
       int comparison = a.relativeSpread.compareTo(b.relativeSpread);
@@ -313,12 +303,18 @@ class MarketsNavigator {
           required Commodity money,
           double slippage = 0.5}) =>
       Position.merge(asset.decompose().map((innerPosition) =>
-          findBestMarket(asset: innerPosition.asset, money: money)
+          bestMarket(asset: innerPosition.asset, money: money)
               .short(slippage)
               .position(innerPosition.size)));
 
   // TODO: implement
   // findFuture(asset, money, date) --> Market (either future or synthetic?)
+
+  // final futurePrice = future.midPrice;
+  // final riskFreeYield = 1.0 + max(0.0, futurePrice / spotPrice - 1);
+  // final riskFreeAPR = (riskFreeYield - 1.0) *
+  //     Duration(days: 365).inMinutes /
+  //     expiration.minutesLeft;
 
   // TODO: expose interest rate somehow, per future (absolute & APR)
 }

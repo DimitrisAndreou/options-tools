@@ -5,6 +5,7 @@ import 'deribit.dart';
 import 'markets.dart';
 import 'position_analyzer.dart';
 import 'url_fetcher.dart';
+import 'strategies.dart';
 
 String percentify(double x, {int decimals = 1}) =>
     "${(100.0 * x).toStringAsFixed(decimals)}%";
@@ -13,7 +14,13 @@ String dollarify(double x) => "\$${x.toStringAsFixed(0)}";
 void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
-  printGeometricCoveredCalls(markets);
+
+  Iterable<CoveredCall> ccs = CoveredCall.generateAll(MarketsNavigator(markets),
+          underlying: Commodity("BTC"), money: Commodity("USD"))
+      .take(10);
+  print(ccs);
+
+  // printGeometricCoveredCalls(markets);
 
 //   printOptionChain(markets);
 
@@ -55,7 +62,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
 //   for (final underlying in [Commodity("BTC"), Commodity("ETH")]) {
   for (final underlying in [Commodity("BTC")]) {
     final spotMarket =
-        marketsNavigator.findBestMarket(asset: underlying, money: usd);
+        marketsNavigator.bestMarket(asset: underlying, money: usd);
     final spotPrice = spotMarket.midPrice;
     final slippage = 0.5;
     final Map<DateTime, Market> futures = markets
@@ -111,23 +118,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
             "achieved at ${analyzer.maxValue.first.price} "
             "(${percentify(analyzer.maxValue.first.price.fromPrice / spotPrice - 1.0)} from spot)");
 
-        ///////////////////////////////////////////////////
-        // max risk, max yield
-        // max risk when? breakeven when? max yield when?
-        // max yield as spot?
-        ///////////////////////////////////////////////////
-
-        // final premiumPerContract = market.sellPrice(slippage);
-        // final premium = soldCalls * premiumPerContract;
-        // final initialHeld = soldCalls - premium;
-
-        // // final strikeAsChange = option.strike / spot - 1.0;
-        // final breakEven = spotBuyPrice * (1.0 - premiumPerContract);
-        // final breakEvenAsChange = breakEven / spotBuyPrice - 1.0;
-        // final maxYield = option.strike / spotPrice / (1.0 - premiumPerContract);
-
         // if (maxYield <= riskFreeYield) continue;
-
         // final equivalentSellPrice = spotPrice * maxYield;
         // print("${option.name.toString().padLeft(21)}: "
         //     "breakeven ${percentify(breakEvenAsChange).padLeft(6)} "

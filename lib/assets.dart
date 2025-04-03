@@ -23,6 +23,7 @@ sealed class Asset implements Decomposable {
 
   String get name;
 
+  Position unit() => Position(this, 1.0);
   Position position(double size) => Position(this, size);
 
   bool get isExpirable => this is Expirable;

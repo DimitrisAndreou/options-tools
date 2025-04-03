@@ -1,56 +1,111 @@
-// GCC: what's the bare minimum needed?
-// just a call, and a spot market.
-// Give it the market navigator, the commodity, and the markets.
-// Then you can group by Expiration -> Strike -> Call
-// and via an inner mapValues(), map to GCC.
-// How to map to JSON? Maybe keep it flat?
+// List<Market> deribitMarketLoader()  // fetch BTC/ETH
+// all synthetic bonds
+// then produce all CC's
+// all over/under (touch/don't touch)
+// all box spreads (or the best per expiration)
+// probabilities of touch by date
 
-// Call -> SyntheticAsset (spot - call).
-// max risk: value at $0
-// max yield: value at $strike / value at $spot
-// breakEven: solve Analytically
+// Each JS exposed function fetches a JSON ready for visualization
+// takes a slippage as parameter
+// and coin, I guess.
+// And most importantly:
+// Translate all options to RELATIVE:
+// not strikes but moves (%). Not dates but days.
+// Especially for touch probabilities, so they can be screenshot
+// and compared.
 
-// Engine that can compute interesting points automatically.
-// Who owns "markToMarket"? With a hypothetical spot market.
-// Can such an engine find interesting points?
-// What about a simple short put, paid in BTC?
+import 'dart:convert';
 
-class GeometricCoveredCall {
-  late final double minimumContract;
-  late final double initialHeld;
-  late final double premium;
-  late final double strikeAsChange;
-  late final double breakEven;
-  late final double breakEvenAsYield;
+import 'package:options_tools/assets.dart';
+import 'package:options_tools/deribit.dart';
+import 'package:options_tools/markets.dart';
+import 'package:options_tools/position_analyzer.dart';
+
+class CoveredCall {
+  final Commodity underlying;
+  final Commodity money;
+  final DateTime expiration;
+
+  final PositionAnalyzer analyzer;
+
+  late final Position strategy;
+  late final Position optionLeg;
+  late final Position underlyingLeg;
+  late final Position moneyLeg;
+
+  final double spotPrice;
+  late final double breakeven;
   late final double maxYield;
-  late final double equivalentSellPrice;
-
-  GeometricCoveredCall(this.contract, this.minimumContract) {
-    final spot = contract.spotPrice;
-    final bid = contract.bidPrice;
-    final strike = contract.strike;
-    final callsToSell = minimumContract;
-    premium = callsToSell * bid;
-    initialHeld = minimumContract - premium;
-
-    breakEven = spot * (1.0 - bid);
-    breakEvenAsYield = breakEven / spot;
-    maxYield = strike / spot / (1.0 - bid);
-    equivalentSellPrice = spot * maxYield;
-  }
-
-  double get totalHeld => initialHeld + premium;
+  late final double maxYieldAt;
+  late final double maxYieldAtChange;
+  late final double yieldIfPriceUnchanged;
+  late final double equivalentHodlerSellPrice;
 
   Map<String, dynamic> toJson() => {
-        'callContract': contract,
-        'initialHeld': initialHeld,
-        'premium': premium,
-        'breakEven': breakEven,
-        'breakEvenAsYield': breakEvenAsYield,
+        'underlying': underlying.name,
+        'underlyingSize': underlyingLeg.size,
+        'money': money.name,
+        'moneySize': moneyLeg.size,
+        'call': optionLeg.asset.name,
+        'callSize': optionLeg.size,
+        'DTE': expiration.daysLeft,
+        'breakEven': breakeven,
         'maxYield': maxYield,
-        'maxYieldAt': contract.strike,
-        'maxYieldAtAsYield': contract.strikeAsYield,
-        'equivalentSpotSellPrice': equivalentSellPrice,
-        'minimumContractSize': minimumContract,
+        'maxYieldAt': maxYieldAt,
+        'maxYieldAtChange': maxYieldAtChange,
+        'yieldIfPriceUnchanged': yieldIfPriceUnchanged,
+        'equivalentHodlerSellPrice': equivalentHodlerSellPrice,
       };
+
+  @override
+  String toString() => jsonEncode(this);
+
+  CoveredCall._(this.strategy,
+      {required this.underlying,
+      required this.money,
+      required this.expiration,
+      required this.spotPrice})
+      : analyzer =
+            PositionAnalyzer(strategy, underlying: underlying, money: money) {
+    for (final p in strategy.decompose()) {
+      if (p.asset == money) {
+        moneyLeg = p;
+      } else if (p.asset == underlying) {
+        underlyingLeg = p;
+      } else {
+        optionLeg = p;
+      }
+    }
+    breakeven = analyzer.breakevens.single.price;
+    maxYield = analyzer.maxYield;
+    maxYieldAt = analyzer.maxValue.single.price.fromPrice;
+    maxYieldAtChange = maxYieldAt / spotPrice;
+    yieldIfPriceUnchanged =
+        analyzer.valueAt(spotPrice) / (-analyzer.minValue.single.value);
+    equivalentHodlerSellPrice = spotPrice * (1.0 + maxYield);
+  }
+
+  static Iterable<CoveredCall> generateAll(MarketsNavigator navigator,
+      {required Commodity underlying,
+      required Commodity money,
+      double slippage = 0.5}) sync* {
+    final spotMarket = navigator.bestMarket(asset: underlying, money: money);
+    for (final call in navigator.allMarkets
+        .whereUnderlyingIs(underlying)
+        .calls
+        .withMoney(money, navigator)
+        .sortByExpiration(Order.asc)
+        .sortByStrike(Order.asc)) {
+      yield CoveredCall._(
+          SyntheticAsset([
+            call.short(slippage).unit(),
+            spotMarket.long(slippage).unit()
+          ]).position(Deribit.getMinimumContract(
+              DeribitCoin.values.byName(underlying.name))),
+          underlying: underlying,
+          money: money,
+          expiration: call.asset.toOption.expiration,
+          spotPrice: spotMarket.midPrice);
+    }
+  }
 }
