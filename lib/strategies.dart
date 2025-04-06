@@ -110,24 +110,6 @@ class CoveredCall {
   }
 }
 
-// TODO: Treating futures as spot is wrong. It also means that
-// in cash & carry, the minus cash for the long spot is cancelled by the
-// plus cash from the short future.
-// What if the short future produces future dollars?
-// e.g. 1.0 long btc at 80k --> -$80k
-//     -1.0 short future btc at 85k --> +85k futureUSD
-// How about implementing the future as -P,+C? Same.
-// I suppose PositionAnalyzer can't help there; just custom logic in
-// SyntheticBond. You don't need a PositionAnalyzer at all.
-//
-// {underlying: BTC, underlyingSize: 1.0, money: USD, moneySize: 4415.5, future: BTC-27MAR26, futureSize: -1.0, DTE: 354, maxLoss: 4415.5, yield: -1.0, apr: -2.0596902627123956}
-// Instance of 'SyntheticBond'
-//  ==> (1.0 BTC)
-// PositionAnalyzer(position: (1.0 SyntheticAsset: ((1.0 BTC), (-1.0 Future(BTC-27MAR26,underlying=BTC)), (4415.5 USD))), underlying: BTC, money: USD, minValue: [{4415.5 @ [0.0..Infinity]}], maxValue: [{4415.5 @ [0.0..Infinity]}], breakevens: ())
-//  ==> (-1.0 Future(BTC-27MAR26,underlying=BTC))
-// PositionAnalyzer(position: (1.0 SyntheticAsset: ((1.0 BTC), (-1.0 Future(BTC-27MAR26,underlying=BTC)), (4415.5 USD))), underlying: BTC, money: USD, minValue: [{4415.5 @ [0.0..Infinity]}], maxValue: [{4415.5 @ [0.0..Infinity]}], breakevens: ())
-//  ==> (4415.5 USD)
-// PositionAnalyzer(position: (1.0 SyntheticAsset: ((1.0 BTC), (-1.0 Future(BTC-27MAR26,underlying=BTC)), (4415.5 USD))), underlying: BTC, money: USD, minValue: [{4415.5 @ [0.0..Infinity]}], maxValue: [{4415.5 @ [0.0..Infinity]}], breakevens: ())
 class SyntheticBond {
   final Commodity underlying;
   final Commodity money;
