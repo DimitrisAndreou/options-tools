@@ -194,8 +194,8 @@ enum Order {
 extension MarketListExtension on Iterable<Market> {
   Iterable<Market> whereUnderlyingIs(Commodity underlying) => where((market) {
         final asset = market.asset;
-        return asset is OfIntrinsicValue &&
-            (asset as OfIntrinsicValue).underlying == underlying;
+        return asset == underlying ||
+            asset.isExpirable && asset.toExpirable.underlying == underlying;
       });
 
   Iterable<Market> withMoney(Commodity money, MarketsNavigator helper) =>
@@ -213,7 +213,7 @@ extension MarketListExtension on Iterable<Market> {
   Iterable<Market> sortByExpiration(Order order) =>
       _sort((Expirable expirable) => expirable.expiration, order);
   Iterable<Market> sortByStrike(Order order) =>
-      _sort<num>((Expirable expirable) => expirable.strike, order);
+      _sort<num>((Expirable expirable) => expirable.toOption.strike, order);
 
   // Stable sort!
   Iterable<Market> _sort<T extends Comparable<T>>(
@@ -237,7 +237,7 @@ extension MarketListExtension on Iterable<Market> {
 
   Map<double, Iterable<Market>> groupByStrike([Order? order]) =>
       (order == null ? this : sortByStrike(order))
-          ._groupBy((Expirable expirable) => expirable.strike);
+          ._groupBy((Expirable expirable) => expirable.toOption.strike);
 
   // Remember that the keys of the returned Map are in insertion order;
   // thus the ordering of markets is respected.

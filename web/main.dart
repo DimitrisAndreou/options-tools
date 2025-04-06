@@ -14,7 +14,10 @@ import 'package:options_tools/url_fetcher.dart';
 external void jsMain();
 
 @JS()
-external set analyzeMarket(JSFunction value);
+external set coveredCallsDart(JSFunction value);
+
+@JS()
+external set syntheticBondsDart(JSFunction value);
 
 UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 5));
 
@@ -23,17 +26,18 @@ Future<List<Market>> deribitMarkets() async {
       [DeribitCoin.BTC, DeribitCoin.ETH], _urlFetcher);
 }
 
-Future<String> analyzeMarketDart(String ticker) async {
+Future<String> coveredCalls(String ticker) async {
   List<Market> markets = await deribitMarkets();
-  Iterable<CoveredCall> ccs = CoveredCall.generateAll(MarketsNavigator(markets),
-          underlying: Commodity("BTC"), money: Commodity("USD"))
-      .take(30)
-      .toList();
-  for (final cc in ccs) {
-    print("maxValue: ${cc.analyzer.maxValue}");
-    print(jsonEncode(cc));
-  }
-  return jsonEncode(ccs);
+  return jsonEncode(CoveredCall.generateAll(MarketsNavigator(markets),
+          underlying: Commodity(ticker), money: Commodity("USD"))
+      .toList());
+}
+
+Future<String> syntheticBonds(String ticker) async {
+  List<Market> markets = await deribitMarkets();
+  return jsonEncode(SyntheticBond.generateAll(MarketsNavigator(markets),
+          underlying: Commodity(ticker), money: Commodity("USD"))
+      .toList());
 }
 
 void main() {
@@ -41,8 +45,11 @@ void main() {
   final element = web.document.querySelector('#output') as web.HTMLDivElement;
   element.text = 'The time is ${now.hour}:${now.minute} '
       'and your Dart web app is running!';
-  analyzeMarket = (JSString ticker) {
-    return analyzeMarketDart(ticker.toDart).then((value) => value.toJS).toJS;
+  coveredCallsDart = (JSString ticker) {
+    return coveredCalls(ticker.toDart).then((value) => value.toJS).toJS;
+  }.toJS;
+  syntheticBondsDart = (JSString ticker) {
+    return syntheticBonds(ticker.toDart).then((value) => value.toJS).toJS;
   }.toJS;
 
   jsMain();

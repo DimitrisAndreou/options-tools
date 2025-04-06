@@ -1,5 +1,6 @@
 import 'dart:collection';
-import 'dart:math';
+
+import 'package:collection/collection.dart';
 
 abstract class Decomposable {
   // Decompose this asset into a list of SimpleAsset positions.
@@ -8,14 +9,14 @@ abstract class Decomposable {
   Iterable<Position> decompose();
 }
 
-abstract class OfIntrinsicValue {
-  Commodity get underlying;
-  // Assume that the underlying price (in whatever money) is the one specified:
-  // what would be the intrinsic value of this asset (in the same money)?
-  double intrinsicValue(double underlyingPrice);
+abstract class WithIntrinsicValue {
+  double intrinsicValue(
+      {required Commodity commodity,
+      required Commodity money,
+      required double price});
 }
 
-sealed class Asset implements Decomposable {
+sealed class Asset implements Decomposable, WithIntrinsicValue {
   const Asset();
 
   @override
@@ -34,7 +35,7 @@ sealed class Asset implements Decomposable {
   Option get toOption => this as Option;
 }
 
-class Position implements Decomposable {
+class Position implements Decomposable, WithIntrinsicValue {
   final Asset asset;
   // TODO: double is not a great type for money.
   final double size;
@@ -67,6 +68,14 @@ class Position implements Decomposable {
       asset.decompose().map((innerPosition) => innerPosition * size);
 
   @override
+  double intrinsicValue(
+          {required Commodity commodity,
+          required Commodity money,
+          required double price}) =>
+      asset.intrinsicValue(commodity: commodity, money: money, price: price) *
+      size;
+
+  @override
   String toString() => '($size $asset)';
 }
 
@@ -90,23 +99,29 @@ abstract class NamedAsset extends Asset {
 }
 
 // USDC, BTC etc.
-class Commodity extends NamedAsset
-    implements Comparable<Commodity>, OfIntrinsicValue {
+class Commodity extends NamedAsset implements Comparable<Commodity> {
   static final Map<String, Commodity> _cache = {};
   const Commodity(super.name);
   factory Commodity.fromName(String name) =>
       _cache.putIfAbsent(name, () => Commodity(name));
 
   @override
-  int compareTo(Commodity that) {
-    return name.compareTo(that.name);
+  double intrinsicValue(
+      {required Commodity commodity,
+      required Commodity money,
+      required double price}) {
+    if (this == commodity) return price;
+    if (this == money) return 1.0;
+    throw ArgumentError("Can only calculate intrinsicValue of commodity "
+        "$this if given the price of that commodity, or if it is considered "
+        "the money. Was given the price of "
+        "commodity: $commodity, and the specifed money was $money");
   }
 
   @override
-  Commodity get underlying => this;
-
-  @override
-  double intrinsicValue(double underlyingPrice) => underlyingPrice;
+  int compareTo(Commodity that) {
+    return name.compareTo(that.name);
+  }
 }
 
 // A SyntheticAsset is an Asset that is a combination of other assets
@@ -131,98 +146,71 @@ class SyntheticAsset extends Asset {
   String get name => "SyntheticAsset: ${_assetPositions.values}";
 
   @override
-  bool operator ==(Object other) =>
-      other is SyntheticAsset && _assetPositions == other._assetPositions;
+  double intrinsicValue(
+          {required Commodity commodity,
+          required Commodity money,
+          required double price}) =>
+      decompose()
+          .map((p) =>
+              p.size *
+              p.asset.intrinsicValue(
+                  commodity: commodity, money: money, price: price))
+          .sum;
+
+  @override
+  bool operator ==(Object that) =>
+      that is SyntheticAsset && _assetPositions == that._assetPositions;
   @override
   int get hashCode => _assetPositions.hashCode;
 }
 
-abstract class Expirable extends NamedAsset implements OfIntrinsicValue {
-  @override
+abstract class Expirable extends NamedAsset {
   final Commodity underlying;
-  final Commodity money;
-  // price at which the exchange is exercised. Quoted in money.
-  final double strike;
   // One derivative contract would refer to how many units of the underlying?
   final double contractLot;
   final DateTime expiration;
-  // Does this contract refer to a "buy" exchange? This is true
-  // for futures & call options, but not for puts (those are sells).
-  final bool _isBuy;
 
   Expirable(
     super.name, {
     required this.underlying,
-    required this.money,
-    required this.strike,
     required this.expiration,
-    required bool isBuy,
     this.contractLot = 1,
-  }) : _isBuy = isBuy;
-
-  Asset exercise() => SyntheticAsset([
-        underlying.position(_isBuy ? contractLot : -contractLot),
-        money.position(_isBuy ? -strike : strike)
-      ]);
-
-  @override
-  bool operator ==(Object that) {
-    if (identical(this, that)) return true;
-    if (that is! Expirable) return false;
-    return name == that.name &&
-        underlying == that.underlying &&
-        money == that.money &&
-        strike == that.strike &&
-        contractLot == that.contractLot &&
-        expiration == that.expiration &&
-        _isBuy == that._isBuy;
-  }
-
-  @override
-  int get hashCode => Object.hash(
-      name, underlying, money, strike, contractLot, expiration, _isBuy);
+  });
 }
 
 class DatedFuture extends Expirable {
   DatedFuture(super.name,
       {required super.underlying,
-      required super.money,
-      required super.strike,
       required super.expiration,
-      super.contractLot})
-      : super(isBuy: true);
-
-  // TODO: replace with ReversedFuture wrapper implementation
-  // TODO: unused
-  DatedFuture get reverse => DatedFuture('Reverse of [$name]',
-      underlying: money,
-      money: underlying,
-      contractLot: 1.0 / contractLot,
-      strike: 1.0 / strike,
-      expiration: expiration);
+      super.contractLot});
 
   @override
-  double intrinsicValue(double underlyingPrice) =>
-      underlyingPrice - underlyingPrice;
+  double intrinsicValue(
+          {required Commodity commodity,
+          required Commodity money,
+          required double price}) =>
+      underlying.intrinsicValue(
+          commodity: commodity, money: money, price: price);
 
   @override
-  String toString() =>
-      'Future($name,money=$money,underlying=$underlying,strike=$strike)';
+  String toString() => 'Future($name,underlying=$underlying)';
 }
 
 class Option extends Expirable {
+  final Commodity money;
+  // price at which the exchange is exercised. Quoted in money.
+  final double strike;
   final bool isPut;
   final bool isCall;
 
   Option(super.name,
       {required super.underlying,
-      required super.money,
-      required super.strike,
+      required this.money,
+      required this.strike,
       this.isPut = false,
       this.isCall = false,
       required super.expiration,
-      super.contractLot})
-      : super(isBuy: isCall) {
+      super.contractLot}) {
     if (isPut == isCall) {
       throw ArgumentError("Exactly one of these should be true: " +
           "isPut: $isPut, isCall: $isCall");
@@ -230,20 +218,26 @@ class Option extends Expirable {
   }
 
   @override
-  double intrinsicValue(double underlyingPrice) => isPut
-      ? max(0.0, strike - underlyingPrice)
-      : max(0.0, underlyingPrice - strike);
-
-  // TODO: replace with ReversedOption wrapper implementation
-  // TODO: unused
-  Option get reverse => Option('Reverse of [$name]',
-      underlying: money,
-      money: underlying,
-      contractLot: 1.0 / contractLot,
-      strike: 1.0 / strike,
-      isPut: !isPut,
-      isCall: !isCall,
-      expiration: expiration);
+  double intrinsicValue(
+      {required Commodity commodity,
+      required Commodity money,
+      required double price}) {
+    if (underlying != commodity || this.money != money) {
+      throw ArgumentError("An option's intrinsic value can only be "
+          "evaluated if given the price of the underlying, at the same "
+          "money as the strike of the option. Option's underlying=and money");
+    }
+    if (price < strike) {
+      if (isPut) {
+        return (strike - price) * contractLot;
+      }
+    } else {
+      if (isCall) {
+        return (price - strike) * contractLot;
+      }
+    }
+    return 0.0;
+  }
 
   @override
   String toString() => '$name[strike=$money]';

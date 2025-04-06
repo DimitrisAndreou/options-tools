@@ -43,13 +43,23 @@ function chartViaApache(data) {
 async function jsMain() {
   console.log("Hello from JS!");
   try {
-    const rawData = await analyzeMarket("BTC");
+    const rawData = await coveredCallsDart("BTC");
     const ccs = JSON.parse(rawData);
     console.log({ccs});
   } catch (error) {
     console.error("JavaScript caught Dart error:", error);
     console.error("Dart stack trace:", error.stack);
   }
+
+  try {
+    const rawData = await syntheticBondsDart("BTC");
+    const bonds = JSON.parse(rawData);
+    console.log({bonds});
+  } catch (error) {
+    console.error("JavaScript caught Dart error:", error);
+    console.error("Dart stack trace:", error.stack);
+  }
+
   // data = [['BreakEven ($)', 'Max Yield', 'Max Yield At ($)', 'Contract'],
   //   ...gccs.map(gcc => 
   //     [

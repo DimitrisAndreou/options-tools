@@ -16,23 +16,6 @@ class PositionAnalyzer {
 
     for (final inner in position.decompose()) {
       final innerAsset = inner.asset;
-      if (innerAsset == money) continue;
-      if (innerAsset is! OfIntrinsicValue) {
-        throw AssertionError("decompose() for position $position returned asset"
-            " which is not OfIntrinsicValue: $innerAsset");
-      }
-      Commodity underlying = (innerAsset as OfIntrinsicValue).underlying;
-      if (underlying == money) {
-        // Can't handle derivatives that depend on the "price of money",
-        // because the price of money would be in terms of what?
-        // Another money?
-        throw ArgumentError("Cannot analyze asset: ${inner.asset}, which "
-            "appears to be a derivative of money ($money)");
-      }
-      if (underlying != this.underlying) {
-        throw ArgumentError("Unexpected underlying asset: $underlying, expected"
-            ": ${this.underlying} (in position to be analyzed: $position)");
-      }
       if (innerAsset.isExpirable) {
         expirations.add(innerAsset.toExpirable.expiration);
         if (expirations.length >= 2) {
@@ -41,15 +24,18 @@ class PositionAnalyzer {
         }
       }
       if (innerAsset.isOption) {
-        interestingPoints.add(innerAsset.toOption.strike);
+        final option = innerAsset.toOption;
+        if (option.money != money) {
+          throw ArgumentError("A PositionAnalyzer(money=$money) cannot "
+              "analyze an option $option because its strike is of "
+              "a different money: ${option.money}");
+        }
+        interestingPoints.add(option.strike);
       }
     }
 
-    double priceToValue(double price) => position.decompose().map((inner) {
-          final innerAsset = inner.asset as OfIntrinsicValue;
-          final priceOfInnerAsset = innerAsset == money ? 1.0 : price;
-          return inner.size * innerAsset.intrinsicValue(priceOfInnerAsset);
-        }).sum;
+    double priceToValue(double price) => position.intrinsicValue(
+        commodity: underlying, money: money, price: price);
 
     double prevPrice = 0.0;
     for (final nextPrice in interestingPoints) {

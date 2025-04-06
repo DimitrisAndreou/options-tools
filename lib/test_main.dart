@@ -15,14 +15,10 @@ void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
 
-  Iterable<CoveredCall> ccs = CoveredCall.generateAll(MarketsNavigator(markets),
-          underlying: Commodity("BTC"), money: Commodity("USD"))
-      .take(10);
-  print(ccs);
-
+  browseStrategies(markets);
   // printGeometricCoveredCalls(markets);
 
-//   printOptionChain(markets);
+  // printOptionChain(markets);
 
 //   Iterable<Market> calls = markets
 //       .whereUnderlyingIs(DeribitCoin.BTC.commodity)
@@ -34,6 +30,21 @@ void main() async {
 //         "Asset: [${call.asset}], sell price: ${call.sellPrice()} of ${call.money}");
 //     // Do it in dollars? Underlying?
 //   }
+}
+
+void browseStrategies(List<Market> markets) {
+  final money = Commodity("USD");
+  final underlying = Commodity("BTC");
+  final navigator = MarketsNavigator(markets);
+  for (SyntheticBond bond in SyntheticBond.generateAll(navigator,
+      underlying: underlying, money: money)) {
+    print(bond);
+    for (Position p in bond.strategy.decompose()) {
+      print(" ==> $p");
+    }
+    print(bond.toJson());
+    print("==============");
+  }
 }
 
 void printOptionChain(List<Market> markets) {

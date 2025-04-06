@@ -133,8 +133,6 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
       }
       return makeMarket(DatedFuture(instrument_name,
           underlying: underlying,
-          money: money,
-          strike: mark_price,
           expiration: expirationDate,
           contractLot: 1.0));
     }
