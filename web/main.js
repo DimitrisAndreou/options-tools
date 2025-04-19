@@ -33,7 +33,7 @@ function chartViaApache(data) {
   const min = Math.min(minX, minY);
   const max = Math.max(maxX, maxY);
 
-  const chart = echarts.init(document.getElementById('BTC_gcc_chart'));
+  const chart = echarts.init(document.getElementById('btcPriceChart'));
   window.addEventListener('resize', function() {
     chart.resize();
   });
@@ -156,6 +156,21 @@ function chartViaApache(data) {
     },
   });
 }
+
+// TODOs:
+// 1. Create dataset as 2d array. Specify dimensions separately.
+// 
+// var option = {
+//   dataset: {
+//     dimensions: ['score', 'amount'],
+//     source: [
+//       [89.3, 3371],
+//       [92.1, 8123],
+//       [94.4, 1954],
+//       [85.4, 829]
+//     ]
+//   }
+// };
 
 async function jsMain() {
   console.log("Hello from JS!");
