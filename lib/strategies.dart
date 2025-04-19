@@ -35,6 +35,7 @@ class CoveredCall {
 
   final double spotPrice;
   late final double? breakeven;
+  late final double? breakevenAsChange;
   late final double maxYield;
   late final double maxYieldAt;
   late final double maxYieldAtChange;
@@ -50,6 +51,7 @@ class CoveredCall {
         'callSize': optionLeg.size,
         'DTE': expiration.daysLeft,
         'breakEven': breakeven,
+        'breakEvenAsChange': breakevenAsChange,
         'maxYield': maxYield,
         'maxYieldAt': maxYieldAt,
         'maxYieldAtChange': maxYieldAtChange,
@@ -77,6 +79,7 @@ class CoveredCall {
       }
     }
     breakeven = analyzer.breakevens.singleOrNull?.price;
+    breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
     maxYield = analyzer.maxYield;
     maxYieldAt = analyzer.maxValue.single.price.fromPrice;
     maxYieldAtChange = maxYieldAt / spotPrice;

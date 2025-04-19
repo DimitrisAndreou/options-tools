@@ -36,14 +36,16 @@ void browseStrategies(List<Market> markets) {
   final money = Commodity("USD");
   final underlying = Commodity("BTC");
   final navigator = MarketsNavigator(markets);
+  print(" ============== BONDS ==============");
   for (SyntheticBond bond in SyntheticBond.generateAll(navigator,
       underlying: underlying, money: money)) {
-    print(bond);
-    for (Position p in bond.strategy.decompose()) {
-      print(" ==> $p");
-    }
     print(bond.toJson());
-    print("==============");
+  }
+
+  print(" ============== CC ==============");
+  for (CoveredCall cc in CoveredCall.generateAll(navigator,
+      underlying: underlying, money: money)) {
+    print(cc.toJson());
   }
 }
 
