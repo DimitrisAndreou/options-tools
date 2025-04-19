@@ -47,6 +47,7 @@ class CoveredCall {
         'underlyingSize': underlyingLeg.size,
         'money': money.name,
         'moneySize': moneyLeg.size,
+        'spotPrice': spotPrice,
         'call': optionLeg.asset.name,
         'callSize': optionLeg.size,
         'DTE': expiration.daysLeft,

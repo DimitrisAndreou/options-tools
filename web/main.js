@@ -1,4 +1,5 @@
-function chartViaApache(data) {
+function chartViaApache(data, divId) {
+  const spotPrice = data.at(0)?.spotPrice;
   // data = data.slice(0, 20);
   // Prepare [x, y, size, label] data
   const scatterData = data.map(item => [
@@ -33,14 +34,14 @@ function chartViaApache(data) {
   const min = Math.min(minX, minY);
   const max = Math.max(maxX, maxY);
 
-  const chart = echarts.init(document.getElementById('btcPriceChart'));
+  const chart = echarts.init(document.getElementById(divId));
   window.addEventListener('resize', function() {
     chart.resize();
   });
 
   chart.setOption({
     title: {
-      text: 'BTC Covered Calls: Max Yield vs Breakeven',
+      text: 'Covered Calls: Max Yield vs Breakeven',
       left: 'center',
       textStyle: {
         color: 'yellow',
@@ -51,7 +52,6 @@ function chartViaApache(data) {
     tooltip: {
       formatter: function (params) {
         const { value, data } = params;
-        console.log({value, data});
         return `
           <b>${value[3]}</b><br/>
           Max Yield At: $${value[0]}<br/>
@@ -104,6 +104,7 @@ function chartViaApache(data) {
       type: 'value',
       scale: true
     },
+    // TODO: one series per expiration!!! Connect with lines!
     series: [{
       type: 'scatter',
       encode: {
@@ -111,7 +112,7 @@ function chartViaApache(data) {
         y: 1  // value[1] = breakEven
       },
       symbolSize: function (data) {
-        return 4;
+        return 6;
         // return Math.sqrt(data[2]) * 5;
       },
       label: {
@@ -121,30 +122,52 @@ function chartViaApache(data) {
         color: function (params) {
           // return '#FFFFFF';
           const dte = params.data[4];
-          console.log({params, dte, color: dteColorMap[dte]});
           return dteColorMap[dte];
         }
       },
-      data: scatterData
+      data: scatterData,
     }],
+    // dataZoom: [
+    //   {
+    //     type: 'inside', // enables mouse wheel + drag zooming
+    //     xAxisIndex: 0,
+    //     yAxisIndex: 1
+    //   },
+    //   {
+    //     type: 'slider', // X-axis slider
+    //     xAxisIndex: 0,
+    //     yAxisIndex: 1
+    //   },
+    //   {
+    //     type: 'slider', // Y-axis slider
+    //     yAxisIndex: 0,
+    //     orient: 'vertical',  // This makes the slider vertical
+    //     left: '90%',          // Adjust the position to fit the chart
+    //     height: '80%'         // Adjust the height of the slider
+    //   }
+    // ],
     dataZoom: [
       {
         type: 'inside', // enables mouse wheel + drag zooming
         xAxisIndex: 0,
-        yAxisIndex: 1
+        yAxisIndex: 1,
+        // zoomLock: false,    // Prevents the zoom from being locked to one axis
+        // throttle: 1        // This controls the rate of zooming, smaller value = smoother
       },
-      {
-        type: 'slider', // X-axis slider
-        xAxisIndex: 0,
-        yAxisIndex: 1
-      },
-      {
-        type: 'slider', // Y-axis slider
-        yAxisIndex: 0,
-        orient: 'vertical',  // This makes the slider vertical
-        left: '90%',          // Adjust the position to fit the chart
-        height: '80%'         // Adjust the height of the slider
-      }
+      // {
+      //   type: 'slider', // X-axis slider
+      //   xAxisIndex: 0,
+      //   yAxisIndex: 1,
+      //   handleSize: '8%'   // Controls the size of the slider handle (smaller handles = smoother)
+      // },
+      // {
+      //   type: 'slider', // Y-axis slider
+      //   yAxisIndex: 0,
+      //   orient: 'vertical',  // This makes the slider vertical
+      //   left: '90%',         // Adjust the position to fit the chart
+      //   height: '80%',       // Adjust the height of the slider
+      //   handleSize: '8%'     // Same here for the Y-axis slider handle size
+      // }
     ],
     toolbox: {
       feature: {
@@ -155,6 +178,52 @@ function chartViaApache(data) {
       }
     },
   });
+
+  const xMax = chart.getModel().getComponent('xAxis').axis.scale.getExtent()[1];
+  const yMax = chart.getModel().getComponent('yAxis').axis.scale.getExtent()[1];
+  console.log({ xMax, yMax });
+  const option = chart.getOption();
+  option.series.push({
+    type: 'line',
+    data: [
+      [spotPrice, 0],
+      [spotPrice, yMax]
+    ],
+    lineStyle: {
+      type: 'dashed',
+      color: 'orange',
+      width: 1
+    },
+    symbol: 'none' // hides points on the line
+  });
+  option.series.push({
+    type: 'line',
+    data: [
+      [0, spotPrice],
+      [xMax, spotPrice]
+    ],
+    lineStyle: {
+      type: 'dashed',
+      color: 'orange',
+      width: 1
+    },
+    symbol: 'none' // hides points on the line
+  });
+  option.series.push({
+    type: 'line',
+    data: [
+      [0, 0],
+      [Math.min(xMax, yMax), Math.min(xMax, yMax)]
+    ],
+    lineStyle: {
+      type: 'dashed',
+      color: 'orange',
+      width: 1
+    },
+    symbol: 'none' // hides points on the line
+  });
+  console.log({series: option.series});
+  chart.setOption(option, true);
 }
 
 // TODOs:
@@ -177,10 +246,8 @@ async function jsMain() {
   try {
     // TODO: also return spotPrice. Draw vertical line using it.
     // Make the chart isomorphic again.
-    const rawData = await coveredCallsDart("BTC");
-    const ccs = JSON.parse(rawData);
-    console.log({ ccs });
-    chartViaApache(ccs);
+    chartViaApache(JSON.parse(await coveredCallsDart("BTC")), "btcCoveredCallsChart");
+    chartViaApache(JSON.parse(await coveredCallsDart("ETH")), "ethCoveredCallsChart");
   } catch (error) {
     console.error("JavaScript caught Dart error:", error);
     console.error("Dart stack trace:", error.stack);
