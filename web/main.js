@@ -181,14 +181,6 @@ function coveredCallToBreakEvenChart(data, divId) {
         endValue: spotPrice
       }
     ],
-    toolbox: {
-      feature: {
-        dataZoom: {
-          yAxisIndex: 'none',
-          type: 'inside',  // This enables mouse drag to pan
-        }
-      }
-    },
   });
 }
 
@@ -333,14 +325,6 @@ function coveredCallToTimeValueChart(data, divId) {
         endValue: spotPrice
       }
     ],
-    toolbox: {
-      feature: {
-        dataZoom: {
-          yAxisIndex: 'none',
-          type: 'inside',  // This enables mouse drag to pan
-        }
-      }
-    },
   });
 }
 
