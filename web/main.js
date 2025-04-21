@@ -1,10 +1,25 @@
-const percent = new Intl.NumberFormat('en-US', {
+const percentFmt = new Intl.NumberFormat('en-US', {
   style: 'percent',
   maximumFractionDigits: 1
 });
 
+const dollarFmt = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0
+});
+
+const priceFmt = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 1
+});
+
+function extractSpotPrice(data) {
+  return data.at(0)?.spotPrice;
+}
+
 function coveredCallToBreakEvenChart(data, divId) {
-  const spotPrice = data.at(0)?.spotPrice;
+  const spotPrice = extractSpotPrice(data);
   // TODO: share this code across charts.
   const dataset = {
     id: "original",
@@ -54,9 +69,18 @@ function coveredCallToBreakEvenChart(data, divId) {
       },
       scale: true
     },
+    // TODO: reusable
+    grid: {
+      left: 80,
+      right: 50,
+      top: 50,
+      bottom: 80
+    },
     yAxis: {
       type: 'value',
       name: 'Break-Even ($)',
+      nameLocation: 'end',
+      align: 'right',
       nameTextStyle: {
         color: 'red',
         fontFamily: 'monospace',
@@ -81,8 +105,8 @@ function coveredCallToBreakEvenChart(data, divId) {
           <b>${value.call}</b><br/>
           Max Yield At: $${value.maxYieldAt}<br/>
           Break Even: $${value.breakEven}<br/>
-          Max Yield: ${percent.format(value.maxYield)}<br/>
-          Time Value: ${percent.format(value.timeValue)}%<br/>
+          Max Yield: ${percentFmt.format(value.maxYield)}<br/>
+          Time Value: ${percentFmt.format(value.timeValue)}%<br/>
           DTE: ${value.DTE}
         `;
       },
@@ -131,10 +155,10 @@ function coveredCallToBreakEvenChart(data, divId) {
         }
       },
     }],
-    // TODO: stuff like this are also reusable across charts
+    // TODO: reusable
     legend: {
       show: true,
-      type: 'scroll', // useful if you have lots of series
+      type: 'scroll',
       orient: 'horizontal',
       top: 'bottom',
       textStyle: {
@@ -218,6 +242,13 @@ function coveredCallToTimeValueChart(data, divId) {
       },
       scale: true
     },
+    // TODO: reusable
+    grid: {
+      left: 80,
+      right: 50,
+      top: 50,
+      bottom: 80
+    },
     yAxis: {
       type: 'value',
       name: 'Time Value (%)',
@@ -231,7 +262,7 @@ function coveredCallToTimeValueChart(data, divId) {
         fontFamily: 'monospace',
         fontSize: 12,
         formatter: function (value) {
-          return percent.format(value);
+          return percentFmt.format(value);
         }
       },
       axisLine: {
@@ -248,8 +279,8 @@ function coveredCallToTimeValueChart(data, divId) {
           <b>${value.call}</b><br/>
           Max Yield At: $${value.maxYieldAt}<br/>
           Break Even: $${value.breakEven}<br/>
-          Max Yield: ${percent.format(value.maxYield)}<br/>
-          Time Value: ${percent.format(value.timeValue)}%<br/>
+          Max Yield: ${percentFmt.format(value.maxYield)}<br/>
+          Time Value: ${percentFmt.format(value.timeValue)}%<br/>
           DTE: ${value.DTE}
         `;
       },
@@ -276,10 +307,10 @@ function coveredCallToTimeValueChart(data, divId) {
         show: false
       }
     }))],
-    // TODO: stuff like this are also reusable across charts
+    // TODO: reusable
     legend: {
       show: true,
-      type: 'scroll', // useful if you have lots of series
+      type: 'scroll',
       orient: 'horizontal',
       top: 'bottom',
       textStyle: {
@@ -317,9 +348,12 @@ async function jsMain() {
   const slippage = 0.5;
   try {
     const btcCoveredCallsJson = JSON.parse(await coveredCallsDart("BTC", slippage));
+    document.getElementById('btc-price').textContent = dollarFmt.format(extractSpotPrice(btcCoveredCallsJson));
     coveredCallToBreakEvenChart(btcCoveredCallsJson, "btcCoveredCallsChart");
     coveredCallToTimeValueChart(btcCoveredCallsJson, "btcCoveredCallsTimeValueChart");
+
     const ethCoveredCallsJson = JSON.parse(await coveredCallsDart("ETH", slippage));
+    document.getElementById('eth-price').textContent = dollarFmt.format(extractSpotPrice(ethCoveredCallsJson));
     coveredCallToBreakEvenChart(ethCoveredCallsJson, "ethCoveredCallsChart");
     coveredCallToTimeValueChart(ethCoveredCallsJson, "ethCoveredCallsTimeValueChart");
     const bondsJson = JSON.parse(await syntheticBondsDart("BTC", slippage));
