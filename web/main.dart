@@ -1,5 +1,3 @@
-import 'package:web/web.dart' as web;
-
 import 'dart:convert';
 import 'dart:js_interop';
 
@@ -26,27 +24,38 @@ Future<List<Market>> deribitMarkets() async {
       [DeribitCoin.BTC, DeribitCoin.ETH], _urlFetcher);
 }
 
-Future<String> coveredCalls(String ticker) async {
+Future<String> coveredCalls(String ticker, double slippage) async {
   List<Market> markets = await deribitMarkets();
   return jsonEncode(CoveredCall.generateAll(MarketsNavigator(markets),
-          underlying: Commodity(ticker), money: Commodity("USD"))
+          underlying: Commodity(ticker),
+          money: Commodity("USD"),
+          slippage: slippage)
+      .where((cc) => cc.breakeven != null)
       .toList());
 }
 
-Future<String> syntheticBonds(String ticker) async {
+Future<String> syntheticBonds(String ticker, double slippage) async {
   List<Market> markets = await deribitMarkets();
   return jsonEncode(SyntheticBond.generateAll(MarketsNavigator(markets),
-          underlying: Commodity(ticker), money: Commodity("USD"))
+          underlying: Commodity(ticker),
+          money: Commodity("USD"),
+          slippage: slippage)
       .toList());
 }
 
 void main() {
-  final now = DateTime.now();
-  coveredCallsDart = (JSString ticker) {
-    return coveredCalls(ticker.toDart).then((value) => value.toJS).toJS;
+  // TODO:
+  // Over/Under (Touch/NotTouch)
+  // Probabilities distribution
+  coveredCallsDart = (JSString ticker, JSNumber slippage) {
+    return coveredCalls(ticker.toDart, slippage.toDartDouble)
+        .then((value) => value.toJS)
+        .toJS;
   }.toJS;
-  syntheticBondsDart = (JSString ticker) {
-    return syntheticBonds(ticker.toDart).then((value) => value.toJS).toJS;
+  syntheticBondsDart = (JSString ticker, JSNumber slippage) {
+    return syntheticBonds(ticker.toDart, slippage.toDartDouble)
+        .then((value) => value.toJS)
+        .toJS;
   }.toJS;
 
   jsMain();

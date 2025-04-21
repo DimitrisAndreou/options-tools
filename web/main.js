@@ -1,38 +1,29 @@
-function chartViaApache(data, divId) {
+const percent = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 1
+});
+
+function coveredCallToBreakEvenChart(data, divId) {
   const spotPrice = data.at(0)?.spotPrice;
-  // data = data.slice(0, 20);
-  // Prepare [x, y, size, label] data
-  const scatterData = data.map(item => [
-    item.maxYieldAt,        // x
-    item.breakEven,         // y
-    item.maxYield,          // used as size or color
-    item.call,              // label
-    item.DTE,
-  ]);
-
-  // Get unique DTE values
-  const uniqueDTEs = [...new Set(data.map(item => item.DTE))];
-
-  // Create a color map for each DTE
-  const colorPalette = [
-    '#5470C6', '#91CC75', '#EE6666', '#73C0DE', '#FAC858',
-    '#3BA272', '#FC8452', '#9A60B4', '#EA7CCC'
-  ];
-  const dteColorMap = {};
-  uniqueDTEs.forEach((dte, index) => {
-    dteColorMap[dte] = colorPalette[index % colorPalette.length];
-  });
-
-  const maxYieldAts = data.map(item => item.maxYieldAt);
-  const breakevens = data.map(item => item.breakEven);
-  const minX = Math.min(...maxYieldAts);
-  const maxX = Math.max(...maxYieldAts);
-  const minY = Math.min(...breakevens);
-  const maxY = Math.max(...breakevens);
-  
-  // Compute a common scale
-  const min = Math.min(minX, minY);
-  const max = Math.max(maxX, maxY);
+  // TODO: share this code across charts.
+  const dataset = {
+    id: "original",
+    dimensions: ["maxYieldAt", "breakEven", "maxYield", "call", "DTE", "timeValue"],
+    source: data
+  };
+  const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
+  const datasetPerDTE = uniqueDTEs.map(dte => ({
+    id: `dte_${dte}`,
+    fromDatasetId: 'original',
+    label: `${dte}`,
+    transform: {
+      type: 'filter',
+      config: {
+        dimension: 'DTE',
+        '=': dte
+      }
+    }
+  }));
 
   const chart = echarts.init(document.getElementById(divId));
   window.addEventListener('resize', function() {
@@ -40,24 +31,59 @@ function chartViaApache(data, divId) {
   });
 
   chart.setOption({
-    title: {
-      text: 'Covered Calls: Max Yield vs Breakeven',
-      left: 'center',
-      textStyle: {
-        color: 'yellow',
-        fontFamily: 'monospace', // Optional
+    dataset: [dataset, ...datasetPerDTE],
+    xAxis: {
+      type: 'value',
+      name: 'Max Yield At ($)',
+      nameLocation: 'center',
+      nameGap: 25,
+      nameTextStyle: {
+        color: 'green',
+        fontFamily: 'monospace',
         fontSize: 16
-      }
+      },
+      axisLabel: {
+        color: 'green',
+        fontFamily: 'monospace',
+        fontSize: 12
+      },
+      axisLine: {
+        lineStyle: {
+          color: 'green'
+        }
+      },
+      scale: true
+    },
+    yAxis: {
+      type: 'value',
+      name: 'Break-Even ($)',
+      nameTextStyle: {
+        color: 'red',
+        fontFamily: 'monospace',
+        fontSize: 16
+      },
+      axisLabel: {
+        color: 'red',
+        fontFamily: 'monospace',
+        fontSize: 12
+      },
+      axisLine: {
+        lineStyle: {
+          color: 'red'
+        }
+      },
+      scale: true
     },
     tooltip: {
       formatter: function (params) {
-        const { value, data } = params;
+        const value = params.value;
         return `
-          <b>${value[3]}</b><br/>
-          Max Yield At: $${value[0]}<br/>
-          Break Even: $${value[1]}<br/>
-          Max Yield: ${value[2]}%<br/>
-          DTE: ${value[4]}
+          <b>${value.call}</b><br/>
+          Max Yield At: $${value.maxYieldAt}<br/>
+          Break Even: $${value.breakEven}<br/>
+          Max Yield: ${percent.format(value.maxYield)}<br/>
+          Time Value: ${percent.format(value.timeValue)}%<br/>
+          DTE: ${value.DTE}
         `;
       },
       textStyle: {
@@ -67,107 +93,69 @@ function chartViaApache(data, divId) {
       backgroundColor: '#333', // optional, for contrast
       borderColor: 'yellow'
     },
-    xAxis: {
-      name: 'Max Yield At ($)',
-      nameLocation: 'middle',
-      nameTextStyle: {
-        color: 'yellow',
-        fontFamily: 'monospace'
-      },
-      axisLabel: {
-        color: 'yellow',
-        fontFamily: 'monospace',
-      },
-      axisLine: {
-        lineStyle: {
-          color: 'yellow'
-        }
-      },
-      type: 'value',
-      scale: true
-    },
-    yAxis: {
-      name: 'Break Even ($)',
-      nameTextStyle: {
-        color: 'yellow',
-        fontFamily: 'monospace'
-      },
-      axisLabel: {
-        color: 'yellow',
-        fontFamily: 'monospace'
-      },
-      axisLine: {
-        lineStyle: {
-          color: 'yellow'
-        }
-      },
-      type: 'value',
-      scale: true
-    },
-    // TODO: one series per expiration!!! Connect with lines!
-    series: [{
-      type: 'scatter',
+    series: [...datasetPerDTE.map(ds => ({
+      type: 'line',
+      name: ds.label,
+      datasetId: ds.id,
       encode: {
-        x: 0, // value[0] = maxYieldAt
-        y: 1  // value[1] = breakEven
+        x: 'maxYieldAt',
+        y: 'breakEven'
       },
       symbolSize: function (data) {
-        return 6;
-        // return Math.sqrt(data[2]) * 5;
+        // TODO: function of maxYield? Or of time value?
+        return 4;
       },
       label: {
         show: false
-      },
+      }
+    })), {
+      type: 'scatter',
+      data: [[Math.max(...data.map(item => item.maxYieldAt)), spotPrice]],
+      symbol: 'circle',
+      symbolSize: 0,
       itemStyle: {
-        color: function (params) {
-          // return '#FFFFFF';
-          const dte = params.data[4];
-          return dteColorMap[dte];
+        color: 'yellow',
+      },
+      label: {
+        show: true,
+        formatter: '🚀',
+        fontSize: 20,
+        color: 'white',
+        position: 'inside',
+        offset: [0, 0],
+      },
+      tooltip: {
+        show: true,
+        formatter: () => {
+          return `The spot strategy`;
         }
       },
-      data: scatterData,
     }],
-    // dataZoom: [
-    //   {
-    //     type: 'inside', // enables mouse wheel + drag zooming
-    //     xAxisIndex: 0,
-    //     yAxisIndex: 1
-    //   },
-    //   {
-    //     type: 'slider', // X-axis slider
-    //     xAxisIndex: 0,
-    //     yAxisIndex: 1
-    //   },
-    //   {
-    //     type: 'slider', // Y-axis slider
-    //     yAxisIndex: 0,
-    //     orient: 'vertical',  // This makes the slider vertical
-    //     left: '90%',          // Adjust the position to fit the chart
-    //     height: '80%'         // Adjust the height of the slider
-    //   }
-    // ],
+    // TODO: stuff like this are also reusable across charts
+    legend: {
+      show: true,
+      type: 'scroll', // useful if you have lots of series
+      orient: 'horizontal',
+      top: 'bottom',
+      textStyle: {
+        color: 'yellow',
+        fontFamily: 'monospace',
+        fontSize: 12
+      }
+    },
     dataZoom: [
       {
-        type: 'inside', // enables mouse wheel + drag zooming
+        type: 'inside',
         xAxisIndex: 0,
-        yAxisIndex: 1,
-        // zoomLock: false,    // Prevents the zoom from being locked to one axis
-        // throttle: 1        // This controls the rate of zooming, smaller value = smoother
+        startValue: spotPrice * 0.5,
+        endValue: spotPrice * 1.5
       },
-      // {
-      //   type: 'slider', // X-axis slider
-      //   xAxisIndex: 0,
-      //   yAxisIndex: 1,
-      //   handleSize: '8%'   // Controls the size of the slider handle (smaller handles = smoother)
-      // },
-      // {
-      //   type: 'slider', // Y-axis slider
-      //   yAxisIndex: 0,
-      //   orient: 'vertical',  // This makes the slider vertical
-      //   left: '90%',         // Adjust the position to fit the chart
-      //   height: '80%',       // Adjust the height of the slider
-      //   handleSize: '8%'     // Same here for the Y-axis slider handle size
-      // }
+      {
+        type: 'inside',
+        yAxisIndex: 0,
+        startValue: 0,
+        endValue: spotPrice
+      }
     ],
     toolbox: {
       feature: {
@@ -178,97 +166,166 @@ function chartViaApache(data, divId) {
       }
     },
   });
-
-  const xMax = chart.getModel().getComponent('xAxis').axis.scale.getExtent()[1];
-  const yMax = chart.getModel().getComponent('yAxis').axis.scale.getExtent()[1];
-  console.log({ xMax, yMax });
-  const option = chart.getOption();
-  option.series.push({
-    type: 'line',
-    data: [
-      [spotPrice, 0],
-      [spotPrice, yMax]
-    ],
-    lineStyle: {
-      type: 'dashed',
-      color: 'orange',
-      width: 1
-    },
-    symbol: 'none' // hides points on the line
-  });
-  option.series.push({
-    type: 'line',
-    data: [
-      [0, spotPrice],
-      [xMax, spotPrice]
-    ],
-    lineStyle: {
-      type: 'dashed',
-      color: 'orange',
-      width: 1
-    },
-    symbol: 'none' // hides points on the line
-  });
-  option.series.push({
-    type: 'line',
-    data: [
-      [0, 0],
-      [Math.min(xMax, yMax), Math.min(xMax, yMax)]
-    ],
-    lineStyle: {
-      type: 'dashed',
-      color: 'orange',
-      width: 1
-    },
-    symbol: 'none' // hides points on the line
-  });
-  console.log({series: option.series});
-  chart.setOption(option, true);
 }
 
-// TODOs:
-// 1. Create dataset as 2d array. Specify dimensions separately.
-// 
-// var option = {
-//   dataset: {
-//     dimensions: ['score', 'amount'],
-//     source: [
-//       [89.3, 3371],
-//       [92.1, 8123],
-//       [94.4, 1954],
-//       [85.4, 829]
-//     ]
-//   }
-// };
+function coveredCallToTimeValueChart(data, divId) {
+  const spotPrice = data.at(0)?.spotPrice;
+  const dataset = {
+    id: "original",
+    dimensions: ["maxYieldAt", "breakEven", "maxYield", "call", "DTE", "timeValue"],
+    source: data
+  };
+  const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
+  const datasetPerDTE = uniqueDTEs.map(dte => ({
+    id: `dte_${dte}`,
+    fromDatasetId: 'original',
+    label: `${dte}`,
+    transform: {
+      type: 'filter',
+      config: {
+        dimension: 'DTE',
+        '=': dte
+      }
+    }
+  }));
+
+  const chart = echarts.init(document.getElementById(divId));
+  window.addEventListener('resize', function() {
+    chart.resize();
+  });
+
+  chart.setOption({
+    dataset: [dataset, ...datasetPerDTE],
+    xAxis: {
+      type: 'value',
+      name: 'Strike',
+      nameLocation: 'center',
+      nameGap: 25,
+      nameTextStyle: {
+        color: 'green',
+        fontFamily: 'monospace',
+        fontSize: 16
+      },
+      axisLabel: {
+        color: 'green',
+        fontFamily: 'monospace',
+        fontSize: 12
+      },
+      axisLine: {
+        lineStyle: {
+          color: 'green'
+        }
+      },
+      scale: true
+    },
+    yAxis: {
+      type: 'value',
+      name: 'Time Value (%)',
+      nameTextStyle: {
+        color: 'yellow',
+        fontFamily: 'monospace',
+        fontSize: 16
+      },
+      axisLabel: {
+        color: 'yellow',
+        fontFamily: 'monospace',
+        fontSize: 12,
+        formatter: function (value) {
+          return percent.format(value);
+        }
+      },
+      axisLine: {
+        lineStyle: {
+          color: 'yellow'
+        }
+      },
+      scale: true
+    },
+    tooltip: {
+      formatter: function (params) {
+        const value = params.value;
+        return `
+          <b>${value.call}</b><br/>
+          Max Yield At: $${value.maxYieldAt}<br/>
+          Break Even: $${value.breakEven}<br/>
+          Max Yield: ${percent.format(value.maxYield)}<br/>
+          Time Value: ${percent.format(value.timeValue)}%<br/>
+          DTE: ${value.DTE}
+        `;
+      },
+      textStyle: {
+        color: 'yellow',
+        fontFamily: 'monospace'
+      },
+      backgroundColor: '#333', // optional, for contrast
+      borderColor: 'yellow'
+    },
+    series: [...datasetPerDTE.map(ds => ({
+      type: 'line',
+      name: ds.label,
+      datasetId: ds.id,
+      encode: {
+        x: 'maxYieldAt',
+        y: 'timeValue'
+      },
+      symbolSize: function (data) {
+        // TODO: function of maxYield? Or of time value?
+        return 4;
+      },
+      label: {
+        show: false
+      }
+    }))],
+    // TODO: stuff like this are also reusable across charts
+    legend: {
+      show: true,
+      type: 'scroll', // useful if you have lots of series
+      orient: 'horizontal',
+      top: 'bottom',
+      textStyle: {
+        color: 'yellow',
+        fontFamily: 'monospace',
+        fontSize: 12
+      }
+    },
+    dataZoom: [
+      {
+        type: 'inside',
+        xAxisIndex: 0,
+        startValue: spotPrice * 0.5,
+        endValue: spotPrice * 1.5
+      },
+      {
+        type: 'inside',
+        yAxisIndex: 0,
+        startValue: 0,
+        endValue: spotPrice
+      }
+    ],
+    toolbox: {
+      feature: {
+        dataZoom: {
+          yAxisIndex: 'none',
+          type: 'inside',  // This enables mouse drag to pan
+        }
+      }
+    },
+  });
+}
 
 async function jsMain() {
-  console.log("Hello from JS!");
+  const slippage = 0.5;
   try {
-    // TODO: also return spotPrice. Draw vertical line using it.
-    // Make the chart isomorphic again.
-    chartViaApache(JSON.parse(await coveredCallsDart("BTC")), "btcCoveredCallsChart");
-    chartViaApache(JSON.parse(await coveredCallsDart("ETH")), "ethCoveredCallsChart");
+    const btcCoveredCallsJson = JSON.parse(await coveredCallsDart("BTC", slippage));
+    coveredCallToBreakEvenChart(btcCoveredCallsJson, "btcCoveredCallsChart");
+    coveredCallToTimeValueChart(btcCoveredCallsJson, "btcCoveredCallsTimeValueChart");
+    const ethCoveredCallsJson = JSON.parse(await coveredCallsDart("ETH", slippage));
+    coveredCallToBreakEvenChart(ethCoveredCallsJson, "ethCoveredCallsChart");
+    coveredCallToTimeValueChart(ethCoveredCallsJson, "ethCoveredCallsTimeValueChart");
+    const bondsJson = JSON.parse(await syntheticBondsDart("BTC", slippage));
+    console.log({ bondsJson });
   } catch (error) {
     console.error("JavaScript caught Dart error:", error);
     console.error("Dart stack trace:", error.stack);
   }
-
-  try {
-    const rawData = await syntheticBondsDart("BTC");
-    const bonds = JSON.parse(rawData);
-    console.log({ bonds });
-  } catch (error) {
-    console.error("JavaScript caught Dart error:", error);
-    console.error("Dart stack trace:", error.stack);
-  }
-
-// data = [['BreakEven ($)', 'Max Yield', 'Max Yield At ($)', 'Contract'],
-//   ...gccs.map(gcc =>
-//     [
-//       gcc.breakEven,
-//       gcc.maxYield,
-//       gcc.maxYieldAt,
-//       gcc.callContract.instrumentName])];
-// console.log({data});
-  // chartViaApache(data);
 }

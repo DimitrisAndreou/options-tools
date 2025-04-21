@@ -15,6 +15,7 @@
 // and compared.
 
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:options_tools/assets.dart';
 import 'package:options_tools/deribit.dart';
@@ -42,6 +43,8 @@ class CoveredCall {
   late final double yieldIfPriceUnchanged;
   late final double equivalentHodlerSellPrice;
 
+  late final double? timeValue;
+
   Map<String, dynamic> toJson() => {
         'underlying': underlying.name,
         'underlyingSize': underlyingLeg.size,
@@ -58,6 +61,7 @@ class CoveredCall {
         'maxYieldAtChange': maxYieldAtChange,
         'yieldIfPriceUnchanged': yieldIfPriceUnchanged,
         'equivalentHodlerSellPrice': equivalentHodlerSellPrice,
+        'timeValue': timeValue,
       };
 
   @override
@@ -87,6 +91,9 @@ class CoveredCall {
     yieldIfPriceUnchanged =
         analyzer.valueAt(spotPrice) / (-analyzer.minValue.single.value);
     equivalentHodlerSellPrice = spotPrice * (1.0 + maxYield);
+    timeValue = breakeven == null
+        ? 0.0
+        : (min(maxYieldAt, spotPrice) - breakeven!) / spotPrice;
   }
 
   static Iterable<CoveredCall> generateAll(MarketsNavigator navigator,
