@@ -17,7 +17,7 @@ To build a production version ready for deployment,
 use the `webdev build` command:
 
 ```
-webdev build
+webdev build --output web:docs
 ```
 
 To learn how to interop with web APIs and other JS libraries,
