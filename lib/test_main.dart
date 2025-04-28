@@ -34,22 +34,26 @@ void main() async {
 }
 
 void browseStrategies(List<Market> markets) {
+  final oracle = Oracle.fromMarkets(markets);
   final money = Commodity("USD");
   final underlying = Commodity("BTC");
   print(" ============== BONDS ==============");
   for (SyntheticBond bond in SyntheticBond.generateAll(markets,
       underlying: underlying, money: money)) {
-    print(bond.toJson());
+    print("Bond: ${bond.toJson()}"
+        "\n  intrinsic: ${oracle.intrinsicValue(asset: bond.futureLeg, money: money)}"
+        "\n  extrinsic: ${oracle.extrinsicValue(asset: bond.futureLeg, money: money)}");
   }
 
-  print(" ============== CC ==============");
-  final oracle = Oracle.fromMarkets(markets);
-  for (CoveredCall cc in CoveredCall.generateAll(markets,
-      underlying: underlying, money: money)) {
-    print(cc.toJson());
-    print(" ### ${cc.optionLeg}, intrinsic of option: "
-        "${oracle.intrinsicValue(asset: cc.optionLeg, money: money)}");
-  }
+  // print(" ============== CC ==============");
+  // for (CoveredCall cc in CoveredCall.generateAll(markets,
+  //     underlying: underlying, money: money)) {
+  //   // print(cc.toJson());
+  //   print(" ### ${cc.optionLeg},\n  intrinsic: "
+  //       "${oracle.intrinsicValue(asset: cc.optionLeg, money: money)},\n  extrinsic: "
+  //       "${oracle.extrinsicValue(asset: cc.optionLeg, money: money)},\n  market: "
+  //       "${oracle.marketFor(asset: cc.optionLeg.asset, money: money)}");
+  // }
 }
 
 void printOptionChain(List<Market> markets) {

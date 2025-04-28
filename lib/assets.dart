@@ -36,25 +36,26 @@ sealed class Asset implements Decomposable, WithIntrinsicValue {
 
 class Position implements Decomposable, WithIntrinsicValue {
   final Asset asset;
-  // TODO: double is not a great type for money.
   final double size;
 
   Position(this.asset, [this.size = 0.0]);
 
-  factory Position.merge(Iterable<Position> positions) =>
-      positions.reduce((p1, p2) => p1.add(p2));
+  factory Position.merge(Iterable<Position> positions) {
+    final first = positions.firstOrNull;
+    if (first == null) {
+      throw ArgumentError("At least one position must be specified");
+    }
+    if (!positions.every((p) => p.asset == first.asset)) {
+      throw ArgumentError("Only positions of the same asset can be merged: "
+          "$positions");
+    }
+    return first.withSize(positions.map((p) => p.size).sum);
+  }
 
   Position operator +(double size) => Position(asset, this.size + size);
   Position operator -(double size) => Position(asset, this.size - size);
+  Position operator -() => Position(asset, -size);
   Position operator *(double size) => Position(asset, this.size * size);
-  Position operator /(double size) => Position(asset, this.size / size);
-  Position add(Position that) {
-    if (asset != that.asset) {
-      throw ArgumentError("Can't add positions due to differing " +
-          "assets, $asset != ${that.asset}");
-    }
-    return this + that.size;
-  }
 
   Position withSize(double size) => Position(asset, size);
   Position empty() => Position(asset);

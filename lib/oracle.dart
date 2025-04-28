@@ -5,6 +5,7 @@ import 'assets.dart';
 import 'markets.dart';
 
 sealed class Oracle {
+  // TODO: once asset becomes a position, make this take a Position.
   Market marketFor({required Asset asset, required Commodity money});
 
   Position markToMarket(
@@ -48,13 +49,15 @@ sealed class Oracle {
                 _ => throw AssertionError(
                     "Unexpected asset from decompose(): ${innerPosition.asset}"),
               })
-          .map((commodityPosition) => markToMarket(
-              asset: commodityPosition, money: money, slippage: 0.0)));
+          .map((commodityPosition) =>
+              markToMarket(asset: commodityPosition, money: money)));
 
-  Position extrinsicValue({required Position asset, required Commodity money}) {
-    // TODO: it's market value minus intrinsic value
-    return money.unit;
-  }
+  Position extrinsicValue(
+          {required Position asset, required Commodity money}) =>
+      Position.merge([
+        markToMarket(asset: asset, money: money),
+        -intrinsicValue(asset: asset, money: money)
+      ]);
 
   static Oracle fromMarkets(Iterable<Market> markets) =>
       _RealMarketsOracle(markets);
