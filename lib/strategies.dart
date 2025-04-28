@@ -1,26 +1,11 @@
-// List<Market> deribitMarketLoader()  // fetch BTC/ETH
-// all synthetic bonds
-// then produce all CC's
-// all over/under (touch/don't touch)[]
-// all box spreads (or the best per expiration)
-// probabilities of touch by date
-
-// Each JS exposed function fetches a JSON ready for visualization
-// takes a slippage as parameter
-// and coin, I guess.
-// And most importantly:
-// Translate all options to RELATIVE:
-// not strikes but moves (%). Not dates but days.
-// Especially for touch probabilities, so they can be screenshot
-// and compared.
-
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:options_tools/assets.dart';
-import 'package:options_tools/deribit.dart';
-import 'package:options_tools/markets.dart';
-import 'package:options_tools/position_analyzer.dart';
+import 'assets.dart';
+import 'deribit.dart';
+import 'markets.dart';
+import 'oracle.dart';
+import 'position_analyzer.dart';
 
 class CoveredCall {
   final Commodity underlying;
@@ -96,23 +81,23 @@ class CoveredCall {
         : (min(maxYieldAt, spotPrice) - breakeven!) / spotPrice;
   }
 
-  static Iterable<CoveredCall> generateAll(MarketsNavigator navigator,
+  static Iterable<CoveredCall> generateAll(Iterable<Market> allMarkets,
       {required Commodity underlying,
       required Commodity money,
       double slippage = 0.5}) sync* {
-    final spotMarket = navigator.bestMarket(asset: underlying, money: money);
-    for (final call in navigator.allMarkets
+    final oracle = Oracle.fromMarkets(allMarkets);
+    final spotMarket = oracle.marketFor(asset: underlying, money: money);
+    for (final call in allMarkets
         .whereUnderlyingIs(underlying)
         .calls
-        .withMoney(money, navigator)
+        .withMoney(money, oracle)
         .sortByStrike(Order.asc)
         .sortByExpiration(Order.asc)) {
       yield CoveredCall._(
-          SyntheticAsset([
-            call.short(slippage).unit(),
-            spotMarket.long(slippage).unit()
-          ]).position(Deribit.getMinimumContract(
-              DeribitCoin.values.byName(underlying.name))),
+          SyntheticAsset(
+                  [call.short(slippage).unit, spotMarket.long(slippage).unit])
+              .position(Deribit.getMinimumContract(
+                  DeribitCoin.values.byName(underlying.name))),
           underlying: underlying,
           money: money,
           expiration: call.asset.toExpirable.expiration,
@@ -167,21 +152,21 @@ class SyntheticBond {
     apr = expiration.rateToAnnualRate(yieldToRate(interestRate));
   }
 
-  static Iterable<SyntheticBond> generateAll(MarketsNavigator navigator,
+  static Iterable<SyntheticBond> generateAll(Iterable<Market> allMarkets,
       {required Commodity underlying,
       required Commodity money,
       double slippage = 0.5}) sync* {
-    final spotMarket = navigator.bestMarket(asset: underlying, money: money);
-    for (final future in navigator.allMarkets
+    final oracle = Oracle.fromMarkets(allMarkets);
+    final spotMarket = oracle.marketFor(asset: underlying, money: money);
+    for (final future in allMarkets
         .whereUnderlyingIs(underlying)
         .futures
-        .withMoney(money, navigator)
+        .withMoney(money, oracle)
         .sortByExpiration(Order.asc)) {
       yield SyntheticBond._(
-          SyntheticAsset([
-            future.short(slippage).unit(),
-            spotMarket.long(slippage).unit()
-          ]).unit(),
+          SyntheticAsset(
+                  [future.short(slippage).unit, spotMarket.long(slippage).unit])
+              .unit,
           underlying: underlying,
           money: money,
           expiration: future.asset.toExpirable.expiration,

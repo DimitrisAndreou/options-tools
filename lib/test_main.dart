@@ -3,6 +3,7 @@ import 'dart:math';
 import 'assets.dart';
 import 'deribit.dart';
 import 'markets.dart';
+import 'oracle.dart';
 import 'position_analyzer.dart';
 import 'url_fetcher.dart';
 import 'strategies.dart';
@@ -35,17 +36,19 @@ void main() async {
 void browseStrategies(List<Market> markets) {
   final money = Commodity("USD");
   final underlying = Commodity("BTC");
-  final navigator = MarketsNavigator(markets);
   print(" ============== BONDS ==============");
-  for (SyntheticBond bond in SyntheticBond.generateAll(navigator,
+  for (SyntheticBond bond in SyntheticBond.generateAll(markets,
       underlying: underlying, money: money)) {
     print(bond.toJson());
   }
 
   print(" ============== CC ==============");
-  for (CoveredCall cc in CoveredCall.generateAll(navigator,
+  final oracle = Oracle.fromMarkets(markets);
+  for (CoveredCall cc in CoveredCall.generateAll(markets,
       underlying: underlying, money: money)) {
     print(cc.toJson());
+    print(" ### ${cc.optionLeg}, intrinsic of option: "
+        "${oracle.intrinsicValue(asset: cc.optionLeg, money: money)}");
   }
 }
 
@@ -71,17 +74,16 @@ void printOptionChain(List<Market> markets) {
 
 void printGeometricCoveredCalls(List<Market> markets) {
   final usd = Commodity("USD");
-  final marketsNavigator = MarketsNavigator(markets);
+  final oracle = Oracle.fromMarkets(markets);
 //   for (final underlying in [Commodity("BTC"), Commodity("ETH")]) {
   for (final underlying in [Commodity("BTC")]) {
-    final spotMarket =
-        marketsNavigator.bestMarket(asset: underlying, money: usd);
+    final spotMarket = oracle.marketFor(asset: underlying, money: usd);
     final spotPrice = spotMarket.midPrice;
     final slippage = 0.5;
     final Map<DateTime, Market> futures = markets
         .whereUnderlyingIs(underlying)
         .futures
-        .withMoney(usd, marketsNavigator)
+        .withMoney(usd, oracle)
         .groupByExpiration()
         .mapValues((ms) => ms.single);
 
@@ -91,7 +93,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
     for (final optionsByExpiration in markets
         .whereUnderlyingIs(underlying)
         .calls
-        .withMoney(usd, marketsNavigator)
+        .withMoney(usd, oracle)
         .groupByExpiration(Order.desc)
         .mapValues((ms) => ms.sortByStrike(Order.asc))
         .entries) {

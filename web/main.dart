@@ -26,7 +26,7 @@ Future<List<Market>> deribitMarkets() async {
 
 Future<String> coveredCalls(String ticker, double slippage) async {
   List<Market> markets = await deribitMarkets();
-  return jsonEncode(CoveredCall.generateAll(MarketsNavigator(markets),
+  return jsonEncode(CoveredCall.generateAll(markets,
           underlying: Commodity(ticker),
           money: Commodity("USD"),
           slippage: slippage)
@@ -36,7 +36,7 @@ Future<String> coveredCalls(String ticker, double slippage) async {
 
 Future<String> syntheticBonds(String ticker, double slippage) async {
   List<Market> markets = await deribitMarkets();
-  return jsonEncode(SyntheticBond.generateAll(MarketsNavigator(markets),
+  return jsonEncode(SyntheticBond.generateAll(markets,
           underlying: Commodity(ticker),
           money: Commodity("USD"),
           slippage: slippage)

@@ -1,5 +1,4 @@
 import 'dart:collection';
-
 import 'package:collection/collection.dart';
 
 abstract class Decomposable {
@@ -24,7 +23,7 @@ sealed class Asset implements Decomposable, WithIntrinsicValue {
 
   String get name;
 
-  Position unit() => Position(this, 1.0);
+  Position get unit => Position(this, 1.0);
   Position position(double size) => Position(this, size);
 
   bool get isExpirable => this is Expirable;
@@ -42,21 +41,20 @@ class Position implements Decomposable, WithIntrinsicValue {
 
   Position(this.asset, [this.size = 0.0]);
 
-  factory Position.merge(Iterable<Position> positions) {
-    Position first = positions.first;
-    double size = first.size;
-    for (Position next in positions.skip(1)) {
-      if (next.asset != first.asset) {
-        throw ArgumentError("Can't merge positions due to differing " +
-            "assets, ${first.asset} != ${next.asset}");
-      }
-      size += next.size;
-    }
-    return first.withSize(size);
-  }
+  factory Position.merge(Iterable<Position> positions) =>
+      positions.reduce((p1, p2) => p1.add(p2));
 
   Position operator +(double size) => Position(asset, this.size + size);
+  Position operator -(double size) => Position(asset, this.size - size);
   Position operator *(double size) => Position(asset, this.size * size);
+  Position operator /(double size) => Position(asset, this.size / size);
+  Position add(Position that) {
+    if (asset != that.asset) {
+      throw ArgumentError("Can't add positions due to differing " +
+          "assets, $asset != ${that.asset}");
+    }
+    return this + that.size;
+  }
 
   Position withSize(double size) => Position(asset, size);
   Position empty() => Position(asset);
@@ -89,7 +87,9 @@ abstract class NamedAsset extends Asset {
   String get name => _name;
 
   @override
-  Iterable<Position> decompose() => [position(1.0)];
+  Iterable<Position> decompose() sync* {
+    yield position(1.0);
+  }
 
   @override
   bool operator ==(Object other) => other is NamedAsset && name == other.name;
@@ -151,10 +151,8 @@ class SyntheticAsset extends Asset {
           required Commodity money,
           required double price}) =>
       decompose()
-          .map((p) =>
-              p.size *
-              p.asset.intrinsicValue(
-                  commodity: commodity, money: money, price: price))
+          .map((p) => p.intrinsicValue(
+              commodity: commodity, money: money, price: price))
           .sum;
 
   @override

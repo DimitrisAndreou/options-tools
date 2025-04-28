@@ -1,0 +1,64 @@
+A Position.... is an asset?! Would simplify a lot! But careful!
+No, if position was an asset, you could pass a position
+for an asset, and then wonder why the size got ignored...
+
+Asset is a position! A position of size 1.
+You can always pass an Asset anywhere a position is needed
+(it would mean: size = 1).
+
+Then, you should remove method Asset.position().
+One could just multiply asset:
+asset * size (and get a new position).
+
+Asset is Position
+Commodity is Asset
+DatedFuture is Asset
+Option is asset
+SyntheticAsset is Asset
+
+*********************
+Time value should be computed from options, not covered calls.
+NO! Time value can be computed on any asset!!
+
+**********************
+
+1) You would use the real Oracle to compute intrinsicValue and extrinsicValue
+2) You would use a hypothetical MarketsNavigator, where the
+   underlying price is configured by PositionAnalyzer.
+   This MarketNavigator:
+     a) would only have stable coin markets (USD_USDC etc)
+     b) would only have a configurable price for the underlying
+  --> Helper method for PositionAnalyzer to easily create hypothetical Oracles.
+
+*****************
+Remove "withIntrinsicValue".
+
+
+****************
+The time value chart should not be about "covered calls"
+
+*****************
+Plot probabilities for all expirations simultaneously? Like cone?
+
+*********************
+Charts should be easier for mobile (larger points, for clicking)
+
+*********************
+
+Reusable parts of charts
+
+*********************
+
+Take slippage as parameter
+
+**********************
+
+ * all over/under (touch/don't touch)[]
+ * all box spreads (or the best per expiration)
+ * probabilities of touch by date
+
+ * Translate all options to RELATIVE:
+ * not strikes but moves (%). Not dates but days.
+ * Especially for touch probabilities, so they can be screenshot and compared.
+
+***********************

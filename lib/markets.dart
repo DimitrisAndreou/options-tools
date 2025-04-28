@@ -1,11 +1,9 @@
 import 'assets.dart';
 
 import 'dart:math';
-import 'dart:collection';
-
-import 'package:collection/collection.dart';
 
 export 'expirations.dart';
+export 'market_extensions.dart';
 
 abstract class Market {
   Asset get asset;
@@ -42,6 +40,16 @@ abstract class Market {
       [asset.position(1.0), money.position(-buyPrice(slippage))]);
   Asset short([double slippage = 0.5]) => SyntheticAsset(
       [asset.position(-1.0), money.position(sellPrice(slippage))]);
+  Position exchange(Position assetOrMoney, [double slippage = 0.5]) =>
+      switch (assetOrMoney) {
+        Position(asset: final a, size: final s) when a == asset =>
+          money.position(sellPrice(slippage) * s),
+        Position(asset: final m, size: final s) when m == money =>
+          asset.position(buyPrice(slippage) * s),
+        final x => throw ArgumentError(
+            "assetOrMoney should have been either asset($asset) or "
+            "money($money), was: $x"),
+      };
 
   double buyPrice([double slippageRatio = 0.5]) =>
       bidPrice + _slippage(slippageRatio);
@@ -189,132 +197,4 @@ enum Order {
     if (this == desc) comparison = -comparison;
     return comparison;
   }
-}
-
-extension MarketListExtension on Iterable<Market> {
-  Iterable<Market> whereUnderlyingIs(Commodity underlying) => where((market) {
-        final asset = market.asset;
-        return asset == underlying ||
-            asset.isExpirable && asset.toExpirable.underlying == underlying;
-      });
-
-  Iterable<Market> withMoney(Commodity money, MarketsNavigator helper) =>
-      map((market) => helper.bestMarket(asset: market.asset, money: money));
-
-  Iterable<Market> get spotMarkets =>
-      where((market) => market.asset is Commodity);
-  Iterable<Market> get futures => where((market) => market.asset.isDatedFuture);
-  Iterable<Market> get options => where((market) => market.asset.isOption);
-  Iterable<Market> get calls =>
-      where((market) => market.asset.isOption && market.asset.toOption.isCall);
-  Iterable<Market> get puts =>
-      where((market) => market.asset.isOption && market.asset.toOption.isPut);
-
-  Iterable<Market> sortByExpiration(Order order) =>
-      _sort((Expirable expirable) => expirable.expiration, order);
-  Iterable<Market> sortByStrike(Order order) =>
-      _sort<num>((Expirable expirable) => expirable.toOption.strike, order);
-
-  // Stable sort!
-  Iterable<Market> _sort<T extends Comparable<T>>(
-          T Function(Expirable) keyExtractor, Order order) =>
-      where((market) => market.asset.isExpirable)
-          .indexed
-          .toList()
-          .sorted(((int, Market) a, (int, Market) b) {
-        final (marketIndexA, marketA) = a;
-        final (marketIndexB, marketB) = b;
-
-        int comparison = order.compare(keyExtractor(marketA.asset as Expirable),
-            keyExtractor(marketB.asset as Expirable));
-        if (comparison != 0) return comparison;
-        return marketIndexA.compareTo(marketIndexB);
-      }).map((indexedMarket) => indexedMarket.$2);
-
-  Map<DateTime, Iterable<Market>> groupByExpiration([Order? order]) =>
-      (order == null ? this : sortByExpiration(order))
-          ._groupBy((Expirable expirable) => expirable.expiration);
-
-  Map<double, Iterable<Market>> groupByStrike([Order? order]) =>
-      (order == null ? this : sortByStrike(order))
-          ._groupBy((Expirable expirable) => expirable.toOption.strike);
-
-  // Remember that the keys of the returned Map are in insertion order;
-  // thus the ordering of markets is respected.
-  Map<T, Iterable<Market>> _groupBy<T>(T Function(Expirable) keyExtractor) =>
-      where((market) => market.asset.isExpirable)
-          .groupListsBy((market) => keyExtractor(market.asset as Expirable));
-}
-
-extension MarketsMapExtension<T> on Map<T, Iterable<Market>> {
-  Map<T, R> mapValues<R>(R Function(Iterable<Market>) fn) =>
-      map((key, markets) => MapEntry(key, fn(markets)));
-}
-
-class MarketsNavigator {
-  final Iterable<Market> allMarkets;
-
-  // asset -> money -> corresponding spot Market
-  final Map<Asset, Map<Asset, Market>> _markets = HashMap();
-
-  MarketsNavigator(this.allMarkets) {
-    for (final market in allMarkets) {
-      // TODO: if we're indexing reverse markets, why not call-put parity too?
-      // I.e. add synthetic calls or puts if they are missing.
-      for (final m in [market, market.reverse]) {
-        (_markets[m.asset] ??= HashMap())[m.money] = m;
-      }
-    }
-  }
-
-  Market bestMarket({required Asset asset, required Commodity money}) {
-    Set<Asset> visitedAssets = HashSet();
-    SplayTreeSet<Market> candidateMarkets = SplayTreeSet((Market a, Market b) {
-      int comparison = a.relativeSpread.compareTo(b.relativeSpread);
-      if (comparison != 0) return comparison;
-      comparison = a.asset.name.compareTo(b.asset.name);
-      if (comparison != 0) return comparison;
-      return a.money.name.compareTo(b.money.name);
-    });
-    candidateMarkets.add(Market.createIdentity(asset));
-    while (candidateMarkets.isNotEmpty) {
-      final visitingMarket = candidateMarkets.first;
-      candidateMarkets.remove(visitingMarket);
-      if (visitingMarket.money == money) {
-        return visitingMarket;
-      }
-      visitedAssets.add(visitingMarket.money);
-
-      final Map<Asset, Market>? nextMarkets = _markets[visitingMarket.money];
-      if (nextMarkets != null) {
-        for (final entry in nextMarkets.entries) {
-          final maybeCandidateMarket = entry.value;
-          if (!visitedAssets.contains(maybeCandidateMarket.money)) {
-            candidateMarkets.add(visitingMarket.concatenate(entry.value));
-          }
-        }
-      }
-    }
-    throw ArgumentError("Can't create a market from $asset to $money");
-  }
-
-  Position markToMarket(
-          {required Asset asset,
-          required Commodity money,
-          double slippage = 0.5}) =>
-      Position.merge(asset.decompose().map((innerPosition) =>
-          bestMarket(asset: innerPosition.asset, money: money)
-              .short(slippage)
-              .position(innerPosition.size)));
-
-  // TODO: implement
-  // findFuture(asset, money, date) --> Market (either future or synthetic?)
-
-  // final futurePrice = future.midPrice;
-  // final riskFreeYield = 1.0 + max(0.0, futurePrice / spotPrice - 1);
-  // final riskFreeAPR = (riskFreeYield - 1.0) *
-  //     Duration(days: 365).inMinutes /
-  //     expiration.minutesLeft;
-
-  // TODO: expose interest rate somehow, per future (absolute & APR)
 }
