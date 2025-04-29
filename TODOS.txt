@@ -16,23 +16,10 @@ DatedFuture is Asset
 Option is asset
 SyntheticAsset is Asset
 
-*********************
-Time value should be computed from options, not covered calls.
-NO! Time value can be computed on any asset!!
-
-**********************
-
-1) You would use the real Oracle to compute intrinsicValue and extrinsicValue
-2) You would use a hypothetical MarketsNavigator, where the
-   underlying price is configured by PositionAnalyzer.
-   This MarketNavigator:
-     a) would only have stable coin markets (USD_USDC etc)
-     b) would only have a configurable price for the underlying
-  --> Helper method for PositionAnalyzer to easily create hypothetical Oracles.
-
-*****************
-Remove "withIntrinsicValue".
-
+****************
+Position operator+(double or Position?)
+maybe safer with Position: always check you don't mix apples with oranges.
+operator/ is already implemented like that.
 
 ****************
 The time value chart should not be about "covered calls"

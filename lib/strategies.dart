@@ -127,6 +127,7 @@ class SyntheticBond {
         'moneyProfit': moneyLeg.size,
         'future': futureLeg.asset.name,
         'futureSize': futureLeg.size,
+        'spotPrice': spotPrice,
         'DTE': expiration.daysLeft,
         'interestRate': interestRate,
         'apr': apr,
@@ -136,7 +137,9 @@ class SyntheticBond {
       {required this.underlying,
       required this.money,
       required this.expiration,
-      required this.spotPrice}) {
+      required Market spotMarket,
+      required Oracle oracle})
+      : spotPrice = spotMarket.midPrice {
     for (final p in strategy.decompose()) {
       if (p.asset == money) {
         moneyLeg = p;
@@ -146,10 +149,15 @@ class SyntheticBond {
         futureLeg = p;
       }
     }
-    interestRate = moneyLeg.size /
-        underlyingLeg.intrinsicValue(
-            commodity: underlying, money: money, price: spotPrice);
-    apr = expiration.rateToAnnualRate(yieldToRate(interestRate));
+    print(
+        "     moneyLeg: $moneyLeg, underlyingLeg: $underlyingLeg (${spotMarket.exchange(underlyingLeg).size})");
+    // "\n  intrinsic: ${oracle.intrinsicValue(asset: bond.futureLeg, money: money)}"
+    // "\n  extrinsic: ${oracle.extrinsicValue(asset: bond.futureLeg, money: money)}"
+    // "\n  rate:      ${1.0 + oracle.extrinsicValue(asset: bond.futureLeg, money: money).size / oracle.intrinsicValue(asset: bond.futureLeg, money: money).size}");
+    final intrinsic = oracle.intrinsicValue(asset: futureLeg, money: money);
+    final extrinsic = oracle.extrinsicValue(asset: futureLeg, money: money);
+    interestRate = extrinsic / intrinsic;
+    apr = expiration.rateToAnnualRate(interestRate);
   }
 
   static Iterable<SyntheticBond> generateAll(Iterable<Market> allMarkets,
@@ -170,7 +178,8 @@ class SyntheticBond {
           underlying: underlying,
           money: money,
           expiration: future.asset.toExpirable.expiration,
-          spotPrice: spotMarket.midPrice);
+          spotMarket: spotMarket,
+          oracle: oracle);
     }
   }
 }

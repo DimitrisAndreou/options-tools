@@ -1,7 +1,8 @@
 import 'dart:collection';
-
 import 'package:collection/collection.dart';
+
 import 'assets.dart';
+import 'oracle.dart';
 
 class PositionAnalyzer {
   final Position position;
@@ -34,8 +35,11 @@ class PositionAnalyzer {
       }
     }
 
-    double priceToValue(double price) => position.intrinsicValue(
-        commodity: underlying, money: money, price: price);
+    final oracle = SimulatedOracle();
+    double priceToValue(double price) =>
+        (oracle..setPrice(asset: underlying, money: money, price: price))
+            .intrinsicValue(asset: position, money: money)
+            .size;
 
     double prevPrice = 0.0;
     for (final nextPrice in interestingPoints) {

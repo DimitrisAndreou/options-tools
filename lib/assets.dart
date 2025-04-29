@@ -8,14 +8,7 @@ abstract class Decomposable {
   Iterable<Position> decompose();
 }
 
-abstract class WithIntrinsicValue {
-  double intrinsicValue(
-      {required Commodity commodity,
-      required Commodity money,
-      required double price});
-}
-
-sealed class Asset implements Decomposable, WithIntrinsicValue {
+sealed class Asset implements Decomposable {
   const Asset();
 
   @override
@@ -34,7 +27,7 @@ sealed class Asset implements Decomposable, WithIntrinsicValue {
   Option get toOption => this as Option;
 }
 
-class Position implements Decomposable, WithIntrinsicValue {
+class Position implements Decomposable {
   final Asset asset;
   final double size;
 
@@ -57,6 +50,14 @@ class Position implements Decomposable, WithIntrinsicValue {
   Position operator -() => Position(asset, -size);
   Position operator *(double size) => Position(asset, this.size * size);
 
+  // This returns a rate.
+  double operator /(Position that) {
+    if (asset != that.asset) {
+      throw ArgumentError("Incompatible positions: $this, $that");
+    }
+    return size / that.size;
+  }
+
   Position withSize(double size) => Position(asset, size);
   Position empty() => Position(asset);
 
@@ -65,14 +66,6 @@ class Position implements Decomposable, WithIntrinsicValue {
   @override
   Iterable<Position> decompose() =>
       asset.decompose().map((innerPosition) => innerPosition * size);
-
-  @override
-  double intrinsicValue(
-          {required Commodity commodity,
-          required Commodity money,
-          required double price}) =>
-      asset.intrinsicValue(commodity: commodity, money: money, price: price) *
-      size;
 
   @override
   String toString() => '($size $asset)';
@@ -107,19 +100,6 @@ class Commodity extends NamedAsset implements Comparable<Commodity> {
       _cache.putIfAbsent(name, () => Commodity(name));
 
   @override
-  double intrinsicValue(
-      {required Commodity commodity,
-      required Commodity money,
-      required double price}) {
-    if (this == commodity) return price;
-    if (this == money) return 1.0;
-    throw ArgumentError("Can only calculate intrinsicValue of commodity "
-        "$this if given the price of that commodity, or if it is considered "
-        "the money. Was given the price of "
-        "commodity: $commodity, and the specifed money was $money");
-  }
-
-  @override
   int compareTo(Commodity that) {
     return name.compareTo(that.name);
   }
@@ -145,16 +125,6 @@ class SyntheticAsset extends Asset {
 
   @override
   String get name => "SyntheticAsset: ${_assetPositions.values}";
-
-  @override
-  double intrinsicValue(
-          {required Commodity commodity,
-          required Commodity money,
-          required double price}) =>
-      decompose()
-          .map((p) => p.intrinsicValue(
-              commodity: commodity, money: money, price: price))
-          .sum;
 
   @override
   bool operator ==(Object that) =>
@@ -184,14 +154,6 @@ class DatedFuture extends Expirable {
       super.contractLot});
 
   @override
-  double intrinsicValue(
-          {required Commodity commodity,
-          required Commodity money,
-          required double price}) =>
-      underlying.intrinsicValue(
-          commodity: commodity, money: money, price: price);
-
-  @override
   String toString() => 'Future($name,underlying=$underlying)';
 }
 
@@ -214,28 +176,6 @@ class Option extends Expirable {
       throw ArgumentError("Exactly one of these should be true: " +
           "isPut: $isPut, isCall: $isCall");
     }
-  }
-
-  @override
-  double intrinsicValue(
-      {required Commodity commodity,
-      required Commodity money,
-      required double price}) {
-    if (underlying != commodity || this.money != money) {
-      throw ArgumentError("An option's intrinsic value can only be "
-          "evaluated if given the price of the underlying, at the same "
-          "money as the strike of the option. Option's underlying=and money");
-    }
-    if (price < strike) {
-      if (isPut) {
-        return (strike - price) * contractLot;
-      }
-    } else {
-      if (isCall) {
-        return (price - strike) * contractLot;
-      }
-    }
-    return 0.0;
   }
 
   @override

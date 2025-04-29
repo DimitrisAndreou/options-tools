@@ -128,3 +128,27 @@ class _RealMarketsOracle extends Oracle {
 
   // TODO: expose interest rate somehow, per future (absolute & APR)
 }
+
+class SimulatedOracle extends Oracle {
+  final Map<(Asset, Commodity), double> _prices = HashMap();
+
+  @override
+  Market marketFor({required Asset asset, required Commodity money}) {
+    if (asset == money) {
+      return Market.createIdentity(asset);
+    }
+    final price = _prices[(asset, money)];
+    if (price == null) {
+      throw StateError("Price was requested for asset $asset and "
+          "money $money but no such price was configured via setPrice(). "
+          "Known prices: $_prices");
+    }
+    return Market.create(
+        asset: asset, money: money, bidPrice: price, askPrice: price);
+  }
+
+  void setPrice(
+      {required Asset asset, required Commodity money, required double price}) {
+    _prices[(asset, money)] = price;
+  }
+}
