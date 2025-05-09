@@ -21,7 +21,9 @@ UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 5));
 
 Future<List<Market>> deribitMarkets() async {
   return await Deribit.fetchMarkets(
-      [DeribitCoin.BTC, DeribitCoin.ETH], _urlFetcher);
+      // TODO: add SOL, PAXG, XRP
+      [DeribitCoin.BTC, DeribitCoin.ETH],
+      _urlFetcher);
 }
 
 Future<String> coveredCalls(String ticker, double slippage) async {

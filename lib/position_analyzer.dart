@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 import 'package:collection/collection.dart';
 
 import 'assets.dart';
@@ -69,7 +70,13 @@ class PositionAnalyzer {
   Iterable<PriceRange> get breakevens =>
       _segments.map((segment) => segment.breakeven).nonNulls;
 
-  double get maxYield => -maxValue.first.value / minValue.first.value;
+  // Can be negative for profitless strategies.
+  double get maxProfit => maxValue.first.value;
+  // Can be negative for riskless strategies.
+  double get maxRisk => -minValue.first.value;
+
+  double get maxYield => 1.0 + maxProfit / maxRisk;
+  double yieldAt(double price) => 1.0 + valueAt(price) / maxRisk;
 
   double valueAt(double price) =>
       _segments.map((segment) => segment.valueAt(price)).nonNulls.first;
@@ -77,7 +84,8 @@ class PositionAnalyzer {
   @override
   String toString() =>
       "PositionAnalyzer(position: $position, underlying: $underlying, money: $money, "
-      "minValue: $minValue, maxValue: $maxValue, breakevens: $breakevens)";
+      "minValue: $minValue, maxValue: $maxValue, breakevens: $breakevens), "
+      "segments: $_segments";
 }
 
 // Inclusive range.

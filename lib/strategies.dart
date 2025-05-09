@@ -1,8 +1,8 @@
 import 'dart:convert';
+import 'dart:collection';
 import 'dart:math';
 
 import 'assets.dart';
-import 'deribit.dart';
 import 'markets.dart';
 import 'oracle.dart';
 import 'position_analyzer.dart';
@@ -71,11 +71,13 @@ class CoveredCall {
     breakeven = analyzer.breakevens.singleOrNull?.price;
     breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
     maxYield = analyzer.maxYield;
+    // We know that in CCs we're looking at a single max value segment
     maxYieldAt = analyzer.maxValue.single.price.fromPrice;
     maxYieldAtChange = maxYieldAt / spotPrice;
     yieldIfPriceUnchanged =
         analyzer.valueAt(spotPrice) / (-analyzer.minValue.single.value);
-    equivalentHodlerSellPrice = spotPrice * (1.0 + maxYield);
+    equivalentHodlerSellPrice = spotPrice * maxYield;
+    // TODO: use Oracle.extrinsicValue to compute timeValue
     timeValue = breakeven == null
         ? 0.0
         : (min(maxYieldAt, spotPrice) - breakeven!) / spotPrice;
@@ -95,9 +97,7 @@ class CoveredCall {
         .sortByExpiration(Order.asc)) {
       yield CoveredCall._(
           SyntheticAsset(
-                  [call.short(slippage).unit, spotMarket.long(slippage).unit])
-              .position(Deribit.getMinimumContract(
-                  DeribitCoin.values.byName(underlying.name))),
+              [call.short(slippage).unit, spotMarket.long(slippage).unit]).unit,
           underlying: underlying,
           money: money,
           expiration: call.asset.toExpirable.expiration,
@@ -137,9 +137,8 @@ class SyntheticBond {
       {required this.underlying,
       required this.money,
       required this.expiration,
-      required Market spotMarket,
-      required Oracle oracle})
-      : spotPrice = spotMarket.midPrice {
+      required this.spotPrice,
+      required Oracle oracle}) {
     for (final p in strategy.decompose()) {
       if (p.asset == money) {
         moneyLeg = p;
@@ -149,11 +148,6 @@ class SyntheticBond {
         futureLeg = p;
       }
     }
-    print(
-        "     moneyLeg: $moneyLeg, underlyingLeg: $underlyingLeg (${spotMarket.exchange(underlyingLeg).size})");
-    // "\n  intrinsic: ${oracle.intrinsicValue(asset: bond.futureLeg, money: money)}"
-    // "\n  extrinsic: ${oracle.extrinsicValue(asset: bond.futureLeg, money: money)}"
-    // "\n  rate:      ${1.0 + oracle.extrinsicValue(asset: bond.futureLeg, money: money).size / oracle.intrinsicValue(asset: bond.futureLeg, money: money).size}");
     final intrinsic = oracle.intrinsicValue(asset: futureLeg, money: money);
     final extrinsic = oracle.extrinsicValue(asset: futureLeg, money: money);
     interestRate = extrinsic / intrinsic;
@@ -166,6 +160,7 @@ class SyntheticBond {
       double slippage = 0.5}) sync* {
     final oracle = Oracle.fromMarkets(allMarkets);
     final spotMarket = oracle.marketFor(asset: underlying, money: money);
+    final spotPrice = spotMarket.midPrice;
     for (final future in allMarkets
         .whereUnderlyingIs(underlying)
         .futures
@@ -178,7 +173,7 @@ class SyntheticBond {
           underlying: underlying,
           money: money,
           expiration: future.asset.toExpirable.expiration,
-          spotMarket: spotMarket,
+          spotPrice: spotPrice,
           oracle: oracle);
     }
   }
@@ -187,6 +182,176 @@ class SyntheticBond {
 // touch is OTM Over/Under which closes on touch
 // not touch is ITM Over/Under which closes on touch
 
-class Over {}
+class VerticalSpread {
+  final Commodity underlying;
+  final Commodity money;
+  final DateTime expiration;
 
-class Under {}
+  final PositionAnalyzer analyzer;
+
+  late final Position strategy;
+  late final Position shortLeg;
+  late final Position longLeg;
+  late final Position moneyLeg;
+
+  final double spotPrice;
+
+  late final double? breakeven;
+  late final double? breakevenAsChange;
+  late final double maxYield;
+  late final double maxYieldAt;
+  late final double maxYieldAtChange;
+  late final double maxRisk;
+  late final double maxRiskAt;
+  late final double maxRiskAtChange;
+  late final double yieldIfPriceUnchanged;
+
+  Map<String, dynamic> toJson() => {
+        'underlying': underlying.name,
+        'money': money.name,
+        'moneySize': moneyLeg.size,
+        'spotPrice': spotPrice,
+        'shortLeg': shortLeg.asset.name,
+        'longLeg': longLeg.asset.name,
+        'DTE': expiration.daysLeft,
+        'breakEven': breakeven,
+        'breakEvenAsChange': breakevenAsChange,
+        'maxYield': maxYield,
+        'maxYieldAt': maxYieldAt,
+        'maxYieldAtChange': maxYieldAtChange,
+        'maxRisk': maxRisk,
+        'maxRiskAt': maxRiskAt,
+        'maxRiskAtChange': maxRiskAtChange,
+        'yieldIfPriceUnchanged': yieldIfPriceUnchanged,
+      };
+
+  VerticalSpread._(this.strategy,
+      {required this.underlying,
+      required this.money,
+      required this.expiration,
+      required this.spotPrice})
+      : analyzer =
+            PositionAnalyzer(strategy, underlying: underlying, money: money) {
+    for (final p in strategy.decompose()) {
+      if (p.asset == money) {
+        moneyLeg = p;
+      } else if (p.size > 0) {
+        longLeg = p;
+      } else {
+        shortLeg = p;
+      }
+    }
+    breakeven = analyzer.breakevens.singleOrNull?.price;
+    breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
+    maxYield = analyzer.maxYield;
+    maxYieldAt = pickNearestBoundary(spotPrice, analyzer.maxValue);
+    maxYieldAtChange = maxYieldAt / spotPrice;
+    maxRisk = analyzer.maxRisk;
+    maxRiskAt = pickNearestBoundary(spotPrice, analyzer.minValue);
+    maxRiskAtChange = maxRiskAt / spotPrice;
+    yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
+  }
+
+  static double pickNearestBoundary(
+          double target, Iterable<PriceAndValue> pnvs) =>
+      pickNearest(target,
+          pnvs.expand((pnv) => [pnv.price.fromPrice, pnv.price.toPrice]));
+
+  static double pickNearest(double target, Iterable<double> candidates) {
+    final it = candidates.iterator;
+    if (!it.moveNext()) {
+      throw ArgumentError("No candidates to pick from");
+    }
+    double candidate = it.current;
+    double distance = (target - candidate).abs();
+    while (it.moveNext()) {
+      double newDistance = (target - it.current).abs();
+      if (newDistance < distance) {
+        distance = newDistance;
+        candidate = it.current;
+      }
+    }
+    return candidate;
+  }
+
+  static Iterable<VerticalSpread> generateAll(Iterable<Market> allMarkets,
+      {required Commodity underlying,
+      required Commodity money,
+      double slippage = 0.5}) sync* {
+    final oracle = Oracle.fromMarkets(allMarkets);
+    final spotMarket = oracle.marketFor(asset: underlying, money: money);
+    final spotPrice = spotMarket.midPrice;
+
+    for (final MapEntry<DateTime,
+            Map<double, ({Market? call, Market? put})>> expirationToStrike
+        in allMarkets
+            .whereUnderlyingIs(underlying)
+            .options
+            .withMoney(money, oracle)
+            .groupByExpiration(Order.asc)
+            .mapValues((ms) => ms.groupByStrike(Order.asc).mapValues((ms) =>
+                (call: ms.calls.singleOrNull, put: ms.puts.singleOrNull)))
+            .entries) {
+      final expiration = expirationToStrike.key,
+          strikeToOptions = expirationToStrike.value;
+      VerticalSpread makeSpread(Iterable<Position> positions) =>
+          VerticalSpread._(SyntheticAsset(positions).unit,
+              underlying: underlying,
+              money: money,
+              expiration: expiration,
+              spotPrice: spotPrice);
+
+      for (final (lowStrike, highStrike) in _pairUp(strikeToOptions.keys)) {
+        final (call: lowCall, put: lowPut) = strikeToOptions[lowStrike]!;
+        final (call: highCall, put: highPut) = strikeToOptions[highStrike]!;
+
+        // under @ lowStrike
+        VerticalSpread? under = keepBestValidSpread([
+          if (lowPut != null && highPut != null)
+            makeSpread(
+                [highPut.long(slippage).unit, lowPut.short(slippage).unit]),
+          if (lowCall != null && highCall != null)
+            makeSpread(
+                [highCall.long(slippage).unit, lowCall.short(slippage).unit]),
+        ]);
+
+        // over @ highStrike
+        VerticalSpread? over = keepBestValidSpread([
+          if (lowPut != null && highPut != null)
+            makeSpread(
+                [highPut.short(slippage).unit, lowPut.long(slippage).unit]),
+          if (lowCall != null && highCall != null)
+            makeSpread(
+                [highCall.short(slippage).unit, lowCall.long(slippage).unit]),
+        ]);
+
+        yield* [under, over].nonNulls;
+      }
+    }
+  }
+
+  static Iterable<(T, T)> _pairUp<T>(Iterable<T> iterable) sync* {
+    final it = iterable.iterator;
+    if (!it.moveNext()) {
+      return;
+    }
+    T previous = it.current;
+    while (it.moveNext()) {
+      T current = it.current;
+      yield (previous, current);
+      previous = current;
+    }
+  }
+
+  static VerticalSpread? keepBestValidSpread(
+          Iterable<VerticalSpread> spreads) =>
+      spreads
+          // Remove riskless or profitless spreads (these can arise due to
+          // wide bid/ask spreads)
+          .where((vs) => vs.maxRisk > 0.0)
+          .where((vs) => vs.maxYield > 1.0)
+          .fold<VerticalSpread?>(
+              null,
+              (vs1, vs2) =>
+                  vs1 != null && vs1.maxYield >= vs2.maxYield ? vs1 : vs2);
+}

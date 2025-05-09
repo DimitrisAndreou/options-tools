@@ -16,7 +16,7 @@ enum DeribitCoin {
   BNB(Commodity("BNB")),
   PAXG(Commodity("PAXG")),
   SOL(Commodity("SOL")),
-  XPR(Commodity("XRP"));
+  XRP(Commodity("XRP"));
 
   final Commodity commodity;
   const DeribitCoin(this.commodity);

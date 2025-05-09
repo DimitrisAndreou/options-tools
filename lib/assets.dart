@@ -114,6 +114,9 @@ class SyntheticAsset extends Asset {
   final Map<Asset, Position> _assetPositions = HashMap();
 
   SyntheticAsset(Iterable<Position> positions) {
+    // It's important that zero positions do not disappear. E.g. the money leg
+    // of some strategy might happen to be zero, but it's important to be
+    // able to detect the money leg via decompose().
     for (final inner in positions.expand((p) => p.decompose())) {
       _assetPositions[inner.asset] =
           (_assetPositions[inner.asset] ?? inner.empty()) + inner.size;
