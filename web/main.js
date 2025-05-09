@@ -340,8 +340,12 @@ async function jsMain() {
     document.getElementById('eth-price').textContent = dollarFmt.format(extractSpotPrice(ethCoveredCallsJson));
     coveredCallToBreakEvenChart(ethCoveredCallsJson, "ethCoveredCallsChart");
     coveredCallToTimeValueChart(ethCoveredCallsJson, "ethCoveredCallsTimeValueChart");
+    
     const bondsJson = JSON.parse(await syntheticBondsDart("BTC", slippage));
     console.log({ bondsJson });
+
+    const verticalSpreadsJson = JSON.parse(await verticalSpreadsDart("BTC", slippage));
+    console.log({verticalSpreadsJson});
   } catch (error) {
     console.error("JavaScript caught Dart error:", error);
     console.error("Dart stack trace:", error.stack);

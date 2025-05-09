@@ -44,27 +44,6 @@ void browseVerticalSpreads(List<Market> markets) {
           underlying: underlying, money: money)
       .take(20)) {
     print(" ## ${vs.toJson()}\n");
-
-    /*
-    Debit:
-     {underlying: BTC, money: USD, moneySize: -851.9084999999995, spotPrice: 94656.5,
-     shortLeg: BTC-6MAY25-96000-P, shortLegSize: -1.0, longLeg: BTC-6MAY25-97000-P,
-     longLegSize: 1.0, DTE: 1, breakEven: 96148.0915, breakEvenAsChange: 1.015757940553475,
-     maxYield: 0.17383498345186194, maxYieldAt: 96000.0, maxYieldAtChange: 1.0141934257024081,
-     maxLossAt: 97000.0, maxLossAtChange: 1.024757940553475, yieldIfPriceUnchanged:
-     0.17383498345186194, equivalentHodlerSellPrice: 111111.11111111117}
-    
-    Credit:
-     {underlying: BTC, money: USD, moneySize: 283.9694999999999, spotPrice: 94656.5,
-     shortLeg: BTC-6MAY25-95000-P, shortLegSize: -1.0, longLeg: BTC-6MAY25-94500-P,
-     longLegSize: 1.0, DTE: 1, breakEven: 94716.0305, breakEvenAsChange: 1.0006289108513413,
-     maxYield: 1.3144880005369604, maxYieldAt: 95000.0, maxYieldAtChange: 1.0036289108513414,
-     maxLossAt: 94500.0, maxLossAtChange: 0.9983466534258081,
-     yieldIfPriceUnchanged: -0.27556525583193137, equivalentHodlerSellPrice: 219081.3334228268}
-     */
-    // TODO: print minValue(At), maxValue(At)
-    // print("${vs.shortLeg} && ${vs.longLeg}:: credit/debit: ${vs.moneyLeg}, "
-    //     "maxLossAt: ${vs.maxLossAt}, maxYield (${vs.maxYield}) at ${vs.maxYieldAt}");
   }
 }
 

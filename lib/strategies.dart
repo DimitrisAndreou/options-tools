@@ -182,6 +182,8 @@ class SyntheticBond {
 // touch is OTM Over/Under which closes on touch
 // not touch is ITM Over/Under which closes on touch
 
+enum VerticalSpreadType { over, under }
+
 class VerticalSpread {
   final Commodity underlying;
   final Commodity money;
@@ -193,6 +195,7 @@ class VerticalSpread {
   late final Position shortLeg;
   late final Position longLeg;
   late final Position moneyLeg;
+  late final VerticalSpreadType type;
 
   final double spotPrice;
 
@@ -209,10 +212,11 @@ class VerticalSpread {
   Map<String, dynamic> toJson() => {
         'underlying': underlying.name,
         'money': money.name,
-        'moneySize': moneyLeg.size,
+        'credit': moneyLeg.size,
         'spotPrice': spotPrice,
         'shortLeg': shortLeg.asset.name,
         'longLeg': longLeg.asset.name,
+        'type': type.name,
         'DTE': expiration.daysLeft,
         'breakEven': breakeven,
         'breakEvenAsChange': breakevenAsChange,
@@ -241,6 +245,9 @@ class VerticalSpread {
         shortLeg = p;
       }
     }
+    type = longLeg.asset.toOption.strike > shortLeg.asset.toOption.strike
+        ? VerticalSpreadType.over
+        : VerticalSpreadType.under;
     breakeven = analyzer.breakevens.singleOrNull?.price;
     breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
     maxYield = analyzer.maxYield;
