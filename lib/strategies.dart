@@ -337,6 +337,18 @@ class VerticalSpread {
     }
   }
 
+  static VerticalSpread? keepBestValidSpread(
+          Iterable<VerticalSpread> spreads) =>
+      spreads
+          // Remove riskless or profitless spreads (these can arise due to
+          // wide bid/ask spreads)
+          .where((vs) => vs.maxRisk > 0.0)
+          .where((vs) => vs.maxYield > 1.0)
+          .fold<VerticalSpread?>(
+              null,
+              (vs1, vs2) =>
+                  vs1 != null && vs1.maxYield >= vs2.maxYield ? vs1 : vs2);
+
   static Iterable<(T, T)> _pairUp<T>(Iterable<T> iterable) sync* {
     final it = iterable.iterator;
     if (!it.moveNext()) {
@@ -349,16 +361,4 @@ class VerticalSpread {
       previous = current;
     }
   }
-
-  static VerticalSpread? keepBestValidSpread(
-          Iterable<VerticalSpread> spreads) =>
-      spreads
-          // Remove riskless or profitless spreads (these can arise due to
-          // wide bid/ask spreads)
-          .where((vs) => vs.maxRisk > 0.0)
-          .where((vs) => vs.maxYield > 1.0)
-          .fold<VerticalSpread?>(
-              null,
-              (vs1, vs2) =>
-                  vs1 != null && vs1.maxYield >= vs2.maxYield ? vs1 : vs2);
 }
