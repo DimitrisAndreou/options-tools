@@ -17,13 +17,7 @@ body {
 .chart-container {
   height: 500px;
   margin-bottom: 20px;
-  min-width: 550px;
-}
-
-@media (max-width: 800px) {
-  .chart-container {
-    min-width: 100%;
-  }
+  min-width: 600px;
 }
 
 .card {
