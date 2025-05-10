@@ -229,9 +229,14 @@ function coveredCallToTimeValueChart(data, divId) {
       type: 'value',
       name: 'Strike',
       nameLocation: 'center',
-      nameGap: 25,
+      nameGap: 40,
       nameTextStyle: axisTitleNameTextStyle,
-      axisLabel: axisXValuesNameTextStyle,
+      axisLabel: {
+        ...axisXValuesNameTextStyle,
+        formatter: function (value) {
+          return `${dollarFmt.format(value)}\n(${percentFmt.format(value / spotPrice - 1.0)})`;
+        },
+      },
       axisLine,
       scale: true
     },
