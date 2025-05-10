@@ -49,8 +49,8 @@
     <div class="tab-content mt-4" id="cryptoTabsContent">
       <!-- BTC Tab -->
       <div class="tab-pane fade show active" id="btc" role="tabpanel" aria-labelledby="btc-tab">
-        <!-- Chart Begin -->
         <div class="row">
+          <!-- Chart -->
           <div class="col-md-6">
             <div class="card">
               <div class="card-header">
@@ -63,7 +63,7 @@
               </div>
             </div>
           </div>
-          <!-- Another Chart, same row -->
+          <!-- Chart -->
           <div class="col-md-6">
             <div class="card">
               <div class="card-header">
@@ -77,13 +77,29 @@
             </div>
           </div>
         </div>
-        <!-- Chart End -->
+        <!-- Row -->
+        <div class="row">
+          <!-- Chart -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5>
+                  <i class="fas fa-chart-line me-2 text-primary"></i>BTC Overs/Unders
+                </h5>
+              </div>
+              <div class="card-body">
+                <div id="btcVerticalSpreadsChart" class="chart-container"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ETH Tab -->
       <div class="tab-pane fade" id="eth" role="tabpanel" aria-labelledby="eth-tab">
-        <!-- Chart Begin -->
+        <!-- Row -->
         <div class="row">
+          <!-- Chart -->
           <div class="col-md-6">
             <div class="card">
               <div class="card-header">
@@ -96,7 +112,7 @@
               </div>
             </div>
           </div>
-          <!-- Another Chart, same row -->
+          <!-- Chart -->
           <div class="col-md-6">
             <div class="card">
               <div class="card-header">
@@ -110,7 +126,22 @@
             </div>
           </div>
         </div>
-        <!-- Chart End -->
+        <!-- Row -->
+        <div class="row">
+          <!-- Chart -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5>
+                  <i class="fas fa-chart-line me-2 text-primary"></i>ETH Overs/Unders
+                </h5>
+              </div>
+              <div class="card-body">
+                <div id="ethVerticalSpreadsChart" class="chart-container"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
