@@ -186,18 +186,12 @@ function coveredCallToBreakEvenChart(data, divId) {
         xAxisIndex: 0,
         startValue: spotPrice * 0.5,
         endValue: spotPrice * 1.5,
-        zoomOnMouseWheel: false, // disable built-in wheel zoom
-        moveOnMouseMove: true,
-        moveOnMouseWheel: true, // allow moving via wheel
       },
       {
         type: 'inside',
         yAxisIndex: 0,
         startValue: 0,
         endValue: spotPrice,
-        zoomOnMouseWheel: false, // disable built-in wheel zoom
-        moveOnMouseMove: true,
-        moveOnMouseWheel: true, // allow moving via wheel
       }
     ],
   });
