@@ -89,7 +89,7 @@ function coveredCallToBreakEvenChart(data, divId) {
     dataset: [dataset, ...datasetPerDTE],
     xAxis: {
       type: 'value',
-      name: 'Max Yield At ($)',
+      name: 'Max Yield At',
       nameLocation: 'center',
       nameGap: 40,
       nameTextStyle: axisTitleNameTextStyle,
@@ -106,7 +106,7 @@ function coveredCallToBreakEvenChart(data, divId) {
     grid,
     yAxis: {
       type: 'value',
-      name: 'Break-Even ($)',
+      name: 'Break-Even',
       nameLocation: 'end',
       align: 'right',
       nameTextStyle: {
@@ -198,7 +198,7 @@ function coveredCallToBreakEvenChart(data, divId) {
 }
 
 function coveredCallToTimeValueChart(data, divId) {
-  const spotPrice = data.at(0)?.spotPrice;
+  const spotPrice = extractSpotPrice(data);
   const dataset = {
     id: "original",
     dimensions: ["maxYieldAt", "breakEven", "maxYield", "call", "DTE", "timeValue"],
@@ -308,7 +308,7 @@ function coveredCallToTimeValueChart(data, divId) {
 }
 
 function verticalSpreadsChart(data, divId) {
-  const spotPrice = data.at(0)?.spotPrice;
+  const spotPrice = extractSpotPrice(data);
 // {
 //   "underlying": "BTC",
 //   "money": "USD",
