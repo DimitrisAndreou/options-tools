@@ -61,15 +61,20 @@ const grid = {
 };
 const legend = {
   show: true,
-  type: 'scroll',
+  type: 'scroll',        // Keeps it scrollable if too long
   orient: 'horizontal',
   top: 'bottom',
   textStyle: {
     color: 'yellow',
     fontFamily: 'monospace',
     fontSize: 12
-  }
-};
+  },
+  pageIconColor: 'yellow',
+  pageTextStyle: {
+    color: 'yellow'
+  },
+  width: '75%',
+}
 
 function extractSpotPrice(data) {
   return data.at(0)?.spotPrice;
