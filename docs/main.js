@@ -4,6 +4,11 @@ const percentFmt = new Intl.NumberFormat('en-US', {
   signDisplay: 'always',
 });
 
+const percentNoSignFmt = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 1,
+});
+
 const dollarFmt = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -27,7 +32,6 @@ const ccTooltipFormatter = function (params) {
     DTE: ${value.DTE}
   `;
 };
-
 
 const axisTitleNameTextStyle = {
   color: 'yellow',
@@ -54,7 +58,7 @@ const axisLine = {
   }
 };
 const grid = {
-  left: 80,
+  left: 40,
   right: 50,
   top: 50,
   bottom: 100,
@@ -111,7 +115,7 @@ function coveredCallToBreakEvenChart(data, divId) {
     dataset: [dataset, ...datasetPerDTE],
     xAxis: {
       type: 'value',
-      name: 'Cap Profit At',
+      name: 'Max Profit',
       nameLocation: 'center',
       nameGap: 40,
       nameTextStyle: axisTitleNameTextStyle,
@@ -129,6 +133,7 @@ function coveredCallToBreakEvenChart(data, divId) {
     yAxis: {
       type: 'value',
       inverse: true,
+      max: spotPrice,
       splitNumber: 10,
       name: 'Breakeven Improvement (Reduction)',
       nameLocation: 'start',
@@ -137,7 +142,7 @@ function coveredCallToBreakEvenChart(data, divId) {
       axisLabel: {
         ...axisYValuesNameTextStyle,
         formatter: function (value) {
-          return `${percentFmt.format(1.0 - value / spotPrice)}`;
+          return `${percentNoSignFmt.format(1.0 - value / spotPrice)}`;
         },
       },
       axisLine,
@@ -212,7 +217,7 @@ function coveredCallToBreakEvenChart(data, divId) {
       {
         type: 'inside',
         yAxisIndex: 0,
-        startValue: 0,
+        startValue: spotPrice / 2.0,
         endValue: spotPrice,
       }
     ],
@@ -249,7 +254,7 @@ function coveredCallToTimeValueChart(data, divId) {
     dataset: [dataset, ...datasetPerDTE],
     xAxis: {
       type: 'value',
-      name: 'Strike',
+      name: 'Max Profit',
       nameLocation: 'center',
       nameGap: 40,
       nameTextStyle: axisTitleNameTextStyle,
@@ -267,12 +272,14 @@ function coveredCallToTimeValueChart(data, divId) {
       type: 'value',
       name: 'Time Value (%)',
       nameTextStyle: yAxisTitleNameTextStyle,
+      align: 'right',
       axisLabel: {
         ...axisYValuesNameTextStyle,
         formatter: function (value) {
           return percentFmt.format(value);
         },
         align: 'left',
+        margin: 40,
       },
       axisLine,
       scale: true
@@ -291,7 +298,8 @@ function coveredCallToTimeValueChart(data, divId) {
       name: ds.label,
       datasetId: ds.id,
       encode: {
-        x: 'maxYieldAt',
+        // x: 'maxYieldAt',
+        x: 'equivalentHodlerSellPrice',
         y: 'timeValue'
       },
       symbolSize: function (data) {
@@ -313,8 +321,8 @@ function coveredCallToTimeValueChart(data, divId) {
       {
         type: 'inside',
         yAxisIndex: 0,
-        startValue: 0,
-        endValue: spotPrice
+        startValue: 0.0,
+        endValue: 1.0,
       }
     ],
   });
