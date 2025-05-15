@@ -34,6 +34,10 @@ const axisTitleNameTextStyle = {
   fontFamily: 'monospace',
   fontSize: 16
 };
+const yAxisTitleNameTextStyle = {
+  ...axisTitleNameTextStyle,
+  align: 'left',
+};
 const axisXValuesNameTextStyle = {
   color: 'lightgreen',
   fontFamily: 'monospace',
@@ -124,11 +128,7 @@ function coveredCallToBreakEvenChart(data, divId) {
       name: 'Breakeven Improvement (Reduction)',
       nameLocation: 'start',
       align: 'right',
-      nameTextStyle: {
-        color: 'yellow',
-        fontFamily: 'monospace',
-        fontSize: 18
-      },
+      nameTextStyle: yAxisTitleNameTextStyle,
       axisLabel: {
         ...axisYValuesNameTextStyle,
         formatter: function (value) {
@@ -261,12 +261,13 @@ function coveredCallToTimeValueChart(data, divId) {
     yAxis: {
       type: 'value',
       name: 'Time Value (%)',
-      nameTextStyle: axisTitleNameTextStyle,
+      nameTextStyle: yAxisTitleNameTextStyle,
       axisLabel: {
         ...axisYValuesNameTextStyle,
         formatter: function (value) {
           return percentFmt.format(value);
-        }
+        },
+        align: 'left',
       },
       axisLine,
       scale: true
