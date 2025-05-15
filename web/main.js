@@ -16,6 +16,19 @@ const priceFmt = new Intl.NumberFormat('en-US', {
   signDisplay: 'always',
 });
 
+const ccTooltipFormatter = function (params) {
+  const value = params.value;
+  return `
+    <b>${value.call}</b><br/>
+    Max Profit At: $${value.maxYieldAt}<br/>
+    Break Even: ${dollarFmt.format(value.breakEven)} (${percentFmt.format(value.breakEvenAsChange - 1.0)})<br/>
+    Max Profit: ${percentFmt.format(value.maxYield - 1.0)}<br/>
+    Time Value: ${percentFmt.format(value.timeValue)}<br/>
+    DTE: ${value.DTE}
+  `;
+};
+
+
 const axisTitleNameTextStyle = {
   color: 'yellow',
   fontFamily: 'monospace',
@@ -63,7 +76,7 @@ function coveredCallToBreakEvenChart(data, divId) {
   // TODO: share this code across charts.
   const dataset = {
     id: "original",
-    dimensions: ["maxYieldAt", "breakEven", "maxYield", "call", "DTE", "timeValue"],
+    dimensions: ["maxYieldAt", "breakEven", "breakEvenAsChange", "maxYield", "call", "DTE", "timeValue", "equivalentHodlerSellPrice"],
     source: data
   };
   const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
@@ -89,7 +102,7 @@ function coveredCallToBreakEvenChart(data, divId) {
     dataset: [dataset, ...datasetPerDTE],
     xAxis: {
       type: 'value',
-      name: 'Max Yield At',
+      name: 'Cap Profit At',
       nameLocation: 'center',
       nameGap: 40,
       nameTextStyle: axisTitleNameTextStyle,
@@ -106,8 +119,10 @@ function coveredCallToBreakEvenChart(data, divId) {
     grid,
     yAxis: {
       type: 'value',
-      name: 'Break-Even',
-      nameLocation: 'end',
+      inverse: true,
+      splitNumber: 10,
+      name: 'Breakeven Improvement (Reduction)',
+      nameLocation: 'start',
       align: 'right',
       nameTextStyle: {
         color: 'yellow',
@@ -117,24 +132,14 @@ function coveredCallToBreakEvenChart(data, divId) {
       axisLabel: {
         ...axisYValuesNameTextStyle,
         formatter: function (value) {
-          return `${dollarFmt.format(value)}\n(${percentFmt.format(value / spotPrice - 1.0)})`;
+          return `${percentFmt.format(1.0 - value / spotPrice)}`;
         },
       },
       axisLine,
       scale: true
     },
     tooltip: {
-      formatter: function (params) {
-        const value = params.value;
-        return `
-          <b>${value.call}</b><br/>
-          Max Profit At: $${value.maxYieldAt}<br/>
-          Break Even: $${dollarFmt.format(value.breakEven)}<br/>
-          Max Profit: ${percentFmt.format(value.maxYield - 1.0)}<br/>
-          Time Value: ${percentFmt.format(value.timeValue)}<br/>
-          DTE: ${value.DTE}
-        `;
-      },
+      formatter: ccTooltipFormatter,
       textStyle: {
         color: 'yellow',
         fontFamily: 'monospace'
@@ -147,11 +152,23 @@ function coveredCallToBreakEvenChart(data, divId) {
       name: ds.label,
       datasetId: ds.id,
       encode: {
-        x: 'maxYieldAt',
+        x: 'equivalentHodlerSellPrice',
         y: 'breakEven'
       },
       symbolSize: function (data) {
         return 5;
+      },
+      emphasis: {
+        symbolSize: function (data) {
+          return 10;
+        },
+        itemStyle: {
+          color: 'red',
+          borderColor: 'white',
+          borderWidth: 2
+        },
+        scale: true,
+        focus: 'series',
       },
       label: {
         show: false
@@ -201,7 +218,7 @@ function coveredCallToTimeValueChart(data, divId) {
   const spotPrice = extractSpotPrice(data);
   const dataset = {
     id: "original",
-    dimensions: ["maxYieldAt", "breakEven", "maxYield", "call", "DTE", "timeValue"],
+    dimensions: ["maxYieldAt", "breakEven", "breakEvenAsChange", "maxYield", "call", "DTE", "timeValue", "equivalentHodlerSellPrice"],
     source: data
   };
   const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
@@ -255,17 +272,7 @@ function coveredCallToTimeValueChart(data, divId) {
       scale: true
     },
     tooltip: {
-      formatter: function (params) {
-        const value = params.value;
-        return `
-          <b>${value.call}</b><br/>
-          Max Profit At: $${value.maxYieldAt}<br/>
-          Break Even: $${dollarFmt.format(value.breakEven)}<br/>
-          Max Profit: ${percentFmt.format(value.maxYield - 1.0)}<br/>
-          Time Value: ${percentFmt.format(value.timeValue)}<br/>
-          DTE: ${value.DTE}
-        `;
-      },
+      formatter: ccTooltipFormatter,
       textStyle: {
         color: 'yellow',
         fontFamily: 'monospace'
@@ -400,7 +407,7 @@ function verticalSpreadsChart(data, divId) {
         return `
           <b>${value.call}</b><br/>
           Max Profit At: $${value.maxYieldAt}<br/>
-          Break Even: $${dollarFmt.format(value.breakEven)}<br/>
+          Break Even: ${dollarFmt.format(value.breakEven)} (${percentFmt.format(value.breakEvenAsChange - 1.0)})<br/>
           Max Profit: ${percentFmt.format(value.maxYield - 1.0)}<br/>
           Time Value: ${percentFmt.format(value.timeValue)}<br/>
           DTE: ${value.DTE}
@@ -447,27 +454,32 @@ function verticalSpreadsChart(data, divId) {
   });
 }
 
+async function parseAndLog(name, jsonLoaderFn) {
+  const rawJson = await jsonLoaderFn();
+  console.log(`Raw ${name} data:`);
+  console.log(rawJson);
+  return JSON.parse(rawJson);
+}
+
 async function jsMain() {
   const slippage = 0.5;
   try {
-    const btcCoveredCallsJson = JSON.parse(await coveredCallsDart("BTC", slippage));
+    const btcCoveredCallsJson = await parseAndLog("btcCoveredCallsJson", () => coveredCallsDart("BTC", slippage));
     document.getElementById('btc-price').textContent = dollarFmt.format(extractSpotPrice(btcCoveredCallsJson));
     coveredCallToBreakEvenChart(btcCoveredCallsJson, "btcCoveredCallsChart");
     coveredCallToTimeValueChart(btcCoveredCallsJson, "btcCoveredCallsTimeValueChart");
 
-    // const btcVerticalSpreadsJson = JSON.parse(await verticalSpreadsDart("BTC", slippage));
-    // console.log({btcVerticalSpreadsJson});
+    const btcVerticalSpreadsJson = await parseAndLog("btcVerticalSpreadsJson", () => verticalSpreadsDart("BTC", slippage));
     // verticalSpreadsChart(btcVerticalSpreadsJson, "btcVerticalSpreadsChart");
 
-    const ethCoveredCallsJson = JSON.parse(await coveredCallsDart("ETH", slippage));
+    const ethCoveredCallsJson = await parseAndLog("ethCoveredCallsJson", () => coveredCallsDart("ETH", slippage));
     document.getElementById('eth-price').textContent = dollarFmt.format(extractSpotPrice(ethCoveredCallsJson));
     coveredCallToBreakEvenChart(ethCoveredCallsJson, "ethCoveredCallsChart");
     coveredCallToTimeValueChart(ethCoveredCallsJson, "ethCoveredCallsTimeValueChart");
-    const ethVerticalSpreadsJson = JSON.parse(await verticalSpreadsDart("BTC", slippage));
-    verticalSpreadsChart(ethVerticalSpreadsJson, "btcVerticalSpreadsChart");
+    const ethVerticalSpreadsJson = await parseAndLog("ethVerticalSpreadsJson", () => verticalSpreadsDart("ETH", slippage));
+    // verticalSpreadsChart(ethVerticalSpreadsJson, "btcVerticalSpreadsChart");
     
-    const btcBondsJson = JSON.parse(await syntheticBondsDart("BTC", slippage));
-    console.log({ btcBondsJson });
+    const btcBondsJson = await parseAndLog("btcBondsJson", () => syntheticBondsDart("BTC", slippage));
   } catch (error) {
     console.error("JavaScript caught Dart error:", error);
     console.error("Dart stack trace:", error.stack);
