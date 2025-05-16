@@ -58,7 +58,7 @@ const axisLine = {
   }
 };
 const grid = {
-  left: 40,
+  left: 60,
   right: 50,
   top: 50,
   bottom: 100,
