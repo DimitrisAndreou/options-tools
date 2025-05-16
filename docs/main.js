@@ -84,6 +84,14 @@ function extractSpotPrice(data) {
   return data.at(0)?.spotPrice;
 }
 
+function selectDTEs(uniqueDTEs, minDTE) {
+  const legendSelected = {};
+  uniqueDTEs.forEach(dte => {
+    legendSelected[dte] = dte >= minDTE;
+  });
+  return legendSelected;
+}
+
 function coveredCallToBreakEvenChart(data, divId) {
   const spotPrice = extractSpotPrice(data);
   // TODO: share this code across charts.
@@ -206,7 +214,10 @@ function coveredCallToBreakEvenChart(data, divId) {
         }
       },
     }],
-    legend,
+    legend: {
+      ...legend,
+      selected: selectDTEs(uniqueDTEs, 15),
+    },
     dataZoom: [
       {
         type: 'inside',
@@ -310,7 +321,10 @@ function coveredCallToTimeValueChart(data, divId) {
         show: false
       }
     }))],
-    legend,
+    legend: {
+      ...legend,
+      selected: selectDTEs(uniqueDTEs, 15),
+    },
     dataZoom: [
       {
         type: 'inside',
