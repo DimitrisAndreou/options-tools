@@ -22,9 +22,6 @@ maybe safer with Position: always check you don't mix apples with oranges.
 operator/ is already implemented like that.
 
 ****************
-Compute time value (in covered calls) not in an ad-hoc way but via extrinsic value.
-
-*****************
 Plot probabilities for all expirations simultaneously? Like cone?
 
 *********************
