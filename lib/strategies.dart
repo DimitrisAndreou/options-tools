@@ -56,7 +56,8 @@ class CoveredCall {
       {required this.underlying,
       required this.money,
       required this.expiration,
-      required this.spotPrice})
+      required this.spotPrice,
+      required Oracle oracle})
       : analyzer =
             PositionAnalyzer(strategy, underlying: underlying, money: money) {
     for (final p in strategy.decompose()) {
@@ -77,10 +78,9 @@ class CoveredCall {
     yieldIfPriceUnchanged =
         analyzer.valueAt(spotPrice) / (-analyzer.minValue.single.value);
     equivalentHodlerSellPrice = spotPrice * maxYield;
-    // TODO: use Oracle.extrinsicValue to compute timeValue
-    timeValue = breakeven == null
-        ? 0.0
-        : (min(maxYieldAt, spotPrice) - breakeven!) / spotPrice;
+    timeValue =
+        oracle.extrinsicValue(asset: optionLeg.asset.unit, money: money).size /
+            spotPrice;
   }
 
   static Iterable<CoveredCall> generateAll(Iterable<Market> allMarkets,
@@ -101,7 +101,8 @@ class CoveredCall {
           underlying: underlying,
           money: money,
           expiration: call.asset.toExpirable.expiration,
-          spotPrice: spotMarket.midPrice);
+          spotPrice: spotMarket.midPrice,
+          oracle: oracle);
     }
   }
 }

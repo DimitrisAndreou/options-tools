@@ -16,9 +16,9 @@ void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
 
-  browseVerticalSpreads(markets);
+  // browseVerticalSpreads(markets);
   // browseBonds(markets);
-  // browseCoveredCalls(markets);
+  browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
 
   // printOptionChain(markets);
@@ -64,9 +64,7 @@ void browseCoveredCalls(List<Market> markets) {
   print(" ============== CC ==============");
   for (CoveredCall cc in CoveredCall.generateAll(markets,
       underlying: underlying, money: money)) {
-    print(cc.toJson());
-    print("  MinValue (Risk): ${cc.analyzer.minValue.first.value}");
-    print("  MaxValue (Profit): ${cc.analyzer.maxValue.first.value}");
+    // print(cc.toJson());
   }
 }
 
