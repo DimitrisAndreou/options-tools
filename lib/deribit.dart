@@ -70,13 +70,11 @@ class Deribit {
     }
   }
 
-  static double getMinimumContract(DeribitCoin coin) {
-    switch (coin) {
-      case DeribitCoin.BTC:
-        return 0.1;
-      default:
-        return 1.0;
+  static double getOptionSize(Commodity underlying) {
+    if (underlying.name == DeribitCoin.BTC.name) {
+      return 0.1;
     }
+    return 1.0;
   }
 }
 

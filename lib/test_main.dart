@@ -131,8 +131,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
 
       for (final market in options) {
         final option = market.asset.toOption;
-        final size = Deribit.getMinimumContract(
-            DeribitCoin.values.byName(option.underlying.name));
+        final size = Deribit.getOptionSize(option.underlying);
 
         // includes +premium ($)
         final shortCall = market.short(slippage).position(1.0);
