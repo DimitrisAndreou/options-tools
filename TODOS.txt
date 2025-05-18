@@ -1,3 +1,14 @@
+
+Some utility where you "create the options table":
+expiry ->
+  future [for index price and interest]
+  strikes ->
+    1 call, 1 put
+
+You almost did this for VerticalSpread, but didn't add futures yet.
+
+*********
+
 A Position.... is an asset?! Would simplify a lot! But careful!
 No, if position was an asset, you could pass a position
 for an asset, and then wonder why the size got ignored...

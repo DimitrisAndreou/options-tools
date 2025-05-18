@@ -208,7 +208,11 @@ function coveredCallToBreakEvenChart(data, divId) {
       tooltip: {
         show: true,
         formatter: () => {
-          return `The spot strategy <BR>(no breakeven reduction, no max gain cap)`;
+          return `
+            'Just hodl' strategy:
+            <BR>You give up no potential profits
+            <BR>and you get no breakeven reduction
+          `;
         }
       },
     }],
