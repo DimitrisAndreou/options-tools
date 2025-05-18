@@ -15,6 +15,13 @@ const dollarFmt = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0
 });
 
+// TODO: Digits of rounding should depend on the underlying.
+const underlyingFmt = new Intl.NumberFormat('en-US', {
+  style: 'decimal',
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3
+});
+
 const priceFmt = new Intl.NumberFormat('en-US', {
   style: 'percent',
   maximumFractionDigits: 1,
@@ -27,6 +34,11 @@ const ccTooltipFormatter = function (params) {
     <b>${value.call}</b><br/>
     Breakeven: <b>${percentFmt.format(value.breakEvenAsChange - 1.0)}</b> (at <b>${dollarFmt.format(value.breakEven)}</b>)<br/>
     Max Profit: <b>${percentFmt.format(value.maxYield - 1.0)}</b> (at <b>>=${dollarFmt.format(value.maxYieldAt)}</b>)<br/>
+    Minimum position: <b>${dollarFmt.format(-value.moneySize)}</b><br>
+    <ul>
+    <li>Buy ${underlyingFmt.format(value.boughtUnderlyingSize)} ${value.underlying}</li>
+    <li>Sell ${-value.callSize} call(s) (for ${underlyingFmt.format(value.premiumUnderlyingSize)} ${value.underlying})</li>
+    </ul>
     Days To Expiration: <b>${value.DTE}</b>
   `;
 };
@@ -129,7 +141,7 @@ function coveredCallToBreakEvenChart(data, divId) {
   // TODO: share this code across charts.
   const dataset = {
     id: "original",
-    dimensions: ["maxYieldAt", "breakEven", "breakEvenAsChange", "maxYield", "call", "DTE", "timeValue", "equivalentHodlerSellPrice"],
+    dimensions: ["breakEven", "DTE", "equivalentHodlerSellPrice"],
     source: data
   };
   const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
@@ -275,7 +287,7 @@ function coveredCallToTimeValueChart(data, divId) {
   const spotPrice = extractSpotPrice(data);
   const dataset = {
     id: "original",
-    dimensions: ["maxYieldAt", "breakEven", "breakEvenAsChange", "maxYield", "call", "DTE", "timeValue", "equivalentHodlerSellPrice"],
+    dimensions: ["timeValue", "DTE", "equivalentHodlerSellPrice"],
     source: data
   };
   const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];

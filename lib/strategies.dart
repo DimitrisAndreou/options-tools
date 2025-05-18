@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:collection';
 
 import 'assets.dart';
+import 'deribit.dart';
 import 'markets.dart';
 import 'oracle.dart';
 import 'position_analyzer.dart';
@@ -31,7 +32,8 @@ class CoveredCall {
 
   Map<String, dynamic> toJson() => {
         'underlying': underlying.name,
-        'underlyingSize': underlyingLeg.size,
+        'boughtUnderlyingSize': -moneyLeg.size / spotPrice,
+        'premiumUnderlyingSize': -optionLeg.size + moneyLeg.size / spotPrice,
         'money': money.name,
         'moneySize': moneyLeg.size,
         'spotPrice': spotPrice,
@@ -86,6 +88,7 @@ class CoveredCall {
       {required Commodity underlying,
       required Commodity money,
       double slippage = 0.5}) sync* {
+    final size = Deribit.getOptionSize(underlying);
     final oracle = Oracle.fromMarkets(allMarkets);
     final spotMarket = oracle.marketFor(asset: underlying, money: money);
     for (final call in allMarkets
@@ -95,8 +98,10 @@ class CoveredCall {
         .sortByStrike(Order.asc)
         .sortByExpiration(Order.asc)) {
       yield CoveredCall._(
-          SyntheticAsset(
-              [call.short(slippage).unit, spotMarket.long(slippage).unit]).unit,
+          SyntheticAsset([
+            call.short(slippage).position(size),
+            spotMarket.long(slippage).position(size)
+          ]).unit,
           underlying: underlying,
           money: money,
           expiration: call.asset.toExpirable.expiration,
