@@ -31,6 +31,40 @@ const ccTooltipFormatter = function (params) {
   `;
 };
 
+const spotPriceSeries = function(spotPrice) {
+  return {
+    type: 'line',
+    data: [],
+    markLine: {
+      symbol: 'none',
+      label: {
+        show: false,
+      },
+      lineStyle: {
+        type: 'dashed',
+        color: 'yellow',
+        width: 1,
+      },
+      tooltip: {
+        show: true,
+        formatter: () => {
+          return `
+            'Just hodl' strategy (no options):
+            <BR>You give up no potential profits
+            <BR>and you get no breakeven reduction.
+            <BR>Your breakeven is ${dollarFmt.format(spotPrice)}
+          `;
+        },
+      },
+      data: [
+        {
+          xAxis: spotPrice,
+        }
+      ]
+    },
+  };
+};
+
 const axisTitleNameTextStyle = {
   color: 'yellow',
   fontFamily: 'monospace',
@@ -215,7 +249,7 @@ function coveredCallToBreakEvenChart(data, divId) {
           `;
         }
       },
-    }],
+    }, spotPriceSeries(spotPrice)],
     legend: {
       ...legend,
       selected: selectDTEs(uniqueDTEs, 15),
@@ -321,7 +355,7 @@ function coveredCallToTimeValueChart(data, divId) {
       label: {
         show: false
       }
-    }))],
+    })), spotPriceSeries(spotPrice)],
     legend: {
       ...legend,
       selected: selectDTEs(uniqueDTEs, 15),

@@ -6,6 +6,7 @@ expiry ->
     1 call, 1 put
 
 You almost did this for VerticalSpread, but didn't add futures yet.
+If you can't find a future, you can seamlessly add a synthetic future! Via the best (least slippage) strike.
 
 *********
 
