@@ -28,7 +28,8 @@ class Deribit {
   Deribit._();
 
   static Future<List<Market>> fetchMarkets(
-      List<DeribitCoin> coins, UrlFetcher urlFetcher) async {
+      List<DeribitCoin> coins, UrlFetcher urlFetcher,
+      {void Function(ListedInstrument instr, String)? errorListener}) async {
     final coinToResponse = {};
     for (final coin in coins) {
       // Hit Deribit sequentially; maybe less likely to get throttled.
@@ -51,7 +52,7 @@ class Deribit {
     };
     return mostRecents.values
         .followedBy(_implicitUsdInstruments(["USDC", "USDT"]))
-        .map((instrument) => instrument.toMarket())
+        .map((instrument) => instrument.toMarket(errorListener: errorListener))
         .nonNulls
         .toList();
   }
@@ -80,11 +81,12 @@ class Deribit {
 }
 
 extension ListedInstrumentDeribitUtils on ListedInstrument {
-  Market? toMarket({void Function(String)? errorListener}) {
-    final errorsSink = errorListener ?? (error) {};
+  Market? toMarket(
+      {void Function(ListedInstrument instr, String)? errorListener}) {
+    final errorsSink = errorListener ?? (instr, error) {};
     // TODO: produced assets might want a reference to this DeribitInstrument
     if (bid_price == null || ask_price == null) {
-      errorsSink("No bid or no ask");
+      errorsSink(this, "No bid or no ask");
       // TODO: can use markPrice +- defaultSlippage
       return null;
     }
@@ -96,13 +98,13 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
 
     Match? match = _instrumentRegex.firstMatch(instrument_name);
     if (match == null) {
-      errorsSink("UNPROCESSED: $instrument_name");
+      errorsSink(this, "UNPROCESSED: $instrument_name");
       return null;
     }
     final String? strat = match.group(2);
     if (strat != null) {
       // A custom strategy or a perpetual; ignore.
-      errorsSink("Ignoring strat: $instrument_name");
+      errorsSink(this, "Ignoring strat: $instrument_name");
       return null;
     }
     final String? dates = match.group(3);
@@ -113,12 +115,12 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
     final String assetNames = match.group(1)!;
     final assetsList = assetNames.split('_');
     if (assetsList.length != 1) {
-      errorsSink("Multiple assets: $assetsList");
+      errorsSink(this, "Multiple assets: $assetsList");
       return null;
     }
     final datesList = dates.split('_');
     if (datesList.length != 1) {
-      errorsSink("Multiple dates: $datesList");
+      errorsSink(this, "Multiple dates: $datesList");
       return null;
     }
     final expirationDate = _parseDate(datesList.first);
@@ -128,7 +130,7 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
     if (strikes == null) {
       // A dated future.
       if (optionType != null) {
-        errorsSink("A dated future with an option type?!");
+        errorsSink(this, "A dated future with an option type?!");
         return null;
       }
       return makeMarket(DatedFuture(instrument_name,
@@ -138,13 +140,13 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
     }
     final strikesList = strikes.split('_');
     if (strikesList.length != 1) {
-      errorsSink("An option with multiple strikes");
+      errorsSink(this, "An option with multiple strikes");
       return null;
     }
     final strike = double.parse(strikesList.first);
 
     if (optionType == null) {
-      errorsSink("An option without a type");
+      errorsSink(this, "An option without a type");
       return null;
     }
     final bool isPut = optionType == "P";

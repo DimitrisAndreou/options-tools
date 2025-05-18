@@ -26,7 +26,9 @@ Future<List<Market>> deribitMarkets() async {
   return await Deribit.fetchMarkets(
       // TODO: add SOL, PAXG, XRP
       [DeribitCoin.BTC, DeribitCoin.ETH],
-      _urlFetcher);
+      _urlFetcher, errorListener: (instr, error) {
+    /* If instruments are missing, add debugging code here */
+  });
 }
 
 Future<String> coveredCalls(String ticker, double slippage) async {

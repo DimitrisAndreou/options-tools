@@ -25,11 +25,9 @@ const ccTooltipFormatter = function (params) {
   const value = params.value;
   return `
     <b>${value.call}</b><br/>
-    Max Profit At: $${value.maxYieldAt}<br/>
-    Break Even: ${dollarFmt.format(value.breakEven)} (${percentFmt.format(value.breakEvenAsChange - 1.0)})<br/>
-    Max Profit: ${percentFmt.format(value.maxYield - 1.0)}<br/>
-    Time Value: ${percentFmt.format(value.timeValue)}<br/>
-    DTE: ${value.DTE}
+    Breakeven: <b>${percentFmt.format(value.breakEvenAsChange - 1.0)}</b> (at <b>${dollarFmt.format(value.breakEven)}</b>)<br/>
+    Max Profit: <b>${percentFmt.format(value.maxYield - 1.0)}</b> (at <b>>=${dollarFmt.format(value.maxYieldAt)}</b>)<br/>
+    Days To Expiration: <b>${value.DTE}</b>
   `;
 };
 
@@ -309,7 +307,6 @@ function coveredCallToTimeValueChart(data, divId) {
       name: ds.label,
       datasetId: ds.id,
       encode: {
-        // x: 'maxYieldAt',
         x: 'equivalentHodlerSellPrice',
         y: 'timeValue'
       },
