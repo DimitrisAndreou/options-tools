@@ -28,19 +28,26 @@ const priceFmt = new Intl.NumberFormat('en-US', {
   signDisplay: 'always',
 });
 
+const tooltipStyle = {
+  textStyle: {
+    color: 'yellow',
+    fontFamily: 'monospace'
+  },
+  backgroundColor: '#131e42', // optional, for contrast
+  borderColor: 'yellow',
+};
+
 const ccTooltipFormatter = function (params) {
   const value = params.value;
   return `
-    <b>${value.call}</b><br/>
+    <b>${value.call}</b> (<b>${value.DTE}</b> days)<br/>
     Breakeven: <b>${percentFmt.format(value.breakEvenAsChange - 1.0)}</b> (at <b>${dollarFmt.format(value.breakEven)}</b>)<br/>
-    Max Profit: <b>${percentFmt.format(value.maxYield - 1.0)}</b> (at <b>>=${dollarFmt.format(value.maxYieldAt)}</b>)<br/>
     Minimum position: <b>${dollarFmt.format(-value.moneySize)}</b><br>
-    <ul>
-    <li>Buy ${underlyingFmt.format(value.boughtUnderlyingSize)} ${value.underlying}</li>
-    <li>Sell ${-value.callSize} call(s) (for ${underlyingFmt.format(value.premiumUnderlyingSize)} ${value.underlying})</li>
-    </ul>
-    Days To Expiration: <b>${value.DTE}</b>
-  `;
+    Max Profit: <b>${percentFmt.format(value.maxYield - 1.0)}</b> (<b>${dollarFmt.format(value.maxProfit)}</b>) at <b>>=${dollarFmt.format(value.maxYieldAt)}</b>)<br/>
+    <ul style="margin: 0">
+    <li>Buy <b>${underlyingFmt.format(value.boughtUnderlyingSize)}</b> ${value.underlying}</li>
+    <li>Sell <b>${-value.callSize}</b> call(s), for <b>${underlyingFmt.format(value.premiumUnderlyingSize)}</b> ${value.underlying}</li>
+    </ul>`;
 };
 
 const spotPriceSeries = function(spotPrice) {
@@ -201,13 +208,8 @@ function coveredCallToBreakEvenChart(data, divId) {
       scale: true
     },
     tooltip: {
+      ...tooltipStyle,
       formatter: ccTooltipFormatter,
-      textStyle: {
-        color: 'yellow',
-        fontFamily: 'monospace'
-      },
-      backgroundColor: '#333', // optional, for contrast
-      borderColor: 'yellow'
     },
     series: [...datasetPerDTE.map(ds => ({
       type: 'line',
@@ -344,13 +346,8 @@ function coveredCallToTimeValueChart(data, divId) {
       scale: true
     },
     tooltip: {
+      ...tooltipStyle,
       formatter: ccTooltipFormatter,
-      textStyle: {
-        color: 'yellow',
-        fontFamily: 'monospace'
-      },
-      backgroundColor: '#333', // optional, for contrast
-      borderColor: 'yellow'
     },
     series: [...datasetPerDTE.map(ds => ({
       type: 'line',
@@ -477,6 +474,7 @@ function verticalSpreadsChart(data, divId) {
       scale: true
     },
     tooltip: {
+      ...tooltipStyle,
       formatter: function (params) {
         const value = params.value;
         return `
@@ -488,12 +486,6 @@ function verticalSpreadsChart(data, divId) {
           DTE: ${value.DTE}
         `;
       },
-      textStyle: {
-        color: 'yellow',
-        fontFamily: 'monospace'
-      },
-      backgroundColor: '#333', // optional, for contrast
-      borderColor: 'yellow'
     },
     series: [...datasetPerDTE.map(ds => ({
       type: 'line',

@@ -42,8 +42,8 @@ const ccTooltipFormatter = function (params) {
   return `
     <b>${value.call}</b> (<b>${value.DTE}</b> days)<br/>
     Breakeven: <b>${percentFmt.format(value.breakEvenAsChange - 1.0)}</b> (at <b>${dollarFmt.format(value.breakEven)}</b>)<br/>
-    Max Profit: <b>${percentFmt.format(value.maxYield - 1.0)}</b> (at <b>>=${dollarFmt.format(value.maxYieldAt)}</b>)<br/>
     Minimum position: <b>${dollarFmt.format(-value.moneySize)}</b><br>
+    Max Profit: <b>${percentFmt.format(value.maxYield - 1.0)}</b> (<b>${dollarFmt.format(value.maxProfit)}</b>) at <b>>=${dollarFmt.format(value.maxYieldAt)}</b>)<br/>
     <ul style="margin: 0">
     <li>Buy <b>${underlyingFmt.format(value.boughtUnderlyingSize)}</b> ${value.underlying}</li>
     <li>Sell <b>${-value.callSize}</b> call(s), for <b>${underlyingFmt.format(value.premiumUnderlyingSize)}</b> ${value.underlying}</li>

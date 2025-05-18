@@ -27,6 +27,7 @@ class CoveredCall {
   late final double maxYieldAtChange;
   late final double yieldIfPriceUnchanged;
   late final double equivalentHodlerSellPrice;
+  late final double maxProfit; // of minimum position.
 
   late final double? timeValue;
 
@@ -36,6 +37,7 @@ class CoveredCall {
         'premiumUnderlyingSize': -optionLeg.size + moneyLeg.size / spotPrice,
         'money': money.name,
         'moneySize': moneyLeg.size,
+        'maxProfit': maxProfit,
         'spotPrice': spotPrice,
         'call': optionLeg.asset.name,
         'callSize': optionLeg.size,
@@ -73,6 +75,7 @@ class CoveredCall {
     breakeven = analyzer.breakevens.singleOrNull?.price;
     breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
     maxYield = analyzer.maxYield;
+    maxProfit = analyzer.maxProfit;
     // We know that in CCs we're looking at a single max value segment
     maxYieldAt = analyzer.maxValue.single.price.fromPrice;
     maxYieldAtChange = maxYieldAt / spotPrice;
