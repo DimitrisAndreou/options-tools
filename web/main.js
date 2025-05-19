@@ -29,6 +29,7 @@ const priceFmt = new Intl.NumberFormat('en-US', {
 });
 
 const tooltipStyle = {
+  position: 'top',
   textStyle: {
     color: 'yellow',
     fontFamily: 'monospace'
