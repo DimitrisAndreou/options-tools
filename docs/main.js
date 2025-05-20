@@ -88,7 +88,7 @@ const spotPriceSeries = function(spotPrice) {
 const axisTitleNameTextStyle = {
   color: 'yellow',
   fontFamily: 'monospace',
-  fontSize: 16
+  fontSize: 18
 };
 const yAxisTitleNameTextStyle = {
   ...axisTitleNameTextStyle,
@@ -97,12 +97,12 @@ const yAxisTitleNameTextStyle = {
 const axisXValuesNameTextStyle = {
   color: 'lightgreen',
   fontFamily: 'monospace',
-  fontSize: 14,
+  fontSize: 16,
 };
 const axisYValuesNameTextStyle = {
   color: 'orange',
   fontFamily: 'monospace',
-  fontSize: 14,
+  fontSize: 16,
 };
 const axisLine = {
   lineStyle: {
@@ -177,7 +177,7 @@ function coveredCallToBreakEvenChart(data, divId) {
       type: 'value',
       name: 'Max Profit',
       nameLocation: 'center',
-      nameGap: 40,
+      nameGap: 50,
       nameTextStyle: axisTitleNameTextStyle,
       axisLabel: {
         ...axisXValuesNameTextStyle,
@@ -221,7 +221,7 @@ function coveredCallToBreakEvenChart(data, divId) {
         y: 'breakEven'
       },
       symbolSize: function (data) {
-        return 5;
+        return 8;
       },
       emphasis: {
         symbolSize: function (data) {
@@ -318,7 +318,7 @@ function coveredCallToTimeValueChart(data, divId) {
       type: 'value',
       name: 'Max Profit',
       nameLocation: 'center',
-      nameGap: 40,
+      nameGap: 50,
       nameTextStyle: axisTitleNameTextStyle,
       axisLabel: {
         ...axisXValuesNameTextStyle,
