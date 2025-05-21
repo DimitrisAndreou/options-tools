@@ -65,18 +65,18 @@ const ccTooltipFormatter = function (params) {
   const whatToSell = `${-value.callSize}`;
   const whatToSellFor = `${underlyingFmt.format(value.premiumUnderlyingSize)}</b> ${value.underlying}`;
   return `
-    <b>${neutral(value.call)}</b> (<b>${neutral(DTE)}</b> days)<br/>
-    ${label('Breakeven')}: <b>${good(breakeven)}</b>
-      (at <b>${good(breakevenAt)}</b>)<br/>
+    ${neutral(value.call)} (${neutral(DTE)} days)<br/>
+    ${label('Breakeven')}: ${neutral(breakeven)}
+      (at ${neutral(breakevenAt)})<br/>
     ${label('Max Profit')}:
     <ul style="margin: 0">
-    <li><b>${good(maxProfitPercent)}</b> (<b>${good(maxProfit)}</b>)
-    <li>at <b>>=${good(maxProfitAt)} (${good(maxProfitAtRelative)})</b>
+    <li>${good(maxProfitPercent)} (${good(maxProfit)})
+    <li>at >=${neutral(maxProfitAt)} (${neutral(maxProfitAtRelative)})
     </ul>
     ${label('Instructions')}:
     <ul style="margin: 0">
-    <li>Buy <b>${good(whatToBuy)}</b>, for <b>${bad(whatToBuyFor)}</b></li>
-    <li>Sell <b>${bad(whatToSell)}</b> call(s), for <b>${good(whatToSellFor)}</li>
+    <li>Buy ${good(whatToBuy)}, for ${bad(whatToBuyFor)}</li>
+    <li>Sell ${bad(whatToSell)} call(s), for ${good(whatToSellFor)}</li>
     </ul>`;
 };
 
