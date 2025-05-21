@@ -31,23 +31,52 @@ const priceFmt = new Intl.NumberFormat('en-US', {
 const tooltipStyle = {
   position: 'top',
   textStyle: {
-    color: 'yellow',
+    color: '#fcd34d',
     fontFamily: 'monospace'
   },
-  backgroundColor: '#131e42', // optional, for contrast
-  borderColor: 'yellow',
+  backgroundColor: '#1e1e2f',
+  borderColor: '#fcd34d',
 };
 
+
 const ccTooltipFormatter = function (params) {
+  function label(str) {
+    return `<strong>${str}</strong>`;
+  }
+  function neutral(str) {
+    return `<strong style="color: #38bdf8;">${str}</strong>`;
+  }
+  function good(str) {
+    return `<strong style="color: #00ffa3;">${str}</strong>`;
+  }
+  function bad(str) {
+    return `<strong style="color: #ff5c5c;">${str}</strong>`;
+  }
   const value = params.value;
+  const DTE = `${value.DTE}`;
+  const breakeven = `${percentFmt.format(value.breakEvenAsChange - 1.0)}`;
+  const breakevenAt = `${dollarFmt.format(value.breakEven)}`;
+  const maxProfitPercent = `${percentFmt.format(value.maxYield - 1.0)}`;
+  const maxProfit = `${dollarFmt.format(value.maxProfit)}`;
+  const maxProfitAt = `${dollarFmt.format(value.maxYieldAt)}`;
+  const maxProfitAtRelative = `${percentFmt.format(1.0 - value.maxYieldAtChange)}`;
+  const whatToBuy = `${underlyingFmt.format(value.boughtUnderlyingSize)}</b> ${value.underlying}}`;
+  const whatToBuyFor = `${dollarFmt.format(-value.moneySize)}`;
+  const whatToSell = `${-value.callSize}`;
+  const whatToSellFor = `${underlyingFmt.format(value.premiumUnderlyingSize)}</b> ${value.underlying}`;
   return `
-    <b>${value.call}</b> (<b>${value.DTE}</b> days)<br/>
-    Breakeven: <b>${percentFmt.format(value.breakEvenAsChange - 1.0)}</b> (at <b>${dollarFmt.format(value.breakEven)}</b>)<br/>
-    Minimum position: <b>${dollarFmt.format(-value.moneySize)}</b><br>
-    Max Profit: <b>${percentFmt.format(value.maxYield - 1.0)}</b> (<b>${dollarFmt.format(value.maxProfit)}</b>) at <b>>=${dollarFmt.format(value.maxYieldAt)}</b>)<br/>
+    <b>${neutral(value.call)}</b> (<b>${neutral(DTE)}</b> days)<br/>
+    ${label('Breakeven')}: <b>${good(breakeven)}</b>
+      (at <b>${good(breakevenAt)}</b>)<br/>
+    ${label('Max Profit')}:
     <ul style="margin: 0">
-    <li>Buy <b>${underlyingFmt.format(value.boughtUnderlyingSize)}</b> ${value.underlying}</li>
-    <li>Sell <b>${-value.callSize}</b> call(s), for <b>${underlyingFmt.format(value.premiumUnderlyingSize)}</b> ${value.underlying}</li>
+    <li><b>${good(maxProfitPercent)}</b> (<b>${good(maxProfit)}</b>)
+    <li>at <b>>=${good(maxProfitAt)} (${good(maxProfitAtRelative)})</b>
+    </ul>
+    ${label('Instructions')}:
+    <ul style="margin: 0">
+    <li>Buy <b>${neutral(whatToBuy)}</b>, for <b>${bad(whatToBuyFor)}</b></li>
+    <li>Sell <b>${bad(whatToSell)}</b> call(s), for <b>${good(whatToSellFor)}</li>
     </ul>`;
 };
 
