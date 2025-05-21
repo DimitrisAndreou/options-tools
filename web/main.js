@@ -60,7 +60,7 @@ const ccTooltipFormatter = function (params) {
   const maxProfit = `${dollarFmt.format(value.maxProfit)}`;
   const maxProfitAt = `${dollarFmt.format(value.maxYieldAt)}`;
   const maxProfitAtRelative = `${percentFmt.format(1.0 - value.maxYieldAtChange)}`;
-  const whatToBuy = `${underlyingFmt.format(value.boughtUnderlyingSize)}</b> ${value.underlying}}`;
+  const whatToBuy = `${underlyingFmt.format(value.boughtUnderlyingSize)}</b> ${value.underlying}`;
   const whatToBuyFor = `${dollarFmt.format(-value.moneySize)}`;
   const whatToSell = `${-value.callSize}`;
   const whatToSellFor = `${underlyingFmt.format(value.premiumUnderlyingSize)}</b> ${value.underlying}`;
@@ -75,7 +75,7 @@ const ccTooltipFormatter = function (params) {
     </ul>
     ${label('Instructions')}:
     <ul style="margin: 0">
-    <li>Buy <b>${neutral(whatToBuy)}</b>, for <b>${bad(whatToBuyFor)}</b></li>
+    <li>Buy <b>${good(whatToBuy)}</b>, for <b>${bad(whatToBuyFor)}</b></li>
     <li>Sell <b>${bad(whatToSell)}</b> call(s), for <b>${good(whatToSellFor)}</li>
     </ul>`;
 };
