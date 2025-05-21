@@ -30,6 +30,7 @@ const priceFmt = new Intl.NumberFormat('en-US', {
 
 const tooltipStyle = {
   position: 'top',
+  enterable: true,
   textStyle: {
     color: '#fcd34d',
     fontFamily: 'monospace'
@@ -59,7 +60,7 @@ const ccTooltipFormatter = function (params) {
   const maxProfitPercent = `${percentFmt.format(value.maxYield - 1.0)}`;
   const maxProfit = `${dollarFmt.format(value.maxProfit)}`;
   const maxProfitAt = `${dollarFmt.format(value.maxYieldAt)}`;
-  const maxProfitAtRelative = `${percentFmt.format(1.0 - value.maxYieldAtChange)}`;
+  const maxProfitAtRelative = `${percentFmt.format(value.maxYieldAtChange - 1.0)}`;
   const whatToBuy = `${underlyingFmt.format(value.boughtUnderlyingSize)}</b> ${value.underlying}`;
   const whatToBuyFor = `${dollarFmt.format(-value.moneySize)}`;
   const whatToSell = `${-value.callSize}`;
