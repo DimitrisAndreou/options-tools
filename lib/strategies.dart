@@ -10,14 +10,15 @@ import 'position_analyzer.dart';
 class CoveredCall {
   final Commodity underlying;
   final Commodity money;
+  final Option option;
   final DateTime expiration;
 
   final PositionAnalyzer analyzer;
 
-  late final Position strategy;
-  late final Position optionLeg;
-  late final Position underlyingLeg;
-  late final Position moneyLeg;
+  final Position strategy;
+  final Position optionLeg;
+  final Position underlyingLeg;
+  final Position moneyLeg;
 
   final double spotPrice;
   late final double? breakeven;
@@ -58,20 +59,15 @@ class CoveredCall {
   CoveredCall._(this.strategy,
       {required this.underlying,
       required this.money,
+      required this.option,
       required this.expiration,
       required this.spotPrice,
       required Oracle oracle})
       : analyzer =
-            PositionAnalyzer(strategy, underlying: underlying, money: money) {
-    for (final p in strategy.decompose()) {
-      if (p.asset == money) {
-        moneyLeg = p;
-      } else if (p.asset == underlying) {
-        underlyingLeg = p;
-      } else {
-        optionLeg = p;
-      }
-    }
+            PositionAnalyzer(strategy, underlying: underlying, money: money),
+        moneyLeg = strategy.innerPositionOf(money),
+        underlyingLeg = strategy.innerPositionOf(underlying),
+        optionLeg = strategy.innerPositionOf(option) {
     breakeven = analyzer.breakevens.singleOrNull?.price;
     breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
     maxYield = analyzer.maxYield;
@@ -107,6 +103,7 @@ class CoveredCall {
           ]).unit,
           underlying: underlying,
           money: money,
+          option: call.asset.toOption,
           expiration: call.asset.toExpirable.expiration,
           spotPrice: spotMarket.midPrice,
           oracle: oracle);
@@ -117,12 +114,13 @@ class CoveredCall {
 class SyntheticBond {
   final Commodity underlying;
   final Commodity money;
+  final DatedFuture future;
   final DateTime expiration;
 
-  late final Position strategy;
-  late final Position futureLeg;
-  late final Position underlyingLeg;
-  late final Position moneyLeg;
+  final Position strategy;
+  final Position futureLeg;
+  final Position underlyingLeg;
+  final Position moneyLeg;
 
   final double spotPrice;
   late final double interestRate;
@@ -144,18 +142,13 @@ class SyntheticBond {
   SyntheticBond._(this.strategy,
       {required this.underlying,
       required this.money,
+      required this.future,
       required this.expiration,
       required this.spotPrice,
-      required Oracle oracle}) {
-    for (final p in strategy.decompose()) {
-      if (p.asset == money) {
-        moneyLeg = p;
-      } else if (p.asset == underlying) {
-        underlyingLeg = p;
-      } else {
-        futureLeg = p;
-      }
-    }
+      required Oracle oracle})
+      : moneyLeg = strategy.innerPositionOf(money),
+        underlyingLeg = strategy.innerPositionOf(underlying),
+        futureLeg = strategy.innerPositionOf(future) {
     final intrinsic = oracle.intrinsicValue(asset: futureLeg, money: money);
     final extrinsic = oracle.extrinsicValue(asset: futureLeg, money: money);
     interestRate = extrinsic / intrinsic;
@@ -180,6 +173,7 @@ class SyntheticBond {
               .unit,
           underlying: underlying,
           money: money,
+          future: future.asset.toDatedFuture,
           expiration: future.asset.toExpirable.expiration,
           spotPrice: spotPrice,
           oracle: oracle);

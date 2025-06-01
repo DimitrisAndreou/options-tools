@@ -2,13 +2,20 @@ import 'dart:collection';
 import 'package:collection/collection.dart';
 
 abstract class Decomposable {
+  const Decomposable();
+
   // Decompose this asset into a list of SimpleAsset positions.
   // Iterable of Positions instead of Assets because it's important
   // to capture the *sign* and the *proportion* of the composed assets.
   Iterable<Position> decompose();
+
+  // Returns the position of decompose() where the asset is the specified one
+  // (or an empty position if it is not found).
+  Position innerPositionOf(Asset asset) =>
+      decompose().firstWhereOrNull((p) => p.asset == asset) ?? asset.empty;
 }
 
-sealed class Asset implements Decomposable {
+sealed class Asset extends Decomposable {
   const Asset();
 
   @override
@@ -17,6 +24,7 @@ sealed class Asset implements Decomposable {
   String get name;
 
   Position get unit => Position(this, 1.0);
+  Position get empty => Position(this, 0.0);
   Position position(double size) => Position(this, size);
 
   bool get isExpirable => this is Expirable;
@@ -27,7 +35,7 @@ sealed class Asset implements Decomposable {
   Option get toOption => this as Option;
 }
 
-class Position implements Decomposable {
+class Position extends Decomposable {
   final Asset asset;
   final double size;
 
@@ -73,6 +81,8 @@ class Position implements Decomposable {
 
 // NamedAsset is an asset that can be traded directly;
 // it doesn't consist of a combination of other assets.
+// TODO: this can be something richer; e.g. an object that also has a url
+// to the tradeable instrument.
 abstract class NamedAsset extends Asset {
   final String _name;
   const NamedAsset(String name) : _name = name;
@@ -82,7 +92,7 @@ abstract class NamedAsset extends Asset {
 
   @override
   Iterable<Position> decompose() sync* {
-    yield position(1.0);
+    yield unit;
   }
 
   @override
@@ -114,9 +124,6 @@ class SyntheticAsset extends Asset {
   final Map<Asset, Position> _assetPositions = HashMap();
 
   SyntheticAsset(Iterable<Position> positions) {
-    // It's important that zero positions do not disappear. E.g. the money leg
-    // of some strategy might happen to be zero, but it's important to be
-    // able to detect the money leg via decompose().
     for (final inner in positions.expand((p) => p.decompose())) {
       _assetPositions[inner.asset] =
           (_assetPositions[inner.asset] ?? inner.empty()) + inner.size;
@@ -125,6 +132,10 @@ class SyntheticAsset extends Asset {
 
   @override
   Iterable<Position> decompose() => _assetPositions.values;
+
+  @override
+  Position innerPositionOf(Asset asset) =>
+      _assetPositions[asset] ?? asset.empty;
 
   @override
   String get name => "SyntheticAsset: ${_assetPositions.values}";

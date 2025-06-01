@@ -1,3 +1,30 @@
+*****
+For covered calls, it's inelegant that you manually had to reconstruct
+the trades that the user has to take.
+It would be easier to have this primitive:
+AssetC = AssetA - AssetB
+
+Similar to how you can merge (add) assets to create a synthetic one.
+
+That way, you could say:
+Covered Call - tradeWhereYouSellTheCall
+what would remain would be the "buy spot" leg.
+**************
+
+Covered calls, extra data points:
+ - probability of profit
+ - probability of underperforming spot hodling
+
+How? This relies on VerticalSpreads.
+Maybe combine all strategies in a single structure? (e.g. indexed by strike).
+Or: create an accumulating distribution of probabilities (per expiration).
+Maybe embed it in Oracle.
+
+******
+ShortPut - CoveredCall? Show the difference?
+
+******
+
 
 Some utility where you "create the options table":
 expiry ->
@@ -10,26 +37,6 @@ If you can't find a future, you can seamlessly add a synthetic future! Via the b
 
 *********
 
-Asset is a position! A position of size 1.
-You can always pass an Asset anywhere a position is needed
-(it would mean: size = 1).
-
-Then, you should remove method Asset.position().
-One could just multiply asset:
-asset * size (and get a new position).
-
-Asset is Position
-Commodity is Asset
-DatedFuture is Asset
-Option is asset
-SyntheticAsset is Asset
-
-ALSO, this allows merging Position with Decomposable.
-And also adding a method like "innerPositionOf(asset)"
-where it can find (in a complex position) the size
-of a commodity (underlying, money) or other asset.
-
-****************
 Position operator+(double or Position?)
 maybe safer with Position: always check you don't mix apples with oranges.
 operator/ is already implemented like that.
