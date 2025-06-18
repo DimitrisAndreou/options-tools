@@ -25,6 +25,10 @@ ShortPut - CoveredCall? Show the difference?
 
 ******
 
+Covered Call   AND long call? This is the full spectrum.
+
+******
+
 
 Some utility where you "create the options table":
 expiry ->
