@@ -37,15 +37,15 @@ abstract class Market {
   // and you end up with a position of the strategy, including a
   // single (merged) money position (the cost basis).
   Asset long([double slippage = 0.5]) => SyntheticAsset(
-      [asset.position(1.0), money.position(-buyPrice(slippage))]);
+      [asset.withSize(1.0), money.withSize(-buyPrice(slippage))]);
   Asset short([double slippage = 0.5]) => SyntheticAsset(
-      [asset.position(-1.0), money.position(sellPrice(slippage))]);
+      [asset.withSize(-1.0), money.withSize(sellPrice(slippage))]);
   Position exchange(Position assetOrMoney, [double slippage = 0.5]) =>
       switch (assetOrMoney) {
         Position(asset: final a, size: final s) when a == asset =>
-          money.position(sellPrice(slippage) * s),
+          money.withSize(sellPrice(slippage) * s),
         Position(asset: final m, size: final s) when m == money =>
-          asset.position(buyPrice(slippage) * s),
+          asset.withSize(buyPrice(slippage) * s),
         final x => throw ArgumentError(
             "assetOrMoney should have been either asset($asset) or "
             "money($money), was: $x"),

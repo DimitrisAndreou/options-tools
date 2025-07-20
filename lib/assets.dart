@@ -8,6 +8,8 @@ abstract class Decomposable {
   // Iterable of Positions instead of Assets because it's important
   // to capture the *sign* and the *proportion* of the composed assets.
   Iterable<Position> decompose();
+  // TODO: if you use decomposeAsSingle(), or decompose().single
+  // then you can replace Position.merge(Iterable<Position>).
 
   // Returns the position of decompose() where the asset is the specified one
   // (or an empty position if it is not found).
@@ -25,7 +27,7 @@ sealed class Asset extends Decomposable {
 
   Position get unit => Position(this, 1.0);
   Position get empty => Position(this, 0.0);
-  Position position(double size) => Position(this, size);
+  Position withSize(double size) => Position(this, size);
 
   bool get isExpirable => this is Expirable;
   Expirable get toExpirable => this as Expirable;

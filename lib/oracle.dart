@@ -26,7 +26,7 @@ sealed class Oracle {
                   asset: DatedFuture(underlying: final underlying),
                   size: final size
                 ) =>
-                  underlying.position(size),
+                  underlying.withSize(size),
                 Position(
                   asset: Option(
                     underlying: final underlying,
@@ -37,7 +37,7 @@ sealed class Oracle {
                   ),
                   size: final size
                 ) =>
-                  strikeMoney.position(size *
+                  strikeMoney.withSize(size *
                       lot *
                       max(
                           0,

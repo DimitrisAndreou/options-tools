@@ -134,13 +134,13 @@ void printGeometricCoveredCalls(List<Market> markets) {
         final size = Deribit.getOptionSize(option.underlying);
 
         // includes +premium ($)
-        final shortCall = market.short(slippage).position(1.0);
+        final shortCall = market.short(slippage).withSize(1.0);
         // includes -cost basis ($)
-        final longSpot = spotMarket.long(slippage).position(1.0);
+        final longSpot = spotMarket.long(slippage).withSize(1.0);
 
         // Simplifies! +Underlying, -call, -$
         final coveredCall = SyntheticAsset([shortCall, longSpot]);
-        final analyzer = PositionAnalyzer(coveredCall.position(size),
+        final analyzer = PositionAnalyzer(coveredCall.withSize(size),
             underlying: option.underlying, money: usd);
         print("${option.name.toString().padLeft(21)}: "
             "breakeven=${analyzer.breakevens}, "

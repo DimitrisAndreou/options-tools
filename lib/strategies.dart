@@ -98,8 +98,8 @@ class CoveredCall {
         .sortByExpiration(Order.asc)) {
       yield CoveredCall._(
           SyntheticAsset([
-            call.short(slippage).position(size),
-            spotMarket.long(slippage).position(size)
+            call.short(slippage).withSize(size),
+            spotMarket.long(slippage).withSize(size)
           ]).unit,
           underlying: underlying,
           money: money,
