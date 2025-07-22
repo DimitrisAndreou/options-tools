@@ -5,59 +5,56 @@ import 'assets.dart';
 import 'markets.dart';
 
 sealed class Oracle {
-  // TODO: once asset becomes a position, make this take a Position.
   Market marketFor({required Asset asset, required Commodity money});
 
-  Position markToMarket(
-          {required Position asset,
+  Line markToMarket(
+          {required Position position,
           required Commodity money,
           double slippage = 0.5}) =>
-      Position.merge(asset.decompose().map((innerPosition) =>
-          marketFor(asset: innerPosition.asset, money: money)
-              .exchange(innerPosition)));
+      Position.mergeAll(position.decompose().map((line) =>
+          marketFor(asset: line.asset, money: money).sell(slippage) *
+          line.size)).singleton(money);
 
-  Position intrinsicValue(
-          {required Position asset, required Commodity money}) =>
-      Position.merge(asset
-          .decompose()
-          .map((innerPosition) => switch (innerPosition) {
-                Position(asset: Commodity()) => innerPosition,
-                Position(
-                  asset: DatedFuture(underlying: final underlying),
-                  size: final size
-                ) =>
-                  underlying.withSize(size),
-                Position(
-                  asset: Option(
-                    underlying: final underlying,
-                    strike: final strike,
-                    money: final strikeMoney,
-                    isPut: final isPut,
-                    contractLot: final lot
-                  ),
-                  size: final size
-                ) =>
-                  strikeMoney.withSize(size *
-                      lot *
-                      max(
-                          0,
-                          (isPut ? 1 : -1) *
-                              (strike -
-                                  marketFor(
-                                          asset: underlying, money: strikeMoney)
-                                      .midPrice))),
-                _ => throw AssertionError(
-                    "Unexpected asset from decompose(): ${innerPosition.asset}"),
-              })
-          .map((commodityPosition) =>
-              markToMarket(asset: commodityPosition, money: money)));
+  Line intrinsicValue({required Position position, required Commodity money}) =>
+      Position.mergeAll(position
+              .decompose()
+              .map((line) => switch (line) {
+                    Line(asset: Commodity()) => line,
+                    Line(
+                      asset: DatedFuture(underlying: final underlying),
+                      size: final size
+                    ) =>
+                      underlying.pos(size),
+                    Line(
+                      asset: Option(
+                        underlying: final underlying,
+                        strike: final strike,
+                        money: final strikeMoney,
+                        isPut: final isPut,
+                        contractLot: final lot
+                      ),
+                      size: final size
+                    ) =>
+                      strikeMoney.pos(size *
+                          lot *
+                          max(
+                              0,
+                              (isPut ? 1 : -1) *
+                                  (strike -
+                                      marketFor(
+                                              asset: underlying,
+                                              money: strikeMoney)
+                                          .midPrice))),
+                    _ => throw AssertionError(
+                        "Unexpected asset from decompose(): ${line.asset}"),
+                  })
+              .map((line) => markToMarket(position: line, money: money)))
+          .singleton(money);
 
-  Position extrinsicValue(
-          {required Position asset, required Commodity money}) =>
-      Position.merge([
-        markToMarket(asset: asset, money: money),
-        -intrinsicValue(asset: asset, money: money)
-      ]);
+  Line extrinsicValue({required Position position, required Commodity money}) =>
+      (markToMarket(position: position, money: money) -
+              intrinsicValue(position: position, money: money))
+          .singleton(money);
 
   static Oracle fromMarkets(Iterable<Market> markets) =>
       _RealMarketsOracle(markets);

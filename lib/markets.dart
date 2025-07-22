@@ -36,20 +36,10 @@ abstract class Market {
   // for each leg, then you just merge them all,
   // and you end up with a position of the strategy, including a
   // single (merged) money position (the cost basis).
-  Asset long([double slippage = 0.5]) => SyntheticAsset(
-      [asset.withSize(1.0), money.withSize(-buyPrice(slippage))]);
-  Asset short([double slippage = 0.5]) => SyntheticAsset(
-      [asset.withSize(-1.0), money.withSize(sellPrice(slippage))]);
-  Position exchange(Position assetOrMoney, [double slippage = 0.5]) =>
-      switch (assetOrMoney) {
-        Position(asset: final a, size: final s) when a == asset =>
-          money.withSize(sellPrice(slippage) * s),
-        Position(asset: final m, size: final s) when m == money =>
-          asset.withSize(buyPrice(slippage) * s),
-        final x => throw ArgumentError(
-            "assetOrMoney should have been either asset($asset) or "
-            "money($money), was: $x"),
-      };
+  Position long([double slippage = 0.5]) => asset.unit - buy(slippage);
+  Position buy([double slippage = 0.5]) => money.pos(buyPrice(slippage));
+  Position short([double slippage = 0.5]) => sell(slippage) - asset.unit;
+  Position sell([double slippage = 0.5]) => money.pos(sellPrice(slippage));
 
   double buyPrice([double slippageRatio = 0.5]) =>
       bidPrice + _slippage(slippageRatio);

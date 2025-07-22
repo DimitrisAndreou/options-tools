@@ -16,9 +16,9 @@ void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
 
-  browseVerticalSpreads(markets);
+  // browseVerticalSpreads(markets);
   // browseBonds(markets);
-  // browseCoveredCalls(markets);
+  browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
 
   // printOptionChain(markets);
@@ -134,13 +134,13 @@ void printGeometricCoveredCalls(List<Market> markets) {
         final size = Deribit.getOptionSize(option.underlying);
 
         // includes +premium ($)
-        final shortCall = market.short(slippage).withSize(1.0);
+        final shortCall = market.short(slippage);
         // includes -cost basis ($)
-        final longSpot = spotMarket.long(slippage).withSize(1.0);
+        final longSpot = spotMarket.long(slippage);
 
         // Simplifies! +Underlying, -call, -$
-        final coveredCall = SyntheticAsset([shortCall, longSpot]);
-        final analyzer = PositionAnalyzer(coveredCall.withSize(size),
+        final coveredCall = shortCall + longSpot;
+        final analyzer = PositionAnalyzer(coveredCall,
             underlying: option.underlying, money: usd);
         print("${option.name.toString().padLeft(21)}: "
             "breakeven=${analyzer.breakevens}, "

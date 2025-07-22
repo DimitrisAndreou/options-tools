@@ -38,7 +38,7 @@ class PositionAnalyzer {
     final oracle = SimulatedOracle();
     double priceToValue(double price) =>
         (oracle..setPrice(asset: underlying, money: money, price: price))
-            .intrinsicValue(asset: position, money: money)
+            .intrinsicValue(position: position, money: money)
             .size;
 
     double prevPrice = 0.0;

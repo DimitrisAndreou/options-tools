@@ -1,111 +1,128 @@
 import 'dart:collection';
-import 'package:collection/collection.dart';
 
-abstract class Decomposable {
-  const Decomposable();
+// TODO: this can be something richer; e.g. an object that also has a url
+// to the tradeable instrument.
+sealed class Asset {
+  final String name;
+  const Asset(this.name);
 
-  // Decompose this asset into a list of SimpleAsset positions.
-  // Iterable of Positions instead of Assets because it's important
-  // to capture the *sign* and the *proportion* of the composed assets.
-  Iterable<Position> decompose();
-  // TODO: if you use decomposeAsSingle(), or decompose().single
-  // then you can replace Position.merge(Iterable<Position>).
+  Line pos(double size) => Line(this, size);
+  Line get unit => Line(this, 1.0);
 
-  // Returns the position of decompose() where the asset is the specified one
-  // (or an empty position if it is not found).
-  Position innerPositionOf(Asset asset) =>
-      decompose().firstWhereOrNull((p) => p.asset == asset) ?? asset.empty;
-}
-
-sealed class Asset extends Decomposable {
-  const Asset();
-
-  @override
-  String toString() => name;
-
-  String get name;
-
-  Position get unit => Position(this, 1.0);
-  Position get empty => Position(this, 0.0);
-  Position withSize(double size) => Position(this, size);
-
+  bool get isCommodity => this is Commodity;
+  Commodity get asCommodity => this as Commodity;
   bool get isExpirable => this is Expirable;
   Expirable get toExpirable => this as Expirable;
   bool get isDatedFuture => this is DatedFuture;
   DatedFuture get toDatedFuture => this as DatedFuture;
   bool get isOption => this is Option;
   Option get toOption => this as Option;
+
+  @override
+  String toString() => name;
+
+  @override
+  bool operator ==(Object other) => other is Asset && name == other.name;
+
+  @override
+  int get hashCode => name.hashCode;
 }
 
-class Position extends Decomposable {
+sealed class Position {
+  Position operator -() => this * -1.0;
+  Position operator *(double size) => _ScaledPosition(this, size);
+
+  Position operator +(Position that) => _MergedPosition([this, that]);
+  Position operator -(Position that) => _MergedPosition([this, -that]);
+
+  static Position mergeAll(Iterable<Position> positions) =>
+      _MergedPosition(positions);
+
+  Iterable<Line> decompose();
+  Line operator [](Asset asset) =>
+      decompose().firstWhere((line) => line.asset == asset);
+
+  // Returns the Position as a single Line, or throws an exception if it's
+  // more complicated.
+  // If a expectedAsset is specified, then it is also asserted that the
+  // Line's asset is the expected one.
+  Line singleton([Asset? expectedAsset]) {
+    Iterable<Line> lines = decompose();
+    if (lines.singleOrNull == null) {
+      throw StateError("Unexpected lines, expected $expectedAsset, was $lines");
+    }
+    Line single = lines.single;
+    if (expectedAsset != null && expectedAsset != single.asset) {
+      throw StateError(
+          "Expected single asset: $expectedAsset, got ${single.asset}");
+    }
+    return single;
+  }
+
+  @override
+  String toString();
+}
+
+// A line in a portfolio. That is, a raw, directly tradeable instrument,
+// with a size.
+class Line extends Position {
   final Asset asset;
   final double size;
+  Line(this.asset, this.size);
 
-  Position(this.asset, [this.size = 0.0]);
-
-  factory Position.merge(Iterable<Position> positions) {
-    final first = positions.firstOrNull;
-    if (first == null) {
-      throw ArgumentError("At least one position must be specified");
-    }
-    if (!positions.every((p) => p.asset == first.asset)) {
-      throw ArgumentError("Only positions of the same asset can be merged: "
-          "$positions");
-    }
-    return first.withSize(positions.map((p) => p.size).sum);
-  }
-
-  Position operator +(double size) => Position(asset, this.size + size);
-  Position operator -(double size) => Position(asset, this.size - size);
-  Position operator -() => Position(asset, -size);
-  Position operator *(double size) => Position(asset, this.size * size);
-
-  // This returns a rate.
-  double operator /(Position that) {
-    if (asset != that.asset) {
-      throw ArgumentError("Incompatible positions: $this, $that");
-    }
-    return size / that.size;
-  }
-
-  Position withSize(double size) => Position(asset, size);
-  Position empty() => Position(asset);
-
-  bool get isZero => size == 0.0;
+  // Similar to the superclass implementation, except it returns Line,
+  // not Position.
+  @override
+  Line operator *(double size) => Line(asset, this.size * size);
 
   @override
-  Iterable<Position> decompose() =>
-      asset.decompose().map((innerPosition) => innerPosition * size);
+  Iterable<Line> decompose() => [this];
 
   @override
-  String toString() => '($size $asset)';
+  String toString() => '$size X $asset';
 }
 
-// NamedAsset is an asset that can be traded directly;
-// it doesn't consist of a combination of other assets.
-// TODO: this can be something richer; e.g. an object that also has a url
-// to the tradeable instrument.
-abstract class NamedAsset extends Asset {
-  final String _name;
-  const NamedAsset(String name) : _name = name;
+class _ScaledPosition extends Position {
+  final Position position;
+  final double scale;
+  _ScaledPosition(this.position, this.scale);
 
   @override
-  String get name => _name;
+  Iterable<Line> decompose() =>
+      position.decompose().map((line) => line * scale);
 
   @override
-  Iterable<Position> decompose() sync* {
-    yield unit;
+  String toString() => '($scale X $position)';
+}
+
+class _MergedPosition extends Position {
+  final Iterable<Position> positions;
+  final Map<Asset, double> _assetPositions = HashMap();
+  _MergedPosition(this.positions) {
+    for (final line in positions.expand((pos) => pos.decompose())) {
+      _assetPositions.update(
+          line.asset, (previousSize) => previousSize + line.size,
+          ifAbsent: () => line.size);
+    }
   }
 
   @override
-  bool operator ==(Object other) => other is NamedAsset && name == other.name;
+  Iterable<Line> decompose() sync* {
+    for (final entry in _assetPositions.entries) {
+      yield Line(entry.key, entry.value);
+    }
+  }
+
+  // Overriden as an optimization.
+  @override
+  Line operator [](Asset asset) => asset.pos(_assetPositions[asset]!);
 
   @override
-  int get hashCode => _name.hashCode;
+  String toString() => 'Sum($positions)';
 }
 
 // USDC, BTC etc.
-class Commodity extends NamedAsset implements Comparable<Commodity> {
+class Commodity extends Asset implements Comparable<Commodity> {
   static final Map<String, Commodity> _cache = {};
   const Commodity(super.name);
   factory Commodity.fromName(String name) =>
@@ -117,39 +134,7 @@ class Commodity extends NamedAsset implements Comparable<Commodity> {
   }
 }
 
-// A SyntheticAsset is an Asset that is a combination of other assets
-// (simple or synthetic) of particular proportions.
-// Usually it cannot be traded directly or atomically.
-// Moreover, an entire portfolio can be represented as a single
-// synthetic asset.
-class SyntheticAsset extends Asset {
-  final Map<Asset, Position> _assetPositions = HashMap();
-
-  SyntheticAsset(Iterable<Position> positions) {
-    for (final inner in positions.expand((p) => p.decompose())) {
-      _assetPositions[inner.asset] =
-          (_assetPositions[inner.asset] ?? inner.empty()) + inner.size;
-    }
-  }
-
-  @override
-  Iterable<Position> decompose() => _assetPositions.values;
-
-  @override
-  Position innerPositionOf(Asset asset) =>
-      _assetPositions[asset] ?? asset.empty;
-
-  @override
-  String get name => "SyntheticAsset: ${_assetPositions.values}";
-
-  @override
-  bool operator ==(Object that) =>
-      that is SyntheticAsset && _assetPositions == that._assetPositions;
-  @override
-  int get hashCode => _assetPositions.hashCode;
-}
-
-abstract class Expirable extends NamedAsset {
+abstract class Expirable extends Asset {
   final Commodity underlying;
   // One derivative contract would refer to how many units of the underlying?
   final double contractLot;

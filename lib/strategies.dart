@@ -16,9 +16,9 @@ class CoveredCall {
   final PositionAnalyzer analyzer;
 
   final Position strategy;
-  final Position optionLeg;
-  final Position underlyingLeg;
-  final Position moneyLeg;
+  final Line optionLeg;
+  final Line underlyingLeg;
+  final Line moneyLeg;
 
   final double spotPrice;
   late final double? breakeven;
@@ -65,9 +65,9 @@ class CoveredCall {
       required Oracle oracle})
       : analyzer =
             PositionAnalyzer(strategy, underlying: underlying, money: money),
-        moneyLeg = strategy.innerPositionOf(money),
-        underlyingLeg = strategy.innerPositionOf(underlying),
-        optionLeg = strategy.innerPositionOf(option) {
+        moneyLeg = strategy[money],
+        underlyingLeg = strategy[underlying],
+        optionLeg = strategy[option] {
     breakeven = analyzer.breakevens.singleOrNull?.price;
     breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
     maxYield = analyzer.maxYield;
@@ -78,9 +78,10 @@ class CoveredCall {
     yieldIfPriceUnchanged =
         analyzer.valueAt(spotPrice) / (-analyzer.minValue.single.value);
     equivalentHodlerSellPrice = spotPrice * maxYield;
-    timeValue =
-        oracle.extrinsicValue(asset: optionLeg.asset.unit, money: money).size /
-            spotPrice;
+    timeValue = oracle
+            .extrinsicValue(position: optionLeg.asset.unit, money: money)
+            .size /
+        spotPrice;
   }
 
   static Iterable<CoveredCall> generateAll(Iterable<Market> allMarkets,
@@ -97,10 +98,7 @@ class CoveredCall {
         .sortByStrike(Order.asc)
         .sortByExpiration(Order.asc)) {
       yield CoveredCall._(
-          SyntheticAsset([
-            call.short(slippage).withSize(size),
-            spotMarket.long(slippage).withSize(size)
-          ]).unit,
+          (call.short(slippage) + spotMarket.long(slippage)) * size,
           underlying: underlying,
           money: money,
           option: call.asset.toOption,
@@ -118,9 +116,9 @@ class SyntheticBond {
   final DateTime expiration;
 
   final Position strategy;
-  final Position futureLeg;
-  final Position underlyingLeg;
-  final Position moneyLeg;
+  final Line futureLeg;
+  final Line underlyingLeg;
+  final Line moneyLeg;
 
   final double spotPrice;
   late final double interestRate;
@@ -146,12 +144,13 @@ class SyntheticBond {
       required this.expiration,
       required this.spotPrice,
       required Oracle oracle})
-      : moneyLeg = strategy.innerPositionOf(money),
-        underlyingLeg = strategy.innerPositionOf(underlying),
-        futureLeg = strategy.innerPositionOf(future) {
-    final intrinsic = oracle.intrinsicValue(asset: futureLeg, money: money);
-    final extrinsic = oracle.extrinsicValue(asset: futureLeg, money: money);
-    interestRate = extrinsic / intrinsic;
+      : moneyLeg = strategy[money],
+        underlyingLeg = strategy[underlying],
+        futureLeg = strategy[future] {
+    final intrinsic = oracle.intrinsicValue(position: futureLeg, money: money);
+    final extrinsic = oracle.extrinsicValue(position: futureLeg, money: money);
+    // TODO: maybe a safe divide function? Line / Line, producing rate?
+    interestRate = extrinsic.size / intrinsic.size;
     apr = expiration.rateToAnnualRate(interestRate);
   }
 
@@ -167,10 +166,7 @@ class SyntheticBond {
         .futures
         .withMoney(money, oracle)
         .sortByExpiration(Order.asc)) {
-      yield SyntheticBond._(
-          SyntheticAsset(
-                  [future.short(slippage).unit, spotMarket.long(slippage).unit])
-              .unit,
+      yield SyntheticBond._(future.short(slippage) + spotMarket.long(slippage),
           underlying: underlying,
           money: money,
           future: future.asset.toDatedFuture,
@@ -193,10 +189,10 @@ class VerticalSpread {
 
   final PositionAnalyzer analyzer;
 
-  late final Position strategy;
-  late final Position shortLeg;
-  late final Position longLeg;
-  late final Position moneyLeg;
+  final Position strategy;
+  late final Line shortLeg;
+  late final Line longLeg;
+  late final Line moneyLeg;
   late final VerticalSpreadType type;
 
   final double spotPrice;
@@ -303,12 +299,11 @@ class VerticalSpread {
             .entries) {
       final expiration = expirationToStrike.key,
           strikeToOptions = expirationToStrike.value;
-      VerticalSpread makeSpread(Iterable<Position> positions) =>
-          VerticalSpread._(SyntheticAsset(positions).unit,
-              underlying: underlying,
-              money: money,
-              expiration: expiration,
-              spotPrice: spotPrice);
+      VerticalSpread makeSpread(Position position) => VerticalSpread._(position,
+          underlying: underlying,
+          money: money,
+          expiration: expiration,
+          spotPrice: spotPrice);
 
       for (final (lowStrike, highStrike) in _pairUp(strikeToOptions.keys)) {
         final (call: lowCall, put: lowPut) = strikeToOptions[lowStrike]!;
@@ -317,21 +312,17 @@ class VerticalSpread {
         // under @ lowStrike
         VerticalSpread? under = keepBestValidSpread([
           if (lowPut != null && highPut != null)
-            makeSpread(
-                [highPut.long(slippage).unit, lowPut.short(slippage).unit]),
+            makeSpread(highPut.long(slippage) + lowPut.short(slippage)),
           if (lowCall != null && highCall != null)
-            makeSpread(
-                [highCall.long(slippage).unit, lowCall.short(slippage).unit]),
+            makeSpread(highCall.long(slippage) + lowCall.short(slippage)),
         ]);
 
         // over @ highStrike
         VerticalSpread? over = keepBestValidSpread([
           if (lowPut != null && highPut != null)
-            makeSpread(
-                [highPut.short(slippage).unit, lowPut.long(slippage).unit]),
+            makeSpread(highPut.short(slippage) + lowPut.long(slippage)),
           if (lowCall != null && highCall != null)
-            makeSpread(
-                [highCall.short(slippage).unit, lowCall.long(slippage).unit]),
+            makeSpread(highCall.short(slippage) + lowCall.long(slippage)),
         ]);
 
         yield* [under, over].nonNulls;
