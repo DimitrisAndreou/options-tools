@@ -166,14 +166,6 @@ function extractSpotPrice(data) {
   return data.at(0)?.spotPrice;
 }
 
-function selectDTEs(uniqueDTEs, minDTE) {
-  const legendSelected = {};
-  uniqueDTEs.forEach(dte => {
-    legendSelected[dte] = dte >= minDTE;
-  });
-  return legendSelected;
-}
-
 function coveredCallToBreakEvenChart(data, divId) {
   const spotPrice = extractSpotPrice(data);
   // TODO: share this code across charts.
@@ -295,10 +287,7 @@ function coveredCallToBreakEvenChart(data, divId) {
         }
       },
     }, spotPriceSeries(spotPrice)],
-    legend: {
-      ...legend,
-      selected: selectDTEs(uniqueDTEs, 15),
-    },
+    legend: legend,
     dataZoom: [
       {
         type: 'inside',
@@ -314,107 +303,145 @@ function coveredCallToBreakEvenChart(data, divId) {
       }
     ],
   });
+  return chart;
 }
 
-function coveredCallToTimeValueChart(data, divId) {
-  const spotPrice = extractSpotPrice(data);
-  const dataset = {
-    id: "original",
-    dimensions: ["timeValue", "DTE", "equivalentHodlerSellPrice"],
-    source: data
-  };
-  const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
-  const datasetPerDTE = uniqueDTEs.map(dte => ({
-    id: `dte_${dte}`,
-    fromDatasetId: 'original',
-    label: `${dte}`,
-    transform: {
-      type: 'filter',
-      config: {
-        dimension: 'DTE',
-        '=': dte
-      }
+function highlightEChartPoint(chartInstance, clickedCallValue) {
+  const option = chartInstance.getOption();
+  const allSeries = option.series;
+  const originalDatasetSource = option.dataset[0].source;
+  const clickedItem = originalDatasetSource.find(item => item.call === clickedCallValue);
+
+  if (!clickedItem) {
+    console.warn(`No data found in original dataset for call: "${clickedCallValue}"`);
+    return;
+  }
+
+  const clickedDTE = clickedItem.DTE;
+  const targetSeriesIndex = allSeries.findIndex(s => s.name === String(clickedDTE));
+
+  if (targetSeriesIndex === -1) {
+    console.warn(`[ECharts Highlight] ECharts series not found for DTE: ${clickedDTE}`);
+    return;
+  }
+
+  const dataForTargetSeries = originalDatasetSource.filter(item => item.DTE === clickedDTE);
+  const targetDataIndex = dataForTargetSeries.findIndex(item => item.call === clickedCallValue);
+
+  if (targetDataIndex === -1) {
+    console.warn(`[ECharts Highlight] Internal error: Data point index not found within DTE series for Call: "${clickedCallValue}", DTE: ${clickedDTE}`);
+    return;
+  }
+
+  chartInstance.dispatchAction({
+    type: 'downplay',
+    seriesIndex: allSeries.map((_, i) => i) // Downplay all series
+  });
+
+  chartInstance.dispatchAction({
+    type: 'highlight',
+    seriesIndex: targetSeriesIndex,
+    dataIndex: targetDataIndex
+  });
+
+  chartInstance.dispatchAction({
+    type: 'showTip',
+    seriesIndex: targetSeriesIndex,
+    dataIndex: targetDataIndex
+  });
+}
+
+function coveredCallToBreakEvenTable(data, divId, chart) {
+  const gridDiv = document.getElementById(divId);
+  if (!gridDiv) {
+    console.error(`AG Grid target div not found: #${divId}`);
+    return;
+  }
+
+  const columnDefs = [
+    { 
+      headerName: 'Call Contract', 
+      field: 'maxYieldAt',
+      sortable: true, 
+      filter: true,
+      cellRenderer: (params) => `<strong>${params.data.call}</strong>`,
+      minWidth: 200,
+      headerTooltip: 'The call option via which to build a covered call strategy',
+    },
+    { 
+      headerName: 'DTE', 
+      field: 'DTE', 
+      sortable: true, 
+      filter: 'agNumberColumnFilter',
+      headerTooltip: 'Days till expiration',
+      minWidth: 40,
+      sort: 'desc',
+    },
+    { 
+      headerName: 'B.E.', 
+      field: 'breakEven', 
+      sortable: true, 
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (params) => dollarFmt.format(params.value),
+      minWidth: 100,
+      headerTooltip: 'Underlying price which (at expiration) would give you your money back',
+    },
+    {
+      headerName: 'B.E. %',
+      field: 'breakEvenAsChange',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (params) => percentFmt.format(params.value - 1.0),
+      minWidth: 80,
+      headerTooltip: 'The breakeven price, as a change (%) of the current spot price',
+    },
+    {
+      headerName: 'M.Y. %',
+      field: 'maxYield',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (params) => percentFmt.format(params.value - 1.0),
+      minWidth: 80,
+      headerTooltip: 'The max yield (maximum profitability) of this strategy',
+    },
+    {
+      headerName: 'M.Y. At %',
+      field: 'maxYieldAtChange',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (params) => percentFmt.format(params.value - 1.0),
+      minWidth: 80,
+      headerTooltip: 'The minimum spot price change (%) you need at expiration to get the max yield',
+    },
+  ];
+
+  const gridOptions = {
+    columnDefs: columnDefs,
+    rowData: data,
+
+    pagination: false,
+    defaultColDef: {
+        sortable: true,
+        resizable: true,
+        filter: true,
+        floatingFilter: true,
+    },
+    onRowClicked: (event) => {
+      console.log({chart});
+      highlightEChartPoint(chart, event.data.call);
     }
-  }));
-
-  const chart = echarts.init(document.getElementById(divId));
+  };
+  gridApi = agGrid.createGrid(gridDiv, gridOptions);  
+  gridApi.sizeColumnsToFit();
   window.addEventListener('resize', function() {
-    chart.resize();
+    gridApi.sizeColumnsToFit();
   });
+  return gridApi;
+}
 
-  chart.setOption({
-    dataset: [dataset, ...datasetPerDTE],
-    xAxis: {
-      type: 'value',
-      name: 'Max Profit',
-      nameLocation: 'center',
-      nameGap: 50,
-      nameTextStyle: axisTitleNameTextStyle,
-      axisLabel: {
-        ...axisXValuesNameTextStyle,
-        formatter: function (value) {
-          return `${dollarFmt.format(value)}\n(${percentFmt.format(value / spotPrice - 1.0)})`;
-        },
-      },
-      axisLine,
-      scale: true
-    },
-    grid,
-    yAxis: {
-      type: 'value',
-      name: 'Time Value (%)',
-      nameTextStyle: yAxisTitleNameTextStyle,
-      align: 'right',
-      axisLabel: {
-        ...axisYValuesNameTextStyle,
-        formatter: function (value) {
-          return percentFmt.format(value);
-        },
-        align: 'left',
-        margin: 40,
-      },
-      axisLine,
-      scale: true
-    },
-    tooltip: {
-      ...tooltipStyle,
-      formatter: ccTooltipFormatter,
-    },
-    series: [...datasetPerDTE.map(ds => ({
-      type: 'line',
-      name: ds.label,
-      datasetId: ds.id,
-      encode: {
-        x: 'equivalentHodlerSellPrice',
-        y: 'timeValue'
-      },
-      symbolSize: function (data) {
-        // TODO: function of maxYield? Or of time value?
-        return 4;
-      },
-      label: {
-        show: false
-      }
-    })), spotPriceSeries(spotPrice)],
-    legend: {
-      ...legend,
-      selected: selectDTEs(uniqueDTEs, 15),
-    },
-    dataZoom: [
-      {
-        type: 'inside',
-        xAxisIndex: 0,
-        startValue: spotPrice * 0.5,
-        endValue: spotPrice * 1.5
-      },
-      {
-        type: 'inside',
-        yAxisIndex: 0,
-        startValue: 0.0,
-        endValue: 1.0,
-      }
-    ],
-  });
+function coveredCallToBreakEvenLockup(data, chartDivId, tableDivId) {
+  chart = coveredCallToBreakEvenChart(data, chartDivId);
+  coveredCallToBreakEvenTable(data, tableDivId, chart);
 }
 
 function verticalSpreadsChart(data, divId) {
@@ -564,16 +591,14 @@ async function jsMain() {
   try {
     const btcCoveredCallsJson = await parseAndLog("btcCoveredCallsJson", () => coveredCallsDart("BTC", slippage));
     document.getElementById('btc-price').textContent = dollarFmt.format(extractSpotPrice(btcCoveredCallsJson));
-    coveredCallToBreakEvenChart(btcCoveredCallsJson, "btcCoveredCallsChart");
-    coveredCallToTimeValueChart(btcCoveredCallsJson, "btcCoveredCallsTimeValueChart");
+    coveredCallToBreakEvenLockup(btcCoveredCallsJson, "btcCoveredCallsChart", "btcCoveredCallsTable");
 
     const btcVerticalSpreadsJson = await parseAndLog("btcVerticalSpreadsJson", () => verticalSpreadsDart("BTC", slippage));
     // verticalSpreadsChart(btcVerticalSpreadsJson, "btcVerticalSpreadsChart");
 
     const ethCoveredCallsJson = await parseAndLog("ethCoveredCallsJson", () => coveredCallsDart("ETH", slippage));
     document.getElementById('eth-price').textContent = dollarFmt.format(extractSpotPrice(ethCoveredCallsJson));
-    coveredCallToBreakEvenChart(ethCoveredCallsJson, "ethCoveredCallsChart");
-    coveredCallToTimeValueChart(ethCoveredCallsJson, "ethCoveredCallsTimeValueChart");
+    coveredCallToBreakEvenLockup(ethCoveredCallsJson, "ethCoveredCallsChart", "ethCoveredCallsTable");
     const ethVerticalSpreadsJson = await parseAndLog("ethVerticalSpreadsJson", () => verticalSpreadsDart("ETH", slippage));
     // verticalSpreadsChart(ethVerticalSpreadsJson, "btcVerticalSpreadsChart");
     

@@ -56,3 +56,33 @@ footer {
   padding: 1rem 0;
   margin-top: auto;
 }
+
+.ag-theme-alpine-dark {
+  --ag-popup-background-color: #2a2a4a;
+  --ag-background-color: #1e1e2f;
+
+  --ag-foreground-color: black;
+  --ag-selected-tab-panel-background-color: #2a2a4a;
+  --ag-menu-background-color: #2a2a4a;
+  --ag-header-background-color: #2a2a4a;
+  --ag-odd-row-background-color: #1e1e2f;
+  --ag-row-background-color: #1e1e2f;
+}
+
+.ag-popup {
+    background-color: #2a2a4a !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+.ag-menu {
+    background-color: #2a2a4a !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+.ag-tooltip {
+  background-color: white !important;
+  color: #000000; /* Optional: text color */
+  border: 1px solid #ccc; /* Optional: border */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); /* Optional: shadow */
+  opacity: 1 !important; /* Ensure it's fully opaque */
+}
