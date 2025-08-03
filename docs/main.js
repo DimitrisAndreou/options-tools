@@ -61,10 +61,10 @@ const ccTooltipFormatter = function (params) {
   const maxProfit = `${dollarFmt.format(value.maxProfit)}`;
   const maxProfitAt = `${dollarFmt.format(value.maxYieldAt)}`;
   const maxProfitAtRelative = `${percentFmt.format(value.maxYieldAtChange - 1.0)}`;
-  const whatToBuy = `${underlyingFmt.format(value.boughtUnderlyingSize)}</b> ${value.underlying}`;
+  const whatToBuy = `${underlyingFmt.format(value.underlyingToBuy)}</b> ${value.underlying}`;
   const whatToBuyFor = `${dollarFmt.format(-value.moneySize)}`;
   const whatToSell = `${-value.callSize}`;
-  const whatToSellFor = `${underlyingFmt.format(value.premiumUnderlyingSize)}</b> ${value.underlying}`;
+  const whatToSellFor = `${underlyingFmt.format(value.premiumToReceive)}</b> ${value.underlying}`;
   return `
     ${neutral(value.call)} (${neutral(DTE)} days)<br/>
     ${label('Breakeven')}: ${neutral(breakeven)}
@@ -427,7 +427,6 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
         floatingFilter: true,
     },
     onRowClicked: (event) => {
-      console.log({chart});
       highlightEChartPoint(chart, event.data.call);
     }
   };

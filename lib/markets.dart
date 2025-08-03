@@ -32,14 +32,20 @@ abstract class Market {
           askSize: askSize);
   factory Market.createIdentity(Asset asset) => _IdentityMarket(asset);
 
-  // Given a strategy, you trade() each leg, get a synthetic asset
-  // for each leg, then you just merge them all,
-  // and you end up with a position of the strategy, including a
-  // single (merged) money position (the cost basis).
   Position long([double slippage = 0.5]) => asset.unit - buy(slippage);
-  Position buy([double slippage = 0.5]) => money.pos(buyPrice(slippage));
   Position short([double slippage = 0.5]) => sell(slippage) - asset.unit;
-  Position sell([double slippage = 0.5]) => money.pos(sellPrice(slippage));
+  Line buy([double slippage = 0.5]) => money.pos(buyPrice(slippage));
+  Line sell([double slippage = 0.5]) => money.pos(sellPrice(slippage));
+
+  // Given a side of a trade, e.g. some negative money quantity, it yields the
+  // opposite side of the trade, e.g. a positive quantity of the asset bought.
+  Line swap(Line line, [double slippage = 0.5]) => switch (line) {
+        Line(asset: final lineAsset, size: final s) when lineAsset == asset =>
+          Line(money, -s * sellPrice(slippage)),
+        Line(asset: final lineAsset, size: final s) when lineAsset == money =>
+          Line(asset, -s / buyPrice(slippage)),
+        _ => throw ArgumentError("Cannot reverse $line at market: $this"),
+      };
 
   double buyPrice([double slippageRatio = 0.5]) =>
       bidPrice + _slippage(slippageRatio);

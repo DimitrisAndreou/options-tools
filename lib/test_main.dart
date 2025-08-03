@@ -65,6 +65,7 @@ void browseCoveredCalls(List<Market> markets) {
   for (CoveredCall cc in CoveredCall.generateAll(markets,
       underlying: underlying, money: money)) {
     print(cc.toJson());
+    print("");
   }
 }
 

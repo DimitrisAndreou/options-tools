@@ -20,6 +20,12 @@ class CoveredCall {
   final Line underlyingLeg;
   final Line moneyLeg;
 
+  // This is an imaginary approach to executing the trade:
+  // First buy this much underlying asset (via spot market),
+  // then open the option leg.
+  final Line underlyingToBuy;
+  final Line premiumToReceive;
+
   final double spotPrice;
   late final double? breakeven;
   late final double? breakevenAsChange;
@@ -34,8 +40,8 @@ class CoveredCall {
 
   Map<String, dynamic> toJson() => {
         'underlying': underlying.name,
-        'boughtUnderlyingSize': -moneyLeg.size / spotPrice,
-        'premiumUnderlyingSize': -optionLeg.size + moneyLeg.size / spotPrice,
+        'underlyingToBuy': underlyingToBuy.size,
+        'premiumToReceive': premiumToReceive.size,
         'money': money.name,
         'moneySize': moneyLeg.size,
         'maxProfit': maxProfit,
@@ -57,7 +63,9 @@ class CoveredCall {
   String toString() => jsonEncode(this);
 
   CoveredCall._(this.strategy,
-      {required this.underlying,
+      {required Market spotMarket,
+      required Market callMarket,
+      required this.underlying,
       required this.money,
       required this.option,
       required this.expiration,
@@ -67,7 +75,9 @@ class CoveredCall {
             PositionAnalyzer(strategy, underlying: underlying, money: money),
         moneyLeg = strategy[money],
         underlyingLeg = strategy[underlying],
-        optionLeg = strategy[option] {
+        optionLeg = strategy[option],
+        underlyingToBuy = spotMarket.swap(strategy[money]),
+        premiumToReceive = spotMarket.swap(-callMarket.swap(strategy[option])) {
     breakeven = analyzer.breakevens.singleOrNull?.price;
     breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
     maxYield = analyzer.maxYield;
@@ -99,6 +109,8 @@ class CoveredCall {
         .sortByExpiration(Order.asc)) {
       yield CoveredCall._(
           (call.short(slippage) + spotMarket.long(slippage)) * size,
+          spotMarket: spotMarket,
+          callMarket: call,
           underlying: underlying,
           money: money,
           option: call.asset.toOption,

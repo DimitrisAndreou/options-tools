@@ -74,6 +74,8 @@ class Line extends Position {
   // not Position.
   @override
   Line operator *(double size) => Line(asset, this.size * size);
+  @override
+  Line operator -() => this * -1.0;
 
   @override
   Iterable<Line> decompose() => [this];
