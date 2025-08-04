@@ -1,16 +1,3 @@
-*****
-For covered calls, it's inelegant that you manually had to reconstruct
-the trades that the user has to take.
-It would be easier to have this primitive:
-AssetC = AssetA - AssetB
-
-Similar to how you can merge (add) assets to create a synthetic one.
-
-That way, you could say:
-Covered Call - tradeWhereYouSellTheCall
-what would remain would be the "buy spot" leg.
-**************
-
 Covered calls, extra data points:
  - probability of profit
  - probability of underperforming spot hodling

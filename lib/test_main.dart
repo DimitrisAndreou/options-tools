@@ -18,8 +18,9 @@ void main() async {
 
   // browseVerticalSpreads(markets);
   // browseBonds(markets);
-  browseCoveredCalls(markets);
+  // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
+  browseLongCalls(markets);
 
   // printOptionChain(markets);
 
@@ -66,6 +67,28 @@ void browseCoveredCalls(List<Market> markets) {
       underlying: underlying, money: money)) {
     print(cc.toJson());
     print("");
+  }
+}
+
+void browseLongCalls(List<Market> allMarkets) {
+  final money = Commodity("USD");
+  final underlying = Commodity("BTC");
+
+  print(" ============== Long Calls ==============");
+  final size = Deribit.getOptionSize(underlying);
+  final oracle = Oracle.fromMarkets(allMarkets);
+  final spotMarket = oracle.marketFor(asset: underlying, money: money);
+  for (final call in allMarkets
+      .whereUnderlyingIs(underlying)
+      .calls
+      .withMoney(money, oracle)
+      .sortByStrike(Order.asc)
+      .sortByExpiration(Order.asc)) {
+    final strategy = call.long();
+    final analyzer =
+        PositionAnalyzer(strategy, underlying: underlying, money: money);
+    final breakeven = analyzer.breakevens.single.price;
+    print("Long call: ${call.asset} $breakeven");
   }
 }
 
