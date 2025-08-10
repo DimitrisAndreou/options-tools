@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:math';
 
 import 'assets.dart';
@@ -84,11 +85,23 @@ void browseLongCalls(List<Market> allMarkets) {
       .withMoney(money, oracle)
       .sortByStrike(Order.asc)
       .sortByExpiration(Order.asc)) {
-    final strategy = call.long();
-    final analyzer =
-        PositionAnalyzer(strategy, underlying: underlying, money: money);
-    final breakeven = analyzer.breakevens.single.price;
-    print("Long call: ${call.asset} $breakeven");
+    final longCall = call.long();
+    final longCallAnalyzer =
+        PositionAnalyzer(longCall, underlying: underlying, money: money);
+    final breakeven = longCallAnalyzer.breakevens.singleOrNull;
+    if (breakeven == null) {
+      continue;
+    }
+    final longSpot = PositionAnalyzer.scalePositionToRisk(
+        spotMarket.long(), longCallAnalyzer.maxRisk,
+        underlying: underlying, money: money);
+    final longSpotAnalyzer =
+        PositionAnalyzer(longSpot, underlying: underlying, money: money);
+    final strike = call.asset.toOption.strike;
+    final leverage = longCallAnalyzer.deltaAfter(strike) /
+        longSpotAnalyzer.deltaAfter(strike);
+    print("${call.asset}. --> Leverage: ${leverage.toStringAsFixed(1)}X");
+    // Find breakeven vs spot long position of the same max loss.
   }
 }
 

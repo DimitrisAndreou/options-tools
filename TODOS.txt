@@ -1,3 +1,8 @@
+**********
+where does a strategy have a specified yield?
+
+**********
+
 Covered calls, extra data points:
  - probability of profit
  - probability of underperforming spot hodling

@@ -69,6 +69,35 @@ class PositionAnalyzer {
   Iterable<PriceRange> get breakevens =>
       _segments.map((segment) => segment.breakeven).nonNulls;
 
+  // The delta for prices just below the specified one.
+  double deltaBefore(double price) {
+    for (final segment in _segments) {
+      if (segment.includes(price)) {
+        return segment.delta;
+      }
+    }
+    throw StateError("No segment included price $price, segments: $_segments");
+  }
+
+  // The delta for prices just above the specified one.
+  double deltaAfter(double price) {
+    for (final segment in _segments.reversed) {
+      if (segment.includes(price)) {
+        return segment.delta;
+      }
+    }
+    throw StateError("No segment included price $price, segments: $_segments");
+  }
+
+  // Transforms a position to a same position but with an adjusted size,
+  // so that the resulting position has the specified maximum risk.
+  static Position scalePositionToRisk(Position position, double desiredMaxRisk,
+          {required Commodity underlying, required Commodity money}) =>
+      position *
+      (desiredMaxRisk /
+          PositionAnalyzer(position, underlying: underlying, money: money)
+              .maxRisk);
+
   // Can be negative for profitless strategies.
   double get maxProfit => maxValue.first.value;
   // Can be negative for riskless strategies.
@@ -171,7 +200,7 @@ class _PnLSegment {
         valueAtMinPrice: valueAtMinPrice,
         maxPrice: maxPrice,
         valueAtMaxPrice: valueAtMaxPrice,
-        delta: calcDelta(
+        delta: _calcDelta(
             x1: minPrice,
             x2: maxPrice,
             y1: valueAtMinPrice,
@@ -188,7 +217,7 @@ class _PnLSegment {
     for (int i = 0; i < medianIndex * 2 + 1; ++i) {
       double nextPrice = (prevPrice + 1.0) * 1.5;
       double nextValue = priceToValue(nextPrice);
-      deltas.add(calcDelta(
+      deltas.add(_calcDelta(
           x1: prevPrice, x2: nextPrice, y1: prevValue, y2: nextValue));
       prevPrice = nextPrice;
       prevValue = nextValue;
@@ -208,7 +237,7 @@ class _PnLSegment {
         delta: delta);
   }
 
-  static double calcDelta(
+  static double _calcDelta(
           {required double x1,
           required double x2,
           required double y1,
@@ -222,6 +251,8 @@ class _PnLSegment {
         1.0 => PriceAndValue(PriceRange.point(minPrice), valueAtMinPrice),
         _ => PriceAndValue(PriceRange(minPrice, maxPrice), valueAtMinPrice),
       };
+
+  bool includes(double price) => minPrice <= price && price <= maxPrice;
 
   PriceRange? get breakeven => switch (delta) {
         0.0 => valueAtMinPrice == 0.0 ? PriceRange(minPrice, maxPrice) : null,
