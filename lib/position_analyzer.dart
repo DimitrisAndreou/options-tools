@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 import 'package:collection/collection.dart';
 
 import 'assets.dart';
@@ -50,24 +51,13 @@ class PositionAnalyzer {
     _segments.add(_PnLSegment.open(priceToValue, minPrice: prevPrice));
   }
 
-  Iterable<PriceAndValue> get minValue {
-    final minValues = _segments.map((segment) => segment.minValue);
-    final globalMinValue =
-        minValues.map((priceAndValue) => priceAndValue.value).min;
-    return PriceAndValue._mergeAdjacents(minValues
-        .where((priceAndValue) => priceAndValue.value == globalMinValue));
-  }
+  double get minValue => _segments.map((segment) => segment.minValue).min;
+  double get maxValue => _segments.map((segment) => segment.maxValue).max;
 
-  Iterable<PriceAndValue> get maxValue {
-    final maxValues = _segments.map((segment) => segment.maxValue);
-    final globalMaxValue =
-        maxValues.map((priceAndValue) => priceAndValue.value).max;
-    return PriceAndValue._mergeAdjacents(maxValues
-        .where((priceAndValue) => priceAndValue.value == globalMaxValue));
-  }
+  Iterable<PriceRange> get breakevens => whereValueIs(0.0);
 
-  Iterable<PriceRange> get breakevens =>
-      _segments.map((segment) => segment.breakeven).nonNulls;
+  Iterable<PriceRange> whereValueIs(double value) => PriceRange._mergeAdjacents(
+      _segments.map((segment) => segment.whereValueIs(value)).nonNulls);
 
   // The delta for prices just below the specified one.
   double deltaBefore(double price) {
@@ -99,12 +89,11 @@ class PositionAnalyzer {
               .maxRisk);
 
   // Can be negative for profitless strategies.
-  double get maxProfit => maxValue.first.value;
-  // Can be negative for riskless strategies.
-  double get maxRisk => -minValue.first.value;
+  double get maxProfit => min(maxValue, 0.0);
+  double get maxRisk => max(-minValue, 0.0);
 
-  double get maxYield => 1.0 + maxProfit / maxRisk;
-  double yieldAt(double price) => 1.0 + valueAt(price) / maxRisk;
+  double get maxYield => maxProfit / maxRisk;
+  double yieldAt(double price) => valueAt(price) / maxRisk;
 
   double valueAt(double price) =>
       _segments.map((segment) => segment.valueAt(price)).nonNulls.first;
@@ -131,36 +120,23 @@ class PriceRange {
     return fromPrice;
   }
 
-  @override
-  String toString() => isPoint ? "$fromPrice" : "[$fromPrice..$toPrice]";
-}
-
-class PriceAndValue {
-  final PriceRange price;
-  final double value;
-
-  PriceAndValue(this.price, this.value);
-
-  static List<PriceAndValue> _mergeAdjacents(Iterable<PriceAndValue> pnvs) =>
+  static List<PriceRange> _mergeAdjacents(Iterable<PriceRange> pnvs) =>
       pnvs.fold(
           [],
-          (List<PriceAndValue> previous, PriceAndValue next) =>
-              switch (previous) {
+          (List<PriceRange> previous, PriceRange next) => switch (previous) {
                 [] => [next],
-                [...List<PriceAndValue> rest, PriceAndValue last] =>
-                  last.price.toPrice >= next.price.fromPrice
+                [...List<PriceRange> rest, PriceRange last] =>
+                  last.toPrice >= next.fromPrice
                       ? [
                           ...rest,
-                          PriceAndValue(
-                              PriceRange(
-                                  last.price.fromPrice, next.price.toPrice),
-                              next.value)
+                          PriceRange(
+                              last.fromPrice, max(last.toPrice, next.toPrice))
                         ]
                       : [...rest, last, next],
               });
 
   @override
-  String toString() => "{$value @ $price}";
+  String toString() => isPoint ? "$fromPrice" : "[$fromPrice..$toPrice]";
 }
 
 class _PnLSegment {
@@ -244,22 +220,28 @@ class _PnLSegment {
           required double y2}) =>
       (y2 - y1) / (x2 - x1);
 
-  PriceAndValue get minValue => minOrMaxValue(delta);
-  PriceAndValue get maxValue => minOrMaxValue(-delta);
-  PriceAndValue minOrMaxValue(double delta) => switch (delta.sign) {
-        -1.0 => PriceAndValue(PriceRange.point(maxPrice), valueAtMaxPrice),
-        1.0 => PriceAndValue(PriceRange.point(minPrice), valueAtMinPrice),
-        _ => PriceAndValue(PriceRange(minPrice, maxPrice), valueAtMinPrice),
+  double get minValue => minOrMaxValue(delta);
+  double get maxValue => minOrMaxValue(-delta);
+  double minOrMaxValue(double delta) => switch (delta.sign) {
+        -1.0 => valueAtMaxPrice,
+        _ => valueAtMinPrice,
       };
 
   bool includes(double price) => minPrice <= price && price <= maxPrice;
 
-  PriceRange? get breakeven => switch (delta) {
-        0.0 => valueAtMinPrice == 0.0 ? PriceRange(minPrice, maxPrice) : null,
-        _ => valueAtMinPrice.sign != valueAtMaxPrice.sign
-            ? PriceRange.point(minPrice - valueAtMinPrice / delta)
-            : null,
-      };
+  PriceRange? whereValueIs(double value) {
+    if (delta == 0.0) {
+      return valueAtMinPrice == value ? PriceRange(minPrice, maxPrice) : null;
+    }
+    if (value == valueAtMinPrice) return PriceRange.point(minPrice);
+    if (value == valueAtMaxPrice) return PriceRange.point(maxPrice);
+    final diffFromValueAtMinPrice = valueAtMinPrice - value;
+    final diffFromValueAtMaxPrice = valueAtMaxPrice - value;
+    if (diffFromValueAtMinPrice.sign == diffFromValueAtMaxPrice.sign) {
+      return null;
+    }
+    return PriceRange.point(minPrice - diffFromValueAtMinPrice / delta);
+  }
 
   double? valueAt(double price) => minPrice <= price && price <= maxPrice
       ? valueAtMinPrice + (price - minPrice) * delta
@@ -267,6 +249,5 @@ class _PnLSegment {
 
   @override
   String toString() => "[($minPrice..$maxPrice), "
-      "minValue=$minValue, maxValue=$maxValue, breakeven=$breakeven, "
-      "delta=$delta]";
+      "minValue=$minValue, maxValue=$maxValue, delta=$delta]";
 }

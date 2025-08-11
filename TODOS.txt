@@ -1,5 +1,12 @@
+*********
+CC table:
+Add column "strike", and let "call contract" just be a string
+(so one can filter the contract name directly)
+
 **********
 where does a strategy have a specified yield?
+
+Also use it in CC.
 
 **********
 

@@ -85,8 +85,7 @@ class CoveredCall {
     // We know that in CCs we're looking at a single max value segment
     maxYieldAt = analyzer.maxValue.single.price.fromPrice;
     maxYieldAtChange = maxYieldAt / spotPrice;
-    yieldIfPriceUnchanged =
-        analyzer.valueAt(spotPrice) / (-analyzer.minValue.single.value);
+    yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
     equivalentHodlerSellPrice = spotPrice * maxYield;
     timeValue = oracle
             .extrinsicValue(position: optionLeg.asset.unit, money: money)
