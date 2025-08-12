@@ -12,6 +12,8 @@ class CoveredCall {
   final Commodity money;
   final Option option;
   final DateTime expiration;
+  final Market spotMarket;
+  final Market callMarket;
 
   final PositionAnalyzer analyzer;
 
@@ -63,8 +65,8 @@ class CoveredCall {
   String toString() => jsonEncode(this);
 
   CoveredCall._(this.strategy,
-      {required Market spotMarket,
-      required Market callMarket,
+      {required this.spotMarket,
+      required this.callMarket,
       required this.underlying,
       required this.money,
       required this.option,
@@ -117,7 +119,6 @@ class CoveredCall {
           spotPrice: spotMarket.midPrice,
           oracle: oracle);
     }
-    print("All CCs done");
   }
 }
 

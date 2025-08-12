@@ -17,9 +17,9 @@ void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
 
-  browseVerticalSpreads(markets);
+  // browseVerticalSpreads(markets);
   // browseBonds(markets);
-  // browseCoveredCalls(markets);
+  browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
   // browseLongCalls(markets);
 
@@ -66,8 +66,18 @@ void browseCoveredCalls(List<Market> markets) {
   print(" ============== CC ==============");
   for (CoveredCall cc in CoveredCall.generateAll(markets,
       underlying: underlying, money: money)) {
-    print(cc.toJson());
-    print("");
+    final spot = cc.spotMarket;
+    final longSpot = PositionAnalyzer.scalePositionToRisk(
+        spot.long(), cc.analyzer.maxRisk,
+        underlying: cc.underlying, money: cc.money);
+    final pricesWithSameMaxGain =
+        PositionAnalyzer(longSpot, underlying: cc.underlying, money: cc.money)
+            .whereValueIs(cc.analyzer.maxValue);
+    print(
+        "### CC: ${cc.analyzer.position.decompose()}, maxYield: ${cc.maxYield}, spotPrice: ${cc.spotPrice}"
+        "\n    equalSizedLongSpot: $longSpot"
+        "\n    breakevenVsHolder: $pricesWithSameMaxGain"
+        "\n");
   }
 }
 
