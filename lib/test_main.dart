@@ -75,7 +75,7 @@ void browseCoveredCalls(List<Market> markets) {
             .whereValueIs(cc.analyzer.maxValue);
     print(
         "### CC: ${cc.analyzer.position.decompose()}, maxYield: ${cc.maxYield}, spotPrice: ${cc.spotPrice}"
-        "\n    equalSizedLongSpot: $longSpot"
+        "\n    equalSizedLongSpot: ${longSpot.decompose()}"
         "\n    breakevenVsHolder: $pricesWithSameMaxGain"
         "\n");
   }

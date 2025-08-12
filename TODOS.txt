@@ -4,9 +4,10 @@ Add column "strike", and let "call contract" just be a string
 (so one can filter the contract name directly)
 
 **********
-where does a strategy have a specified yield?
+where does a strategy have a specified yield? <-- Done.
 
-Also use it in CC.
+Also use it in CC. Right now it's implemented in JS:
+return `${dollarFmt.format(value)}\n(${percentFmt.format(value / spotPrice - 1.0)})`;
 
 **********
 
