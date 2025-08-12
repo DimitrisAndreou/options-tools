@@ -83,7 +83,7 @@ class CoveredCall {
     maxYield = analyzer.maxYield;
     maxProfit = analyzer.maxProfit;
     // We know that in CCs we're looking at a single max value segment
-    maxYieldAt = analyzer.maxValue.single.price.fromPrice;
+    maxYieldAt = analyzer.bestPrices.first.fromPrice;
     maxYieldAtChange = maxYieldAt / spotPrice;
     yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
     equivalentHodlerSellPrice = spotPrice * maxYield;
@@ -117,6 +117,7 @@ class CoveredCall {
           spotPrice: spotMarket.midPrice,
           oracle: oracle);
     }
+    print("All CCs done");
   }
 }
 
@@ -257,26 +258,28 @@ class VerticalSpread {
     type = longLeg.asset.toOption.strike > shortLeg.asset.toOption.strike
         ? VerticalSpreadType.over
         : VerticalSpreadType.under;
-    breakeven = analyzer.breakevens.singleOrNull?.price;
+    breakeven = pickNearestBoundary(spotPrice, analyzer.breakevens);
     breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
     maxYield = analyzer.maxYield;
-    maxYieldAt = pickNearestBoundary(spotPrice, analyzer.maxValue);
+    maxYieldAt = pickNearestBoundary(spotPrice, analyzer.bestPrices)!;
     maxYieldAtChange = maxYieldAt / spotPrice;
     maxRisk = analyzer.maxRisk;
-    maxRiskAt = pickNearestBoundary(spotPrice, analyzer.minValue);
+    maxRiskAt = pickNearestBoundary(spotPrice, analyzer.worstPrices)!;
     maxRiskAtChange = maxRiskAt / spotPrice;
     yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
   }
 
-  static double pickNearestBoundary(
-          double target, Iterable<PriceAndValue> pnvs) =>
-      pickNearest(target,
-          pnvs.expand((pnv) => [pnv.price.fromPrice, pnv.price.toPrice]));
+  static double? pickNearestBoundary(
+          double target, Iterable<PriceRange> priceRanges) =>
+      pickNearest(
+          target,
+          priceRanges.expand(
+              (priceRange) => [priceRange.fromPrice, priceRange.toPrice]));
 
-  static double pickNearest(double target, Iterable<double> candidates) {
+  static double? pickNearest(double target, Iterable<double> candidates) {
     final it = candidates.iterator;
     if (!it.moveNext()) {
-      throw ArgumentError("No candidates to pick from");
+      return null;
     }
     double candidate = it.current;
     double distance = (target - candidate).abs();

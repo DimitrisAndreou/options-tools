@@ -55,6 +55,8 @@ class PositionAnalyzer {
   double get maxValue => _segments.map((segment) => segment.maxValue).max;
 
   Iterable<PriceRange> get breakevens => whereValueIs(0.0);
+  Iterable<PriceRange> get bestPrices => whereValueIs(maxValue);
+  Iterable<PriceRange> get worstPrices => whereValueIs(minValue);
 
   Iterable<PriceRange> whereValueIs(double value) => PriceRange._mergeAdjacents(
       _segments.map((segment) => segment.whereValueIs(value)).nonNulls);
@@ -89,7 +91,7 @@ class PositionAnalyzer {
               .maxRisk);
 
   // Can be negative for profitless strategies.
-  double get maxProfit => min(maxValue, 0.0);
+  double get maxProfit => max(maxValue, 0.0);
   double get maxRisk => max(-minValue, 0.0);
 
   double get maxYield => maxProfit / maxRisk;
@@ -116,7 +118,9 @@ class PriceRange {
   bool get isPoint => fromPrice == toPrice;
 
   double get price {
-    if (!isPoint) throw ArgumentError("isPoint == false");
+    if (!isPoint) {
+      throw ArgumentError("isPoint == false");
+    }
     return fromPrice;
   }
 
@@ -189,7 +193,7 @@ class _PnLSegment {
     final List<double> deltas = [];
     double prevPrice = minPrice;
     double prevValue = valueAtMinPrice;
-    final medianIndex = 2;
+    final medianIndex = 3;
     for (int i = 0; i < medianIndex * 2 + 1; ++i) {
       double nextPrice = (prevPrice + 1.0) * 1.5;
       double nextValue = priceToValue(nextPrice);
@@ -198,7 +202,6 @@ class _PnLSegment {
       prevPrice = nextPrice;
       prevValue = nextValue;
     }
-    ;
     final double delta = (deltas..sort())[medianIndex];
 
     return _PnLSegment(

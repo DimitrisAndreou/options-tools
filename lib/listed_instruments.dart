@@ -48,18 +48,18 @@ class ListedInstrument {
           price_change: data['price_change'] as double?);
 
   @override
-  String toString() =>
-      'instrument_name: $instrument_name,' 'base_currency: $base_currency,' +
-      'quote_currency: $quote_currency,' +
-      'mark_price: $mark_price,' +
-      'estimated_delivery_price: $estimated_delivery_price,' +
-      'last: $last,' +
-      'low: $low,' +
-      'bid_price: $bid_price,' +
-      'mid_price: $mid_price,' +
-      'ask_price: $ask_price,' +
-      'high: $high,' +
-      'underlying_index: $underlying_index,' +
-      'underlying_price: $underlying_price,' +
+  String toString() => 'instrument_name: $instrument_name,'
+      'base_currency: $base_currency,'
+      'quote_currency: $quote_currency,'
+      'mark_price: $mark_price,'
+      'estimated_delivery_price: $estimated_delivery_price,'
+      'last: $last,'
+      'low: $low,'
+      'bid_price: $bid_price,'
+      'mid_price: $mid_price,'
+      'ask_price: $ask_price,'
+      'high: $high,'
+      'underlying_index: $underlying_index,'
+      'underlying_price: $underlying_price,'
       'price_change: $price_change,';
 }

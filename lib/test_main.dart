@@ -17,11 +17,11 @@ void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
 
-  // browseVerticalSpreads(markets);
+  browseVerticalSpreads(markets);
   // browseBonds(markets);
   // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
-  browseLongCalls(markets);
+  // browseLongCalls(markets);
 
   // printOptionChain(markets);
 
@@ -182,8 +182,8 @@ void printGeometricCoveredCalls(List<Market> markets) {
         print("${option.name.toString().padLeft(21)}: "
             "breakeven=${analyzer.breakevens}, "
             "maxYield=${percentify(analyzer.maxYield)} "
-            "achieved at ${analyzer.maxValue.first.price} "
-            "(${percentify(analyzer.maxValue.first.price.fromPrice / spotPrice - 1.0)} from spot)");
+            "achieved at ${analyzer.bestPrices.first.price} "
+            "(${percentify(analyzer.bestPrices.first.fromPrice / spotPrice - 1.0)} from spot)");
 
         // if (maxYield <= riskFreeYield) continue;
         // final equivalentSellPrice = spotPrice * maxYield;
