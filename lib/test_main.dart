@@ -104,6 +104,7 @@ void browseLongCalls(List<Market> allMarkets) {
     if (breakeven == null) {
       continue;
     }
+    // Find breakeven vs spot long position of the same max loss.
     final longSpot = PositionAnalyzer.scalePositionToRisk(
         spotMarket.long(), longCallAnalyzer.maxRisk,
         underlying: underlying, money: money);
@@ -117,7 +118,6 @@ void browseLongCalls(List<Market> allMarkets) {
         ", in the money at ${percentify(asChange(strike, spotMarket.midPrice)).padLeft(7)}"
         ", profit starts at ${percentify(asChange(breakeven.price, spotMarket.midPrice)).padLeft(7)} "
         "(\$${breakeven.price.toStringAsFixed(0).padLeft(6)})");
-    // Find breakeven vs spot long position of the same max loss.
   }
 }
 
