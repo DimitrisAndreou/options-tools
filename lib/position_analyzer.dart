@@ -193,7 +193,7 @@ class _PnLSegment {
     final List<double> deltas = [];
     double prevPrice = minPrice;
     double prevValue = valueAtMinPrice;
-    final medianIndex = 3;
+    final medianIndex = 2;
     for (int i = 0; i < medianIndex * 2 + 1; ++i) {
       double nextPrice = (prevPrice + 1.0) * 1.5;
       double nextValue = priceToValue(nextPrice);
@@ -202,7 +202,9 @@ class _PnLSegment {
       prevPrice = nextPrice;
       prevValue = nextValue;
     }
-    final double delta = (deltas..sort())[medianIndex];
+    final double tentativeDelta = (deltas..sort())[medianIndex];
+    final double delta =
+        tentativeDelta.abs() < 0.0000000000000001 ? 0.0 : tentativeDelta;
 
     return _PnLSegment(
         minPrice: minPrice,
