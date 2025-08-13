@@ -9,9 +9,11 @@ import 'position_analyzer.dart';
 import 'url_fetcher.dart';
 import 'strategies.dart';
 
-String percentify(double x, {int decimals = 1}) =>
-    "${(100.0 * x).toStringAsFixed(decimals)}%";
+String percentify(double x, {int decimals = 1, bool sign = true}) =>
+    "${sign ? (x >= 0.0 ? "+" : "-") : ""}${(100.0 * x).toStringAsFixed(decimals)}%";
 String dollarify(double x) => "\$${x.toStringAsFixed(0)}";
+double asChange(double changedValue, double originalValue) =>
+    changedValue / originalValue - 1.0;
 
 void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
@@ -110,9 +112,11 @@ void browseLongCalls(List<Market> allMarkets) {
     final strike = call.asset.toOption.strike;
     final leverage = longCallAnalyzer.deltaAfter(strike) /
         longSpotAnalyzer.deltaAfter(strike);
-    print("${call.asset}. --> Leverage: ${leverage.toStringAsFixed(1)}X"
-        "  profit after \$${breakeven.price.toStringAsFixed(0)} "
-        "(after +${(100.0 * breakeven.price / spotMarket.midPrice - 100.0).toStringAsFixed(1)}%)");
+    print(
+        "${call.asset}. --> Leverage: ${leverage.toStringAsFixed(1).padLeft(5)}X"
+        ", in the money at ${percentify(asChange(strike, spotMarket.midPrice)).padLeft(7)}"
+        ", profit starts at ${percentify(asChange(breakeven.price, spotMarket.midPrice)).padLeft(7)} "
+        "(\$${breakeven.price.toStringAsFixed(0).padLeft(6)})");
     // Find breakeven vs spot long position of the same max loss.
   }
 }
@@ -167,7 +171,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
       final future = futures[expiration];
       if (future == null) continue;
       final futurePrice = future.midPrice;
-      final riskFreeYield = 1.0 + max(0.0, futurePrice / spotPrice - 1);
+      final riskFreeYield = 1.0 + max(0.0, asChange(futurePrice, spotPrice));
       final riskFreeAPR = (riskFreeYield - 1.0) *
           Duration(days: 365).inMinutes /
           expiration.minutesLeft;
@@ -195,7 +199,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
             "breakeven=${analyzer.breakevens}, "
             "maxYield=${percentify(analyzer.maxYield)} "
             "achieved at ${analyzer.bestPrices.first.price} "
-            "(${percentify(analyzer.bestPrices.first.fromPrice / spotPrice - 1.0)} from spot)");
+            "(${percentify(asChange(analyzer.bestPrices.first.fromPrice, spotPrice))} from spot)");
 
         // if (maxYield <= riskFreeYield) continue;
         // final equivalentSellPrice = spotPrice * maxYield;
