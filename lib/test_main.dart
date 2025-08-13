@@ -19,9 +19,9 @@ void main() async {
 
   // browseVerticalSpreads(markets);
   // browseBonds(markets);
-  browseCoveredCalls(markets);
+  // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
-  // browseLongCalls(markets);
+  browseLongCalls(markets);
 
   // printOptionChain(markets);
 
@@ -110,7 +110,9 @@ void browseLongCalls(List<Market> allMarkets) {
     final strike = call.asset.toOption.strike;
     final leverage = longCallAnalyzer.deltaAfter(strike) /
         longSpotAnalyzer.deltaAfter(strike);
-    print("${call.asset}. --> Leverage: ${leverage.toStringAsFixed(1)}X");
+    print("${call.asset}. --> Leverage: ${leverage.toStringAsFixed(1)}X"
+        "  profit after \$${breakeven.price.toStringAsFixed(0)} "
+        "(after +${(100.0 * breakeven.price / spotMarket.midPrice - 100.0).toStringAsFixed(1)}%)");
     // Find breakeven vs spot long position of the same max loss.
   }
 }
