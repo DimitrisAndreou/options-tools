@@ -94,8 +94,8 @@ class PositionAnalyzer {
   double get maxProfit => max(maxValue, 0.0);
   double get maxRisk => max(-minValue, 0.0);
 
-  double get maxYield => maxProfit / maxRisk;
-  double yieldAt(double price) => valueAt(price) / maxRisk;
+  double get maxYield => 1.0 + maxProfit / maxRisk;
+  double yieldAt(double price) => 1.0 + valueAt(price) / maxRisk;
 
   double valueAt(double price) =>
       _segments.map((segment) => segment.valueAt(price)).nonNulls.first;
