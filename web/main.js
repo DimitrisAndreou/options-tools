@@ -360,13 +360,22 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
 
   const columnDefs = [
     { 
-      headerName: 'Call Contract', 
-      field: 'maxYieldAt',
-      sortable: true, 
+      headerName: 'Call', 
+      field: 'call',
+      sortable: false, 
       filter: true,
       cellRenderer: (params) => `<strong>${params.data.call}</strong>`,
       minWidth: 200,
       headerTooltip: 'The call option via which to build a covered call strategy',
+    },
+    { 
+      headerName: 'Strike', 
+      field: 'maxYieldAt',
+      sortable: true, 
+      filter: true,
+      cellRenderer: (params) => `<strong>${params.data.maxYieldAt}</strong>`,
+      minWidth: 100,
+      headerTooltip: 'The strike (also the price where max yield is achieved)',
     },
     { 
       headerName: 'DTE', 
@@ -374,7 +383,7 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
       sortable: true, 
       filter: 'agNumberColumnFilter',
       headerTooltip: 'Days till expiration',
-      minWidth: 40,
+      minWidth: 50,
       sort: 'desc',
     },
     { 
@@ -392,7 +401,7 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
       sortable: true,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params) => percentFmt.format(params.value - 1.0),
-      minWidth: 80,
+      minWidth: 90,
       headerTooltip: 'The breakeven price, as a change (%) of the current spot price',
     },
     {
@@ -401,7 +410,7 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
       sortable: true,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params) => percentFmt.format(params.value - 1.0),
-      minWidth: 80,
+      minWidth: 90,
       headerTooltip: 'The max yield (maximum profitability) of this strategy',
     },
     {
@@ -410,7 +419,7 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
       sortable: true,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params) => percentFmt.format(params.value - 1.0),
-      minWidth: 80,
+      minWidth: 90,
       headerTooltip: 'The minimum spot price change (%) you need at expiration to get the max yield',
     },
   ];
