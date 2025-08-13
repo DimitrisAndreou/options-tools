@@ -10,7 +10,7 @@ import 'url_fetcher.dart';
 import 'strategies.dart';
 
 String percentify(double x, {int decimals = 1, bool sign = true}) =>
-    "${sign ? (x >= 0.0 ? "+" : "-") : ""}${(100.0 * x).toStringAsFixed(decimals)}%";
+    "${sign && x >= 0.0 ? "+" : ""}${(100.0 * x).toStringAsFixed(decimals)}%";
 String dollarify(double x) => "\$${x.toStringAsFixed(0)}";
 double asChange(double changedValue, double originalValue) =>
     changedValue / originalValue - 1.0;
