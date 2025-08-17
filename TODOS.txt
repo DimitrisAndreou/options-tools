@@ -1,7 +1,13 @@
-*********
-CC table:
-Add column "strike", and let "call contract" just be a string
-(so one can filter the contract name directly)
+*******
+yield vs profit is confusing
+the need to do percentify(yield-1.0) is confusingq
+
+Maybe add types? Yield(value), Pnl(value), Rate(value), so they can't be confused? Maybe worth an experiment.
+
+*******
+Generating a single CC is tricky. Can't do it merely from a call contract
+(need all markets, including spot markets, or an Oracle than knows all this).
+
 
 **********
 where does a strategy have a specified yield? <-- Done.

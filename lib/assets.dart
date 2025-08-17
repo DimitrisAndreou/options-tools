@@ -176,7 +176,7 @@ class Option extends Expirable {
       required super.expiration,
       super.contractLot}) {
     if (isPut == isCall) {
-      throw ArgumentError("Exactly one of these should be true: " +
+      throw ArgumentError("Exactly one of these should be true: "
           "isPut: $isPut, isCall: $isCall");
     }
   }

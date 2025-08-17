@@ -89,8 +89,6 @@ class CoveredCall {
     maxYieldAtChange = maxYieldAt / spotPrice;
     yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
     equivalentHodlerSellPrice = spotPrice * maxYield;
-    print(
-        "Spot price=$spotPrice, maxYield=$maxYield, equivalentHodlerSellPrice=$equivalentHodlerSellPrice");
     timeValue = oracle
             .extrinsicValue(position: optionLeg.asset.unit, money: money)
             .size /

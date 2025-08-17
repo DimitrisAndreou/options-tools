@@ -91,13 +91,14 @@ void browseLongCalls(List<Market> allMarkets) {
   final size = Deribit.getOptionSize(underlying);
   final oracle = Oracle.fromMarkets(allMarkets);
   final spotMarket = oracle.marketFor(asset: underlying, money: money);
-  for (final call in allMarkets
-      .whereUnderlyingIs(underlying)
-      .calls
-      .withMoney(money, oracle)
-      .sortByStrike(Order.asc)
-      .sortByExpiration(Order.asc)) {
-    final longCall = call.long();
+  final ccs =
+      CoveredCall.generateAll(allMarkets, underlying: underlying, money: money);
+  for (final cc in ccs) {
+    if (cc.breakeven == null) {
+      continue;
+    }
+    final callContract = cc.callMarket.asset.toOption;
+    final longCall = cc.callMarket.long();
     final longCallAnalyzer =
         PositionAnalyzer(longCall, underlying: underlying, money: money);
     final breakeven = longCallAnalyzer.breakevens.singleOrNull;
@@ -110,14 +111,17 @@ void browseLongCalls(List<Market> allMarkets) {
         underlying: underlying, money: money);
     final longSpotAnalyzer =
         PositionAnalyzer(longSpot, underlying: underlying, money: money);
-    final strike = call.asset.toOption.strike;
+    final strike = callContract.strike;
     final leverage = longCallAnalyzer.deltaAfter(strike) /
         longSpotAnalyzer.deltaAfter(strike);
-    print(
-        "${call.asset}. --> Leverage: ${leverage.toStringAsFixed(1).padLeft(5)}X"
-        ", in the money at ${percentify(asChange(strike, spotMarket.midPrice)).padLeft(7)}"
-        ", profit starts at ${percentify(asChange(breakeven.price, spotMarket.midPrice)).padLeft(7)} "
-        "(\$${breakeven.price.toStringAsFixed(0).padLeft(6)})");
+    print("${callContract.toString().padLeft(32)} -->"
+        // " Leverage: ${leverage.toStringAsFixed(1).padLeft(5)}X"
+        ", ITM @ ${percentify(asChange(strike, spotMarket.midPrice)).padLeft(7)}"
+        ", profit @ ${percentify(asChange(breakeven.price, spotMarket.midPrice)).padLeft(7)}"
+        " (\$${breakeven.price.toStringAsFixed(0).padLeft(6)})"
+        ", CC b.e.: ${percentify(asChange(cc.breakeven!, spotMarket.midPrice)).padLeft(7)}"
+        " (\$${cc.breakeven!.toStringAsFixed(0).padLeft(6)})"
+        " cc max profit: ${percentify(cc.maxYield - 1.0)}");
   }
 }
 
