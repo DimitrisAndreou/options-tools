@@ -1,8 +1,10 @@
 *******
 yield vs profit is confusing
-the need to do percentify(yield-1.0) is confusingq
+the need to do percentify(yield-1.0) is confusing.
 
 Maybe add types? Yield(value), Pnl(value), Rate(value), so they can't be confused? Maybe worth an experiment.
+Would also help when translating these to JSON: they would guard against un-encodable values like infinity,
+and produce proper errors.
 
 *******
 Generating a single CC is tricky. Can't do it merely from a call contract
