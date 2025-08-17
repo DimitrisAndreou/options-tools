@@ -47,11 +47,6 @@ If you can't find a future, you can seamlessly add a synthetic future! Via the b
 
 *********
 
-Position operator+(double or Position?)
-maybe safer with Position: always check you don't mix apples with oranges.
-operator/ is already implemented like that.
-
-****************
 Plot probabilities for all expirations simultaneously? Like cone?
 
 *********************
@@ -59,11 +54,7 @@ Charts should be easier for mobile (larger points, for clicking)
 
 *********************
 
-Reusable parts of charts
-
-*********************
-
-Take slippage as parameter
+Take slippage as user parameter
 
 **********************
 
