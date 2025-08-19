@@ -155,9 +155,6 @@ class DatedFuture extends Expirable {
       {required super.underlying,
       required super.expiration,
       super.contractLot});
-
-  @override
-  String toString() => 'Future($name,underlying=$underlying)';
 }
 
 class Option extends Expirable {

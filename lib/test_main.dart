@@ -19,11 +19,12 @@ void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
 
-  // browseVerticalSpreads(markets);
+  // browseLinearContracts();
+  browseVerticalSpreads(markets);
   // browseBonds(markets);
   // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
-  browseLongCalls(markets);
+  // browseLongCalls(markets);
 
   // printOptionChain(markets);
 
@@ -37,6 +38,15 @@ void main() async {
 //         "Asset: [${call.asset}], sell price: ${call.sellPrice()} of ${call.money}");
 //     // Do it in dollars? Underlying?
 //   }
+}
+
+void browseLinearContracts() {
+  List<Market> usdcMarkets = await Deribit.fetchMarkets(
+      [DeribitCoin.BTC, DeribitCoin.ETH, DeribitCoin.USDC],
+      UrlFetcher(Duration(minutes: 15)));
+  for (final m in usdcMarkets) {
+    print(m);
+  }
 }
 
 void browseVerticalSpreads(List<Market> markets) {

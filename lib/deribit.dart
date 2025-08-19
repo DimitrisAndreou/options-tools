@@ -29,7 +29,8 @@ class Deribit {
 
   static Future<List<Market>> fetchMarkets(
       List<DeribitCoin> coins, UrlFetcher urlFetcher,
-      {void Function(ListedInstrument instr, String)? errorListener}) async {
+      {void Function(ListedInstrument instr, String error)?
+          errorListener}) async {
     final coinToResponse = {};
     for (final coin in coins) {
       // Hit Deribit sequentially; maybe less likely to get throttled.
@@ -101,8 +102,8 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
     }
     final String? strat = match.group(2);
     if (strat != null) {
-      // A custom strategy or a perpetual; ignore.
-      errorsSink(this, "Ignoring strat: $instrument_name");
+      // A custom strategy or a perpetual ("PERPETUAL"); ignore.
+      errorsSink(this, "Ignoring strat: $instrument_name ($strat)");
       return null;
     }
     final String? dates = match.group(3);
@@ -112,8 +113,8 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
     }
     final String assetNames = match.group(1)!;
     final assetsList = assetNames.split('_');
-    if (assetsList.length != 1) {
-      errorsSink(this, "Multiple assets: $assetsList");
+    if (assetsList.length > 2) {
+      errorsSink(this, "Too many assets: $assetsList");
       return null;
     }
     final datesList = dates.split('_');
