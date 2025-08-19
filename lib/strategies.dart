@@ -252,8 +252,10 @@ class VerticalSpread {
         moneyLeg = p;
       } else if (p.size > 0) {
         longLeg = p;
-      } else {
+      } else if (p.size < 0) {
         shortLeg = p;
+      } else {
+        throw ArgumentError("Unexpected leg: $p, in ${strategy.decompose()}");
       }
     }
     type = longLeg.asset.toOption.strike > shortLeg.asset.toOption.strike
