@@ -12,13 +12,30 @@ extension MarketListExtension on Iterable<Market> {
             asset.isExpirable && asset.toExpirable.underlying == underlying;
       });
 
-  Iterable<Market> withMoney(Commodity money, Oracle helper) =>
+  Iterable<Market> coercedToMoney(Commodity money, Oracle helper) =>
       map((market) => helper.marketFor(asset: market.asset, money: money));
+  Iterable<Market> whereMoneyIs(Commodity money) =>
+      where((market) => market.money == money);
+
+  Market? get tighestMarketOrNull => isEmpty ? null : tighestMarket;
+  Market get tighestMarket {
+    final Asset asset = first.asset;
+    for (final m in this) {
+      if (m.asset != asset) {
+        throw StateError("tighestMarket was requested for markets of "
+            "different assets: $asset != ${m.asset}");
+      }
+    }
+    return maxBy(this, (m) => m.relativeSpread)!;
+  }
 
   Iterable<Market> get spotMarkets =>
       where((market) => market.asset is Commodity);
   Iterable<Market> get futures => where((market) => market.asset.isDatedFuture);
   Iterable<Market> get options => where((market) => market.asset.isOption);
+  Iterable<Market> optionsWithStrikeInMoney(Commodity strikeMoney) =>
+      where((market) =>
+          market.asset.isOption && market.asset.toOption.money == strikeMoney);
   Iterable<Market> get calls =>
       where((market) => market.asset.isOption && market.asset.toOption.isCall);
   Iterable<Market> get puts =>

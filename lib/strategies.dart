@@ -105,7 +105,7 @@ class CoveredCall {
     for (final call in allMarkets
         .whereUnderlyingIs(underlying)
         .calls
-        .withMoney(money, oracle)
+        .coercedToMoney(money, oracle)
         .sortByStrike(Order.asc)
         .sortByExpiration(Order.asc)) {
       yield CoveredCall._(
@@ -177,7 +177,7 @@ class SyntheticBond {
     for (final future in allMarkets
         .whereUnderlyingIs(underlying)
         .futures
-        .withMoney(money, oracle)
+        .coercedToMoney(money, oracle)
         .sortByExpiration(Order.asc)) {
       yield SyntheticBond._(future.short(slippage) + spotMarket.long(slippage),
           underlying: underlying,
@@ -308,8 +308,8 @@ class VerticalSpread {
             Map<double, ({Market? call, Market? put})>> expirationToStrike
         in allMarkets
             .whereUnderlyingIs(underlying)
-            .options
-            .withMoney(money, oracle)
+            .optionsWithStrikeInMoney(money)
+            .coercedToMoney(money, oracle)
             .groupByExpiration(Order.asc)
             .mapValues((ms) => ms.groupByStrike(Order.asc).mapValues((ms) =>
                 (call: ms.calls.singleOrNull, put: ms.puts.singleOrNull)))

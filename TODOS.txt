@@ -6,6 +6,8 @@ Maybe add types? Yield(value), Pnl(value), Rate(value), so they can't be confuse
 Would also help when translating these to JSON: they would guard against un-encodable values like infinity,
 and produce proper errors.
 
+Maybe attach periods to Yield/Rate etc
+
 *******
 Generating a single CC is tricky. Can't do it merely from a call contract
 (need all markets, including spot markets, or an Oracle than knows all this).

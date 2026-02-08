@@ -1,6 +1,8 @@
 import 'dart:collection';
 import 'dart:math';
 
+import 'package:options_tools/market_analyzer.dart';
+
 import 'assets.dart';
 import 'deribit.dart';
 import 'markets.dart';
@@ -18,9 +20,12 @@ double asChange(double changedValue, double originalValue) =>
 void main() async {
   List<Market> markets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
+  ArchOracle oracle = Oracle.fromMarkets(markets);
+
+  testMarketNavigator(oracle);
 
   // browseLinearContracts();
-  browseVerticalSpreads(markets);
+  // browseVerticalSpreads(markets);
   // browseBonds(markets);
   // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
@@ -40,7 +45,14 @@ void main() async {
 //   }
 }
 
-void browseLinearContracts() {
+void testMarketNavigator(ArchOracle oracle) {
+  final money = Commodity("USD");
+  final underlying = Commodity("BTC");
+  MarketNavigator nav =
+      MarketNavigator.create(oracle, underlying: underlying, money: money);
+}
+
+void browseLinearContracts() async {
   List<Market> usdcMarkets = await Deribit.fetchMarkets(
       [DeribitCoin.BTC, DeribitCoin.ETH, DeribitCoin.USDC],
       UrlFetcher(Duration(minutes: 15)));
@@ -166,7 +178,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
     final Map<DateTime, Market> futures = markets
         .whereUnderlyingIs(underlying)
         .futures
-        .withMoney(usd, oracle)
+        .coercedToMoney(usd, oracle)
         .groupByExpiration()
         .mapValues((ms) => ms.single);
 
@@ -176,7 +188,7 @@ void printGeometricCoveredCalls(List<Market> markets) {
     for (final optionsByExpiration in markets
         .whereUnderlyingIs(underlying)
         .calls
-        .withMoney(usd, oracle)
+        .coercedToMoney(usd, oracle)
         .groupByExpiration(Order.desc)
         .mapValues((ms) => ms.sortByStrike(Order.asc))
         .entries) {

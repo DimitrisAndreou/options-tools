@@ -56,11 +56,16 @@ sealed class Oracle {
               intrinsicValue(position: position, money: money))
           .singleton(money);
 
-  static Oracle fromMarkets(Iterable<Market> markets) =>
+  static ArchOracle fromMarkets(Iterable<Market> markets) =>
       _RealMarketsOracle(markets);
 }
 
-class _RealMarketsOracle extends Oracle {
+abstract class ArchOracle extends Oracle {
+  Iterable<Market> get allMarkets;
+}
+
+class _RealMarketsOracle extends ArchOracle {
+  @override
   final Iterable<Market> allMarkets;
 
   // asset -> money -> corresponding spot Market
