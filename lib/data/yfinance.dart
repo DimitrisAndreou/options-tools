@@ -57,6 +57,7 @@ class YFinance {
             // TODO: catch & rethrow, to print more debug stuff if needed.
             (throw StateError("Did not find $optionType"));
         for (final option in options) {
+          if (option["bid"] == null || option["ask"] == null) continue;
           final optionMarket = Market.create(
               asset: Option(option["contractSymbol"],
                   underlying: underlying,
