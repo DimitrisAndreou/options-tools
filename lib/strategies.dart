@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:collection';
 
 import 'assets.dart';
-import 'deribit.dart';
 import 'markets.dart';
 import 'oracle.dart';
 import 'position_analyzer.dart';
@@ -99,7 +98,6 @@ class CoveredCall {
       {required Commodity underlying,
       required Commodity money,
       double slippage = 0.5}) sync* {
-    final size = Deribit.getOptionSize(underlying);
     final oracle = Oracle.fromMarkets(allMarkets);
     final spotMarket = oracle.marketFor(asset: underlying, money: money);
     for (final call in allMarkets
@@ -109,7 +107,9 @@ class CoveredCall {
         .sortByStrike(Order.asc)
         .sortByExpiration(Order.asc)) {
       yield CoveredCall._(
-          (call.short(slippage) + spotMarket.long(slippage)) * size,
+          (call.short(slippage) +
+                  spotMarket.long(slippage) * call.asset.toOption.contractLot) *
+              call.asset.toOption.minSize,
           spotMarket: spotMarket,
           callMarket: call,
           underlying: underlying,

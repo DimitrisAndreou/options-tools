@@ -4,11 +4,12 @@ import 'dart:math';
 import 'package:options_tools/market_analyzer.dart';
 
 import 'assets.dart';
-import 'deribit.dart';
+import 'data/deribit.dart';
+import 'data/url_fetcher.dart';
+import 'data/yfinance.dart';
 import 'markets.dart';
 import 'oracle.dart';
 import 'position_analyzer.dart';
-import 'url_fetcher.dart';
 import 'strategies.dart';
 
 String percentify(double x, {int decimals = 1, bool sign = true}) =>
@@ -18,11 +19,13 @@ double asChange(double changedValue, double originalValue) =>
     changedValue / originalValue - 1.0;
 
 void main() async {
-  List<Market> markets = await Deribit.fetchMarkets(
-      [DeribitCoin.BTC, DeribitCoin.ETH], UrlFetcher(Duration(minutes: 15)));
-  ArchOracle oracle = Oracle.fromMarkets(markets);
+  testYFinance();
 
-  testMarketNavigator(oracle);
+  // List<Market> markets = await Deribit.fetchMarkets(
+  //     [Deribit.BTC, Deribit.ETH], UrlFetcher(Duration(minutes: 15)));
+  // ArchOracle oracle = Oracle.fromMarkets(markets);
+
+  // testMarketNavigator(oracle);
 
   // browseLinearContracts();
   // browseVerticalSpreads(markets);
@@ -34,7 +37,7 @@ void main() async {
   // printOptionChain(markets);
 
 //   Iterable<Market> calls = markets
-//       .whereUnderlyingIs(DeribitCoin.BTC.commodity)
+//       .whereUnderlyingIs(Deribit.BTC.commodity)
 //       .calls
 //       .sortByStrike(Order.asc)
 //       .sortByExpiration(Order.asc);
@@ -43,6 +46,55 @@ void main() async {
 //         "Asset: [${call.asset}], sell price: ${call.sellPrice()} of ${call.money}");
 //     // Do it in dollars? Underlying?
 //   }
+}
+
+void testYFinance() async {
+  final urlFetcher = UrlFetcher(Duration(minutes: 15));
+  YFinance yfinance = await YFinance.openConnection(urlFetcher);
+  final List<Market> markets = await yfinance.fetchMarket("GOOG", urlFetcher);
+
+  // for (final MapEntry<DateTime,
+  //         Map<double, ({Market? call, Market? put})>> expirationToStrike
+  //     in markets.options
+  //         .sortByExpiration(Order.desc)
+  //         .groupByExpiration()
+  //         .mapValues((ms) => ms.groupByStrike(Order.desc).mapValues(
+  //             (ms) => (call: ms.calls.singleOrNull, put: ms.puts.singleOrNull)))
+  //         .entries) {
+  //   print("Date: ${expirationToStrike.key}");
+  //   for (final strikeToOptions in expirationToStrike.value.entries) {
+  //     final options = strikeToOptions.value;
+  //     print(
+  //         "  Strike: ${strikeToOptions.key} Call: ${options.call},  put: ${options.put}");
+  //   }
+  //   break;
+  // }
+
+  final money = Commodity("USD");
+  final underlying = Commodity("GOOG");
+
+  print(" ============== GOOG CC ==============");
+  for (CoveredCall cc in CoveredCall.generateAll(markets,
+      underlying: underlying, money: money)) {
+    final spot = cc.spotMarket;
+    final longSpot = PositionAnalyzer.scalePositionToRisk(
+        spot.long(), cc.analyzer.maxRisk,
+        underlying: cc.underlying, money: cc.money);
+    final pricesWithSameMaxGain =
+        PositionAnalyzer(longSpot, underlying: cc.underlying, money: cc.money)
+            .whereValueIs(cc.analyzer.maxValue);
+    print("Spot: $spot");
+    print("Analyzer: ${cc.analyzer}");
+    print("max risk: ${cc.analyzer.maxRisk}");
+    print("Long spot: $longSpot");
+    print("pricesWithSameMaxGain: $pricesWithSameMaxGain");
+
+    print(
+        "### CC: ${cc.analyzer.position.decompose()}, maxYield: ${cc.maxYield}, spotPrice: ${cc.spotPrice}"
+        "\n    equalSizedLongSpot: ${longSpot.decompose()}"
+        "\n    breakevenVsHolder: $pricesWithSameMaxGain"
+        "\n");
+  }
 }
 
 void testMarketNavigator(ArchOracle oracle) {
@@ -54,7 +106,7 @@ void testMarketNavigator(ArchOracle oracle) {
 
 void browseLinearContracts() async {
   List<Market> usdcMarkets = await Deribit.fetchMarkets(
-      [DeribitCoin.BTC, DeribitCoin.ETH, DeribitCoin.USDC],
+      [Deribit.BTC, Deribit.ETH, Deribit.USDC],
       UrlFetcher(Duration(minutes: 15)));
   for (final m in usdcMarkets) {
     print(m);
@@ -110,7 +162,6 @@ void browseLongCalls(List<Market> allMarkets) {
   final underlying = Commodity("BTC");
 
   print(" ============== Long Calls ==============");
-  final size = Deribit.getOptionSize(underlying);
   final oracle = Oracle.fromMarkets(allMarkets);
   final spotMarket = oracle.marketFor(asset: underlying, money: money);
   final ccs =
@@ -210,7 +261,6 @@ void printGeometricCoveredCalls(List<Market> markets) {
 
       for (final market in options) {
         final option = market.asset.toOption;
-        final size = Deribit.getOptionSize(option.underlying);
 
         // includes +premium ($)
         final shortCall = market.short(slippage);

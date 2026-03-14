@@ -30,7 +30,8 @@ sealed class Asset {
 
 sealed class Position {
   Position operator -() => this * -1.0;
-  Position operator *(double size) => _ScaledPosition(this, size);
+  Position operator *(double size) =>
+      size == 1.0 ? this : _ScaledPosition(this, size);
 
   Position operator +(Position that) => _MergedPosition([this, that]);
   Position operator -(Position that) => _MergedPosition([this, -that]);
@@ -140,21 +141,22 @@ abstract class Expirable extends Asset {
   final Commodity underlying;
   // One derivative contract would refer to how many units of the underlying?
   final double contractLot;
+  final double minSize;
   final DateTime expiration;
 
-  Expirable(
-    super.name, {
-    required this.underlying,
-    required this.expiration,
-    this.contractLot = 1,
-  });
+  Expirable(super.name,
+      {required this.underlying,
+      required this.expiration,
+      this.contractLot = 1,
+      this.minSize = 1});
 }
 
 class DatedFuture extends Expirable {
   DatedFuture(super.name,
       {required super.underlying,
       required super.expiration,
-      super.contractLot});
+      super.contractLot,
+      super.minSize});
 }
 
 class Option extends Expirable {
@@ -171,7 +173,8 @@ class Option extends Expirable {
       this.isPut = false,
       this.isCall = false,
       required super.expiration,
-      super.contractLot}) {
+      super.contractLot,
+      super.minSize}) {
     if (isPut == isCall) {
       throw ArgumentError("Exactly one of these should be true: "
           "isPut: $isPut, isCall: $isCall");

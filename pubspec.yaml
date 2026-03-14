@@ -9,7 +9,8 @@ environment:
 # Add regular dependencies here.
 dependencies:
   web: ^1.0.0
-  http: ^1.2.2
+  html: ^0.15.4
+  http: ^1.6.0
   memory_cache: ^1.2.0
   collection: ^1.19.1
 

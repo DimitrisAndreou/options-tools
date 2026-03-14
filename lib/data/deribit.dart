@@ -1,34 +1,26 @@
 // ignore_for_file: constant_identifier_names
 
 import 'dart:convert';
-import 'assets.dart';
-import 'markets.dart';
-import 'listed_instruments.dart';
+import '../assets.dart';
+import '../markets.dart';
 import 'url_fetcher.dart';
-
-enum DeribitCoin {
-  BTC(Commodity("BTC")),
-  ETH(Commodity("ETH")),
-  USDC(Commodity("USDC")),
-  // The rest aren't needed; all of them can be fetched via USDC.
-  // Note that "USD" itself is not supported.
-  USDT(Commodity("USDT")),
-  BNB(Commodity("BNB")),
-  PAXG(Commodity("PAXG")),
-  SOL(Commodity("SOL")),
-  XRP(Commodity("XRP"));
-
-  final Commodity commodity;
-  const DeribitCoin(this.commodity);
-
-  // Reminder: DeribitCoin.values.byName("BTC")
-}
 
 class Deribit {
   Deribit._();
 
+  static final BTC = "BTC";
+  static final ETH = "ETH";
+  static final USDC = "USDC";
+  // The rest aren't needed; all of them can be fetched via USDC.
+  // Note that "USD" itself is not supported.
+  static final USDT = "USDT";
+  static final BNB = "BNB";
+  static final PAXG = "PAXG";
+  static final SOL = "SOL";
+  static final XRP = "XRP";
+
   static Future<List<Market>> fetchMarkets(
-      List<DeribitCoin> coins, UrlFetcher urlFetcher,
+      List<String> coins, UrlFetcher urlFetcher,
       {void Function(ListedInstrument instr, String error)?
           errorListener}) async {
     final coinToResponse = {};
@@ -36,7 +28,7 @@ class Deribit {
       // Hit Deribit sequentially; maybe less likely to get throttled.
       final coinInstrumentsJson = await urlFetcher.fetch(
           'https://www.deribit.com/api/v2/public/get_book_summary_by_currency'
-          '?currency=${coin.name}');
+          '?currency=$coin');
       coinToResponse[coin] = coinInstrumentsJson;
     }
     final Iterable<ListedInstrument> instruments =
@@ -69,13 +61,6 @@ class Deribit {
           bid_price: 1.0,
           ask_price: 1.0);
     }
-  }
-
-  static double getOptionSize(Commodity underlying) {
-    if (underlying.name == DeribitCoin.BTC.name) {
-      return 0.1;
-    }
-    return 1.0;
   }
 }
 
@@ -135,7 +120,8 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
       return makeMarket(DatedFuture(instrument_name,
           underlying: underlying,
           expiration: expirationDate,
-          contractLot: 1.0));
+          contractLot: 1.0,
+          minSize: 0.0001));
     }
     final strikesList = strikes.split('_');
     if (strikesList.length != 1) {
@@ -158,7 +144,8 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
         isPut: isPut,
         isCall: isCall,
         expiration: expirationDate,
-        contractLot: 1.0));
+        contractLot: 1.0,
+        minSize: underlying.name == Deribit.BTC ? 0.1 : 1.0));
   }
 
   // BTC-22NOV24-85000-P
@@ -193,4 +180,70 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
     return DateTime.utc(2000 + yy, _monthToNum[mmm]!, dd, /*hour: */ 9)
         .toLocal();
   }
+}
+
+class ListedInstrument {
+  final String instrument_name;
+  final String base_currency;
+  final String quote_currency;
+  final double mark_price;
+  final double? estimated_delivery_price;
+  final double? last;
+  final double? low;
+  final double? bid_price;
+  final double? mid_price;
+  final double? ask_price;
+  final double? high;
+  final String? underlying_index;
+  final double? underlying_price;
+  final double? price_change;
+
+  ListedInstrument(
+      {required this.instrument_name,
+      required this.base_currency,
+      required this.quote_currency,
+      required this.mark_price,
+      this.estimated_delivery_price,
+      this.last,
+      this.low,
+      this.bid_price,
+      this.mid_price,
+      this.ask_price,
+      this.high,
+      this.underlying_index,
+      this.underlying_price,
+      this.price_change});
+
+  static ListedInstrument? fromJson(Map<String, dynamic> data) =>
+      ListedInstrument(
+          instrument_name: data['instrument_name'] as String,
+          base_currency: data['base_currency'] as String,
+          quote_currency: data['quote_currency'] as String,
+          mark_price: data['mark_price'] as double,
+          estimated_delivery_price: data['estimated_delivery_price'] as double?,
+          last: data['last'] as double?,
+          low: data['low'] as double?,
+          bid_price: data['bid_price'] as double?,
+          mid_price: data['mid_price'] as double?,
+          ask_price: data['ask_price'] as double?,
+          high: data['high'] as double?,
+          underlying_index: data['underlying_index'] as String?,
+          underlying_price: data['underlying_price'] as double?,
+          price_change: data['price_change'] as double?);
+
+  @override
+  String toString() => 'instrument_name: $instrument_name,'
+      'base_currency: $base_currency,'
+      'quote_currency: $quote_currency,'
+      'mark_price: $mark_price,'
+      'estimated_delivery_price: $estimated_delivery_price,'
+      'last: $last,'
+      'low: $low,'
+      'bid_price: $bid_price,'
+      'mid_price: $mid_price,'
+      'ask_price: $ask_price,'
+      'high: $high,'
+      'underlying_index: $underlying_index,'
+      'underlying_price: $underlying_price,'
+      'price_change: $price_change,';
 }
