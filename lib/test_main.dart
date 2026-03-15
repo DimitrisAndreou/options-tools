@@ -84,8 +84,11 @@ void testYFinance() async {
         PositionAnalyzer(longSpot, underlying: cc.underlying, money: cc.money)
             .whereValueIs(cc.analyzer.maxValue);
     print("Spot: $spot");
-    print("Analyzer: ${cc.analyzer}");
-    print("max risk: ${cc.analyzer.maxRisk}");
+    print("Call: ${cc.option}");
+    // print("Call premium: ${cc.callMarket.midPrice}");
+    // print("Analyzer: ${cc.analyzer}");
+    // print("max risk: ${cc.analyzer.maxRisk}");
+    print(cc);
     print("Long spot: $longSpot");
     print("pricesWithSameMaxGain: $pricesWithSameMaxGain");
 
