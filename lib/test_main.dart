@@ -77,24 +77,21 @@ void testYFinance() async {
   for (CoveredCall cc in CoveredCall.generateAll(markets,
       underlying: underlying, money: money)) {
     final spot = cc.spotMarket;
-    final longSpot = PositionAnalyzer.scalePositionToRisk(
-        spot.long(), cc.analyzer.maxRisk,
-        underlying: cc.underlying, money: cc.money);
+    final equalSizeLongStrategy = cc.analyzer.equalizeRisk(spot.long());
     final pricesWithSameMaxGain =
-        PositionAnalyzer(longSpot, underlying: cc.underlying, money: cc.money)
-            .whereValueIs(cc.analyzer.maxValue);
+        equalSizeLongStrategy.whereValueIs(cc.analyzer.maxValue);
     print("Spot: $spot");
     print("Call: ${cc.option}");
     // print("Call premium: ${cc.callMarket.midPrice}");
     // print("Analyzer: ${cc.analyzer}");
     // print("max risk: ${cc.analyzer.maxRisk}");
     print(cc);
-    print("Long spot: $longSpot");
+    print("Long spot: $equalSizeLongStrategy");
     print("pricesWithSameMaxGain: $pricesWithSameMaxGain");
 
     print(
         "### CC: ${cc.analyzer.position.decompose()}, maxYield: ${cc.maxYield}, spotPrice: ${cc.spotPrice}"
-        "\n    equalSizedLongSpot: ${longSpot.decompose()}"
+        "\n    equalSizedLongSpot: ${equalSizeLongStrategy.position.decompose()}"
         "\n    breakevenVsHolder: $pricesWithSameMaxGain"
         "\n");
   }
@@ -146,15 +143,12 @@ void browseCoveredCalls(List<Market> markets) {
   for (CoveredCall cc in CoveredCall.generateAll(markets,
       underlying: underlying, money: money)) {
     final spot = cc.spotMarket;
-    final longSpot = PositionAnalyzer.scalePositionToRisk(
-        spot.long(), cc.analyzer.maxRisk,
-        underlying: cc.underlying, money: cc.money);
+    final equalSizeLongStrategy = cc.analyzer.equalizeRisk(spot.long());
     final pricesWithSameMaxGain =
-        PositionAnalyzer(longSpot, underlying: cc.underlying, money: cc.money)
-            .whereValueIs(cc.analyzer.maxValue);
+        equalSizeLongStrategy.whereValueIs(cc.analyzer.maxValue);
     print(
         "### CC: ${cc.analyzer.position.decompose()}, maxYield: ${cc.maxYield}, spotPrice: ${cc.spotPrice}"
-        "\n    equalSizedLongSpot: ${longSpot.decompose()}"
+        "\n    equalSizedLongSpot: ${equalSizeLongStrategy.position.decompose()}"
         "\n    breakevenVsHolder: $pricesWithSameMaxGain"
         "\n");
   }
@@ -182,16 +176,12 @@ void browseLongCalls(List<Market> allMarkets) {
       continue;
     }
     // Find breakeven vs spot long position of the same max loss.
-    final longSpot = PositionAnalyzer.scalePositionToRisk(
-        spotMarket.long(), longCallAnalyzer.maxRisk,
-        underlying: underlying, money: money);
-    final longSpotAnalyzer =
-        PositionAnalyzer(longSpot, underlying: underlying, money: money);
+    final longSpotAnalyzer = longCallAnalyzer.equalizeRisk(spotMarket.long());
     final strike = callContract.strike;
     final leverage = longCallAnalyzer.deltaAfter(strike) /
         longSpotAnalyzer.deltaAfter(strike);
     print("${callContract.toString().padLeft(32)} -->"
-        // " Leverage: ${leverage.toStringAsFixed(1).padLeft(5)}X"
+        " Leverage: ${leverage.toStringAsFixed(1).padLeft(5)}X"
         ", ITM @ ${percentify(asChange(strike, spotMarket.midPrice)).padLeft(7)}"
         ", profit @ ${percentify(asChange(breakeven.price, spotMarket.midPrice)).padLeft(7)}"
         " (\$${breakeven.price.toStringAsFixed(0).padLeft(6)})"

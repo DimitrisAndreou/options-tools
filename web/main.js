@@ -471,7 +471,6 @@ function verticalSpreadsChart(data, divId) {
 //   "maxRisk": 11.619999999997162,
 //   "maxRiskAt": 88000,
 //   "maxRiskAtChange": 0.8519413128609254,
-//   "yieldIfPriceUnchanged": 0
 // } 
   const dataset = {
     id: "original",
@@ -598,6 +597,7 @@ async function jsMain() {
   const slippage = 0.5;
   try {
     // const stockCoveredCallsJson = await parseAndLog("yfinanceCoveredCalls", () => yfinanceCoveredCallsDart("GOOG", slippage));
+    // console.log({stockCoveredCallsJson});
 
     const btcCoveredCallsJson = await parseAndLog("btcCoveredCallsJson", () => coveredCallsDart("BTC", slippage));
     document.getElementById('btc-price').textContent = dollarFmt.format(extractSpotPrice(btcCoveredCallsJson));

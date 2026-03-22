@@ -40,24 +40,24 @@ class CoveredCall {
   late final double? timeValue;
 
   Map<String, dynamic> toJson() => {
-        'underlying': underlying.name,
-        'underlyingToBuy': underlyingToBuy.size,
-        'premiumToReceive': premiumToReceive.size,
-        'money': money.name,
-        'moneySize': moneyLeg.size,
-        'maxProfit': maxProfit,
-        'spotPrice': spotPrice,
-        'call': optionLeg.asset.name,
-        'callSize': optionLeg.size,
-        'DTE': expiration.daysLeft,
-        'breakEven': breakeven,
-        'breakEvenAsChange': breakevenAsChange,
-        'maxYield': maxYield,
-        'maxYieldAt': maxYieldAt,
-        'maxYieldAtChange': maxYieldAtChange,
-        'yieldIfPriceUnchanged': yieldIfPriceUnchanged,
-        'equivalentHodlerSellPrice': equivalentHodlerSellPrice,
-        'timeValue': timeValue,
+        'underlying': underlying.name, // Used
+        'underlyingToBuy': underlyingToBuy.size, // Used
+        'premiumToReceive': premiumToReceive.size, // Used
+        'money': money.name, // SHOULD be used but isn't
+        'moneySize': moneyLeg.size, // Used
+        'maxProfit': maxProfit, // Used
+        'spotPrice': spotPrice, // Used
+        'call': optionLeg.asset.name, // Used
+        'callSize': optionLeg.size, // Used
+        'DTE': expiration.daysLeft, // Used
+        'breakEven': breakeven, // Used. Y-axis!
+        'breakEvenAsChange': breakevenAsChange, // Used
+        'maxYield': maxYield, // Used
+        'maxYieldAt': maxYieldAt, // Used
+        'maxYieldAtChange': maxYieldAtChange, // Used
+        'equivalentHodlerSellPrice':
+            equivalentHodlerSellPrice, // Used. X-axis!!
+        'timeValue': timeValue, // Not used
       };
 
   @override
@@ -77,11 +77,9 @@ class CoveredCall {
         moneyLeg = strategy[money],
         underlyingLeg = strategy[underlying],
         optionLeg = strategy[option],
-        underlyingToBuy = -spotMarket.toAsset(strategy[money]),
+        underlyingToBuy = spotMarket.toAsset(-strategy[money]),
         premiumToReceive =
             spotMarket.toAsset(callMarket.toMoney(-strategy[option])) {
-    // underlyingToBuy = spotMarket.swap(strategy[money]),
-    // premiumToReceive = spotMarket.swap(-callMarket.swap(strategy[option])) {
     breakeven = analyzer.breakevens.singleOrNull?.price;
     breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
     maxYield = analyzer.maxYield;

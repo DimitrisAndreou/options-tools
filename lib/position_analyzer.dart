@@ -81,14 +81,15 @@ class PositionAnalyzer {
     throw StateError("No segment included price $price, segments: $_segments");
   }
 
-  // Transforms a position to a same position but with an adjusted size,
-  // so that the resulting position has the specified maximum risk.
-  static Position scalePositionToRisk(Position position, double desiredMaxRisk,
-          {required Commodity underlying, required Commodity money}) =>
+  // Transforms a position to a position of different size, such as
+  // the resulting position has the same maxRisk as this PositionAnalyzer.
+  PositionAnalyzer equalizeRisk(Position position) => PositionAnalyzer(
       position *
-      (desiredMaxRisk /
-          PositionAnalyzer(position, underlying: underlying, money: money)
-              .maxRisk);
+          (maxRisk /
+              PositionAnalyzer(position, underlying: underlying, money: money)
+                  .maxRisk),
+      underlying: underlying,
+      money: money);
 
   // Can be negative for profitless strategies.
   double get maxProfit => max(maxValue, 0.0);
