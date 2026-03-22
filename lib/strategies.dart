@@ -77,8 +77,11 @@ class CoveredCall {
         moneyLeg = strategy[money],
         underlyingLeg = strategy[underlying],
         optionLeg = strategy[option],
-        underlyingToBuy = spotMarket.swap(strategy[money]),
-        premiumToReceive = spotMarket.swap(-callMarket.swap(strategy[option])) {
+        underlyingToBuy = -spotMarket.toAsset(strategy[money]),
+        premiumToReceive =
+            spotMarket.toAsset(callMarket.toMoney(-strategy[option])) {
+    // underlyingToBuy = spotMarket.swap(strategy[money]),
+    // premiumToReceive = spotMarket.swap(-callMarket.swap(strategy[option])) {
     breakeven = analyzer.breakevens.singleOrNull?.price;
     breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
     maxYield = analyzer.maxYield;

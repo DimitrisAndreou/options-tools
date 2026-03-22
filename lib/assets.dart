@@ -6,7 +6,7 @@ sealed class Asset {
   final String name;
   const Asset(this.name);
 
-  Line pos(double size) => Line(this, size);
+  Line ofSize(double size) => Line(this, size);
   Line get unit => Line(this, 1.0);
 
   bool get isCommodity => this is Commodity;
@@ -118,7 +118,7 @@ class _MergedPosition extends Position {
 
   // Overriden as an optimization.
   @override
-  Line operator [](Asset asset) => asset.pos(_assetPositions[asset]!);
+  Line operator [](Asset asset) => asset.ofSize(_assetPositions[asset]!);
 
   @override
   String toString() => 'Sum($positions)';

@@ -32,10 +32,33 @@ abstract class Market {
           askSize: askSize);
   factory Market.createIdentity(Asset asset) => _IdentityMarket(asset);
 
-  Position long([double slippage = 0.5]) => asset.unit - buy(slippage);
-  Position short([double slippage = 0.5]) => sell(slippage) - asset.unit;
-  Line buy([double slippage = 0.5]) => money.pos(buyPrice(slippage));
-  Line sell([double slippage = 0.5]) => money.pos(sellPrice(slippage));
+  /// Creates a position consisting of:
+  ///   +1 of asset
+  ///   -price of money
+  Position long([double slippage = 0.5]) =>
+      asset.unit - money.ofSize(buyPrice(slippage));
+
+  /// Creates a position consisting of:
+  ///   -1 of asset
+  ///   +price of money
+  Position short([double slippage = 0.5]) =>
+      money.ofSize(sellPrice(slippage)) - asset.unit;
+
+  /// Converts a money quantity to an asset quantity (of same sign) via this
+  /// market.
+  Line toAsset(Line line, [double slippage = 0.5]) => switch (line) {
+        Line(asset: final lineAsset, size: final s) when lineAsset == money =>
+          Line(asset, s / buyPrice(slippage)),
+        _ => throw ArgumentError("Expected money [$money], got: ${line.asset}"),
+      };
+
+  /// Converts an asset quantity to a money quantity (of same sign) via this
+  /// market.
+  Line toMoney(Line line, [double slippage = 0.5]) => switch (line) {
+        Line(asset: final lineAsset, size: final s) when lineAsset == asset =>
+          Line(money, s * sellPrice(slippage)),
+        _ => throw ArgumentError("Expected asset [$asset], got: ${line.asset}"),
+      };
 
   // Given a side of a trade, e.g. some negative money quantity, it yields the
   // opposite side of the trade, e.g. a positive quantity of the asset bought.

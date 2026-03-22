@@ -12,8 +12,8 @@ sealed class Oracle {
           required Commodity money,
           double slippage = 0.5}) =>
       Position.mergeAll(position.decompose().map((line) =>
-          marketFor(asset: line.asset, money: money).sell(slippage) *
-          line.size)).singleton(money);
+          marketFor(asset: line.asset, money: money)
+              .toMoney(line, slippage))).singleton(money);
 
   Line intrinsicValue({required Position position, required Commodity money}) =>
       Position.mergeAll(position
@@ -24,7 +24,7 @@ sealed class Oracle {
                       asset: DatedFuture(underlying: final underlying),
                       size: final size
                     ) =>
-                      underlying.pos(size),
+                      underlying.ofSize(size),
                     Line(
                       asset: Option(
                         underlying: final underlying,
@@ -35,7 +35,7 @@ sealed class Oracle {
                       ),
                       size: final size
                     ) =>
-                      strikeMoney.pos(size *
+                      strikeMoney.ofSize(size *
                           lot *
                           max(
                               0,
