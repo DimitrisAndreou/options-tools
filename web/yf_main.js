@@ -32,11 +32,9 @@
       const errorMessage = `❌ ERROR: ${error}\n` + 
         `STORY: ${error.stack || 'No stack trace available'}`;
 
-      // Print to your UI console
       logToScreen(errorMessage);
-
-      // Keep this for your browser dev tools too!
       console.error("Dart Error:", error); 
+      console.error("Dart stack trace:", error.stack);
     }
   }
   
