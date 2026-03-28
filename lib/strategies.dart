@@ -58,20 +58,21 @@ class CoveredCall {
         'equivalentHodlerSellPrice':
             equivalentHodlerSellPrice, // Used. X-axis!!
 
+        //////////////////
         // New approach:
         // Either +x% money (+|x|)
         // Or +y% underlying (+|y|)
 
         // Position description: underlying, money, call
-        'underlying': underlying.name,
-        'money': money.name,
-        'call': optionLeg.asset.name,
+        // 'underlying': underlying.name,
+        // 'money': money.name,
+        // 'call': optionLeg.asset.name,
 
         // Open the trade: callSize, underlyingToBuy, moneySize
-        'callSize': optionLeg.size, // Used
-        'underlyingToBuy': underlyingToBuy.size, // Used
-        'moneySize': moneyLeg.size, // Used
-        'premiumToReceive': premiumToReceive.size, // Used
+        // 'callSize': optionLeg.size, // Used
+        // 'underlyingToBuy': underlyingToBuy.size, // Used
+        // 'moneySize': moneyLeg.size, // Used
+        // 'premiumToReceive': premiumToReceive.size, // Used
 
         // CC aspects:
         // 'maxYieldInMoney':
@@ -85,8 +86,8 @@ class CoveredCall {
         // A simple function of makePrice(price, spotPrice) can produce this.
 
         // Misc
-        'spotPrice': spotPrice,
-        'DTE': expiration.daysLeft,
+        // 'spotPrice': spotPrice,
+        // 'DTE': expiration.daysLeft,
       };
 
   @override

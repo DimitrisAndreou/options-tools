@@ -593,7 +593,7 @@ async function parseAndLog(name, jsonLoaderFn) {
   return JSON.parse(rawJson);
 }
 
-async function jsMain() {
+async function jsDeribitMain() {
   const slippage = 0.5;
   try {
     // const stockCoveredCallsJson = await parseAndLog("yfinanceCoveredCalls", () => yfinanceCoveredCallsDart("GOOG", slippage));

@@ -1,9 +1,10 @@
 .dart_tool/package_config.json
+deribit_main.dart.js
+deribit_main.js
 favicon.png
 favicon.svg
 index.html
-main.dart.js
-main.js
+index_yf.html
 packages/$sdk/dev_compiler/amd/require.js
 packages/$sdk/dev_compiler/ddc/ddc_module_loader.js
 packages/$sdk/dev_compiler/web/dart_stack_trace_mapper.js
@@ -17,3 +18,5 @@ packages/lints/core.yaml
 packages/lints/recommended.yaml
 packages/web/fix_data.yaml
 styles.css
+yf_main.dart.js
+yf_main.js
