@@ -5,6 +5,7 @@ favicon.png
 favicon.svg
 index.html
 index_yf.html
+option_tools.js
 packages/$sdk/dev_compiler/amd/require.js
 packages/$sdk/dev_compiler/ddc/ddc_module_loader.js
 packages/$sdk/dev_compiler/web/dart_stack_trace_mapper.js
