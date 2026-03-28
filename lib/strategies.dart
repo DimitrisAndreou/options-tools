@@ -57,7 +57,36 @@ class CoveredCall {
         'maxYieldAtChange': maxYieldAtChange, // Used
         'equivalentHodlerSellPrice':
             equivalentHodlerSellPrice, // Used. X-axis!!
-        'timeValue': timeValue, // Not used
+
+        // New approach:
+        // Either +x% money (+|x|)
+        // Or +y% underlying (+|y|)
+
+        // Position description: underlying, money, call
+        'underlying': underlying.name,
+        'money': money.name,
+        'call': optionLeg.asset.name,
+
+        // Open the trade: callSize, underlyingToBuy, moneySize
+        'callSize': optionLeg.size, // Used
+        'underlyingToBuy': underlyingToBuy.size, // Used
+        'moneySize': moneyLeg.size, // Used
+        'premiumToReceive': premiumToReceive.size, // Used
+
+        // CC aspects:
+        // 'maxYieldInMoney':
+        // 'breakEvenInMoney':
+        // 'maxYieldInUnderlying':
+        // 'breakEvenInUnderlying': ..!!
+        // Any price: {
+        //   absolute: ...
+        //   relative: ...  // relative to spot
+        // }
+        // A simple function of makePrice(price, spotPrice) can produce this.
+
+        // Misc
+        'spotPrice': spotPrice,
+        'DTE': expiration.daysLeft,
       };
 
   @override
@@ -70,8 +99,7 @@ class CoveredCall {
       required this.money,
       required this.option,
       required this.expiration,
-      required this.spotPrice,
-      required Oracle oracle})
+      required this.spotPrice})
       : analyzer =
             PositionAnalyzer(strategy, underlying: underlying, money: money),
         moneyLeg = strategy[money],
@@ -89,10 +117,6 @@ class CoveredCall {
     maxYieldAtChange = maxYieldAt / spotPrice;
     yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
     equivalentHodlerSellPrice = spotPrice * maxYield;
-    timeValue = oracle
-            .extrinsicValue(position: optionLeg.asset.unit, money: money)
-            .size /
-        spotPrice;
   }
 
   static Iterable<CoveredCall> generateAll(Iterable<Market> allMarkets,
@@ -117,8 +141,7 @@ class CoveredCall {
           money: money,
           option: call.asset.toOption,
           expiration: call.asset.toExpirable.expiration,
-          spotPrice: spotMarket.midPrice,
-          oracle: oracle);
+          spotPrice: spotMarket.midPrice);
     }
   }
 }

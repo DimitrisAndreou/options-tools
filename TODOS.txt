@@ -1,3 +1,10 @@
+****
+Reimplement CoveredCall strategy; new approach.
++X% or +Y%, whatever is least (in money).
+
+***
+YFinance
+
 *******
 yield vs profit is confusing
 the need to do percentify(yield-1.0) is confusing.
