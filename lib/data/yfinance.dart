@@ -44,7 +44,6 @@ class YFinance {
         final expirations = results["expirationDates"].cast<int>().toSet();
         // Not the one we happen to get in the first, dateless request.
         expirations.remove(optionChain["expirationDate"]);
-        print("TEMP: not adding more option chains"); // DO NOT SUBMIT
         for (int expiration in expirations) {
           urlsToFetch.add(
               '$_baseUrl/v7/finance/options/$ticker?crumb=$_crumb&date=$expiration');
@@ -53,7 +52,6 @@ class YFinance {
 
       for (final (optionType, isCall) in [("calls", true), ("puts", false)]) {
         final options = optionChain[optionType] ??
-            // TODO: catch & rethrow, to print more debug stuff if needed.
             (throw StateError("Did not find $optionType"));
         for (final option in options) {
           if (option["bid"] == null || option["ask"] == null) continue;
@@ -85,11 +83,11 @@ class YFinance {
       'Accept': '*/*',
     };
 
-    print("Handshake: Phase 1 - Getting Initial Cookie");
+    // Handshake: Phase 1 - Getting Initial Cookie
     // Use fc.yahoo.com - it's much faster than the full home page
     await urlFetcher.fetch('https://fc.yahoo.com', headers: headers);
 
-    print("Handshake: Phase 2 - Requesting Crumb");
+    // Handshake: Phase 2 - Requesting Crumb
     final crumb = await urlFetcher.fetch(
         'https://query2.finance.yahoo.com/v1/test/getcrumb',
         headers: headers);
@@ -99,7 +97,7 @@ class YFinance {
       throw Exception("Crumb request returned HTML (Session Rejected)");
     }
 
-    print("Handshake Success! Crumb: $crumb");
+    // Success! Got crumb (cookie).
     return YFinance(headers, crumb);
   }
 }
