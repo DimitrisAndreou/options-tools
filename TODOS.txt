@@ -3,7 +3,7 @@ Reimplement CoveredCall strategy; new approach.
 +X% or +Y%, whatever is least (in money).
 
 ***
-YFinance
+YFinance + optionstrat links
 
 *******
 yield vs profit is confusing
