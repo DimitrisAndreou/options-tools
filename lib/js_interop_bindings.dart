@@ -9,13 +9,13 @@ import 'package:options_tools/strategies.dart';
 import 'package:options_tools/data/url_fetcher.dart';
 
 @JS()
-external set coveredCallsDart(JSFunction value);
+external set deribitCoveredCallsDart(JSFunction value);
 
 @JS()
-external set verticalSpreadsDart(JSFunction value);
+external set deribitVerticalSpreadsDart(JSFunction value);
 
 @JS()
-external set syntheticBondsDart(JSFunction value);
+external set deribitSyntheticBondsDart(JSFunction value);
 
 @JS()
 external set yfinanceCoveredCallsDart(JSFunction value);
@@ -29,7 +29,7 @@ Future<List<Market>> deribitMarkets() async {
   });
 }
 
-Future<String> coveredCalls(String ticker, double slippage) async {
+Future<String> deribitCoveredCalls(String ticker, double slippage) async {
   List<Market> markets = await deribitMarkets();
   return jsonEncode(CoveredCall.generateAll(markets,
           underlying: Commodity(ticker),
@@ -39,7 +39,7 @@ Future<String> coveredCalls(String ticker, double slippage) async {
       .toList());
 }
 
-Future<String> verticalSpreads(String ticker, double slippage) async {
+Future<String> deribitVerticalSpreads(String ticker, double slippage) async {
   List<Market> markets = await deribitMarkets();
   return jsonEncode(VerticalSpread.generateAll(markets,
           underlying: Commodity(ticker),
@@ -48,7 +48,7 @@ Future<String> verticalSpreads(String ticker, double slippage) async {
       .toList());
 }
 
-Future<String> syntheticBonds(String ticker, double slippage) async {
+Future<String> deribitSyntheticBonds(String ticker, double slippage) async {
   List<Market> markets = await deribitMarkets();
   return jsonEncode(SyntheticBond.generateAll(markets,
           underlying: Commodity(ticker),
@@ -69,18 +69,18 @@ Future<String> yfinanceCoveredCalls(String ticker, double slippage) async {
 }
 
 void setupJsInterop() {
-  coveredCallsDart = (JSString ticker, JSNumber slippage) {
-    return coveredCalls(ticker.toDart, slippage.toDartDouble)
+  deribitCoveredCallsDart = (JSString ticker, JSNumber slippage) {
+    return deribitCoveredCalls(ticker.toDart, slippage.toDartDouble)
         .then((value) => value.toJS)
         .toJS;
   }.toJS;
-  verticalSpreadsDart = (JSString ticker, JSNumber slippage) {
-    return verticalSpreads(ticker.toDart, slippage.toDartDouble)
+  deribitVerticalSpreadsDart = (JSString ticker, JSNumber slippage) {
+    return deribitVerticalSpreads(ticker.toDart, slippage.toDartDouble)
         .then((value) => value.toJS)
         .toJS;
   }.toJS;
-  syntheticBondsDart = (JSString ticker, JSNumber slippage) {
-    return syntheticBonds(ticker.toDart, slippage.toDartDouble)
+  deribitSyntheticBondsDart = (JSString ticker, JSNumber slippage) {
+    return deribitSyntheticBonds(ticker.toDart, slippage.toDartDouble)
         .then((value) => value.toJS)
         .toJS;
   }.toJS;
