@@ -38,6 +38,7 @@ async function jsDeribitMain() {
     console.log({ coveredCallsJson });
     coveredCallToBreakEvenLockup(coveredCallsJson, "coveredCallsChart", "coveredCallsTable");
 
+    document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(coveredCallsJson));
     // const btcVerticalSpreadsJson = await parseAndLog("btcVerticalSpreadsJson", () => deribitVerticalSpreadsDart("BTC", slippage));
     // verticalSpreadsChart(btcVerticalSpreadsJson, "btcVerticalSpreadsChart");
 
