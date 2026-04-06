@@ -50,7 +50,7 @@
       <form id="ticker-form" class="d-flex align-items-center mb-0">
         <label for="ticker-input" class="text-white me-3 fw-bold">Ticker Symbol:</label>
         <input type="text" id="ticker-input" name="ticker"
-          class="form-control me-3 bg-secondary text-white border-0 font-monospace" placeholder="e.g., GOOG"
+          class="form-control me-3 bg-secondary text-white border-0 font-monospace" placeholder="e.g., GOOG, BTC, ..."
           style="max-width: 200px; text-transform: uppercase;" required>
         <button type="submit" class="btn btn-primary">Load Data</button>
       </form>
@@ -59,8 +59,8 @@
 
   <!-- Spot Price Display -->
   <div class="card shadow-sm border-0 bg-dark mb-4">
-    <div class="card-body text-center">
-      <h5 class="text-white mb-0">Spot Price: <span id="spot-price" class="text-success fw-bold"></span></h5>
+    <div class="card-body">
+      <h5 class="text-white mb-0">Spot Price: <span id="spot-price" class="fw-bold" style="color: #00ff00;"></span></h5>
     </div>
   </div>
 
