@@ -26,7 +26,7 @@
       <div class="d-flex justify-content-between align-items-center">
         <h2 class="mb-0">
           <img src="favicon.png" alt="icon" style="height: 1.5em; margin-right: 0.5em; vertical-align: middle;">
-          Crypto Options Lab
+          Options Lab
         </h2>
         <span>
           <div class="container py-3">
@@ -43,116 +43,67 @@
       </div>
     </div>
   </header>
- 
-  <div class="container-fluid">
-    <!-- Nav tabs -->
-    <ul class="nav nav-tabs" id="cryptoTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="btc-tab" data-bs-toggle="tab" data-bs-target="#btc" type="button"
-          role="tab">
-          <i class="fab fa-bitcoin crypto-icon"></i>Bitcoin (<div id="btc-price" style="display:inline;"></div>)
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="eth-tab" data-bs-toggle="tab" data-bs-target="#eth" type="button" role="tab">
-          <i class="fab fa-ethereum crypto-icon"></i>Ethereum (<div id="eth-price" style="display:inline;"></div>)
-        </button>
-      </li>
-    </ul>
 
-    <!-- Tab content -->
-    <div class="tab-content mt-4" id="cryptoTabsContent">
-      <!-- BTC Tab -->
-      <div class="tab-pane fade show active" id="btc" role="tabpanel" aria-labelledby="btc-tab">
-        <div class="row">
-          <!-- Chart -->
-          <div class="col-xxl-6 col-12">
-            <div class="card">
-              <div class="card-header">
-                <h5>
-                  <i class="fas fa-chart-line me-2 text-primary"></i>Covered Calls: Max Profit vs Break-Even
-                </h5>
-              </div>
-              <div class="card-body">
-                <div id="btcCoveredCallsChart" class="chart-container"></div>
-              </div>
-            </div>
+  <!-- Ticker Input Form -->
+  <div class="card shadow-sm border-0 bg-dark mb-4">
+    <div class="card-body">
+      <form id="ticker-form" class="d-flex align-items-center mb-0">
+        <label for="ticker-input" class="text-white me-3 fw-bold">Ticker Symbol:</label>
+        <input type="text" id="ticker-input" name="ticker"
+          class="form-control me-3 bg-secondary text-white border-0 font-monospace" placeholder="e.g., GOOG"
+          style="max-width: 200px; text-transform: uppercase;" required>
+        <button type="submit" class="btn btn-primary">Load Data</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Spot Price Display -->
+  <div class="card shadow-sm border-0 bg-dark mb-4">
+    <div class="card-body text-center">
+      <h5 class="text-white mb-0">Spot Price: <span id="spot-price" class="text-success fw-bold"></span></h5>
+    </div>
+  </div>
+
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Chart -->
+      <div class="col-xxl-6 col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5>
+              <i class="fas fa-chart-line me-2 text-primary"></i>Covered Calls: Max Profit vs Break-Even
+            </h5>
           </div>
-          <div class="col-xxl-6 col-12">
-            <div class="card">
-              <div class="card-header">
-                <h5>
-                  <i class="fas fa-table me-2 text-primary"></i>Table: Covered Calls: Max Profit vs Break-Even
-                </h5>
-              </div>
-              <div class="card-body">
-                <div id="btcCoveredCallsTable" class="ag-theme-alpine-dark" style="width: 100%; height: 500px;"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Row -->
-        <div class="row">
-          <!-- Chart -->
-          <div class="col-xxl-6 col-12">
-            <div class="card">
-              <div class="card-header">
-                <h5>
-                  <i class="fas fa-chart-line me-2 text-primary"></i>BTC Overs/Unders
-                </h5>
-              </div>
-              <div class="card-body">
-                <div id="btcVerticalSpreadsChart" class="chart-container"></div>
-              </div>
-            </div>
+          <div class="card-body">
+            <div id="coveredCallsChart" class="chart-container"></div>
           </div>
         </div>
       </div>
-
-      <!-- ETH Tab -->
-      <div class="tab-pane fade" id="eth" role="tabpanel" aria-labelledby="eth-tab">
-        <!-- Row -->
-        <div class="row">
-          <!-- Chart -->
-          <div class="col-xxl-6 col-12">
-            <div class="card">
-              <div class="card-header">
-                <h5>
-                  <i class="fas fa-chart-line me-2 text-primary"></i>Covered Calls
-                </h5>
-              </div>
-              <div class="card-body">
-                <div id="ethCoveredCallsChart" class="chart-container"></div>
-              </div>
-            </div>
+      <div class="col-xxl-6 col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5>
+              <i class="fas fa-table me-2 text-primary"></i>Table: Covered Calls: Max Profit vs Break-Even
+            </h5>
           </div>
-          <div class="col-xxl-6 col-12">
-            <div class="card">
-              <div class="card-header">
-                <h5>
-                  <i class="fas fa-table me-2 text-primary"></i>Table: Covered Calls: Max Profit vs Break-Even
-                </h5>
-              </div>
-              <div class="card-body">
-                <div id="ethCoveredCallsTable" class="ag-theme-alpine-dark" style="width: 100%; height: 500px;"></div>
-              </div>
-            </div>
+          <div class="card-body">
+            <div id="coveredCallsTable" class="ag-theme-alpine-dark" style="width: 100%; height: 500px;"></div>
           </div>
         </div>
-        <!-- Row -->
-        <div class="row">
-          <!-- Chart -->
-          <div class="col-xxl-6 col-12">
-            <div class="card">
-              <div class="card-header">
-                <h5>
-                  <i class="fas fa-chart-line me-2 text-primary"></i>ETH Overs/Unders
-                </h5>
-              </div>
-              <div class="card-body">
-                <div id="ethVerticalSpreadsChart" class="chart-container"></div>
-              </div>
-            </div>
+      </div>
+    </div>
+    <!-- Row -->
+    <div class="row mt-4">
+      <!-- Chart -->
+      <div class="col-xxl-6 col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5>
+              <i class="fas fa-chart-line me-2 text-primary"></i>Overs/Unders
+            </h5>
+          </div>
+          <div class="card-body">
+            <div id="verticalSpreadsChart" class="chart-container"></div>
           </div>
         </div>
       </div>
@@ -166,19 +117,9 @@
   </footer>
   <!-- Bootstrap JS Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // Handle tab switching to properly resize charts
-    document
-      .querySelectorAll('button[data-bs-toggle="tab"]')
-      .forEach((tab) => {
-        tab.addEventListener("shown.bs.tab", (event) => {
-          window.dispatchEvent(new Event("resize"));
-        });
-      });
-  </script>
   <script src="option_tools.js"></script>
-  <script src="deribit_main.js"></script>
-  <script defer src="deribit_main.dart.js"></script>
+  <script src="main.js"></script>
+  <script defer src="main.dart.js"></script>
 </body>
 
 </html>

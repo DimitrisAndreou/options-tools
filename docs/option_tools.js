@@ -81,7 +81,7 @@ const ccTooltipFormatter = function (params) {
     </ul>`;
 };
 
-const spotPriceSeries = function(spotPrice) {
+const spotPriceSeries = function (spotPrice) {
   return {
     type: 'line',
     data: [],
@@ -189,7 +189,7 @@ function coveredCallToBreakEvenChart(data, divId) {
   }));
 
   const chart = echarts.init(document.getElementById(divId));
-  window.addEventListener('resize', function() {
+  window.addEventListener('resize', function () {
     chart.resize();
   });
 
@@ -359,37 +359,37 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
   }
 
   const columnDefs = [
-    { 
-      headerName: 'Call', 
+    {
+      headerName: 'Call',
       field: 'call',
-      sortable: false, 
+      sortable: false,
       filter: true,
       cellRenderer: (params) => `<strong>${params.data.call}</strong>`,
       minWidth: 200,
       headerTooltip: 'The call option via which to build a covered call strategy',
     },
-    { 
-      headerName: 'Strike', 
+    {
+      headerName: 'Strike',
       field: 'maxYieldAt',
-      sortable: true, 
+      sortable: true,
       filter: true,
       cellRenderer: (params) => `<strong>${params.data.maxYieldAt}</strong>`,
       minWidth: 100,
       headerTooltip: 'The strike (also the price where max yield is achieved)',
     },
-    { 
-      headerName: 'DTE', 
-      field: 'DTE', 
-      sortable: true, 
+    {
+      headerName: 'DTE',
+      field: 'DTE',
+      sortable: true,
       filter: 'agNumberColumnFilter',
       headerTooltip: 'Days till expiration',
       minWidth: 50,
       sort: 'desc',
     },
-    { 
-      headerName: 'B.E.', 
-      field: 'breakEven', 
-      sortable: true, 
+    {
+      headerName: 'B.E.',
+      field: 'breakEven',
+      sortable: true,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params) => dollarFmt.format(params.value),
       minWidth: 100,
@@ -430,18 +430,18 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
 
     pagination: false,
     defaultColDef: {
-        sortable: true,
-        resizable: true,
-        filter: true,
-        floatingFilter: true,
+      sortable: true,
+      resizable: true,
+      filter: true,
+      floatingFilter: true,
     },
     onRowClicked: (event) => {
       highlightEChartPoint(chart, event.data.call);
     }
   };
-  gridApi = agGrid.createGrid(gridDiv, gridOptions);  
+  gridApi = agGrid.createGrid(gridDiv, gridOptions);
   gridApi.sizeColumnsToFit();
-  window.addEventListener('resize', function() {
+  window.addEventListener('resize', function () {
     gridApi.sizeColumnsToFit();
   });
   return gridApi;
@@ -454,24 +454,24 @@ function coveredCallToBreakEvenLockup(data, chartDivId, tableDivId) {
 
 function verticalSpreadsChart(data, divId) {
   const spotPrice = extractSpotPrice(data);
-// {
-//   "underlying": "BTC",
-//   "money": "USD",
-//   "credit": 1988.3800000000028,
-//   "spotPrice": 103293.5,
-//   "shortLeg": "BTC-10MAY25-86000-C",
-//   "longLeg": "BTC-10MAY25-88000-C",
-//   "type": "over",
-//   "DTE": 0,
-//   "breakEven": 87988.38,
-//   "breakEvenAsChange": 0.8518288178830227,
-//   "maxYield": 172.11703958696114,
-//   "maxYieldAt": 86000,
-//   "maxYieldAtChange": 0.8325790102959044,
-//   "maxRisk": 11.619999999997162,
-//   "maxRiskAt": 88000,
-//   "maxRiskAtChange": 0.8519413128609254,
-// } 
+  // {
+  //   "underlying": "BTC",
+  //   "money": "USD",
+  //   "credit": 1988.3800000000028,
+  //   "spotPrice": 103293.5,
+  //   "shortLeg": "BTC-10MAY25-86000-C",
+  //   "longLeg": "BTC-10MAY25-88000-C",
+  //   "type": "over",
+  //   "DTE": 0,
+  //   "breakEven": 87988.38,
+  //   "breakEvenAsChange": 0.8518288178830227,
+  //   "maxYield": 172.11703958696114,
+  //   "maxYieldAt": 86000,
+  //   "maxYieldAtChange": 0.8325790102959044,
+  //   "maxRisk": 11.619999999997162,
+  //   "maxRiskAt": 88000,
+  //   "maxRiskAtChange": 0.8519413128609254,
+  // } 
   const dataset = {
     id: "original",
     dimensions: ["type", "DTE", "maxYield", "maxYieldAt", "shortLeg", "longLeg",
@@ -494,7 +494,7 @@ function verticalSpreadsChart(data, divId) {
   }));
 
   const chart = echarts.init(document.getElementById(divId));
-  window.addEventListener('resize', function() {
+  window.addEventListener('resize', function () {
     chart.resize();
   });
 
@@ -585,12 +585,3 @@ function verticalSpreadsChart(data, divId) {
     ],
   });
 }
-
-async function parseAndLog(name, jsonLoaderFn) {
-  const rawJson = await jsonLoaderFn();
-  console.log(`Raw ${name} data:`);
-  console.log(rawJson);
-  return JSON.parse(rawJson);
-}
-
-
