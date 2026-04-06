@@ -1,0 +1,78 @@
+Worker:
+
+https://dash.cloudflare.com/42157d23bf6abce29be0eb52eff0523d/workers/services/view/yahoo-proxy/production
+
+https://yahoo-proxy.jim-andreou.workers.dev/
+
+Code:
+
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const targetUrl = url.searchParams.get('target');
+
+    // 1. Handle CORS Preflight (Crucial for custom headers like x-proxy-cookie)
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, x-proxy-cookie',
+          'Access-Control-Max-Age': '86400',
+        },
+      });
+    }
+
+    if (!targetUrl) return new Response('Target missing', { status: 400 });
+
+    // 2. Setup Yahoo Headers
+    const yahooHeaders = new Headers();
+    yahooHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    yahooHeaders.set('Accept', '*/*');
+
+    // 3. Log and Extract the camouflaged cookie
+    const disguisedCookie = request.headers.get('x-proxy-cookie');
+    if (disguisedCookie) {
+      console.log(`[Proxy] Found x-proxy-cookie. Length: ${disguisedCookie.length}`);
+      yahooHeaders.set('cookie', disguisedCookie); // Restore to standard 'cookie'
+    } else {
+      console.log(`[Proxy] No x-proxy-cookie found in request.`);
+    }
+
+    try {
+      console.log(`[Proxy] Fetching: ${targetUrl}`);
+      const response = await fetch(targetUrl, {
+        method: 'GET',
+        headers: yahooHeaders,
+        redirect: 'follow',
+      });
+
+      console.log(`[Proxy] Yahoo Status: ${response.status}`);
+
+      // Use ArrayBuffer to prevent encoding hangs
+      const body = await response.arrayBuffer();
+      const proxyResponse = new Response(body, {
+        status: response.status,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Expose-Headers': '*',
+          'Content-Type': response.headers.get('Content-Type') || 'text/plain',
+        }
+      });
+
+      // 4. Log and Forward Set-Cookie
+      const setCookie = response.headers.get('set-cookie');
+      if (setCookie) {
+        console.log(`[Proxy] Yahoo sent a Set-Cookie. Forwarding via x-yahoo-cookie.`);
+        proxyResponse.headers.set('x-yahoo-cookie', setCookie);
+      }
+
+      return proxyResponse;
+    } catch (err) {
+      console.error(`[Proxy] Error: ${err.message}`);
+      return new Response('Proxy Error: ' + err.message, { status: 500 });
+    }
+  }
+};
