@@ -59,11 +59,13 @@ class YFinance {
         final options = optionChain[optionType] ??
             (throw StateError("Did not find $optionType"));
         for (final option in options) {
-          print(option);
-          if (option["bid"] == null || option["ask"] == null) continue;
-          var (bid, ask) = (option["bid"]!, option["ask"]!);
+          var (bid, ask) = (option["bid"] ?? 0.0, option["ask"] ?? 0.0);
           if (bid > ask) {
             (bid, ask) = (ask, bid);
+          }
+          if (bid == 0.0 || ask == 0.0) {
+            print("Skipping option due to bad bid/ask: $option");
+            continue;
           }
           final optionMarket = Market.create(
               asset: Option(option["contractSymbol"],
