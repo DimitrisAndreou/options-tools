@@ -67,8 +67,8 @@
   <div class="container-fluid">
     <div class="row">
       <!-- Chart -->
-      <div class="col-xxl-6 col-12">
-        <div class="card">
+      <div class="col-lg-9 col-12">
+        <div class="card mb-4 mb-lg-0">
           <div class="card-header">
             <h5>
               <i class="fas fa-chart-line me-2 text-primary"></i>Covered Calls: Max Profit vs Break-Even
@@ -79,7 +79,25 @@
           </div>
         </div>
       </div>
-      <div class="col-xxl-6 col-12">
+      <!-- Strategy Details Panel -->
+      <div class="col-lg-3 col-12">
+        <div class="card h-100">
+          <div class="card-header">
+            <h5>
+              <i class="fas fa-info-circle me-2 text-primary"></i>Strategy Details
+            </h5>
+          </div>
+          <div class="card-body">
+            <div id="coveredCallDetailsPanel" class="text-white" style="font-family: monospace;">
+              Select a point on the chart or a row in the table to view details.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Table Row -->
+    <div class="row mt-4">
+      <div class="col-12">
         <div class="card">
           <div class="card-header">
             <h5>

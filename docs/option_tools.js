@@ -166,6 +166,14 @@ function extractSpotPrice(data) {
   return data.at(0)?.spotPrice;
 }
 
+function populateStrategyDetails(dataObj) {
+  const panel = document.getElementById('coveredCallDetailsPanel');
+  if (panel && dataObj) {
+    // ECharts formatter expects an object with 'value' property
+    panel.innerHTML = ccTooltipFormatter({ value: dataObj });
+  }
+}
+
 function coveredCallToBreakEvenChart(data, divId) {
   const spotPrice = extractSpotPrice(data);
   // TODO: share this code across charts.
@@ -303,6 +311,13 @@ function coveredCallToBreakEvenChart(data, divId) {
       }
     ],
   });
+
+  chart.on('click', function (params) {
+    if (params.componentType === 'series' && params.data) {
+      populateStrategyDetails(params.data);
+    }
+  });
+
   return chart;
 }
 
@@ -437,6 +452,7 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
     },
     onRowClicked: (event) => {
       highlightEChartPoint(chart, event.data.call);
+      populateStrategyDetails(event.data);
     }
   };
   gridApi = agGrid.createGrid(gridDiv, gridOptions);
