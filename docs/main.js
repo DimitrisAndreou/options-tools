@@ -50,7 +50,7 @@ async function jsDeribitMain() {
 
     // const btcBondsJson = await parseAndLog("btcBondsJson", () => deribitSyntheticBondsDart("BTC", slippage));
   } catch (error) {
-    console.error("JavaScript caught Dart error:", error);
+    console.error("JavaScript caught Dart error:", error.error);
     console.error("Dart stack trace:", error.stack);
   }
 }

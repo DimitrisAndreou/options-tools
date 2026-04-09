@@ -59,7 +59,12 @@ class YFinance {
         final options = optionChain[optionType] ??
             (throw StateError("Did not find $optionType"));
         for (final option in options) {
+          print(option);
           if (option["bid"] == null || option["ask"] == null) continue;
+          var (bid, ask) = (option["bid"]!, option["ask"]!);
+          if (bid > ask) {
+            (bid, ask) = (ask, bid);
+          }
           final optionMarket = Market.create(
               asset: Option(option["contractSymbol"],
                   underlying: underlying,
@@ -71,8 +76,8 @@ class YFinance {
                       option["expiration"] * 1000),
                   contractLot: 100.0),
               money: Commodity(option["currency"]), // USD
-              bidPrice: option["bid"]! * 100.0,
-              askPrice: option["ask"]! * 100.0);
+              bidPrice: bid * 100.0,
+              askPrice: ask * 100.0);
           markets.add(optionMarket);
         }
       }
