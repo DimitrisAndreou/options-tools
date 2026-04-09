@@ -55,18 +55,21 @@ const ccTooltipFormatter = function (params) {
   }
   const value = params.value;
   const DTE = `${value.DTE}`;
+  const underlying = value.underlying;
   const breakeven = `${percentFmt.format(value.breakEvenAsChange - 1.0)}`;
   const breakevenAt = `${dollarFmt.format(value.breakEven)}`;
   const maxProfitPercent = `${percentFmt.format(value.maxYield - 1.0)}`;
   const maxProfit = `${dollarFmt.format(value.maxProfit)}`;
   const maxProfitAt = `${dollarFmt.format(value.maxYieldAt)}`;
   const maxProfitAtRelative = `${percentFmt.format(value.maxYieldAtChange - 1.0)}`;
-  const whatToBuy = `${underlyingFmt.format(value.underlyingToBuy)}</b> ${value.underlying}`;
+  const whatToBuy = `${underlying}</b> ${value.underlying}`;
   const whatToBuyFor = `${dollarFmt.format(-value.moneySize)}`;
   const whatToSell = `${-value.callSize}`;
   const whatToSellFor = `${underlyingFmt.format(value.premiumToReceive)}</b> ${value.underlying}`;
   return `
-    ${neutral(value.call)} (${neutral(DTE)} days)<br/>
+    ${label('Covered Call')} on ${neutral(underlying)}<br/>
+    ${label('Expiration')}: ${neutral(value.formattedDate)} (${neutral(DTE)} days)<br/>
+    ${label('Strike')}: ${neutral(dollarFmt.format(value.strike))}<br/>
     ${label('Breakeven')}: ${neutral(breakeven)}
       (at ${neutral(breakevenAt)})<br/>
     ${label('Max Profit')}:
@@ -78,7 +81,9 @@ const ccTooltipFormatter = function (params) {
     <ul style="margin: 0">
     <li>Buy ${good(whatToBuy)}, for ${bad(whatToBuyFor)}</li>
     <li>Sell ${bad(whatToSell)} call(s), for ${good(whatToSellFor)}</li>
-    </ul>`;
+    </ul>
+    <br/>
+    ${label('Contract Name')}: ${neutral(value.call)}`;
 };
 
 const spotPriceSeries = function (spotPrice) {

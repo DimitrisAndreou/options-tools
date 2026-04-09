@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:collection';
 
 import 'assets.dart';
+import 'expirations.dart';
 import 'markets.dart';
 import 'oracle.dart';
 import 'position_analyzer.dart';
@@ -50,6 +51,8 @@ class CoveredCall {
         'call': optionLeg.asset.name, // Used
         'callSize': optionLeg.size, // Used
         'DTE': expiration.daysLeft, // Used
+        'formattedDate': expiration.formattedDate,
+        'strike': option.strike,
         'breakEven': breakeven, // Used. Y-axis!
         'breakEvenAsChange': breakevenAsChange, // Used
         'maxYield': maxYield, // Used
