@@ -32,11 +32,13 @@ class YFinance {
       final money = Commodity(quote["currency"]);
       final underlying = Commodity(quote["symbol"]);
       // Will add this to markets last, to have the latest value.
+      // Not using quote["bid"] and quote["ask"] because they tend
+      // to be very wide.
       spotMarket = Market.create(
           asset: underlying, // AAPL
           money: money, // USD
-          bidPrice: quote["bid"]!,
-          askPrice: quote["ask"]!);
+          bidPrice: quote["regularMarketPrice"]!,
+          askPrice: quote["regularMarketPrice"]!);
       print("Quote: $quote");
 
       final optionChain = (results["options"] as List?)?.firstOrNull;

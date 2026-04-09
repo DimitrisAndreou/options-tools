@@ -8257,10 +8257,10 @@ if(d==null)d=A.o(A.ay("Did not find quote"))
 c=J.a_(d)
 b=new A.a2(A.y(c.j(d,"currency")))
 a=new A.a2(A.y(c.j(d,"symbol")))
-a0=c.j(d,"bid")
+a0=c.j(d,"regularMarketPrice")
 a0.toString
 A.aV(a0)
-c=c.j(d,"ask")
+c=c.j(d,"regularMarketPrice")
 c.toString
 A.aV(c)
 h=new A.cc(a,b,a0,c)
