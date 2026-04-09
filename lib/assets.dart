@@ -4,6 +4,8 @@ import 'dart:collection';
 // to the tradeable instrument.
 sealed class Asset {
   final String name;
+  // // Links to markets where this asset can be traded, if known.
+  // final List<MarketURL> urls;
   const Asset(this.name);
 
   Line ofSize(double size) => Line(this, size);

@@ -28,7 +28,7 @@ async function jsDeribitMain() {
   }
 
   // TODO: also get slippage from textField/cgi
-  const slippage = 0.5;
+  const slippage = 0.0;
   try {
     const coveredCallsJson = JSON.parse(await (
       ticker === "BTC" || ticker === "ETH"
