@@ -18,6 +18,7 @@ class YFinance {
     Market? spotMarket;
     List<Market> markets = [];
     final urlsToFetch = ['$_baseUrl/v7/finance/options/$ticker?crumb=$_crumb'];
+    print("Fetching $ticker ...");
     while (urlsToFetch.isNotEmpty) {
       final url = urlsToFetch.removeLast();
       print("About to fetch an option chain... $url, Headers: $_headers");
@@ -36,9 +37,11 @@ class YFinance {
           money: money, // USD
           bidPrice: quote["bid"]!,
           askPrice: quote["ask"]!);
+      print("Quote: $quote");
 
       final optionChain = (results["options"] as List?)?.firstOrNull;
       if (firstOptionChain) {
+        print("First option chain: $optionChain");
         // Also remember to fetch the rest expirations.
         firstOptionChain = false;
         final expirations = results["expirationDates"].cast<int>().toSet();
