@@ -62,10 +62,10 @@ const ccTooltipFormatter = function (params) {
   const maxProfit = `${dollarFmt.format(value.maxProfit)}`;
   const maxProfitAt = `${dollarFmt.format(value.maxYieldAt)}`;
   const maxProfitAtRelative = `${percentFmt.format(value.maxYieldAtChange - 1.0)}`;
-  const whatToBuy = `${underlying}</b> ${value.underlying}`;
+  const whatToBuy = `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`;
   const whatToBuyFor = `${dollarFmt.format(-value.moneySize)}`;
   const whatToSell = `${-value.callSize}`;
-  const whatToSellFor = `${underlyingFmt.format(value.premiumToReceive)}</b> ${value.underlying}`;
+  const whatToSellFor = `${underlyingFmt.format(value.premiumToReceive)} ${value.underlying}`;
   return `
     ${label('Covered Call')} on ${neutral(underlying)}<br/>
     ${label('Expiration')}: ${neutral(value.formattedDate)} (${neutral(DTE)} days)<br/>
