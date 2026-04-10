@@ -113,7 +113,8 @@ class CoveredCall {
         premiumToReceive =
             spotMarket.toAsset(callMarket.toMoney(-strategy[option])) {
     try {
-      breakeven = analyzer.breakevens.singleOrNull?.price;
+      // Breakeven could be a whole range, for a profit-less strategy.
+      breakeven = analyzer.breakevens.singleOrNull?.fromPrice;
       breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
       maxYield = analyzer.maxYield;
       maxProfit = analyzer.maxProfit;
@@ -123,7 +124,9 @@ class CoveredCall {
       yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
       equivalentHodlerSellPrice = spotPrice * maxYield;
     } catch (e) {
-      print(analyzer);
+      print("Error: \nStrategy: $strategy\n"
+          "Merged: ${Position.mergeAll(strategy.decompose())}\n"
+          "Analyzer: $analyzer");
       rethrow;
     }
   }

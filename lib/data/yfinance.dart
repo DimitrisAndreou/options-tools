@@ -40,6 +40,7 @@ class YFinance {
           bidPrice: quote["regularMarketPrice"]!,
           askPrice: quote["regularMarketPrice"]!);
       print("Quote: $quote");
+      final isMarketOpen = quote["marketState"] == "REGULAR";
 
       final optionChain = (results["options"] as List?)?.firstOrNull;
       if (firstOptionChain) {
@@ -59,7 +60,9 @@ class YFinance {
         final options = optionChain[optionType] ??
             (throw StateError("Did not find $optionType"));
         for (final option in options) {
-          var (bid, ask) = (option["bid"] ?? 0.0, option["ask"] ?? 0.0);
+          final lastPrice = option["lastPrice"] ?? 0.0;
+          double bid = isMarketOpen ? option["bid"] : lastPrice;
+          double ask = isMarketOpen ? option["ask"] : lastPrice;
           if (bid > ask) {
             (bid, ask) = (ask, bid);
           }
