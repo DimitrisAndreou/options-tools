@@ -112,15 +112,20 @@ class CoveredCall {
         underlyingToBuy = spotMarket.toAsset(-strategy[money]),
         premiumToReceive =
             spotMarket.toAsset(callMarket.toMoney(-strategy[option])) {
-    breakeven = analyzer.breakevens.singleOrNull?.price;
-    breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
-    maxYield = analyzer.maxYield;
-    maxProfit = analyzer.maxProfit;
-    // We know that in CCs we're looking at a single max value segment
-    maxYieldAt = analyzer.bestPrices.first.fromPrice;
-    maxYieldAtChange = maxYieldAt / spotPrice;
-    yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
-    equivalentHodlerSellPrice = spotPrice * maxYield;
+    try {
+      breakeven = analyzer.breakevens.singleOrNull?.price;
+      breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
+      maxYield = analyzer.maxYield;
+      maxProfit = analyzer.maxProfit;
+      // We know that in CCs we're looking at a single max value segment
+      maxYieldAt = analyzer.bestPrices.first.fromPrice;
+      maxYieldAtChange = maxYieldAt / spotPrice;
+      yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
+      equivalentHodlerSellPrice = spotPrice * maxYield;
+    } catch (e) {
+      print(analyzer);
+      rethrow;
+    }
   }
 
   static Iterable<CoveredCall> generateAll(Iterable<Market> allMarkets,
