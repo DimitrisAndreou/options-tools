@@ -101,9 +101,8 @@ class _ScaledPosition extends Position {
 }
 
 class _MergedPosition extends Position {
-  final Iterable<Position> positions;
   final Map<Asset, double> _assetPositions = HashMap();
-  _MergedPosition(this.positions) {
+  _MergedPosition(Iterable<Position> positions) {
     for (final line in positions.expand((pos) => pos.decompose())) {
       _assetPositions.update(
           line.asset, (previousSize) => previousSize + line.size,
@@ -123,7 +122,7 @@ class _MergedPosition extends Position {
   Line operator [](Asset asset) => asset.ofSize(_assetPositions[asset]!);
 
   @override
-  String toString() => 'Sum($positions)';
+  String toString() => '($_assetPositions)';
 }
 
 // USDC, BTC etc.

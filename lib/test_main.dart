@@ -86,14 +86,17 @@ void testYFinance() async {
     // print("Analyzer: ${cc.analyzer}");
     // print("max risk: ${cc.analyzer.maxRisk}");
     print(cc);
-    print("Long spot: $equalSizeLongStrategy");
-    print("pricesWithSameMaxGain: $pricesWithSameMaxGain");
-
-    print(
-        "### CC: ${cc.analyzer.position.decompose()}, maxYield: ${cc.maxYield}, spotPrice: ${cc.spotPrice}"
-        "\n    equalSizedLongSpot: ${equalSizeLongStrategy.position.decompose()}"
-        "\n    breakevenVsHolder: $pricesWithSameMaxGain"
-        "\n");
+    // print("Long spot: $equalSizeLongStrategy");
+    // print("pricesWithSameMaxGain: $pricesWithSameMaxGain");
+    final p = cc.analyzer.position;
+    print("  #### : Original: $p");
+    print("  #### : Shares: ${p[spot.asset]}");
+    print("  #### : but instructions: ${cc.underlyingToBuy} + ${cc.premiumToReceive} = ${(cc.underlyingToBuy + cc.premiumToReceive)[spot.asset]}");
+    // print(
+    //     "### CC: ${cc.analyzer.position.decompose()}, maxYield: ${cc.maxYield}, spotPrice: ${cc.spotPrice}"
+    //     "\n    equalSizedLongSpot: ${equalSizeLongStrategy.position.decompose()}"
+    //     "\n    breakevenVsHolder: $pricesWithSameMaxGain"
+    //     "\n");
   }
 }
 

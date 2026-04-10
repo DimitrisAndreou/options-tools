@@ -61,8 +61,8 @@ class YFinance {
             (throw StateError("Did not find $optionType"));
         for (final option in options) {
           final lastPrice = option["lastPrice"] ?? 0.0;
-          double bid = isMarketOpen ? option["bid"] : lastPrice;
-          double ask = isMarketOpen ? option["ask"] : lastPrice;
+          double bid = isMarketOpen ? (option["bid"] ?? 0.0) : lastPrice;
+          double ask = isMarketOpen ? (option["ask"] ?? 0.0) : lastPrice;
           if (bid > ask) {
             (bid, ask) = (ask, bid);
           }

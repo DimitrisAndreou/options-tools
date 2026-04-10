@@ -26,7 +26,7 @@ class CoveredCall {
   // First buy this much underlying asset (via spot market),
   // then open the option leg.
   final Line underlyingToBuy;
-  final Line premiumToReceive;
+  late final Line premiumToReceive;
 
   final double spotPrice;
   late final double? breakeven;
@@ -109,9 +109,8 @@ class CoveredCall {
         moneyLeg = strategy[money],
         underlyingLeg = strategy[underlying],
         optionLeg = strategy[option],
-        underlyingToBuy = spotMarket.toAsset(-strategy[money]),
-        premiumToReceive =
-            spotMarket.toAsset(callMarket.toMoney(-strategy[option])) {
+        underlyingToBuy = spotMarket.toAsset(-strategy[money]) {
+    premiumToReceive = (strategy[underlying] - underlyingToBuy).singleton(underlying);
     try {
       // Breakeven could be a whole range, for a profit-less strategy.
       breakeven = analyzer.breakevens.singleOrNull?.fromPrice;
