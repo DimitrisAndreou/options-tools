@@ -109,17 +109,22 @@ class CoveredCall {
         .coercedToMoney(money, oracle)
         .sortByStrike(Order.asc)
         .sortByExpiration(Order.asc)) {
-      yield CoveredCall._(
-          (call.short(slippage) +
-                  spotMarket.long(slippage) * call.asset.toOption.contractLot) *
-              call.asset.toOption.minSize,
-          spotMarket: spotMarket,
-          callMarket: call,
-          underlying: underlying,
-          money: money,
-          option: call.asset.toOption,
-          expiration: call.asset.toExpirable.expiration,
-          spotPrice: spotMarket.midPrice);
+      try {
+        yield CoveredCall._(
+            (call.short(slippage) +
+                    spotMarket.long(slippage) *
+                        call.asset.toOption.contractLot) *
+                call.asset.toOption.minSize,
+            spotMarket: spotMarket,
+            callMarket: call,
+            underlying: underlying,
+            money: money,
+            option: call.asset.toOption,
+            expiration: call.asset.toExpirable.expiration,
+            spotPrice: spotMarket.midPrice);
+      } catch (e) {
+        print("Skipped Covered Call on $call due to error (see above)");
+      }
     }
   }
 }
