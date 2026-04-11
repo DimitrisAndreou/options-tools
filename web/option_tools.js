@@ -58,10 +58,10 @@ const ccTooltipFormatter = function (params) {
   const underlying = value.underlying;
   const breakeven = `${percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0)}`;
   const breakevenAt = `${dollarFmt.format(value.breakEvenVsFullMoneyAbsolute)}`;
-  const maxProfitPercent = `${percentFmt.format(value.maxYield - 1.0)}`;
+  const maxProfitPercent = `${percentFmt.format(value.moneyYield - 1.0)}`;
   const maxProfit = `${dollarFmt.format(value.maxProfit)}`;
-  const maxProfitAt = `${dollarFmt.format(value.maxYieldAt)}`;
-  const maxProfitAtRelative = `${percentFmt.format(value.maxYieldAtChange - 1.0)}`;
+  const maxProfitAt = `${dollarFmt.format(value.strikeAbsolute)}`;
+  const maxProfitAtRelative = `${percentFmt.format(value.strikeRelative - 1.0)}`;
   const whatToBuy = `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`;
   const whatToBuyFor = `${dollarFmt.format(-value.moneySize)}`;
   const whatToSell = `${-value.callSize}`;
@@ -69,7 +69,7 @@ const ccTooltipFormatter = function (params) {
   return `
     ${label('Covered Call')} on ${neutral(underlying)}<br/>
     ${label('Expiration')}: ${neutral(value.formattedDate)} (${neutral(DTE)} days)<br/>
-    ${label('Strike')}: ${neutral(dollarFmt.format(value.strike))}<br/>
+    ${label('Strike')}: ${neutral(dollarFmt.format(value.strikeAbsolute))}<br/>
     ${label('Breakeven')}: ${neutral(breakeven)}
       (at ${neutral(breakevenAt)})<br/>
     ${label('Max Profit')}:
@@ -330,10 +330,10 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
     },
     {
       headerName: 'Strike',
-      field: 'maxYieldAt',
+      field: 'strikeAbsolute',
       sortable: true,
       filter: true,
-      cellRenderer: (params) => `<strong>${params.data.maxYieldAt}</strong>`,
+      cellRenderer: (params) => `<strong>${params.data.strikeAbsolute}</strong>`,
       minWidth: 100,
       headerTooltip: 'The strike (also the price where max yield is achieved)',
     },
@@ -366,7 +366,7 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
     },
     {
       headerName: 'M.Y. %',
-      field: 'maxYield',
+      field: 'moneyYield',
       sortable: true,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params) => percentFmt.format(params.value - 1.0),
@@ -375,7 +375,7 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
     },
     {
       headerName: 'M.Y. At %',
-      field: 'maxYieldAtChange',
+      field: 'strikeRelative',
       sortable: true,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params) => percentFmt.format(params.value - 1.0),
@@ -415,27 +415,9 @@ function coveredCallToBreakEvenLockup(data, chartDivId, tableDivId) {
 
 function verticalSpreadsChart(data, divId) {
   const spotPrice = extractSpotPrice(data);
-  // {
-  //   "underlying": "BTC",
-  //   "money": "USD",
-  //   "credit": 1988.3800000000028,
-  //   "spotPrice": 103293.5,
-  //   "shortLeg": "BTC-10MAY25-86000-C",
-  //   "longLeg": "BTC-10MAY25-88000-C",
-  //   "type": "over",
-  //   "DTE": 0,
-  //   "breakEven": 87988.38,
-  //   "breakEvenAsChange": 0.8518288178830227,
-  //   "maxYield": 172.11703958696114,
-  //   "maxYieldAt": 86000,
-  //   "maxYieldAtChange": 0.8325790102959044,
-  //   "maxRisk": 11.619999999997162,
-  //   "maxRiskAt": 88000,
-  //   "maxRiskAtChange": 0.8519413128609254,
-  // } 
   const dataset = {
     id: "original",
-    dimensions: ["type", "DTE", "maxYield", "maxYieldAt", "shortLeg", "longLeg",
+    dimensions: ["type", "DTE", "moneyYield", "strikeAbsolute", "shortLeg", "longLeg",
       "credit", "maxRisk", "breakEven"
     ],
     source: data
@@ -505,9 +487,9 @@ function verticalSpreadsChart(data, divId) {
         const value = params.value;
         return `
           <b>${value.call}</b><br/>
-          Max Profit At: $${value.maxYieldAt}<br/>
+          Max Profit At: $${value.strikeAbsolute}<br/>
           Break Even: ${dollarFmt.format(value.breakEvenVsFullMoneyAbsolute)} (${percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0)})<br/>
-          Max Profit: ${percentFmt.format(value.maxYield - 1.0)}<br/>
+          Max Profit: ${percentFmt.format(value.moneyYield - 1.0)}<br/>
           Time Value: ${percentFmt.format(value.timeValue)}<br/>
           DTE: ${value.DTE}
         `;

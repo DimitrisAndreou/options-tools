@@ -28,10 +28,7 @@ class CoveredCall {
   late final Line premiumToReceive;
 
   final double spotPrice;
-  late final double maxYield;
-  late final double maxYieldAt;
-  late final double maxYieldAtChange;
-  late final double equivalentHodlerSellPrice;
+  final PriceInfo strikePrice;
   late final double maxProfit; // of minimum position.
 
   late final double moneyYield;
@@ -51,10 +48,8 @@ class CoveredCall {
         'callSize': optionLeg.size,
         'DTE': expiration.daysLeft,
         'formattedDate': expiration.formattedDate,
-        'strike': option.strike,
-        'maxYield': maxYield,
-        'maxYieldAt': maxYieldAt,
-        'maxYieldAtChange': maxYieldAtChange,
+        'strikeAbsolute': strikePrice.absolute,
+        'strikeRelative': strikePrice.relative,
 
         'moneyYield': moneyYield, // new Y-axis
         'underlyingYield': underlyingYield, // new X-axis
@@ -83,21 +78,18 @@ class CoveredCall {
         moneyLeg = strategy[money],
         underlyingLeg = strategy[underlying],
         optionLeg = strategy[option],
-        underlyingToBuy = spotMarket.toAsset(-strategy[money]) {
+        underlyingToBuy = spotMarket.toAsset(-strategy[money]),
+        strikePrice = price(option.strike, spotPrice) {
     premiumToReceive =
         (strategy[underlying] - underlyingToBuy).singleton(underlying);
     try {
-      maxYield = analyzer.maxYield; // TO BE REMOVED
       moneyYield = analyzer.maxYield;
       underlyingYield = premiumToReceive.size / underlyingToBuy.size + 1.0;
       maxProfit = analyzer.maxProfit;
-      breakEvenVsFullUnderlying = price(spotPrice * maxYield, spotPrice);
+      breakEvenVsFullUnderlying = price(spotPrice * moneyYield, spotPrice);
       // Breakeven could be a whole range, for a profit-less strategy.
       breakEvenVsFullMoney =
           price(analyzer.breakevens.first.fromPrice, spotPrice);
-      // We know that in CCs we're looking at a single max value segment
-      maxYieldAt = analyzer.bestPrices.first.fromPrice;
-      maxYieldAtChange = maxYieldAt / spotPrice;
     } catch (e) {
       print("Error: \nStrategy: $strategy\n"
           "Analyzer: $analyzer");
