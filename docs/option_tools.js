@@ -39,8 +39,7 @@ const tooltipStyle = {
   borderColor: '#fcd34d',
 };
 
-
-const ccTooltipFormatter = function (params) {
+function ccFormatterTemplate(params, isDetailed) {
   function label(str) {
     return `<strong>${str}</strong>`;
   }
@@ -54,36 +53,95 @@ const ccTooltipFormatter = function (params) {
     return `<strong style="color: #ff5c5c;">${str}</strong>`;
   }
   const value = params.value;
+  // console.log({ value });
   const DTE = `${value.DTE}`;
+  const money = value.money;
   const underlying = value.underlying;
-  const breakeven = `${percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0)}`;
-  const breakevenAt = `${dollarFmt.format(value.breakEvenVsFullMoneyAbsolute)}`;
-  const maxProfitPercent = `${percentFmt.format(value.moneyYield - 1.0)}`;
-  const maxProfit = `${dollarFmt.format(value.maxProfit)}`;
-  const maxProfitAt = `${dollarFmt.format(value.strikeAbsolute)}`;
-  const maxProfitAtRelative = `${percentFmt.format(value.strikeRelative - 1.0)}`;
-  const whatToBuy = `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`;
+  const breakEvenVsFullMoneyRelative = `${percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0)}`;
+  const breakEvenVsFullMoneyAbsolute = `${dollarFmt.format(value.breakEvenVsFullMoneyAbsolute)}`;
+  const breakEvenVsFullUnderlyingRelative = `${percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0)}`;
+  const breakEvenVsFullUnderlyingAbsolute = `${dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute)}`;
+  const moneyYieldPercent = `${percentFmt.format(value.moneyYield - 1.0)}`;
+  const underlyingYieldPercent = `${percentFmt.format(value.underlyingYield - 1.0)}`;
+  const moneyProfit = `+${dollarFmt.format(value.moneyProfit)}`;
+  const underlyingProfit = `+${underlyingFmt.format(value.premiumToReceive)} ${underlying}`;
+  const whatToBuy = `${underlyingFmt.format(value.underlyingToBuy)}`;
   const whatToBuyFor = `${dollarFmt.format(-value.moneySize)}`;
   const whatToSell = `${-value.callSize}`;
-  const whatToSellFor = `${underlyingFmt.format(value.premiumToReceive)} ${value.underlying}`;
-  return `
-    ${label('Covered Call')} on ${neutral(underlying)}<br/>
-    ${label('Expiration')}: ${neutral(value.formattedDate)} (${neutral(DTE)} days)<br/>
-    ${label('Strike')}: ${neutral(dollarFmt.format(value.strikeAbsolute))}<br/>
-    ${label('Breakeven')}: ${neutral(breakeven)}
-      (at ${neutral(breakevenAt)})<br/>
-    ${label('Max Profit')}:
-    <ul style="margin: 0">
-    <li>${good(maxProfitPercent)} (${good(maxProfit)})
-    <li>at >=${neutral(maxProfitAt)} (${neutral(maxProfitAtRelative)})
-    </ul>
-    ${label('Instructions')}:
-    <ul style="margin: 0">
-    <li>Buy ${good(whatToBuy)}, for ${bad(whatToBuyFor)}</li>
-    <li>Sell ${bad(whatToSell)} call(s), for ${good(whatToSellFor)}</li>
-    </ul>
-    <br/>
-    ${label('Contract Name')}: ${neutral(value.call)}`;
+  const whatToSellFor = `${underlyingFmt.format(value.premiumToReceive)} ${underlying}`;
+
+  let html = ``;
+  if (isDetailed) {
+    html += `${label('Covered Call')} on ${neutral(underlying)}<br/>`;
+  }
+
+  html += `${label('Expiration')}: ${neutral(value.formattedDate)} (${bad(DTE)} days)<br/>`;
+  if (isDetailed) {
+    html += `${label('Strike')}: ${neutral(dollarFmt.format(value.strikeAbsolute))}<br/>`;
+    html += `${label('Contract Name')}: ${neutral(value.call)}<br/>`;
+  }
+
+  if (!isDetailed) {
+    html += `
+      ${label('Capital required: ')} ${neutral(value.money)} ${bad(whatToBuyFor)}
+      <br/>
+      ${label('Outcomes:')}<ul>
+        <li>${neutral(underlying)} > ${neutral(dollarFmt.format(value.strikeAbsolute))}:
+          ${good(moneyYieldPercent)} ${good(money)} (${good(moneyProfit)})
+        </li>
+        <li>${neutral(underlying)} <= ${neutral(dollarFmt.format(value.strikeAbsolute))}:
+          ${good(underlyingYieldPercent)} ${good(underlying)} (${good(underlyingProfit)})
+        </li>
+      </ul>
+      ${label('Breakeven')}: ${neutral(breakEvenVsFullMoneyRelative)}
+        (at ${neutral(breakEvenVsFullMoneyAbsolute)})<br/>
+    `;
+  }
+
+  if (isDetailed) {
+    html += `
+      ${label('Initial required capital')}: ${neutral(value.money)} ${bad(whatToBuyFor)}, or ${bad(whatToBuy)} ${neutral(underlying)}.<br/>
+      ${label('Spot price')}: ${neutral(dollarFmt.format(value.spotPrice))}.<br/>
+      <p>
+      On ${neutral(value.formattedDate)}, you will remain with one of these alternatives (whichever is ${bad('worse')}):
+      <ul>
+        <li>${label('Either')} ${good(moneyYieldPercent)} ${good(money)} (${good(moneyProfit)}),
+            from your initial ${neutral(value.money)} ${neutral(whatToBuyFor)}.
+        <ul>
+          <li>But you would have ${bad('less')} in terms of ${neutral(underlying)} 
+          if price moves beyond ${good(breakEvenVsFullUnderlyingRelative)} (> ${good(breakEvenVsFullUnderlyingAbsolute)}),
+          versus ${neutral('being 100% in')} ${neutral(underlying)}.
+          </li>
+        </ul>
+        <li>${label('Or')} ${good(underlyingYieldPercent)} ${good(underlying)} (${good(underlyingProfit)}),
+            from your initial ${neutral(whatToBuy)}.
+        <ul>
+          <li>But you would have ${bad('less')} in terms of ${neutral(money)}
+          if price moves beyond ${bad(breakEvenVsFullMoneyRelative)} (< ${bad(breakEvenVsFullMoneyAbsolute)}),
+          versus ${neutral('being 100% in')} ${neutral(money)}.
+          </li>
+        </ul>
+      </ul>
+      `;
+
+    html += `
+      ${label('Instructions')}:
+      <ul style="margin: 0">
+      <li>Buy ${good(whatToBuy)} ${neutral(underlying)}, for ${bad(whatToBuyFor)}</li>
+      <li>Sell ${bad(whatToSell)} call(s), for ${good(whatToSellFor)}</li>
+      </ul>
+      `;
+  }
+
+  return html;
+}
+
+const ccTooltipFormatter = function (params) {
+  return ccFormatterTemplate(params, false);
+};
+
+const ccDetailsFormatter = function (params) {
+  return ccFormatterTemplate(params, true);
 };
 
 const axisTitleNameTextStyle = {
@@ -141,16 +199,18 @@ function populateStrategyDetails(dataObj) {
   const panel = document.getElementById('coveredCallDetailsPanel');
   if (panel && dataObj) {
     // ECharts formatter expects an object with 'value' property
-    panel.innerHTML = ccTooltipFormatter({ value: dataObj });
+    panel.innerHTML = ccDetailsFormatter({ value: dataObj });
   }
 }
 
 function coveredCallToBreakEvenChart(data, divId) {
   const spotPrice = extractSpotPrice(data);
+  const money = data.at(0)?.money || '';
+  const underlying = data.at(0)?.underlying || '';
   // TODO: share this code across charts.
   const dataset = {
     id: "original",
-    dimensions: ["breakEvenVsFullMoneyAbsolute", "DTE", "breakEvenVsFullUnderlyingAbsolute"],
+    dimensions: ["moneyYield", "underlyingYield", "DTE"],
     source: data
   };
   const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
@@ -176,14 +236,14 @@ function coveredCallToBreakEvenChart(data, divId) {
     dataset: [dataset, ...datasetPerDTE],
     xAxis: {
       type: 'value',
-      name: 'Max Profit',
-      nameLocation: 'center',
-      nameGap: 50,
+      name: `${money}➡`,
+      nameLocation: 'end',
+      nameGap: 15,
       nameTextStyle: axisTitleNameTextStyle,
       axisLabel: {
         ...axisXValuesNameTextStyle,
         formatter: function (value) {
-          return `${dollarFmt.format(value)}\n(${percentFmt.format(value / spotPrice - 1.0)})`;
+          return `${percentFmt.format(value - 1.0)}`;
         },
       },
       axisLine,
@@ -193,17 +253,13 @@ function coveredCallToBreakEvenChart(data, divId) {
     grid,
     yAxis: {
       type: 'value',
-      inverse: true,
-      max: spotPrice,
-      splitNumber: 10,
-      name: 'Breakeven Improvement (Reduction)',
-      nameLocation: 'start',
-      align: 'right',
+      name: `⬆${underlying}`,
+      nameLocation: 'end',
       nameTextStyle: yAxisTitleNameTextStyle,
       axisLabel: {
         ...axisYValuesNameTextStyle,
         formatter: function (value) {
-          return `${percentNoSignFmt.format(1.0 - value / spotPrice)}`;
+          return `${percentFmt.format(value - 1.0)}`;
         },
       },
       axisLine,
@@ -218,8 +274,8 @@ function coveredCallToBreakEvenChart(data, divId) {
       name: ds.label,
       datasetId: ds.id,
       encode: {
-        x: 'breakEvenVsFullUnderlyingAbsolute',
-        y: 'breakEvenVsFullMoneyAbsolute'
+        x: 'moneyYield',
+        y: 'underlyingYield'
       },
       symbolSize: function (data) {
         return 8;
@@ -245,14 +301,14 @@ function coveredCallToBreakEvenChart(data, divId) {
       {
         type: 'inside',
         xAxisIndex: 0,
-        startValue: spotPrice * 0.5,
-        endValue: spotPrice * 1.5,
+        startValue: 1.0,
+        endValue: 2.0,
       },
       {
         type: 'inside',
         yAxisIndex: 0,
-        startValue: spotPrice / 2.0,
-        endValue: spotPrice,
+        startValue: 1.0,
+        endValue: 2.0,
       }
     ],
   });

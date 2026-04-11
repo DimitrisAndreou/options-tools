@@ -29,7 +29,7 @@ class CoveredCall {
 
   final double spotPrice;
   final PriceInfo strikePrice;
-  late final double maxProfit; // of minimum position.
+  late final double moneyProfit; // of minimum position.
 
   late final double moneyYield;
   late final double underlyingYield;
@@ -42,7 +42,7 @@ class CoveredCall {
         'premiumToReceive': premiumToReceive.size,
         'money': money.name,
         'moneySize': moneyLeg.size,
-        'maxProfit': maxProfit,
+        'moneyProfit': moneyProfit,
         'spotPrice': spotPrice,
         'call': optionLeg.asset.name,
         'callSize': optionLeg.size,
@@ -85,7 +85,7 @@ class CoveredCall {
     try {
       moneyYield = analyzer.maxYield;
       underlyingYield = premiumToReceive.size / underlyingToBuy.size + 1.0;
-      maxProfit = analyzer.maxProfit;
+      moneyProfit = analyzer.maxProfit;
       breakEvenVsFullUnderlying = price(spotPrice * moneyYield, spotPrice);
       // Breakeven could be a whole range, for a profit-less strategy.
       breakEvenVsFullMoney =

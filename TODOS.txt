@@ -1,4 +1,10 @@
 ****
+Would be fun if you could invert a PositionAnalyzer,
+e.g. BTC<->USD, turn it into USD<->BTC (thus, money is BTC),
+and then you query the "maxProfit", which would be the
+maximum amount of BTC!
+
+****
 Reimplement CoveredCall strategy; new approach.
 +X% or +Y%, whatever is least (in money).
 

@@ -8636,7 +8636,7 @@ A.eD.prototype={
 cA(){var s,r,q,p,o,n,m,l,k,j,i=this,h="premiumToReceive",g=i.as
 g===$&&A.D(h)
 s=i.ay
-s===$&&A.D("maxProfit")
+s===$&&A.D("moneyProfit")
 r=i.x
 q=i.d
 p=B.c.a2(q.c8(new A.ar(Date.now(),0,!1)).a,864e8)
@@ -8652,7 +8652,7 @@ k=i.cx
 k===$&&A.D("breakEvenVsFullUnderlying")
 j=i.cy
 j===$&&A.D("breakEvenVsFullMoney")
-return A.eR(["underlying",i.a.a,"underlyingToBuy",i.Q.b,h,g.b,"money",i.b.a,"moneySize",i.z.b,"maxProfit",s,"spotPrice",i.at,"call",r.a.a,"callSize",r.b,"DTE",p,"formattedDate",""+A.m9(q)+" "+o+" "+A.mb(q),"strikeAbsolute",n.a,"strikeRelative",n.b,"moneyYield",m,"underlyingYield",l,"breakEvenVsFullUnderlyingAbsolute",k.a,"breakEvenVsFullUnderlyingRelative",k.b,"breakEvenVsFullMoneyAbsolute",j.a,"breakEvenVsFullMoneyRelative",j.b],t.N,t.z)},
+return A.eR(["underlying",i.a.a,"underlyingToBuy",i.Q.b,h,g.b,"money",i.b.a,"moneySize",i.z.b,"moneyProfit",s,"spotPrice",i.at,"call",r.a.a,"callSize",r.b,"DTE",p,"formattedDate",""+A.m9(q)+" "+o+" "+A.mb(q),"strikeAbsolute",n.a,"strikeRelative",n.b,"moneyYield",m,"underlyingYield",l,"breakEvenVsFullUnderlyingAbsolute",k.a,"breakEvenVsFullUnderlyingRelative",k.b,"breakEvenVsFullMoneyAbsolute",j.a,"breakEvenVsFullMoneyRelative",j.b],t.N,t.z)},
 i(a){return B.j.b2(this,null)},
 e6(a,b,c,d,e,f,g,h){var s,r,q=this,p=q.w,o=q.a,n=q.Q,m=n.b
 o=A.a4(A.i([p.j(0,o),new A.r(n.a,m*-1)],t.b)).bf(o)
@@ -8665,7 +8665,7 @@ q.ch=s
 q.CW!==$&&A.ai("underlyingYield")
 q.CW=o.b/m+1
 m=Math.max(n.gb5(),0)
-q.ay!==$&&A.ai("maxProfit")
+q.ay!==$&&A.ai("moneyProfit")
 q.ay=m
 m=q.at
 s=m*s
