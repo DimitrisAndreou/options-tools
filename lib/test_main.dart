@@ -151,7 +151,7 @@ void browseCoveredCalls(List<Market> markets) {
     final pricesWithSameMaxGain =
         equalSizeLongStrategy.whereValueIs(cc.analyzer.maxValue);
     print(
-        "### CC: ${cc.analyzer.position.decompose()}, maxYield: ${cc.maxYield}, spotPrice: ${cc.spotPrice}"
+        "### CC: ${cc.analyzer.position.decompose()}, maxYield: ${cc.moneyYield}, spotPrice: ${cc.spotPrice}"
         "\n    equalSizedLongSpot: ${equalSizeLongStrategy.position.decompose()}"
         "\n    breakevenVsHolder: $pricesWithSameMaxGain"
         "\n");
@@ -188,7 +188,7 @@ void browseLongCalls(List<Market> allMarkets) {
         " (\$${breakeven.price.toStringAsFixed(0).padLeft(6)})"
         ", CC b.e.: ${percentify(asChange(cc.breakEvenVsFullMoney.absolute, spotMarket.midPrice)).padLeft(7)}"
         " (\$${cc.breakEvenVsFullMoney.absolute.toStringAsFixed(0).padLeft(6)})"
-        " cc max profit: ${percentify(cc.maxYield - 1.0)}");
+        " cc max profit: ${percentify(cc.moneyYield - 1.0)}");
   }
 }
 
