@@ -102,7 +102,7 @@ function ccFormatterTemplate(params, isDetailed) {
     html += `
       ${label('Initial required capital')}: ${neutral(value.money)} ${bad(whatToBuyFor)}, or ${bad(whatToBuy)} ${neutral(underlying)}.<br/>
       ${label('Spot price')}: ${neutral(dollarFmt.format(value.spotPrice))}.<br/>
-      <p>
+      <br/>
       On ${neutral(value.formattedDate)}, you will remain with one of these alternatives (whichever is ${bad('worse')}):
       <ul>
         <li>${label('Either')} ${good(moneyYieldPercent)} ${good(money)} (${good(moneyProfit)}),
