@@ -56,8 +56,8 @@ const ccTooltipFormatter = function (params) {
   const value = params.value;
   const DTE = `${value.DTE}`;
   const underlying = value.underlying;
-  const breakeven = `${percentFmt.format(value.breakEvenAsChange - 1.0)}`;
-  const breakevenAt = `${dollarFmt.format(value.breakEven)}`;
+  const breakeven = `${percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0)}`;
+  const breakevenAt = `${dollarFmt.format(value.breakEvenVsFullMoneyAbsolute)}`;
   const maxProfitPercent = `${percentFmt.format(value.maxYield - 1.0)}`;
   const maxProfit = `${dollarFmt.format(value.maxProfit)}`;
   const maxProfitAt = `${dollarFmt.format(value.maxYieldAt)}`;
@@ -84,40 +84,6 @@ const ccTooltipFormatter = function (params) {
     </ul>
     <br/>
     ${label('Contract Name')}: ${neutral(value.call)}`;
-};
-
-const spotPriceSeries = function (spotPrice) {
-  return {
-    type: 'line',
-    data: [],
-    markLine: {
-      symbol: 'none',
-      label: {
-        show: false,
-      },
-      lineStyle: {
-        type: 'dashed',
-        color: 'yellow',
-        width: 1,
-      },
-      tooltip: {
-        show: true,
-        formatter: () => {
-          return `
-            'Just hodl' strategy (no options):
-            <BR>You give up no potential profits
-            <BR>and you get no breakeven reduction.
-            <BR>Your breakeven is ${dollarFmt.format(spotPrice)}
-          `;
-        },
-      },
-      data: [
-        {
-          xAxis: spotPrice,
-        }
-      ]
-    },
-  };
 };
 
 const axisTitleNameTextStyle = {
@@ -184,7 +150,7 @@ function coveredCallToBreakEvenChart(data, divId) {
   // TODO: share this code across charts.
   const dataset = {
     id: "original",
-    dimensions: ["breakEven", "DTE", "equivalentHodlerSellPrice"],
+    dimensions: ["breakEvenVsFullMoneyAbsolute", "DTE", "breakEvenVsFullUnderlyingAbsolute"],
     source: data
   };
   const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
@@ -252,8 +218,8 @@ function coveredCallToBreakEvenChart(data, divId) {
       name: ds.label,
       datasetId: ds.id,
       encode: {
-        x: 'equivalentHodlerSellPrice',
-        y: 'breakEven'
+        x: 'breakEvenVsFullUnderlyingAbsolute',
+        y: 'breakEvenVsFullMoneyAbsolute'
       },
       symbolSize: function (data) {
         return 8;
@@ -273,33 +239,7 @@ function coveredCallToBreakEvenChart(data, divId) {
       label: {
         show: false
       }
-    })), {
-      type: 'scatter',
-      data: [[Math.max(...data.map(item => item.maxYieldAt)), spotPrice]],
-      symbol: 'circle',
-      symbolSize: 0,
-      itemStyle: {
-        color: 'yellow',
-      },
-      label: {
-        show: true,
-        formatter: '🚀',
-        fontSize: 20,
-        color: 'white',
-        position: 'inside',
-        offset: [0, 0],
-      },
-      tooltip: {
-        show: true,
-        formatter: () => {
-          return `
-            'Just hodl' strategy:
-            <BR>You give up no potential profits
-            <BR>and you get no breakeven reduction
-          `;
-        }
-      },
-    }, spotPriceSeries(spotPrice)],
+    }))],
     legend: legend,
     dataZoom: [
       {
@@ -408,7 +348,7 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
     },
     {
       headerName: 'B.E.',
-      field: 'breakEven',
+      field: 'breakEvenVsFullMoneyAbsolute',
       sortable: true,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params) => dollarFmt.format(params.value),
@@ -417,7 +357,7 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
     },
     {
       headerName: 'B.E. %',
-      field: 'breakEvenAsChange',
+      field: 'breakEvenVsFullMoneyRelative',
       sortable: true,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params) => percentFmt.format(params.value - 1.0),
@@ -566,7 +506,7 @@ function verticalSpreadsChart(data, divId) {
         return `
           <b>${value.call}</b><br/>
           Max Profit At: $${value.maxYieldAt}<br/>
-          Break Even: ${dollarFmt.format(value.breakEven)} (${percentFmt.format(value.breakEvenAsChange - 1.0)})<br/>
+          Break Even: ${dollarFmt.format(value.breakEvenVsFullMoneyAbsolute)} (${percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0)})<br/>
           Max Profit: ${percentFmt.format(value.maxYield - 1.0)}<br/>
           Time Value: ${percentFmt.format(value.timeValue)}<br/>
           DTE: ${value.DTE}

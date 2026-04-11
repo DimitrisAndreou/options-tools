@@ -91,7 +91,8 @@ void testYFinance() async {
     final p = cc.analyzer.position;
     print("  #### : Original: $p");
     print("  #### : Shares: ${p[spot.asset]}");
-    print("  #### : but instructions: ${cc.underlyingToBuy} + ${cc.premiumToReceive} = ${(cc.underlyingToBuy + cc.premiumToReceive)[spot.asset]}");
+    print(
+        "  #### : but instructions: ${cc.underlyingToBuy} + ${cc.premiumToReceive} = ${(cc.underlyingToBuy + cc.premiumToReceive)[spot.asset]}");
     // print(
     //     "### CC: ${cc.analyzer.position.decompose()}, maxYield: ${cc.maxYield}, spotPrice: ${cc.spotPrice}"
     //     "\n    equalSizedLongSpot: ${equalSizeLongStrategy.position.decompose()}"
@@ -167,9 +168,6 @@ void browseLongCalls(List<Market> allMarkets) {
   final ccs =
       CoveredCall.generateAll(allMarkets, underlying: underlying, money: money);
   for (final cc in ccs) {
-    if (cc.breakeven == null) {
-      continue;
-    }
     final callContract = cc.callMarket.asset.toOption;
     final longCall = cc.callMarket.long();
     final longCallAnalyzer =
@@ -188,8 +186,8 @@ void browseLongCalls(List<Market> allMarkets) {
         ", ITM @ ${percentify(asChange(strike, spotMarket.midPrice)).padLeft(7)}"
         ", profit @ ${percentify(asChange(breakeven.price, spotMarket.midPrice)).padLeft(7)}"
         " (\$${breakeven.price.toStringAsFixed(0).padLeft(6)})"
-        ", CC b.e.: ${percentify(asChange(cc.breakeven!, spotMarket.midPrice)).padLeft(7)}"
-        " (\$${cc.breakeven!.toStringAsFixed(0).padLeft(6)})"
+        ", CC b.e.: ${percentify(asChange(cc.breakEvenVsFullMoney.absolute, spotMarket.midPrice)).padLeft(7)}"
+        " (\$${cc.breakEvenVsFullMoney.absolute.toStringAsFixed(0).padLeft(6)})"
         " cc max profit: ${percentify(cc.maxYield - 1.0)}");
   }
 }

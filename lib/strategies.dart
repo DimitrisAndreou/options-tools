@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:collection';
 
 import 'assets.dart';
-import 'expirations.dart';
 import 'markets.dart';
 import 'oracle.dart';
 import 'position_analyzer.dart';
@@ -29,68 +28,43 @@ class CoveredCall {
   late final Line premiumToReceive;
 
   final double spotPrice;
-  late final double? breakeven;
-  late final double? breakevenAsChange;
   late final double maxYield;
   late final double maxYieldAt;
   late final double maxYieldAtChange;
-  late final double yieldIfPriceUnchanged;
   late final double equivalentHodlerSellPrice;
   late final double maxProfit; // of minimum position.
 
-  late final double? timeValue;
+  late final double moneyYield;
+  late final double underlyingYield;
+  late final PriceInfo breakEvenVsFullUnderlying;
+  late final PriceInfo breakEvenVsFullMoney;
 
   Map<String, dynamic> toJson() => {
-        'underlying': underlying.name, // Used
-        'underlyingToBuy': underlyingToBuy.size, // Used
-        'premiumToReceive': premiumToReceive.size, // Used
-        'money': money.name, // SHOULD be used but isn't
-        'moneySize': moneyLeg.size, // Used
-        'maxProfit': maxProfit, // Used
-        'spotPrice': spotPrice, // Used
-        'call': optionLeg.asset.name, // Used
-        'callSize': optionLeg.size, // Used
-        'DTE': expiration.daysLeft, // Used
+        'underlying': underlying.name,
+        'underlyingToBuy': underlyingToBuy.size,
+        'premiumToReceive': premiumToReceive.size,
+        'money': money.name,
+        'moneySize': moneyLeg.size,
+        'maxProfit': maxProfit,
+        'spotPrice': spotPrice,
+        'call': optionLeg.asset.name,
+        'callSize': optionLeg.size,
+        'DTE': expiration.daysLeft,
         'formattedDate': expiration.formattedDate,
         'strike': option.strike,
-        'breakEven': breakeven, // Used. Y-axis!
-        'breakEvenAsChange': breakevenAsChange, // Used
-        'maxYield': maxYield, // Used
-        'maxYieldAt': maxYieldAt, // Used
-        'maxYieldAtChange': maxYieldAtChange, // Used
-        'equivalentHodlerSellPrice':
-            equivalentHodlerSellPrice, // Used. X-axis!!
+        'maxYield': maxYield,
+        'maxYieldAt': maxYieldAt,
+        'maxYieldAtChange': maxYieldAtChange,
 
-        //////////////////
-        // New approach:
-        // Either +x% money (+|x|)
-        // Or +y% underlying (+|y|)
+        'moneyYield': moneyYield, // new Y-axis
+        'underlyingYield': underlyingYield, // new X-axis
 
-        // Position description: underlying, money, call
-        // 'underlying': underlying.name,
-        // 'money': money.name,
-        // 'call': optionLeg.asset.name,
-
-        // Open the trade: callSize, underlyingToBuy, moneySize
-        // 'callSize': optionLeg.size, // Used
-        // 'underlyingToBuy': underlyingToBuy.size, // Used
-        // 'moneySize': moneyLeg.size, // Used
-        // 'premiumToReceive': premiumToReceive.size, // Used
-
-        // CC aspects:
-        // 'maxYieldInMoney':
-        // 'breakEvenInMoney':
-        // 'maxYieldInUnderlying':
-        // 'breakEvenInUnderlying': ..!!
-        // Any price: {
-        //   absolute: ...
-        //   relative: ...  // relative to spot
-        // }
-        // A simple function of makePrice(price, spotPrice) can produce this.
-
-        // Misc
-        // 'spotPrice': spotPrice,
-        // 'DTE': expiration.daysLeft,
+        // Where does this CC meet with the strategy of 100% underlying?
+        'breakEvenVsFullUnderlyingAbsolute': breakEvenVsFullUnderlying.absolute,
+        'breakEvenVsFullUnderlyingRelative': breakEvenVsFullUnderlying.relative,
+        // Where does this CC meet with the strategy of 100% money?
+        'breakEvenVsFullMoneyAbsolute': breakEvenVsFullMoney.absolute,
+        'breakEvenVsFullMoneyRelative': breakEvenVsFullMoney.relative,
       };
 
   @override
@@ -110,21 +84,22 @@ class CoveredCall {
         underlyingLeg = strategy[underlying],
         optionLeg = strategy[option],
         underlyingToBuy = spotMarket.toAsset(-strategy[money]) {
-    premiumToReceive = (strategy[underlying] - underlyingToBuy).singleton(underlying);
+    premiumToReceive =
+        (strategy[underlying] - underlyingToBuy).singleton(underlying);
     try {
-      // Breakeven could be a whole range, for a profit-less strategy.
-      breakeven = analyzer.breakevens.singleOrNull?.fromPrice;
-      breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
-      maxYield = analyzer.maxYield;
+      maxYield = analyzer.maxYield; // TO BE REMOVED
+      moneyYield = analyzer.maxYield;
+      underlyingYield = premiumToReceive.size / underlyingToBuy.size + 1.0;
       maxProfit = analyzer.maxProfit;
+      breakEvenVsFullUnderlying = price(spotPrice * maxYield, spotPrice);
+      // Breakeven could be a whole range, for a profit-less strategy.
+      breakEvenVsFullMoney =
+          price(analyzer.breakevens.first.fromPrice, spotPrice);
       // We know that in CCs we're looking at a single max value segment
       maxYieldAt = analyzer.bestPrices.first.fromPrice;
       maxYieldAtChange = maxYieldAt / spotPrice;
-      yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
-      equivalentHodlerSellPrice = spotPrice * maxYield;
     } catch (e) {
       print("Error: \nStrategy: $strategy\n"
-          "Merged: ${Position.mergeAll(strategy.decompose())}\n"
           "Analyzer: $analyzer");
       rethrow;
     }
@@ -253,7 +228,6 @@ class VerticalSpread {
   late final double maxRisk;
   late final double maxRiskAt;
   late final double maxRiskAtChange;
-  late final double yieldIfPriceUnchanged;
 
   Map<String, dynamic> toJson() => {
         'underlying': underlying.name,
@@ -272,7 +246,6 @@ class VerticalSpread {
         'maxRisk': maxRisk,
         'maxRiskAt': maxRiskAt,
         'maxRiskAtChange': maxRiskAtChange,
-        'yieldIfPriceUnchanged': yieldIfPriceUnchanged,
       };
 
   VerticalSpread._(this.strategy,
@@ -304,7 +277,6 @@ class VerticalSpread {
     maxRisk = analyzer.maxRisk;
     maxRiskAt = pickNearestBoundary(spotPrice, analyzer.worstPrices)!;
     maxRiskAtChange = maxRiskAt / spotPrice;
-    yieldIfPriceUnchanged = analyzer.yieldAt(spotPrice);
   }
 
   static double? pickNearestBoundary(
@@ -407,3 +379,15 @@ class VerticalSpread {
     }
   }
 }
+
+class PriceInfo {
+  final double absolute;
+  final double relative;
+
+  PriceInfo(this.absolute, this.relative);
+}
+
+/// Helper to construct a price object pairing an absolute price
+/// with its relative value (e.g. against a spot price).
+PriceInfo price(double targetPrice, double basePrice) =>
+    PriceInfo(targetPrice, targetPrice / basePrice);

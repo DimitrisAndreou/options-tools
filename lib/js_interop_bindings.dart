@@ -35,7 +35,6 @@ Future<String> deribitCoveredCalls(String ticker, double slippage) async {
           underlying: Commodity(ticker),
           money: Commodity("USD"),
           slippage: slippage)
-      .where((cc) => cc.breakeven != null)
       .toList());
 }
 
@@ -64,7 +63,6 @@ Future<String> yfinanceCoveredCalls(String ticker, double slippage) async {
           underlying: Commodity(ticker),
           money: Commodity("USD"),
           slippage: slippage)
-      .where((cc) => cc.breakeven != null)
       .toList());
 }
 
