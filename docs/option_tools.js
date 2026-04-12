@@ -41,7 +41,7 @@ const tooltipStyle = {
 
 function ccFormatterTemplate(params, isDetailed) {
   function label(str) {
-    return `<strong>${str}</strong>`;
+    return `<strong style="color: #ffffff;">${str}</strong>`;
   }
   function neutral(str) {
     return `<strong style="color: #38bdf8;">${str}</strong>`;
@@ -72,56 +72,47 @@ function ccFormatterTemplate(params, isDetailed) {
 
   let html = ``;
   if (isDetailed) {
-    html += `${label('Covered Call')} on ${neutral(underlying)}<br/>`;
+    html += `${label('Covered Call')} on ${neutral(underlying)}`;
   }
 
-  html += `${label('Expiration')}: ${neutral(value.formattedDate)} (${bad(DTE)} days)<br/>`;
+  html += `<br/>${label('Expiration')}: ${neutral(value.formattedDate)}`;
   if (isDetailed) {
-    html += `${label('Strike')}: ${neutral(dollarFmt.format(value.strikeAbsolute))}<br/>`;
-    html += `${label('Contract Name')}: ${neutral(value.call)}<br/>`;
+    html += `<br/>${label('Strike')}: ${neutral(dollarFmt.format(value.strikeAbsolute))}`;
+    html += `<br/>${label('Contract Name')}: ${neutral(value.call)}`;
   }
 
+  html += `
+    <br/>${label('Capital required: ')} <!-- ${neutral(value.money)} --> ${neutral(whatToBuyFor)}`;
+
+  if (isDetailed) {
+    html += ` = ${neutral(whatToBuy)} ${neutral(underlying)}`;
+  }
+  html += `
+    <br/>
+    <br/>In ${bad(DTE)} days, you get one of:
+    <br/>
+    <br/>${good(moneyYieldPercent)} ${good(money)} (${good(moneyProfit)})
+    <br/>⬆⬆⬆ if above ⬆⬆⬆
+    <br/>${neutral(underlying)} = ${neutral(dollarFmt.format(value.strikeAbsolute))}
+    <br/>⬇⬇⬇ if below ⬇⬇⬇
+    <br/>${good(underlyingYieldPercent)} ${good(underlying)} (${good(underlyingProfit)})
+    <br/>`;
   if (!isDetailed) {
     html += `
-      ${label('Capital required: ')} ${neutral(value.money)} ${bad(whatToBuyFor)}
-      <br/>
-      ${label('Outcomes:')}<ul>
-        <li>${neutral(underlying)} > ${neutral(dollarFmt.format(value.strikeAbsolute))}:
-          ${good(moneyYieldPercent)} ${good(money)} (${good(moneyProfit)})
-        </li>
-        <li>${neutral(underlying)} <= ${neutral(dollarFmt.format(value.strikeAbsolute))}:
-          ${good(underlyingYieldPercent)} ${good(underlying)} (${good(underlyingProfit)})
-        </li>
-      </ul>
-      ${label('Breakeven')}: ${neutral(breakEvenVsFullMoneyRelative)}
-        (at ${neutral(breakEvenVsFullMoneyAbsolute)})<br/>
+    <br/>${label('Breakeven')}: ${neutral(breakEvenVsFullMoneyRelative)}
+      (at ${neutral(breakEvenVsFullMoneyAbsolute)})<br/>
     `;
   }
 
   if (isDetailed) {
     html += `
-      ${label('Initial required capital')}: ${neutral(value.money)} ${bad(whatToBuyFor)}, or ${bad(whatToBuy)} ${neutral(underlying)}.<br/>
-      ${label('Spot price')}: ${neutral(dollarFmt.format(value.spotPrice))}.<br/>
+      <br/>${label('Is there no downside?')}
       <br/>
-      On ${neutral(value.formattedDate)}, you will remain with one of these alternatives (whichever is ${bad('worse')}):
-      <ul>
-        <li>${label('Either')} ${good(moneyYieldPercent)} ${good(money)} (${good(moneyProfit)}),
-            from your initial ${neutral(value.money)} ${neutral(whatToBuyFor)}.
-        <ul>
-          <li>But you would have ${bad('less')} in terms of ${neutral(underlying)} 
-          if price moves beyond ${good(breakEvenVsFullUnderlyingRelative)} (> ${good(breakEvenVsFullUnderlyingAbsolute)}),
-          versus ${neutral('being 100% in')} ${neutral(underlying)}.
-          </li>
-        </ul>
-        <li>${label('Or')} ${good(underlyingYieldPercent)} ${good(underlying)} (${good(underlyingProfit)}),
-            from your initial ${neutral(whatToBuy)}.
-        <ul>
-          <li>But you would have ${bad('less')} in terms of ${neutral(money)}
-          if price moves beyond ${bad(breakEvenVsFullMoneyRelative)} (< ${bad(breakEvenVsFullMoneyAbsolute)}),
-          versus ${neutral('being 100% in')} ${neutral(money)}.
-          </li>
-        </ul>
-      </ul>
+      <br/>If ${neutral(underlying)} > ${good(breakEvenVsFullUnderlyingAbsolute)} (${good(breakEvenVsFullUnderlyingRelative)}):
+      <br/>You will have ${bad('less')} in terms of ${neutral(underlying)} vs ${neutral('being 100% in')} ${neutral(underlying)}.
+      <br/>
+      <br/>If ${neutral(underlying)} < ${bad(breakEvenVsFullMoneyAbsolute)} (${bad(breakEvenVsFullMoneyRelative)})
+      <br/>${bad('less')} in terms of ${neutral(money)} vs ${neutral('being 100% in')} ${neutral(money)}.
       `;
 
     html += `
