@@ -116,7 +116,7 @@ function ccFormatterTemplate(params, isDetailed) {
       `;
 
     html += `
-      ${label('Instructions')}:
+      <br/>${label('Instructions')}:
       <ul style="margin: 0">
       <li>Buy ${good(whatToBuy)} ${neutral(underlying)}, for ${bad(whatToBuyFor)}</li>
       <li>Sell ${bad(whatToSell)} call(s), for ${good(whatToSellFor)}</li>
