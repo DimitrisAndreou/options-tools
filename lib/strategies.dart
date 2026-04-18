@@ -82,19 +82,17 @@ class CoveredCall {
         strikePrice = price(option.strike, spotPrice) {
     premiumToReceive =
         (strategy[underlying] - underlyingToBuy).singleton(underlying);
-    try {
-      moneyYield = analyzer.maxYield;
-      underlyingYield = premiumToReceive.size / underlyingToBuy.size + 1.0;
-      moneyProfit = analyzer.maxProfit;
-      breakEvenVsFullUnderlying = price(spotPrice * moneyYield, spotPrice);
-      // Breakeven could be a whole range, for a profit-less strategy.
-      breakEvenVsFullMoney =
-          price(analyzer.breakevens.first.fromPrice, spotPrice);
-    } catch (e) {
-      print("Error: \nStrategy: $strategy\n"
+    moneyYield = analyzer.maxYield;
+    underlyingYield = premiumToReceive.size / underlyingToBuy.size + 1.0;
+    moneyProfit = analyzer.maxProfit;
+    breakEvenVsFullUnderlying = price(spotPrice * moneyYield, spotPrice);
+    if (analyzer.breakevens.isEmpty) {
+      throw Exception("No breakeven!\nStrategy: $strategy\n"
           "Analyzer: $analyzer");
-      rethrow;
     }
+    // Breakeven could be a whole range, for a profit-less strategy.
+    breakEvenVsFullMoney =
+        price(analyzer.breakevens.first.fromPrice, spotPrice);
   }
 
   static Iterable<CoveredCall> generateAll(Iterable<Market> allMarkets,
