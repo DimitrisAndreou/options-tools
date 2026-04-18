@@ -32,100 +32,146 @@ const tooltipStyle = {
   position: 'top',
   enterable: true,
   textStyle: {
-    color: '#fcd34d',
-    fontFamily: 'monospace'
+    color: '#f8fafc',
+    fontFamily: 'Inter, sans-serif'
   },
-  backgroundColor: '#1e1e2f',
+  backgroundColor: '#1e293b',
   borderColor: '#fcd34d',
+  borderWidth: 1,
+  padding: 0, // Template handles padding
+  shadowBlur: 10,
+  shadowColor: 'rgba(0,0,0,0.5)'
 };
 
-function ccFormatterTemplate(params, isDetailed) {
-  function label(str) {
-    return `<strong style="color: #ffffff;">${str}</strong>`;
-  }
-  function neutral(str) {
-    return `<strong style="color: #38bdf8;">${str}</strong>`;
-  }
-  function good(str) {
-    return `<strong style="color: #00ffa3;">${str}</strong>`;
-  }
-  function bad(str) {
-    return `<strong style="color: #ff5c5c;">${str}</strong>`;
-  }
-  const value = params.value;
-  // console.log({ value });
-  const DTE = `${value.DTE}`;
+/**
+ * Prepares and formats the raw data for display.
+ */
+function prepareCCData(value) {
   const money = value.money;
   const underlying = value.underlying;
-  const breakEvenVsFullMoneyRelative = `${percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0)}`;
-  const breakEvenVsFullMoneyAbsolute = `${dollarFmt.format(value.breakEvenVsFullMoneyAbsolute)}`;
-  const breakEvenVsFullUnderlyingRelative = `${percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0)}`;
-  const breakEvenVsFullUnderlyingAbsolute = `${dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute)}`;
-  const moneyYieldPercent = `${percentFmt.format(value.moneyYield - 1.0)}`;
-  const underlyingYieldPercent = `${percentFmt.format(value.underlyingYield - 1.0)}`;
-  const moneyProfit = `+${dollarFmt.format(value.moneyProfit)}`;
-  const underlyingProfit = `+${underlyingFmt.format(value.premiumToReceive)} ${underlying}`;
-  const whatToBuy = `${underlyingFmt.format(value.underlyingToBuy)}`;
-  const whatToBuyFor = `${dollarFmt.format(-value.moneySize)}`;
-  const whatToSell = `${-value.callSize}`;
-  const whatToSellFor = `${underlyingFmt.format(value.premiumToReceive)} ${underlying}`;
 
-  let html = ``;
-  if (isDetailed) {
-    html += `${label('Covered Call')} on ${neutral(underlying)}`;
-  }
+  return {
+    underlying,
+    money,
+    formattedDate: value.formattedDate,
+    DTE: value.DTE,
+    strikeAbsolute: dollarFmt.format(value.strikeAbsolute),
+    callName: value.call,
+    capitalRequired: dollarFmt.format(-value.moneySize),
+    capitalRequiredUnderlying: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
 
-  html += `<br/>${label('Expiration')}: ${neutral(value.formattedDate)}`;
-  if (isDetailed) {
-    html += `<br/>${label('Strike')}: ${neutral(dollarFmt.format(value.strikeAbsolute))}`;
-    html += `<br/>${label('Contract Name')}: ${neutral(value.call)}`;
-  }
+    // Yields
+    moneyYield: percentFmt.format(value.moneyYield - 1.0),
+    moneyProfit: `${dollarFmt.format(value.moneyProfit)}`,
+    underlyingYield: percentFmt.format(value.underlyingYield - 1.0),
+    underlyingProfit: `${underlyingFmt.format(value.premiumToReceive)} ${underlying}`,
 
-  html += `
-    <br/>${label('Capital required: ')} <!-- ${neutral(value.money)} --> ${neutral(whatToBuyFor)}`;
+    // Breakeven / Caps
+    beAbsolute: dollarFmt.format(value.breakEvenVsFullMoneyAbsolute),
+    beRelative: percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0),
+    capAbsolute: dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute),
+    capRelative: percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0),
 
-  if (isDetailed) {
-    html += ` = ${neutral(whatToBuy)} ${neutral(underlying)}`;
-  }
-  html += `
-    <br/>
-    <br/>In ${bad(DTE)} days, you get one of:
-    <br/>
-    <br/>${good(moneyYieldPercent)} ${good(money)} (${good(moneyProfit)})
-    <br/>⬆⬆⬆ if above ⬆⬆⬆
-    <br/>${neutral(underlying)} = ${neutral(dollarFmt.format(value.strikeAbsolute))}
-    <br/>⬇⬇⬇ if below ⬇⬇⬇
-    <br/>${good(underlyingYieldPercent)} ${good(underlying)} (${good(underlyingProfit)})
-    <br/>`;
-  if (!isDetailed) {
-    html += `
-    <br/>${label('Breakeven')}: ${neutral(breakEvenVsFullMoneyRelative)}
-      (at ${neutral(breakEvenVsFullMoneyAbsolute)})<br/>
-    `;
-  }
-
-  if (isDetailed) {
-    html += `
-      <br/>${label('Is there no downside?')}
-      <br/>
-      <br/>If ${neutral(underlying)} > ${good(breakEvenVsFullUnderlyingAbsolute)} (${good(breakEvenVsFullUnderlyingRelative)}):
-      <br/>You will have ${bad('less')} in terms of ${neutral(underlying)} vs ${neutral('being 100% in')} ${neutral(underlying)}.
-      <br/>
-      <br/>If ${neutral(underlying)} < ${bad(breakEvenVsFullMoneyAbsolute)} (${bad(breakEvenVsFullMoneyRelative)})
-      <br/>${bad('less')} in terms of ${neutral(money)} vs ${neutral('being 100% in')} ${neutral(money)}.
-      `;
-
-    html += `
-      <br/>${label('Instructions')}:
-      <ul style="margin: 0">
-      <li>Buy ${good(whatToBuy)} ${neutral(underlying)}, for ${bad(whatToBuyFor)}</li>
-      <li>Sell ${bad(whatToSell)} call(s), for ${good(whatToSellFor)}</li>
-      </ul>
-      `;
-  }
-
-  return html;
+    // Instructions
+    buyAmount: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
+    buyCost: dollarFmt.format(-value.moneySize),
+    sellAmount: `${-value.callSize} call(s)`,
+    sellPremium: `${underlyingFmt.format(value.premiumToReceive)} ${underlying}`
+  };
 }
+
+// Semantic color helpers for a premium look
+const fmtStyle = {
+  label: (str) => `<span style="color: #94a3b8; font-weight: bold;">${str}</span>`,
+  neutral: (str) => `<span style="color: #38bdf8; font-weight: bold;">${str}</span>`,
+  good: (str) => `<span style="color: #00ffa3; font-weight: bold;">${str}</span>`,
+  bad: (str) => `<span style="color: #ff5c5c; font-weight: bold;">${str}</span>`,
+  header: (str) => `<div style="color: #fcd34d; font-size: 1.2em; font-weight: bold; border-bottom: 1px solid #334155; margin-bottom: 12px; padding-bottom: 6px; display: flex; align-items: center;"><i class="fas fa-cube me-2"></i> ${str}</div>`
+};
+
+function renderDetailedCC(d) {
+  return `
+    ${fmtStyle.header(`Strategy: Covered Call on&nbsp;${fmtStyle.neutral(d.underlying)}`)}
+    
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.95em;">
+      <tr><td style="padding: 4px 0;">${fmtStyle.label('Expiration')}</td><td style="text-align: right;">${fmtStyle.neutral(d.formattedDate)} <small>${fmtStyle.bad('(' + d.DTE + 'd)')}</small></td></tr>
+      <tr><td style="padding: 4px 0;">${fmtStyle.label('Strike Price')}</td><td style="text-align: right;">${fmtStyle.neutral(d.strikeAbsolute)}</td></tr>
+      <tr><td style="padding: 4px 0;">${fmtStyle.label('Contract')}</td><td style="text-align: right; font-family: monospace;">${fmtStyle.neutral(d.callName)}</td></tr>
+      <tr><td style="padding: 4px 0;">${fmtStyle.label('Capital Required')}</td><td style="text-align: right;">${fmtStyle.neutral(d.capitalRequired)} <small style="color: #64748b">(${fmtStyle.neutral(d.capitalRequiredUnderlying)})</small></td></tr>
+    </table>
+
+    <div style="background: rgba(30, 41, 59, 0.5); padding: 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 16px;">
+      <div style="margin-bottom: 8px; font-weight: bold; color: #cbd5e1;">Outcomes at Expiration:</div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span>If Price &ge; ${d.strikeAbsolute}:</span>
+        <span>${fmtStyle.good(d.moneyYield)} ${fmtStyle.good(d.money)} <small style="color: #00ffa3">+(${d.moneyProfit})</small></span>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span>If Price &lt; ${d.strikeAbsolute}:</span>
+        <span>${fmtStyle.good(d.underlyingYield)} ${fmtStyle.good(d.underlying)} <small style="color: #00ffa3">+(${d.underlyingProfit})</small></span>
+      </div>
+    </div>
+
+    <div style="font-size: 0.9em; margin-bottom: 16px; line-height: 1.5; color: #94a3b8;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        <span>${fmtStyle.label('Breakeven Price')}</span>
+        <span>${fmtStyle.bad(d.beAbsolute)} (${fmtStyle.bad(d.beRelative)})</span>
+      </div>
+      <div style="border-top: 1px dashed #334155; margin: 8px 0; padding-top: 8px;">
+        <i class="fas fa-exclamation-triangle me-1" style="color: #fcd34d"></i> 
+        If ${d.underlying} surpasses ${fmtStyle.good(d.capAbsolute)} (${fmtStyle.good(d.capRelative)}), 
+        you will have ${fmtStyle.bad('less')} total value than a 100% ${d.underlying} position.
+      </div>
+      <div style="border-top: 1px dashed #334155; margin: 8px 0; padding-top: 8px;">
+        <i class="fas fa-exclamation-triangle me-1" style="color: #fcd34d"></i> 
+        If ${d.underlying} falls below ${fmtStyle.bad(d.beAbsolute)} (${fmtStyle.bad(d.beRelative)}), 
+        you will have ${fmtStyle.bad('less')} total value in ${d.money} than a 100% ${d.money} position.
+      </div>
+    </div>
+
+    <div style="background: rgba(15, 23, 42, 0.3); padding: 10px; border-left: 3px solid #38bdf8; border-radius: 0 4px 4px 0;">
+      <div style="font-weight: bold; margin-bottom: 6px; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.05em;">Execution Instructions</div>
+      <div style="font-size: 0.9em;">
+        &bull; <b>Buy</b> ${fmtStyle.good(d.buyAmount)} for ${fmtStyle.bad(d.buyCost)}<br/>
+        &bull; <b>Sell</b> ${fmtStyle.bad(d.sellAmount)} for ${fmtStyle.good(d.sellPremium)}
+      </div>
+    </div>
+  `;
+}
+
+function renderTooltipCC(d) {
+  return `
+    <div style="padding: 10px; min-width: 220px; font-family: 'Inter', sans-serif; background: #1e293b;">
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #334155; margin-bottom: 12px; padding-bottom: 6px;">
+        <span style="font-weight: bold; color: #cbd5e1;">${d.formattedDate}</span>
+        <span style="color: #ff5c5c; font-weight: bold;">${d.DTE}d</span>
+      </div>
+      
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+        <div style="color: #00ffa3; font-weight: bold; font-size: 1.1em;">${d.moneyYield} ${d.money} ⬆</div>
+        <div style="height: 10px; border-left: 2px dashed #475569;"></div>
+        <div style="background: #334155; padding: 2px 12px; border-radius: 12px; color: #fcd34d; font-weight: bold; font-size: 0.9em; border: 1px solid #475569;">
+          ${d.strikeAbsolute}
+        </div>
+        <div style="height: 10px; border-left: 2px dashed #475569;"></div>
+        <div style="color: #00ffa3; font-weight: bold; font-size: 1.1em;">${d.underlyingYield} ${d.underlying} ⬇</div>
+      </div>
+
+      <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #334155; text-align: center; font-size: 0.85em;">
+        <span style="color: #94a3b8;">Breakeven:</span> 
+        <span style="color: #38bdf8; font-weight: bold;">${d.beAbsolute}</span>
+        <span style="color: #ff5c5c; margin-left: 4px;">(${d.beRelative})</span>
+      </div>
+    </div>
+  `;
+}
+
+function ccFormatterTemplate(params, isDetailed) {
+  if (!params || !params.value) return '';
+  const data = prepareCCData(params.value);
+  return isDetailed ? renderDetailedCC(data) : renderTooltipCC(data);
+}
+
 
 const ccTooltipFormatter = function (params) {
   return ccFormatterTemplate(params, false);
@@ -136,34 +182,36 @@ const ccDetailsFormatter = function (params) {
 };
 
 const axisTitleNameTextStyle = {
-  color: 'yellow',
-  fontFamily: 'monospace',
-  fontSize: 18
+  color: '#fcd34d',
+  fontFamily: 'Inter',
+  fontWeight: 'bold',
+  fontSize: 15
 };
 const yAxisTitleNameTextStyle = {
   ...axisTitleNameTextStyle,
   align: 'left',
 };
 const axisXValuesNameTextStyle = {
-  color: 'lightgreen',
-  fontFamily: 'monospace',
-  fontSize: 16,
+  color: '#94a3b8',
+  fontFamily: 'Roboto Mono',
+  fontSize: 12,
 };
 const axisYValuesNameTextStyle = {
-  color: 'orange',
-  fontFamily: 'monospace',
-  fontSize: 16,
+  color: '#94a3b8',
+  fontFamily: 'Roboto Mono',
+  fontSize: 12,
 };
 const axisLine = {
   lineStyle: {
-    color: 'yellow'
+    color: '#334155'
   }
 };
 const grid = {
-  left: 60,
-  right: 50,
-  top: 50,
-  bottom: 100,
+  left: '5%',
+  right: '10%',
+  top: '10%',
+  bottom: '15%',
+  containLabel: true
 };
 const legend = {
   show: true,

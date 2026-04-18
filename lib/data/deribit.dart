@@ -21,8 +21,9 @@ class Deribit {
 
   static Future<List<Market>> fetchMarkets(
       List<String> coins, UrlFetcher urlFetcher,
-      {void Function(ListedInstrument instr, String error)?
-          errorListener}) async {
+      {void Function(ListedInstrument instr, String error)? errorListener,
+      int? minDTE,
+      int? maxDTE}) async {
     final coinToResponse = {};
     for (final coin in coins) {
       // Hit Deribit sequentially; maybe less likely to get throttled.
@@ -45,7 +46,8 @@ class Deribit {
     };
     return mostRecents.values
         .followedBy(_implicitUsdInstruments(["USDC", "USDT"]))
-        .map((instrument) => instrument.toMarket(errorListener: errorListener))
+        .map((instrument) => instrument.toMarket(
+            errorListener: errorListener, minDTE: minDTE, maxDTE: maxDTE))
         .nonNulls
         .toList();
   }
@@ -66,7 +68,9 @@ class Deribit {
 
 extension ListedInstrumentDeribitUtils on ListedInstrument {
   Market? toMarket(
-      {void Function(ListedInstrument instr, String)? errorListener}) {
+      {void Function(ListedInstrument instr, String)? errorListener,
+      int? minDTE,
+      int? maxDTE}) {
     final errorsSink = errorListener ?? (instr, error) {};
     // TODO: produced assets might want a reference to this DeribitInstrument
     if (bid_price == null || ask_price == null) {
@@ -108,6 +112,9 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
       return null;
     }
     final expirationDate = _parseDate(datesList.first);
+    final dte = expirationDate.difference(DateTime.now()).inDays;
+    if (minDTE != null && dte < minDTE) return null;
+    if (maxDTE != null && dte > maxDTE) return null;
 
     final String? strikes = match.group(4);
     final String? optionType = match.group(5);

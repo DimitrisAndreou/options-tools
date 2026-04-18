@@ -13,7 +13,8 @@ class YFinance {
 
   YFinance(this._headers, this._crumb);
 
-  Future<List<Market>> fetchMarket(String ticker, UrlFetcher urlFetcher) async {
+  Future<List<Market>> fetchMarkets(String ticker, UrlFetcher urlFetcher,
+      {int? minDTE, int? maxDTE}) async {
     bool firstOptionChain = true;
     Market? spotMarket;
     List<Market> markets = [];
@@ -43,6 +44,7 @@ class YFinance {
       final isMarketOpen = quote["marketState"] == "REGULAR";
 
       final optionChain = (results["options"] as List?)?.firstOrNull;
+      if (optionChain == null) continue;
       if (firstOptionChain) {
         print("First option chain: $optionChain");
         // Also remember to fetch the rest expirations.
@@ -50,12 +52,29 @@ class YFinance {
         final expirations = results["expirationDates"].cast<int>().toSet();
         // Not the one we happen to get in the first, dateless request.
         expirations.remove(optionChain["expirationDate"]);
+        final now = DateTime.now();
         for (int expiration in expirations) {
+          final expirationDate =
+              DateTime.fromMillisecondsSinceEpoch(expiration * 1000);
+          final dte = expirationDate.difference(now).inDays;
+          if (minDTE != null && dte < minDTE) continue;
+          if (maxDTE != null && dte > maxDTE) continue;
           urlsToFetch.add(
               '$_baseUrl/v7/finance/options/$ticker?crumb=$_crumb&date=$expiration');
         }
       }
 
+      final currentExpirationDate = DateTime.fromMillisecondsSinceEpoch(
+          optionChain["expirationDate"] * 1000);
+      final currentDte =
+          currentExpirationDate.difference(DateTime.now()).inDays;
+      bool skipChain = false;
+      if (minDTE != null && currentDte < minDTE) skipChain = true;
+      if (maxDTE != null && currentDte > maxDTE) skipChain = true;
+
+      if (skipChain) {
+        continue;
+      }
       for (final (optionType, isCall) in [("calls", true), ("puts", false)]) {
         final options = optionChain[optionType] ??
             (throw StateError("Did not find $optionType"));

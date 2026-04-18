@@ -1,10 +1,10 @@
-async function loadData(ticker, slippage) {
+async function loadData(ticker, slippage, minDte, maxDte) {
   if (!ticker) return;
   try {
     const coveredCallsJson = JSON.parse(await (
       ticker === "BTC" || ticker === "ETH"
-        ? deribitCoveredCallsDart(ticker, slippage)
-        : yfinanceCoveredCallsDart(ticker, slippage)
+        ? deribitCoveredCallsDart(ticker, slippage, minDte, maxDte)
+        : yfinanceCoveredCallsDart(ticker, slippage, minDte, maxDte)
     ));
     console.log({ coveredCallsJson });
     coveredCallToBreakEvenLockup(coveredCallsJson, "coveredCallsChart", "coveredCallsTable");
@@ -42,23 +42,70 @@ async function jsMain() {
 
   const slippageInput = document.getElementById('slippage-input');
   const slippageValueDisplay = document.getElementById('slippage-value');
-  
+  const minDteInput = document.getElementById('min-dte-input');
+  const maxDteInput = document.getElementById('max-dte-input');
+  const dteValueDisplay = document.getElementById('dte-value-display');
+  const dteSliderRange = document.getElementById('dte-slider-range');
+
+  function updateDteUI() {
+    if (!minDteInput || !maxDteInput || !dteValueDisplay) return;
+    const minVal = parseInt(minDteInput.value, 10);
+    const maxVal = parseInt(maxDteInput.value, 10);
+    dteValueDisplay.textContent = `${minVal} - ${maxVal} d`;
+    
+    if (dteSliderRange) {
+      const min = parseInt(minDteInput.min, 10) || 0;
+      const max = parseInt(minDteInput.max, 10) || 1095;
+      const percent1 = ((minVal - min) / (max - min)) * 100;
+      const percent2 = ((maxVal - min) / (max - min)) * 100;
+      dteSliderRange.style.left = percent1 + '%';
+      dteSliderRange.style.width = (percent2 - percent1) + '%';
+    }
+  }
+
+  function reloadData() {
+    if (!ticker) return;
+    const slippage = slippageInput ? parseFloat(slippageInput.value) : 0.0;
+    const minDte = minDteInput ? parseInt(minDteInput.value, 10) : 7;
+    const maxDte = maxDteInput ? parseInt(maxDteInput.value, 10) : 1095;
+    loadData(ticker, slippage, minDte, maxDte);
+  }
+
   if (slippageInput && slippageValueDisplay) {
     slippageInput.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
       slippageValueDisplay.textContent = Math.round(val * 100) + '%';
     });
-    
-    slippageInput.addEventListener('change', (e) => {
-      const slippage = parseFloat(e.target.value);
-      loadData(ticker, slippage);
+    slippageInput.addEventListener('change', reloadData);
+  }
+
+  if (minDteInput && maxDteInput) {
+    minDteInput.addEventListener('input', (e) => {
+      let minVal = parseInt(e.target.value, 10);
+      let maxVal = parseInt(maxDteInput.value, 10);
+      if (minVal > maxVal) {
+        maxDteInput.value = minVal;
+      }
+      updateDteUI();
     });
+    minDteInput.addEventListener('change', reloadData);
+
+    maxDteInput.addEventListener('input', (e) => {
+      let maxVal = parseInt(e.target.value, 10);
+      let minVal = parseInt(minDteInput.value, 10);
+      if (maxVal < minVal) {
+        minDteInput.value = maxVal;
+      }
+      updateDteUI();
+    });
+    maxDteInput.addEventListener('change', reloadData);
+    
+    updateDteUI();
   }
 
   if (!ticker) {
     return;
   }
 
-  const initialSlippage = slippageInput ? parseFloat(slippageInput.value) : 0.0;
-  await loadData(ticker, initialSlippage);
+  reloadData();
 }

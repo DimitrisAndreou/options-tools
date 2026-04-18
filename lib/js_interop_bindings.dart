@@ -22,15 +22,15 @@ external set yfinanceCoveredCallsDart(JSFunction value);
 
 UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 5));
 
-Future<List<Market>> deribitMarkets() async {
+Future<List<Market>> deribitMarkets(int minDTE, int maxDTE) async {
   return await Deribit.fetchMarkets([Deribit.BTC, Deribit.ETH], _urlFetcher,
       errorListener: (instr, error) {
     /* If instruments are missing, add debugging code here */
-  });
+  }, minDTE: minDTE, maxDTE: maxDTE);
 }
 
-Future<String> deribitCoveredCalls(String ticker, double slippage) async {
-  List<Market> markets = await deribitMarkets();
+Future<String> deribitCoveredCalls(String ticker, double slippage, int minDTE, int maxDTE) async {
+  List<Market> markets = await deribitMarkets(minDTE, maxDTE);
   return jsonEncode(CoveredCall.generateAll(markets,
           underlying: Commodity(ticker),
           money: Commodity("USD"),
@@ -38,8 +38,8 @@ Future<String> deribitCoveredCalls(String ticker, double slippage) async {
       .toList());
 }
 
-Future<String> deribitVerticalSpreads(String ticker, double slippage) async {
-  List<Market> markets = await deribitMarkets();
+Future<String> deribitVerticalSpreads(String ticker, double slippage, int minDTE, int maxDTE) async {
+  List<Market> markets = await deribitMarkets(minDTE, maxDTE);
   return jsonEncode(VerticalSpread.generateAll(markets,
           underlying: Commodity(ticker),
           money: Commodity("USD"),
@@ -47,8 +47,8 @@ Future<String> deribitVerticalSpreads(String ticker, double slippage) async {
       .toList());
 }
 
-Future<String> deribitSyntheticBonds(String ticker, double slippage) async {
-  List<Market> markets = await deribitMarkets();
+Future<String> deribitSyntheticBonds(String ticker, double slippage, int minDTE, int maxDTE) async {
+  List<Market> markets = await deribitMarkets(minDTE, maxDTE);
   return jsonEncode(SyntheticBond.generateAll(markets,
           underlying: Commodity(ticker),
           money: Commodity("USD"),
@@ -56,9 +56,9 @@ Future<String> deribitSyntheticBonds(String ticker, double slippage) async {
       .toList());
 }
 
-Future<String> yfinanceCoveredCalls(String ticker, double slippage) async {
+Future<String> yfinanceCoveredCalls(String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await (await YFinance.openConnection(_urlFetcher))
-      .fetchMarket(ticker, _urlFetcher);
+      .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
   return jsonEncode(CoveredCall.generateAll(markets,
           underlying: Commodity(ticker),
           money: Commodity("USD"),
@@ -67,24 +67,24 @@ Future<String> yfinanceCoveredCalls(String ticker, double slippage) async {
 }
 
 void setupJsInterop() {
-  deribitCoveredCallsDart = (JSString ticker, JSNumber slippage) {
-    return deribitCoveredCalls(ticker.toDart, slippage.toDartDouble)
+  deribitCoveredCallsDart = (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return deribitCoveredCalls(ticker.toDart, slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt)
         .then((value) => value.toJS)
         .toJS;
   }.toJS;
-  deribitVerticalSpreadsDart = (JSString ticker, JSNumber slippage) {
-    return deribitVerticalSpreads(ticker.toDart, slippage.toDartDouble)
+  deribitVerticalSpreadsDart = (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return deribitVerticalSpreads(ticker.toDart, slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt)
         .then((value) => value.toJS)
         .toJS;
   }.toJS;
-  deribitSyntheticBondsDart = (JSString ticker, JSNumber slippage) {
-    return deribitSyntheticBonds(ticker.toDart, slippage.toDartDouble)
+  deribitSyntheticBondsDart = (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return deribitSyntheticBonds(ticker.toDart, slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt)
         .then((value) => value.toJS)
         .toJS;
   }.toJS;
 
-  yfinanceCoveredCallsDart = (JSString ticker, JSNumber slippage) {
-    return yfinanceCoveredCalls(ticker.toDart, slippage.toDartDouble)
+  yfinanceCoveredCallsDart = (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return yfinanceCoveredCalls(ticker.toDart, slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt)
         .then((value) => value.toJS)
         .toJS;
   }.toJS;

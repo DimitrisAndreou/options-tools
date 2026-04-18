@@ -1,88 +1,137 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+:root {
+  --bg-dark: #0f172a;
+  --bg-card: #1e293b;
+  --primary: #38bdf8;
+  --secondary: #64748b;
+  --accent: #fcd34d;
+  --success: #00ffa3;
+  --danger: #ff5c5c;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
+}
 
 body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: black;
-  color: white;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  line-height: 1.6;
 }
 
 .header {
-  background-color: #2c3e50;
-  color: white;
-  padding: 1rem 0;
+  background: linear-gradient(to bottom, #1e293b, #0f172a);
+  border-bottom: 1px solid #334155;
+  padding: 1.5rem 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .chart-container {
   height: 500px;
-  margin-bottom: 20px;
-  min-width: 600px;
   width: 100%;
+  background: rgba(15, 23, 42, 0.2);
+  border-radius: 8px;
 }
 
 .card {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-  border: none;
-  background-color: black;
-  border-color: #dee2e6 #dee2e6 #fff;
+  background-color: var(--bg-card);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 24px;
+  overflow: hidden;
 }
 
 .card-header {
-  color: yellow;
-  border-bottom: 2px solid #3498db;
+  background-color: rgba(30, 41, 59, 0.8);
+  border-bottom: 1px solid #334155;
+  padding: 1rem 1.25rem;
 }
 
-.nav-tabs .nav-link.active {
-  font-weight: bold;
-  color: yellow;
-  border-color: #dee2e6 #dee2e6 #fff;
-  background-color: black;
+.card-header h5 {
+  margin-bottom: 0;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 1.1rem;
+  letter-spacing: 0.025em;
 }
 
-.crypto-icon {
-  color: #f39c12;
-  margin-right: 8px;
+.card-body {
+  padding: 1.25rem;
 }
 
-.main-content {
-  flex: 1;
+/* Custom range slider styling */
+.form-range::-webkit-slider-runnable-track {
+  background: #334155;
+  border-radius: 10px;
+  height: 6px;
+}
+
+.form-range::-webkit-slider-thumb {
+  background: var(--primary);
+  margin-top: -5px;
+}
+
+/* ag-Grid Overrides */
+.ag-theme-alpine-dark {
+  --ag-background-color: var(--bg-card);
+  --ag-header-background-color: #0f172a;
+  --ag-odd-row-background-color: rgba(30, 41, 59, 0.5);
+  --ag-row-hover-color: rgba(56, 189, 248, 0.1);
+  --ag-selected-row-background-color: rgba(56, 189, 248, 0.2);
+  --ag-font-family: var(--font-sans);
+  --ag-font-size: 13px;
 }
 
 footer {
-  background-color: #2c3e50;
-  color: white;
-  padding: 1rem 0;
+  background-color: #0f172a;
+  border-top: 1px solid #334155;
+  color: var(--text-muted);
+  padding: 2rem 0;
   margin-top: auto;
 }
 
-.ag-theme-alpine-dark {
-  --ag-popup-background-color: #2a2a4a;
-  --ag-background-color: #1e1e2f;
-
-  --ag-foreground-color: black;
-  --ag-selected-tab-panel-background-color: #2a2a4a;
-  --ag-menu-background-color: #2a2a4a;
-  --ag-header-background-color: #2a2a4a;
-  --ag-odd-row-background-color: #1e1e2f;
-  --ag-row-background-color: #1e1e2f;
+/* Helper classes */
+.font-monospace {
+  font-family: var(--font-mono) !important;
 }
 
-.ag-popup {
-    background-color: #2a2a4a !important;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+/* Dual slider styles */
+.dual-slider-container input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  position: absolute;
+  top: 12px;
+  height: 0;
+  pointer-events: none;
+  background: transparent;
+  z-index: 3;
 }
 
-.ag-menu {
-    background-color: #2a2a4a !important;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+.dual-slider-container input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  margin-top: -8px;
+  box-shadow: 0 0 0 1px #fff;
 }
 
-.ag-tooltip {
-  background-color: white !important;
-  color: #000000; /* Optional: text color */
-  border: 1px solid #ccc; /* Optional: border */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); /* Optional: shadow */
-  opacity: 1 !important; /* Ensure it's fully opaque */
+.dual-slider-container input[type=range]::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: 1px solid #fff;
 }
