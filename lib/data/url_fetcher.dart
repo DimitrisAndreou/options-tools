@@ -12,11 +12,15 @@ class UrlFetcher {
   UrlFetcher(Duration duration) : _duration = duration;
 
   Future<String> fetch(String uri, {Map<String, String>? headers}) async {
-    final cacheKey = '$uri|$headers';
-    String? cached = _cache.read<String>(cacheKey);
-    if (cached != null) {
-      print("Return cached...");
-      return cached;
+    final cacheKey = uri;
+    final isHandshake = uri.contains('fc.yahoo.com') || uri.contains('getcrumb');
+    
+    if (!isHandshake) {
+      String? cached = _cache.read<String>(cacheKey);
+      if (cached != null) {
+        print("Return cached...");
+        return cached;
+      }
     }
 
     try {
@@ -67,7 +71,9 @@ class UrlFetcher {
 
       // 5. Cache and Return
       String value = response.body;
-      _cache.create(cacheKey, value, expiry: _duration);
+      if (!isHandshake) {
+        _cache.create(cacheKey, value, expiry: _duration);
+      }
       return value;
     } catch (e) {
       print('Failed while fetching url: [$uri], error: $e');

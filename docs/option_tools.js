@@ -456,6 +456,13 @@ function coveredCallToBreakEvenTable(data, divId, chart) {
 }
 
 function coveredCallToBreakEvenLockup(data, chartDivId, tableDivId) {
+  let chartDom = document.getElementById(chartDivId);
+  let existingChart = echarts.getInstanceByDom(chartDom);
+  if (existingChart) existingChart.dispose();
+
+  let tableDom = document.getElementById(tableDivId);
+  if (tableDom) tableDom.innerHTML = '';
+
   chart = coveredCallToBreakEvenChart(data, chartDivId);
   coveredCallToBreakEvenTable(data, tableDivId, chart);
 }

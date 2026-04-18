@@ -1,5 +1,22 @@
+async function loadData(ticker, slippage) {
+  if (!ticker) return;
+  try {
+    const coveredCallsJson = JSON.parse(await (
+      ticker === "BTC" || ticker === "ETH"
+        ? deribitCoveredCallsDart(ticker, slippage)
+        : yfinanceCoveredCallsDart(ticker, slippage)
+    ));
+    console.log({ coveredCallsJson });
+    coveredCallToBreakEvenLockup(coveredCallsJson, "coveredCallsChart", "coveredCallsTable");
 
-async function jsDeribitMain() {
+    document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(coveredCallsJson));
+  } catch (error) {
+    console.error("JavaScript caught Dart error:", error.error);
+    console.error("Dart stack trace:", error.stack);
+  }
+}
+
+async function jsMain() {
   const urlParams = new URLSearchParams(window.location.search);
   let ticker = urlParams.get('ticker');
   if (ticker) {
@@ -23,35 +40,25 @@ async function jsDeribitMain() {
     });
   }
 
+  const slippageInput = document.getElementById('slippage-input');
+  const slippageValueDisplay = document.getElementById('slippage-value');
+  
+  if (slippageInput && slippageValueDisplay) {
+    slippageInput.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      slippageValueDisplay.textContent = Math.round(val * 100) + '%';
+    });
+    
+    slippageInput.addEventListener('change', (e) => {
+      const slippage = parseFloat(e.target.value);
+      loadData(ticker, slippage);
+    });
+  }
+
   if (!ticker) {
     return;
   }
 
-  // TODO: also get slippage from textField/cgi
-  const slippage = 0.0;
-  try {
-    const coveredCallsJson = JSON.parse(await (
-      ticker === "BTC" || ticker === "ETH"
-        ? deribitCoveredCallsDart(ticker, slippage)
-        : yfinanceCoveredCallsDart(ticker, slippage)
-    ));
-    console.log({ coveredCallsJson });
-    coveredCallToBreakEvenLockup(coveredCallsJson, "coveredCallsChart", "coveredCallsTable");
-
-    document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(coveredCallsJson));
-    // const btcVerticalSpreadsJson = await parseAndLog("btcVerticalSpreadsJson", () => deribitVerticalSpreadsDart("BTC", slippage));
-    // verticalSpreadsChart(btcVerticalSpreadsJson, "btcVerticalSpreadsChart");
-
-    // const ethCoveredCallsJson = await parseAndLog("ethCoveredCallsJson", () => deribitCoveredCallsDart("ETH", slippage));
-    // document.getElementById('eth-price').textContent = dollarFmt.format(extractSpotPrice(ethCoveredCallsJson));
-    // coveredCallToBreakEvenLockup(ethCoveredCallsJson, "ethCoveredCallsChart", "ethCoveredCallsTable");
-    // const ethVerticalSpreadsJson = await parseAndLog("ethVerticalSpreadsJson", () => deribitVerticalSpreadsDart("ETH", slippage));
-    // verticalSpreadsChart(ethVerticalSpreadsJson, "btcVerticalSpreadsChart");
-
-    // const btcBondsJson = await parseAndLog("btcBondsJson", () => deribitSyntheticBondsDart("BTC", slippage));
-  } catch (error) {
-    console.error("JavaScript caught Dart error:", error.error);
-    console.error("Dart stack trace:", error.stack);
-  }
+  const initialSlippage = slippageInput ? parseFloat(slippageInput.value) : 0.0;
+  await loadData(ticker, initialSlippage);
 }
-
