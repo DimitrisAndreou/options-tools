@@ -51,7 +51,7 @@ void main() async {
 void testYFinance() async {
   final urlFetcher = UrlFetcher(Duration(minutes: 15));
   YFinance yfinance = await YFinance.openConnection(urlFetcher);
-  final List<Market> markets = await yfinance.fetchMarket("GOOG", urlFetcher);
+  final List<Market> markets = await yfinance.fetchMarkets("GOOG", urlFetcher);
 
   // for (final MapEntry<DateTime,
   //         Map<double, ({Market? call, Market? put})>> expirationToStrike

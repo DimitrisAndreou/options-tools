@@ -104,11 +104,11 @@ function renderDetailedCC(d) {
       <div style="margin-bottom: 8px; font-weight: bold; color: #cbd5e1;">Outcomes at Expiration:</div>
       <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
         <span>If Price &ge; ${d.strikeAbsolute}:</span>
-        <span>${fmtStyle.good(d.moneyYield)} ${fmtStyle.good(d.money)} <small style="color: #00ffa3">+(${d.moneyProfit})</small></span>
+        <span>${fmtStyle.good(d.moneyYield)} ${fmtStyle.good(d.money)} <small style="color: #00ffa3">(+${d.moneyProfit})</small></span>
       </div>
       <div style="display: flex; justify-content: space-between;">
         <span>If Price &lt; ${d.strikeAbsolute}:</span>
-        <span>${fmtStyle.good(d.underlyingYield)} ${fmtStyle.good(d.underlying)} <small style="color: #00ffa3">+(${d.underlyingProfit})</small></span>
+        <span>${fmtStyle.good(d.underlyingYield)} ${fmtStyle.good(d.underlying)} <small style="color: #00ffa3">(+${d.underlyingProfit})</small></span>
       </div>
     </div>
 
