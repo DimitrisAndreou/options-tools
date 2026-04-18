@@ -23,6 +23,10 @@ async function jsMain() {
     ticker = ticker.toUpperCase();
   }
 
+  const initialSlippage = urlParams.get('slippage');
+  const initialMinDTE = urlParams.get('minDTE');
+  const initialMaxDTE = urlParams.get('maxDTE');
+
   const tickerInput = document.getElementById('ticker-input');
   if (tickerInput && ticker) {
     tickerInput.value = ticker;
@@ -34,8 +38,9 @@ async function jsMain() {
       e.preventDefault();
       const userInput = tickerInput.value.trim().toUpperCase();
       if (userInput) {
-        // Redirect so the URL contains this ticker
-        window.location.href = `${window.location.pathname}?ticker=${userInput}`;
+        const url = new URL(window.location);
+        url.searchParams.set('ticker', userInput);
+        window.location.href = url.toString();
       }
     });
   }
@@ -46,6 +51,21 @@ async function jsMain() {
   const maxDteInput = document.getElementById('max-dte-input');
   const dteValueDisplay = document.getElementById('dte-value-display');
   const dteSliderRange = document.getElementById('dte-slider-range');
+
+  if (slippageInput && initialSlippage !== null) {
+    slippageInput.value = initialSlippage;
+    if (slippageValueDisplay) {
+      slippageValueDisplay.textContent = Math.round(parseFloat(initialSlippage) * 100) + '%';
+    }
+  }
+
+  if (minDteInput && initialMinDTE !== null) {
+    minDteInput.value = initialMinDTE;
+  }
+
+  if (maxDteInput && initialMaxDTE !== null) {
+    maxDteInput.value = initialMaxDTE;
+  }
 
   function updateDteUI() {
     if (!minDteInput || !maxDteInput || !dteValueDisplay) return;
@@ -68,6 +88,13 @@ async function jsMain() {
     const slippage = slippageInput ? parseFloat(slippageInput.value) : 0.0;
     const minDte = minDteInput ? parseInt(minDteInput.value, 10) : 7;
     const maxDte = maxDteInput ? parseInt(maxDteInput.value, 10) : 1095;
+
+    const url = new URL(window.location);
+    url.searchParams.set('slippage', slippage);
+    url.searchParams.set('minDTE', minDte);
+    url.searchParams.set('maxDTE', maxDte);
+    window.history.replaceState({}, '', url);
+
     loadData(ticker, slippage, minDte, maxDte);
   }
 
