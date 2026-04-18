@@ -42,6 +42,8 @@ class YFinance {
           askPrice: quote["regularMarketPrice"]!);
       print("Quote: $quote");
       final isMarketOpen = quote["marketState"] == "REGULAR";
+      final regularMarketTime = DateTime.fromMillisecondsSinceEpoch(
+          quote["regularMarketTime"]! * 1000);
 
       final optionChain = (results["options"] as List?)?.firstOrNull;
       if (optionChain == null) continue;
@@ -80,13 +82,27 @@ class YFinance {
             (throw StateError("Did not find $optionType"));
         for (final option in options) {
           final lastPrice = option["lastPrice"] ?? 0.0;
+
           double bid = isMarketOpen ? (option["bid"] ?? 0.0) : lastPrice;
           double ask = isMarketOpen ? (option["ask"] ?? 0.0) : lastPrice;
+          if (!isMarketOpen) {
+            final lastTradeDate = option["lastTradeDate"];
+            if (lastTradeDate == null ||
+                regularMarketTime
+                        .difference(DateTime.fromMillisecondsSinceEpoch(
+                            lastTradeDate * 1000))
+                        .inMinutes >
+                    15) {
+              print("Skipping option due to old last trade date: $option");
+              continue;
+            }
+          }
           if (bid > ask) {
             (bid, ask) = (ask, bid);
           }
           if (bid == 0.0 || ask == 0.0) {
-            print("Skipping option due to bad bid/ask: $option");
+            print(
+                "Skipping option ${option["contractSymbol"]} due to bad bid/ask: $option");
             continue;
           }
           final optionMarket = Market.create(
@@ -96,8 +112,7 @@ class YFinance {
                   strike: option["strike"],
                   isPut: !isCall,
                   isCall: isCall,
-                  expiration: DateTime.fromMillisecondsSinceEpoch(
-                      option["expiration"] * 1000),
+                  expiration: currentExpirationDate,
                   contractLot: 100.0),
               money: Commodity(option["currency"]), // USD
               bidPrice: bid * 100.0,
