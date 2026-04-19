@@ -113,19 +113,15 @@ function renderDetailedCC(d) {
     </div>
 
     <div style="font-size: 0.9em; margin-bottom: 16px; line-height: 1.5; color: #94a3b8;">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-        <span>${fmtStyle.label('Breakeven Price')}</span>
-        <span>${fmtStyle.bad(d.beAbsolute)} (${fmtStyle.bad(d.beRelative)})</span>
+      <div style="border-top: 1px dashed #334155; margin: 8px 0; padding-top: 8px;">
+        <i class="fas fa-exclamation-triangle me-1" style="color: #fcd34d"></i> 
+        If ${d.underlying} falls below ${fmtStyle.bad(d.beAbsolute)} (${fmtStyle.bad(d.beRelative)}), 
+        you will have ${fmtStyle.bad('less')} ${d.money} than starting with a 100% ${d.money} allocation.
       </div>
       <div style="border-top: 1px dashed #334155; margin: 8px 0; padding-top: 8px;">
         <i class="fas fa-exclamation-triangle me-1" style="color: #fcd34d"></i> 
         If ${d.underlying} surpasses ${fmtStyle.good(d.capAbsolute)} (${fmtStyle.good(d.capRelative)}), 
-        you will have ${fmtStyle.bad('less')} total value than a 100% ${d.underlying} position.
-      </div>
-      <div style="border-top: 1px dashed #334155; margin: 8px 0; padding-top: 8px;">
-        <i class="fas fa-exclamation-triangle me-1" style="color: #fcd34d"></i> 
-        If ${d.underlying} falls below ${fmtStyle.bad(d.beAbsolute)} (${fmtStyle.bad(d.beRelative)}), 
-        you will have ${fmtStyle.bad('less')} total value in ${d.money} than a 100% ${d.money} position.
+        you will have ${fmtStyle.bad('less')} ${d.underlying} than starting with a 100% ${d.underlying} allocation.
       </div>
     </div>
 
@@ -158,13 +154,19 @@ function renderTooltipCC(d) {
       </div>
 
       <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #334155; text-align: center; font-size: 0.85em;">
-        <span style="color: #94a3b8;">Breakeven:</span> 
+        <span style="color: #94a3b8;">Even vs full ${d.money}:</span> 
         <span style="color: #38bdf8; font-weight: bold;">${d.beAbsolute}</span>
         <span style="color: #ff5c5c; margin-left: 4px;">(${d.beRelative})</span>
+        <br/>
+        <span style="color: #94a3b8;">Even vs full ${d.underlying}:</span> 
+        <span style="color: #38bdf8; font-weight: bold;">${d.capAbsolute}</span>
+        <span style="color: #00ffa3; margin-left: 4px;">(${d.capRelative})</span>
       </div>
     </div>
   `;
 }
+// capAbsolute: dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute),
+// capRelative: percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0),
 
 function ccFormatterTemplate(params, isDetailed) {
   if (!params || !params.value) return '';
