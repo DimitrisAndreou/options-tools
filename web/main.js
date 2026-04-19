@@ -71,7 +71,18 @@ async function jsMain() {
     if (!minDteInput || !maxDteInput || !dteValueDisplay) return;
     const minVal = parseInt(minDteInput.value, 10);
     const maxVal = parseInt(maxDteInput.value, 10);
-    dteValueDisplay.textContent = `${minVal} - ${maxVal} d`;
+    
+    function formatDte(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return new Intl.DateTimeFormat('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }).format(date);
+    }
+
+    dteValueDisplay.textContent = `${formatDte(minVal)} - ${formatDte(maxVal)}`;
     
     if (dteSliderRange) {
       const min = parseInt(minDteInput.min, 10) || 0;
