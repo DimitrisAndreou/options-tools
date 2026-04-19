@@ -279,8 +279,13 @@ function coveredCallToBreakEvenChart(data, divId) {
       type: 'value',
       name: `${money}➡`,
       nameLocation: 'end',
-      nameGap: 15,
-      nameTextStyle: axisTitleNameTextStyle,
+      nameGap: 0,
+      nameTextStyle: {
+        ...axisTitleNameTextStyle,
+        align: 'right',
+        verticalAlign: 'top',
+        padding: [30, 0, 0, 0]
+      },
       axisLabel: {
         ...axisXValuesNameTextStyle,
         formatter: function (value) {
