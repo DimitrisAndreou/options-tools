@@ -76,11 +76,13 @@ async function jsMain() {
     function formatDte(days) {
       const date = new Date();
       date.setDate(date.getDate() + days);
-      return new Intl.DateTimeFormat('en-GB', {
+      const dateString = new Intl.DateTimeFormat('en-GB', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
       }).format(date);
+
+      return `${dateString} (${days}d)`;
     }
 
     dteValueDisplay.textContent = `${formatDte(minVal)} - ${formatDte(maxVal)}`;
