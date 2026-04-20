@@ -2,7 +2,8 @@ async function loadData(ticker, slippage, minDte, maxDte) {
   if (!ticker) return;
   try {
     const coveredCallsJson = JSON.parse(await (
-      ticker === "BTC" || ticker === "ETH"
+      ticker === "BTC" || ticker === "ETH" || ticker === "SOL" ||
+        ticker === "AVAX" || ticker === "TRX" || ticker === "XRP"
         ? deribitCoveredCallsDart(ticker, slippage, minDte, maxDte)
         : yfinanceCoveredCallsDart(ticker, slippage, minDte, maxDte)
     ));
@@ -71,7 +72,7 @@ async function jsMain() {
     if (!minDteInput || !maxDteInput || !dteValueDisplay) return;
     const minVal = parseInt(minDteInput.value, 10);
     const maxVal = parseInt(maxDteInput.value, 10);
-    
+
     function formatDte(days) {
       const date = new Date();
       date.setDate(date.getDate() + days);
@@ -83,7 +84,7 @@ async function jsMain() {
     }
 
     dteValueDisplay.textContent = `${formatDte(minVal)} - ${formatDte(maxVal)}`;
-    
+
     if (dteSliderRange) {
       const min = parseInt(minDteInput.min, 10) || 0;
       const max = parseInt(minDteInput.max, 10) || 1095;
@@ -137,7 +138,7 @@ async function jsMain() {
       updateDteUI();
     });
     maxDteInput.addEventListener('change', reloadData);
-    
+
     updateDteUI();
   }
 

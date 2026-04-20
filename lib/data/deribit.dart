@@ -151,7 +151,14 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
         isPut: isPut,
         isCall: isCall,
         expiration: expirationDate,
-        contractLot: 1.0,
+        contractLot: switch (underlying.name) {
+          'BTC' => 0.1,
+          'SOL' => 10.0,
+          'AVAX' => 100.0,
+          'XRP' => 1000.0,
+          'TRX' => 10000.0,
+          _ => 1.0,
+        },
         minSize: underlying.name == Deribit.BTC ? 0.1 : 1.0));
   }
 

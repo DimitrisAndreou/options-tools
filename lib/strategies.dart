@@ -99,6 +99,7 @@ class CoveredCall {
       {required Commodity underlying,
       required Commodity money,
       double slippage = 0.5}) sync* {
+    print("allMarkets in CC: $allMarkets");
     final oracle = Oracle.fromMarkets(allMarkets);
     final spotMarket = oracle.marketFor(asset: underlying, money: money);
     for (final call in allMarkets

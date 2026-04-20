@@ -19,10 +19,11 @@ double asChange(double changedValue, double originalValue) =>
     changedValue / originalValue - 1.0;
 
 void main() async {
-  testYFinance();
+  // testYFinance();
 
-  // List<Market> markets = await Deribit.fetchMarkets(
-  //     [Deribit.BTC, Deribit.ETH], UrlFetcher(Duration(minutes: 15)));
+  List<Market> markets = await Deribit.fetchMarkets(
+      [Deribit.USDC], UrlFetcher(Duration(minutes: 15)));
+  // [Deribit.BTC, Deribit.ETH], UrlFetcher(Duration(minutes: 15)));
   // ArchOracle oracle = Oracle.fromMarkets(markets);
 
   // testMarketNavigator(oracle);
@@ -30,7 +31,7 @@ void main() async {
   // browseLinearContracts();
   // browseVerticalSpreads(markets);
   // browseBonds(markets);
-  // browseCoveredCalls(markets);
+  browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
   // browseLongCalls(markets);
 
