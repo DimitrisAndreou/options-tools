@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Documentation
+favicon: /options-tools/favicon.jpg
 ---
 
 # Welcome to the Manual
