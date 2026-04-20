@@ -92,7 +92,7 @@ class YFinance {
                         .difference(DateTime.fromMillisecondsSinceEpoch(
                             lastTradeDate * 1000))
                         .inMinutes >
-                    15) {
+                    20) {
               print("Skipping option due to old last trade date: $option");
               continue;
             }

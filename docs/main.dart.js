@@ -8330,7 +8330,7 @@ if(a2){c1=b8.j(b7,"ask")
 if(c1==null)c1=0}else c1=b9
 A.a8(c1)
 if(a1){c2=b8.j(b7,"lastTradeDate")
-if(c2==null||B.c.V(1000*(c-A.eG(A.z(J.kI(c2,1000)),0,!1)),6e7)>15){A.cU("Skipping option due to old last trade date: "+A.e(b7))
+if(c2==null||B.c.V(1000*(c-A.eG(A.z(J.kI(c2,1000)),0,!1)),6e7)>20){A.cU("Skipping option due to old last trade date: "+A.e(b7))
 continue}}if(c0>c1){c3=c0
 c4=c1}else{c3=c1
 c4=c0}if(c4===0||c3===0){A.cU("Skipping option "+A.e(b8.j(b7,"contractSymbol"))+" due to bad bid/ask: "+A.e(b7))

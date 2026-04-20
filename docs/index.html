@@ -51,7 +51,8 @@
   <!-- Ticker Input Form -->
   <div class="card shadow-sm border-0 bg-dark mb-4">
     <div class="card-body">
-      <form id="ticker-form" class="d-flex flex-wrap justify-content-center align-items-center mb-0 row-gap-3 column-gap-4">
+      <form id="ticker-form"
+        class="d-flex flex-wrap justify-content-center align-items-center mb-0 row-gap-3 column-gap-4">
         <!-- Ticker Input Group -->
         <div class="d-flex align-items-center">
           <label for="ticker-input" class="text-white me-3 fw-bold mb-0">Ticker Symbol:</label>
@@ -59,27 +60,6 @@
             class="form-control me-3 bg-secondary text-white border-0 font-monospace" placeholder="e.g., GOOG, BTC, ..."
             style="max-width: 200px; text-transform: uppercase;" required>
           <button type="submit" class="btn btn-primary">Load Data</button>
-        </div>
-
-        <!-- Slippage Group -->
-        <div class="d-flex align-items-center">
-          <label for="slippage-input" class="text-white me-2 fw-bold mb-0">Slippage:</label>
-          <input type="range" id="slippage-input" class="form-range" style="max-width: 150px;" min="0" max="1"
-            step="0.1" value="0.5" list="slippage-ticks">
-          <datalist id="slippage-ticks">
-            <option value="0.0"></option>
-            <option value="0.1"></option>
-            <option value="0.2"></option>
-            <option value="0.3"></option>
-            <option value="0.4"></option>
-            <option value="0.5"></option>
-            <option value="0.6"></option>
-            <option value="0.7"></option>
-            <option value="0.8"></option>
-            <option value="0.9"></option>
-            <option value="1.0"></option>
-          </datalist>
-          <span id="slippage-value" class="text-white ms-2" style="font-family: monospace; min-width: 45px;">50%</span>
         </div>
 
         <!-- DTE Group -->
@@ -93,8 +73,23 @@
             <input type="range" id="min-dte-input" min="0" max="1095" step="1" value="7">
             <input type="range" id="max-dte-input" min="0" max="1095" step="1" value="1095">
           </div>
-          <span id="dte-value-display" class="text-white ms-2" style="font-family: monospace; min-width: 105px;">7 -
+          <span id="dte-value-display" class="text-white ms-2" style="font-family: monospace; min-width: 37ch;">7 -
             1095 d</span>
+        </div>
+
+        <!-- Slippage Group -->
+        <div class="d-flex align-items-center">
+          <label for="slippage-input" class="text-white me-2 fw-bold mb-0">Slippage:</label>
+          <input type="range" id="slippage-input" class="form-range" style="max-width: 150px;" min="0" max="1"
+            step="0.25" value="0.5" list="slippage-ticks">
+          <datalist id="slippage-ticks">
+            <option value="0.0"></option>
+            <option value="0.25"></option>
+            <option value="0.5"></option>
+            <option value="0.75"></option>
+            <option value="1.0"></option>
+          </datalist>
+          <span id="slippage-value" class="text-white ms-2" style="font-family: monospace; min-width: 45px;">50%</span>
         </div>
       </form>
     </div>
