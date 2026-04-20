@@ -1,5 +1,6 @@
 .dart_tool/package_config.json
 favicon.jpg
+help/index.md
 index.html
 main.dart.js
 main.js
