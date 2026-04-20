@@ -152,7 +152,6 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
         isCall: isCall,
         expiration: expirationDate,
         contractLot: switch (underlying.name) {
-          'BTC' => 0.1,
           'SOL' => 10.0,
           'AVAX' => 100.0,
           'XRP' => 1000.0,

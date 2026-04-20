@@ -3374,8 +3374,7 @@ return a2}return q.$1(new A.c_(r,1,0.0001,d,p))}a0=b.split("_")
 if(a0.length!==1){a4.$2(a3,"An option with multiple strikes")
 return a2}a1=A.rk(B.b.gO(a0))
 if(a==null){a4.$2(a3,"An option without a type")
-return a2}A:{if("BTC"===s){n=0.1
-break A}if("SOL"===s){n=10
+return a2}A:{if("SOL"===s){n=10
 break A}if("AVAX"===s){n=100
 break A}if("XRP"===s){n=1000
 break A}if("TRX"===s){n=1e4
