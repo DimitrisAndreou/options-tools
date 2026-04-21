@@ -14,6 +14,12 @@ async function loadData(ticker, slippage, minDte, maxDte) {
   } catch (error) {
     console.error("JavaScript caught Dart error:", error.error);
     console.error("Dart stack trace:", error.stack);
+
+    document.getElementById('error-message').textContent =
+      `Error! This tool only works in Chrome (sorry!). ` +
+      `If you are using Chrome, check the ticker.`;
+    const myModal = new bootstrap.Modal(document.getElementById('errorModal'));
+    myModal.show();
   }
 }
 
