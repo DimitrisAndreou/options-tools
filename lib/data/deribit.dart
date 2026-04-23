@@ -81,8 +81,15 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
     // Only the underlying & the money are registered in the registry.
     final underlying = Commodity(base_currency);
     final money = Commodity(quote_currency);
-    makeMarket(Asset asset) => Market.create(
-        asset: asset, money: money, bidPrice: bid_price!, askPrice: ask_price!);
+    makeMarket(Asset asset) {
+      final contractLot =
+          asset.isExpirable ? asset.toExpirable.contractLot : 1.0;
+      return Market.create(
+          asset: asset,
+          money: money,
+          bidPrice: bid_price! * contractLot,
+          askPrice: ask_price! * contractLot);
+    }
 
     Match? match = _instrumentRegex.firstMatch(instrument_name);
     if (match == null) {

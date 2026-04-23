@@ -142,7 +142,7 @@ void browseBonds(List<Market> markets) {
 
 void browseCoveredCalls(List<Market> markets) {
   final money = Commodity("USD");
-  final underlying = Commodity("BTC");
+  final underlying = Commodity("TRX");
 
   print(" ============== CC ==============");
   for (CoveredCall cc in CoveredCall.generateAll(markets,
@@ -156,6 +156,7 @@ void browseCoveredCalls(List<Market> markets) {
         "\n    equalSizedLongSpot: ${equalSizeLongStrategy.position.decompose()}"
         "\n    breakevenVsHolder: $pricesWithSameMaxGain"
         "\n");
+    print(cc.callMarket);
   }
 }
 
