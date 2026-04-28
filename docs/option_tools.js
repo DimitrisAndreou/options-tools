@@ -4,11 +4,6 @@ const percentFmt = new Intl.NumberFormat('en-US', {
   signDisplay: 'always',
 });
 
-const percentNoSignFmt = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-  maximumFractionDigits: 1,
-});
-
 const dollarFmt = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -56,6 +51,7 @@ function prepareCCData(value) {
     formattedDate: value.formattedDate,
     DTE: value.DTE,
     strikeAbsolute: dollarFmt.format(value.strikeAbsolute),
+    strikeRelative: percentFmt.format(value.strikeAbsolute / value.spotPrice - 1.0),
     callName: value.call,
     capitalRequired: dollarFmt.format(-value.moneySize),
     capitalRequiredUnderlying: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
@@ -147,7 +143,7 @@ function renderTooltipCC(d) {
         <div style="color: #00ffa3; font-weight: bold; font-size: 1.1em;">${d.moneyYield} ${d.money} ⬆</div>
         <div style="height: 10px; border-left: 2px dashed #475569;"></div>
         <div style="background: #334155; padding: 2px 12px; border-radius: 12px; color: #fcd34d; font-weight: bold; font-size: 0.9em; border: 1px solid #475569;">
-          ${d.strikeAbsolute}
+          ${d.strikeAbsolute} <span style="font-weight: normal; color: #94a3b8;">(${d.strikeRelative})</span>
         </div>
         <div style="height: 10px; border-left: 2px dashed #475569;"></div>
         <div style="color: #00ffa3; font-weight: bold; font-size: 1.1em;">${d.underlyingYield} ${d.underlying} ⬇</div>
@@ -162,11 +158,13 @@ function renderTooltipCC(d) {
         <span style="color: #38bdf8; font-weight: bold;">${d.capAbsolute}</span>
         <span style="color: #00ffa3; margin-left: 4px;">(${d.capRelative})</span>
       </div>
+      
+      <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #334155; text-align: center; font-size: 0.75em; color: #94a3b8;">
+        Minimum position: <span style="color: #cbd5e1;">${d.capitalRequired}</span> (${d.capitalRequiredUnderlying})
+      </div>
     </div>
   `;
 }
-// capAbsolute: dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute),
-// capRelative: percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0),
 
 function ccFormatterTemplate(params, isDetailed) {
   if (!params || !params.value) return '';
