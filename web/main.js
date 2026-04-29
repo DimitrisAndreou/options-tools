@@ -8,7 +8,7 @@ async function loadData(ticker, slippage, minDte, maxDte) {
         : yfinanceCoveredCallsDart(ticker, slippage, minDte, maxDte)
     ));
     console.log({ coveredCallsJson });
-    coveredCallToBreakEvenLockup(coveredCallsJson, "coveredCallsChart", "coveredCallsTable");
+    coveredCallToBreakEvenChart(coveredCallsJson, "coveredCallsChart");
 
     document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(coveredCallsJson));
   } catch (error) {
