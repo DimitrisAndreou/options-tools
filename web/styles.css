@@ -135,3 +135,163 @@ footer {
   cursor: pointer;
   border: 1px solid #fff;
 }
+
+/* Options Tools UI Specific Styles */
+.text-good { color: var(--success); font-weight: bold; }
+.text-bad { color: var(--danger); font-weight: bold; }
+.text-neutral { color: var(--primary); font-weight: bold; }
+.text-label { color: var(--text-muted); font-weight: bold; }
+.text-good-alt { color: var(--success); }
+.text-muted-alt { color: var(--secondary); }
+.text-light-alt { color: #cbd5e1; }
+.text-warning-icon { color: var(--accent); }
+
+/* Strategy Details */
+.strategy-header {
+  color: var(--accent);
+  font-size: 1.2em;
+  font-weight: bold;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.strategy-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  font-size: 0.95em;
+}
+
+.strategy-table td {
+  padding: 4px 0;
+}
+
+.contract-name {
+  font-family: var(--font-mono);
+}
+
+.outcomes-panel {
+  background: rgba(30, 41, 59, 0.5);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  margin-bottom: 16px;
+}
+
+.outcomes-header {
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #cbd5e1;
+}
+
+.outcome-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.warnings-panel {
+  font-size: 0.9em;
+  margin-bottom: 16px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.warning-row {
+  border-top: 1px dashed #334155;
+  margin: 8px 0;
+  padding-top: 8px;
+}
+
+.instructions-panel {
+  background: rgba(15, 23, 42, 0.3);
+  padding: 10px;
+  border-left: 3px solid var(--primary);
+  border-radius: 0 4px 4px 0;
+}
+
+.instructions-header {
+  font-weight: bold;
+  margin-bottom: 6px;
+  font-size: 0.9em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.instructions-content {
+  font-size: 0.9em;
+}
+
+/* Tooltip */
+.tooltip-container {
+  padding: 10px;
+  min-width: 220px;
+  font-family: var(--font-sans);
+  background: var(--bg-card);
+}
+
+.tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+}
+
+.tooltip-date {
+  font-weight: bold;
+  color: #cbd5e1;
+}
+
+.tooltip-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.tooltip-yield-good {
+  color: var(--success);
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.tooltip-strike-badge {
+  background: #334155;
+  padding: 2px 12px;
+  border-radius: 12px;
+  color: var(--accent);
+  font-weight: bold;
+  font-size: 0.9em;
+  border: 1px solid #475569;
+}
+
+.strike-relative {
+  font-weight: normal;
+  color: var(--text-muted);
+}
+
+.tooltip-divider {
+  height: 10px;
+  border-left: 2px dashed #475569;
+}
+
+.tooltip-breakeven {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #334155;
+  text-align: center;
+  font-size: 0.85em;
+}
+
+.tooltip-footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #334155;
+  text-align: center;
+  font-size: 0.75em;
+  color: var(--text-muted);
+}
