@@ -189,17 +189,17 @@ function extractSpotPrice(data) {
 function populateStrategyDetails(dataObj) {
   const panel = document.getElementById('coveredCallDetailsPanel');
   const template = document.getElementById('cc-details-template');
-  
+
   if (panel && template && dataObj) {
     const d = prepareCCData(dataObj);
     const clone = template.content.cloneNode(true);
-    
+
     for (const [key, value] of Object.entries(d)) {
       clone.querySelectorAll(`.tpl-${key}`).forEach(el => {
         el.textContent = value;
       });
     }
-    
+
     panel.innerHTML = '';
     panel.appendChild(clone);
   }
@@ -237,9 +237,7 @@ function coveredCallToBreakEvenChart(data, divId) {
 
   const chart = echarts.init(document.getElementById(divId));
   window.addEventListener('resize', function () {
-    console.log("Before resize");
     chart.resize();
-    console.log("After resize");
   });
 
   chart.setOption({
