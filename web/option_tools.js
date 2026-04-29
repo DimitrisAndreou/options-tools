@@ -85,51 +85,7 @@ const fmtStyle = {
   header: (str) => `<div class="strategy-header"><i class="fas fa-cube me-2"></i> ${str}</div>`
 };
 
-function renderDetailedCC(d) {
-  return `
-    ${fmtStyle.header(`Strategy: Covered Call on&nbsp;${fmtStyle.neutral(d.underlying)}`)}
-    
-    <table class="strategy-table">
-      <tr><td>${fmtStyle.label('Expiration')}</td><td class="text-end">${fmtStyle.neutral(d.formattedDate)} <small>${fmtStyle.bad('(' + d.DTE + 'd)')}</small></td></tr>
-      <tr><td>${fmtStyle.label('Strike Price')}</td><td class="text-end">${fmtStyle.neutral(d.strikeAbsolute)}</td></tr>
-      <tr><td>${fmtStyle.label('Contract')}</td><td class="text-end contract-name">${fmtStyle.neutral(d.callName)}</td></tr>
-      <tr><td>${fmtStyle.label('Capital Required')}</td><td class="text-end">${fmtStyle.neutral(d.capitalRequired)} <small class="text-muted-alt">(${fmtStyle.neutral(d.capitalRequiredUnderlying)})</small></td></tr>
-    </table>
 
-    <div class="outcomes-panel">
-      <div class="outcomes-header">Outcomes at Expiration:</div>
-      <div class="outcome-row">
-        <span>If Price &ge; ${d.strikeAbsolute}:</span>
-        <span>${fmtStyle.good(d.moneyYield)} ${fmtStyle.good(d.money)} <small class="text-good-alt">(+${d.moneyProfit})</small></span>
-      </div>
-      <div class="outcome-row mb-0">
-        <span>If Price &lt; ${d.strikeAbsolute}:</span>
-        <span>${fmtStyle.good(d.underlyingYield)} ${fmtStyle.good(d.underlying)} <small class="text-good-alt">(+${d.underlyingProfit})</small></span>
-      </div>
-    </div>
-
-    <div class="warnings-panel">
-      <div class="warning-row">
-        <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i> 
-        If ${d.underlying} falls below ${fmtStyle.bad(d.beAbsolute)} (${fmtStyle.bad(d.beRelative)}), 
-        you will have ${fmtStyle.bad('less')} ${d.money} than starting with a 100% ${d.money} allocation.
-      </div>
-      <div class="warning-row">
-        <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i> 
-        If ${d.underlying} surpasses ${fmtStyle.good(d.capAbsolute)} (${fmtStyle.good(d.capRelative)}), 
-        you will have ${fmtStyle.bad('less')} ${d.underlying} than starting with a 100% ${d.underlying} allocation.
-      </div>
-    </div>
-
-    <div class="instructions-panel">
-      <div class="instructions-header">Execution Instructions</div>
-      <div class="instructions-content">
-        &bull; <b>Buy</b> ${fmtStyle.good(d.buyAmount)} for ${fmtStyle.bad(d.buyCost)}<br/>
-        &bull; <b>Sell</b> ${fmtStyle.bad(d.sellAmount)} for ${fmtStyle.good(d.sellPremium)}
-      </div>
-    </div>
-  `;
-}
 
 function renderTooltipCC(d) {
   return `
@@ -166,19 +122,15 @@ function renderTooltipCC(d) {
   `;
 }
 
-function ccFormatterTemplate(params, isDetailed) {
+function ccFormatterTemplate(params) {
   if (!params || !params.value) return '';
   const data = prepareCCData(params.value);
-  return isDetailed ? renderDetailedCC(data) : renderTooltipCC(data);
+  return renderTooltipCC(data);
 }
 
 
 const ccTooltipFormatter = function (params) {
-  return ccFormatterTemplate(params, false);
-};
-
-const ccDetailsFormatter = function (params) {
-  return ccFormatterTemplate(params, true);
+  return ccFormatterTemplate(params);
 };
 
 const axisTitleNameTextStyle = {
@@ -236,9 +188,20 @@ function extractSpotPrice(data) {
 
 function populateStrategyDetails(dataObj) {
   const panel = document.getElementById('coveredCallDetailsPanel');
-  if (panel && dataObj) {
-    // ECharts formatter expects an object with 'value' property
-    panel.innerHTML = ccDetailsFormatter({ value: dataObj });
+  const template = document.getElementById('cc-details-template');
+  
+  if (panel && template && dataObj) {
+    const d = prepareCCData(dataObj);
+    const clone = template.content.cloneNode(true);
+    
+    for (const [key, value] of Object.entries(d)) {
+      clone.querySelectorAll(`.tpl-${key}`).forEach(el => {
+        el.textContent = value;
+      });
+    }
+    
+    panel.innerHTML = '';
+    panel.appendChild(clone);
   }
 }
 

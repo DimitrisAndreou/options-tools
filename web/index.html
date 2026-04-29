@@ -161,6 +161,52 @@
     </div>
   </div>
 
+  <template id="cc-details-template">
+    <div class="strategy-header">
+      <i class="fas fa-cube me-2"></i> Strategy: Covered Call on&nbsp;<span class="text-neutral tpl-underlying"></span>
+    </div>
+    
+    <table class="strategy-table">
+      <tr><td><span class="text-label">Expiration</span></td><td class="text-end"><span class="text-neutral tpl-formattedDate"></span> <small class="text-bad">(<span class="tpl-DTE"></span>d)</small></td></tr>
+      <tr><td><span class="text-label">Strike Price</span></td><td class="text-end"><span class="text-neutral tpl-strikeAbsolute"></span></td></tr>
+      <tr><td><span class="text-label">Contract</span></td><td class="text-end contract-name"><span class="text-neutral tpl-callName"></span></td></tr>
+      <tr><td><span class="text-label">Capital Required</span></td><td class="text-end"><span class="text-neutral tpl-capitalRequired"></span> <small class="text-muted-alt">(<span class="text-neutral tpl-capitalRequiredUnderlying"></span>)</small></td></tr>
+    </table>
+
+    <div class="outcomes-panel">
+      <div class="outcomes-header">Outcomes at Expiration:</div>
+      <div class="outcome-row">
+        <span>If Price &ge; <span class="tpl-strikeAbsolute"></span>:</span>
+        <span><span class="text-good tpl-moneyYield"></span> <span class="text-good tpl-money"></span> <small class="text-good-alt">(+<span class="tpl-moneyProfit"></span>)</small></span>
+      </div>
+      <div class="outcome-row mb-0">
+        <span>If Price &lt; <span class="tpl-strikeAbsolute"></span>:</span>
+        <span><span class="text-good tpl-underlyingYield"></span> <span class="text-good tpl-underlying"></span> <small class="text-good-alt">(+<span class="tpl-underlyingProfit"></span>)</small></span>
+      </div>
+    </div>
+
+    <div class="warnings-panel">
+      <div class="warning-row">
+        <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i> 
+        If <span class="tpl-underlying"></span> falls below <span class="text-bad tpl-beAbsolute"></span> (<span class="text-bad tpl-beRelative"></span>), 
+        you will have <span class="text-bad">less</span> <span class="tpl-money"></span> than starting with a 100% <span class="tpl-money"></span> allocation.
+      </div>
+      <div class="warning-row">
+        <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i> 
+        If <span class="tpl-underlying"></span> surpasses <span class="text-good tpl-capAbsolute"></span> (<span class="text-good tpl-capRelative"></span>), 
+        you will have <span class="text-bad">less</span> <span class="tpl-underlying"></span> than starting with a 100% <span class="tpl-underlying"></span> allocation.
+      </div>
+    </div>
+
+    <div class="instructions-panel">
+      <div class="instructions-header">Execution Instructions</div>
+      <div class="instructions-content">
+        &bull; <b>Buy</b> <span class="text-good tpl-buyAmount"></span> for <span class="text-bad tpl-buyCost"></span><br/>
+        &bull; <b>Sell</b> <span class="text-bad tpl-sellAmount"></span> for <span class="text-good tpl-sellPremium"></span>
+      </div>
+    </div>
+  </template>
+
   <!-- Bootstrap JS Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="option_tools.js"></script>
