@@ -122,15 +122,10 @@ function renderTooltipCC(d) {
   `;
 }
 
-function ccFormatterTemplate(params) {
+const ccTooltipFormatter = function (params) {
   if (!params || !params.value) return '';
   const data = prepareCCData(params.value);
   return renderTooltipCC(data);
-}
-
-
-const ccTooltipFormatter = function (params) {
-  return ccFormatterTemplate(params);
 };
 
 const axisTitleNameTextStyle = {
