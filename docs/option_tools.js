@@ -309,12 +309,14 @@ function coveredCallToBreakEvenChart(data, divId) {
       {
         type: 'inside',
         xAxisIndex: 0,
+        filterMode: 'none',
         startValue: 1.0,
         endValue: 2.0,
       },
       {
         type: 'inside',
         yAxisIndex: 0,
+        filterMode: 'none',
         startValue: 1.0,
         endValue: 2.0,
       }
