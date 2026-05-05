@@ -305,7 +305,7 @@ function coveredCallToBreakEvenChart(data, divId) {
       {
         type: 'line',
         name: '45°',
-        data: [[1, 1], [2, 2]], 
+        data: [[1, 1], [5, 5]], 
         symbol: 'none',
         silent: true,
         animation: false,
@@ -332,6 +332,7 @@ function coveredCallToBreakEvenChart(data, divId) {
     dataZoom: [
       {
         type: 'inside',
+        throttle: 50, // Only updates the view every 50ms (delays the "snap")
         xAxisIndex: 0,
         filterMode: 'none',
         startValue: 1.0,
