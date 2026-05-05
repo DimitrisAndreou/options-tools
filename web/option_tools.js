@@ -362,6 +362,11 @@ function coveredCallToBreakEvenChart(data, divId) {
       populateStrategyDetails(params.data);
     }
   });
+  chart.on('datazoom', function () {
+    chart.dispatchAction({
+      type: 'hideTip'
+    });
+  });
 
   return chart;
 }
