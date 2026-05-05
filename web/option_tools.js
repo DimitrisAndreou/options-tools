@@ -277,7 +277,8 @@ function coveredCallToBreakEvenChart(data, divId) {
       ...tooltipStyle,
       formatter: ccTooltipFormatter,
     },
-    series: [...datasetPerDTE.map(ds => ({
+    series: [
+      ...datasetPerDTE.map(ds => ({
       type: 'line',
       name: ds.label,
       datasetId: ds.id,
@@ -286,24 +287,45 @@ function coveredCallToBreakEvenChart(data, divId) {
         y: 'underlyingYield'
       },
       symbolSize: function (data) {
-        return 8;
+        return 6;
       },
       emphasis: {
-        symbolSize: function (data) {
-          return 10;
-        },
+        scale: 2,
         itemStyle: {
           color: 'red',
           borderColor: 'white',
           borderWidth: 2
         },
-        scale: true,
         focus: 'series',
       },
       label: {
         show: false
       }
-    }))],
+    })),
+    {
+      type: 'line',
+      name: '45°',
+      data: [[1, 1], [2, 2]], 
+      symbol: 'none',
+      silent: true,
+      animation: false,
+      lineStyle: {
+        color: '#fcd34d',
+        type: 'dashed',
+        width: 2.0,
+        opacity: 0.75
+      },
+      emphasis: {
+        focus: 'series',
+        lineStyle: {
+          width: 3.0,
+          opacity: 1,
+          type: 'solid'
+        }
+      },
+      showSymbol: false
+    }
+  ],
     legend: legend,
     dataZoom: [
       {
