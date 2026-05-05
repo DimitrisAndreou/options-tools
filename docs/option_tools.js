@@ -327,6 +327,8 @@ function coveredCallToBreakEvenChart(data, divId) {
       }
     ],
     legend: legend,
+    animationDurationUpdate: 800,      // Higher = slower/heavier feel
+    animationEasingUpdate: 'quinticOut', // A very smooth, slow-stopping curve
     dataZoom: [
       {
         type: 'inside',
