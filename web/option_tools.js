@@ -337,7 +337,7 @@ function coveredCallToBreakEvenChart(data, divId) {
         xAxisIndex: 0,
         filterMode: 'none',
         startValue: 1.0,
-        endValue: 2.0,
+        endValue: 1.5,
         zoomLock: false,
         // Add these to ensure this controller is the "Master"
         zoomOnMouseWheel: true,
@@ -350,7 +350,7 @@ function coveredCallToBreakEvenChart(data, divId) {
         yAxisIndex: 0,
         filterMode: 'none',
         startValue: 1.0,
-        endValue: 2.0,
+        endValue: 1.5,
         // Disable zoom triggers on the second controller to stop the "doubling"
         zoomOnMouseWheel: false, 
         zoomOnPinch: false,  // <--- This is the key for mobile pinch speed
