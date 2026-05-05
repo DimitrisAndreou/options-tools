@@ -332,17 +332,30 @@ function coveredCallToBreakEvenChart(data, divId) {
     dataZoom: [
       {
         type: 'inside',
+        minSpan: 10,
+        throttle: 50, // Only updates the view every 50ms (delays the "snap")
         xAxisIndex: 0,
+        filterMode: 'none',
+        startValue: 1.0,
+        endValue: 2.0,
+        zoomLock: false,
+        // Add these to ensure this controller is the "Master"
+        zoomOnMouseWheel: true,
+        zoomOnPinch: true 
+      },
+      {
+        type: 'inside',
+        minSpan: 10,
+        throttle: 50, // Only updates the view every 50ms (delays the "snap")
         yAxisIndex: 0,
         filterMode: 'none',
         startValue: 1.0,
         endValue: 2.0,
-        // This stops the diagonal 'locked' move while still allowing zoom
-        zoomOnMouseWheel: true,
+        // Disable zoom triggers on the second controller to stop the "doubling"
+        zoomOnMouseWheel: false, 
+        zoomOnPinch: false,  // <--- This is the key for mobile pinch speed
         moveOnMouseMove: true,
-        moveOnTouch: true,
-        preventDefaultMouseMove: false,
-        minSpan: 10, // You cannot zoom into less than 10% of the total range
+        moveOnTouch: true    // Ensures panning still works smoothly on mobile
       }
     ],
   });
