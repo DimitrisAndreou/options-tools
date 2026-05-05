@@ -279,53 +279,53 @@ function coveredCallToBreakEvenChart(data, divId) {
     },
     series: [
       ...datasetPerDTE.map(ds => ({
-      type: 'line',
-      name: ds.label,
-      datasetId: ds.id,
-      encode: {
-        x: 'moneyYield',
-        y: 'underlyingYield'
-      },
-      symbolSize: function (data) {
-        return 6;
-      },
-      emphasis: {
-        scale: 2,
-        itemStyle: {
-          color: 'red',
-          borderColor: 'white',
-          borderWidth: 2
+        type: 'line',
+        name: ds.label,
+        datasetId: ds.id,
+        encode: {
+          x: 'moneyYield',
+          y: 'underlyingYield'
         },
-        focus: 'series',
-      },
-      label: {
-        show: false
-      }
-    })),
-    {
-      type: 'line',
-      name: '45°',
-      data: [[1, 1], [2, 2]], 
-      symbol: 'none',
-      silent: true,
-      animation: false,
-      lineStyle: {
-        color: '#fcd34d',
-        type: 'dashed',
-        width: 2.0,
-        opacity: 0.75
-      },
-      emphasis: {
-        focus: 'series',
-        lineStyle: {
-          width: 3.0,
-          opacity: 1,
-          type: 'solid'
+        symbolSize: function (data) {
+          return 6;
+        },
+        emphasis: {
+          scale: 2,
+          itemStyle: {
+            color: 'red',
+            borderColor: 'white',
+            borderWidth: 2
+          },
+          focus: 'series',
+        },
+        label: {
+          show: false
         }
-      },
-      showSymbol: false
-    }
-  ],
+      })),
+      {
+        type: 'line',
+        name: '45°',
+        data: [[1, 1], [2, 2]], 
+        symbol: 'none',
+        silent: true,
+        animation: false,
+        lineStyle: {
+          color: '#fcd34d',
+          type: 'dashed',
+          width: 2.0,
+          opacity: 0.75
+        },
+        emphasis: {
+          focus: 'series',
+          lineStyle: {
+            width: 3.0,
+            opacity: 1,
+            type: 'solid'
+          }
+        },
+        showSymbol: false
+      }
+    ],
     legend: legend,
     dataZoom: [
       {
@@ -334,9 +334,10 @@ function coveredCallToBreakEvenChart(data, divId) {
         filterMode: 'none',
         startValue: 1.0,
         endValue: 2.0,
-        // Allows panning, but prevents the scroll wheel/pinch from 
-        // triggering twice on this specific object.
-        zoomLock: false 
+        zoomLock: false,
+        // Add these to ensure this controller is the "Master"
+        zoomOnMouseWheel: true,
+        zoomOnPinch: true 
       },
       {
         type: 'inside',
@@ -344,10 +345,11 @@ function coveredCallToBreakEvenChart(data, divId) {
         filterMode: 'none',
         startValue: 1.0,
         endValue: 2.0,
-        // Setting this to true on the second axis prevents the "double zoom" 
-        // but still allows the first object to handle the zooming for both.
+        // Disable zoom triggers on the second controller to stop the "doubling"
         zoomOnMouseWheel: false, 
-        moveOnMouseMove: true
+        zoomOnPinch: false,  // <--- This is the key for mobile pinch speed
+        moveOnMouseMove: true,
+        moveOnTouch: true    // Ensures panning still works smoothly on mobile
       }
     ],
   });
