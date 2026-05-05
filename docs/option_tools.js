@@ -312,6 +312,9 @@ function coveredCallToBreakEvenChart(data, divId) {
         filterMode: 'none',
         startValue: 1.0,
         endValue: 2.0,
+        // Allows panning, but prevents the scroll wheel/pinch from 
+        // triggering twice on this specific object.
+        zoomLock: false 
       },
       {
         type: 'inside',
@@ -319,6 +322,10 @@ function coveredCallToBreakEvenChart(data, divId) {
         filterMode: 'none',
         startValue: 1.0,
         endValue: 2.0,
+        // Setting this to true on the second axis prevents the "double zoom" 
+        // but still allows the first object to handle the zooming for both.
+        zoomOnMouseWheel: false, 
+        moveOnMouseMove: true
       }
     ],
   });
