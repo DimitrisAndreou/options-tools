@@ -333,20 +333,17 @@ function coveredCallToBreakEvenChart(data, divId) {
       {
         type: 'inside',
         xAxisIndex: 0,
-        yAxisIndex: 0, // Control BOTH here
+        yAxisIndex: 0,
         filterMode: 'none',
         startValue: 1.0,
         endValue: 2.0,
-        // THE SECRET SAITE: 
         // This stops the diagonal 'locked' move while still allowing zoom
         zoomOnMouseWheel: true,
         moveOnMouseMove: true,
         moveOnTouch: true,
-        preventDefaultMouseMove: false 
+        preventDefaultMouseMove: false,
+        minSpan: 10, // You cannot zoom into less than 10% of the total range
       }
-      // DELETE the second object entirely. 
-      // Handling them in one object with xAxisIndex/yAxisIndex 
-      // is the only way eCharts allows 'zoomOnPinch' logic to be unified.
     ],
   });
 

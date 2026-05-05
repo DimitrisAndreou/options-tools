@@ -341,7 +341,8 @@ function coveredCallToBreakEvenChart(data, divId) {
         zoomOnMouseWheel: true,
         moveOnMouseMove: true,
         moveOnTouch: true,
-        preventDefaultMouseMove: false 
+        preventDefaultMouseMove: false,
+        minSpan: 10, // You cannot zoom into less than 10% of the total range
       }
     ],
   });
