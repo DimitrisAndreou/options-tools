@@ -345,7 +345,8 @@ function coveredCallToBreakEvenChart(data, divId) {
       },
       {
         type: 'inside',
-        minSpan: 10,
+        minSpanValue: 0.5,
+        maxSpanValue: 2.0,
         throttle: 50, // Only updates the view every 50ms (delays the "snap")
         yAxisIndex: 0,
         filterMode: 'none',
