@@ -12,9 +12,10 @@ class UrlFetcher {
   UrlFetcher(Duration duration) : _duration = duration;
 
   Future<String> fetch(String uri, {Map<String, String>? headers}) async {
-    final cacheKey = uri;
+    final cacheKey = _getCacheKeyIgnoringCrumb(uri);
+
     final isHandshake = uri.contains('fc.yahoo.com') || uri.contains('getcrumb');
-    
+
     if (!isHandshake) {
       String? cached = _cache.read<String>(cacheKey);
       if (cached != null) {
@@ -26,11 +27,9 @@ class UrlFetcher {
     try {
       // 1. Determine if we need to proxy (is it a Yahoo URL?)
       bool isYahoo = uri.contains('yahoo.com');
-      print("isYahoo: $isYahoo");
       Uri finalUri = isYahoo
           ? Uri.parse('$_proxyBase?target=${Uri.encodeComponent(uri)}')
           : Uri.parse(uri);
-      print("finalUri: $finalUri");
 
       // 2. Execute the request
       http.Response response = await http.get(finalUri, headers: headers);
@@ -79,6 +78,26 @@ class UrlFetcher {
       print('Failed while fetching url: [$uri], error: $e');
       rethrow;
     }
+  }
+
+  String _getCacheKeyIgnoringCrumb(String uri) {
+    String cacheKey = uri;
+    try {
+      final parsed = Uri.parse(uri);
+      if (parsed.queryParameters.containsKey('crumb')) {
+        final queryParams = Map<String, String>.from(parsed.queryParameters);
+        queryParams.remove('crumb');
+        
+        final newUri = parsed.replace(
+          query: queryParams.isEmpty ? '' : Uri(queryParameters: queryParams).query,
+        ).toString();
+        
+        cacheKey = queryParams.isEmpty && newUri.endsWith('?') 
+            ? newUri.substring(0, newUri.length - 1) 
+            : newUri;
+      }
+    } catch (_) {}
+    return cacheKey;
   }
 
   String _cleanCookieHeader(String rawCookie) {
