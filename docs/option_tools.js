@@ -200,7 +200,7 @@ function populateStrategyDetails(dataObj) {
   }
 }
 
-function coveredCallToBreakEvenChart(data, divId) {
+function coveredCallChart(data, divId) {
   {
     let chartDom = document.getElementById(divId);
     let existingChart = echarts.getInstanceByDom(chartDom);
@@ -255,7 +255,8 @@ function coveredCallToBreakEvenChart(data, divId) {
         },
       },
       axisLine,
-      scale: true,
+      min: function (value) { return Math.max(1.0, value.min - 0.5); },
+      max: function (value) { return value.max + 0.5; },
       position: 'bottom',
     },
     grid,
@@ -271,7 +272,8 @@ function coveredCallToBreakEvenChart(data, divId) {
         },
       },
       axisLine,
-      scale: true
+      min: function (value) { return Math.max(1.0, value.min - 0.5); },
+      max: function (value) { return value.max + 0.5; }
     },
     tooltip: {
       ...tooltipStyle,
@@ -305,7 +307,7 @@ function coveredCallToBreakEvenChart(data, divId) {
       {
         type: 'line',
         name: '45°',
-        data: [[1, 1], [5, 5]], 
+        data: [[1, 1], [5, 5]],
         symbol: 'none',
         silent: true,
         animation: false,
@@ -332,31 +334,21 @@ function coveredCallToBreakEvenChart(data, divId) {
     dataZoom: [
       {
         type: 'inside',
-        minSpan: 10,
-        throttle: 50, // Only updates the view every 50ms (delays the "snap")
+        maxValueSpan: 1.0,
+        throttle: 50,
         xAxisIndex: 0,
         filterMode: 'none',
         startValue: 1.0,
-        endValue: 1.5,
-        zoomLock: false,
-        // Add these to ensure this controller is the "Master"
-        zoomOnMouseWheel: true,
-        zoomOnPinch: true 
+        endValue: 1.5
       },
       {
         type: 'inside',
-        minSpanValue: 0.5,
-        maxSpanValue: 2.0,
-        throttle: 50, // Only updates the view every 50ms (delays the "snap")
+        maxValueSpan: 1.0,
+        throttle: 50,
         yAxisIndex: 0,
         filterMode: 'none',
         startValue: 1.0,
-        endValue: 1.5,
-        // Disable zoom triggers on the second controller to stop the "doubling"
-        zoomOnMouseWheel: false, 
-        zoomOnPinch: false,  // <--- This is the key for mobile pinch speed
-        moveOnMouseMove: true,
-        moveOnTouch: true    // Ensures panning still works smoothly on mobile
+        endValue: 1.5
       }
     ],
   });
