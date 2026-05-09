@@ -48,11 +48,12 @@ function prepareCCData(value) {
   return {
     underlying,
     money,
+    strategyName: value.strategyURL ? `<a href="${value.strategyURL}" target="_blank" style="color: inherit; text-decoration: underline;">Covered Call</a>` : 'Covered Call',
     formattedDate: value.formattedDate,
     DTE: value.DTE,
     strikeAbsolute: dollarFmt.format(value.strikeAbsolute),
     strikeRelative: percentFmt.format(value.strikeAbsolute / value.spotPrice - 1.0),
-    callName: value.call,
+    callName: value.callURL ? `<a href="${value.callURL}" target="_blank" style="color: inherit; text-decoration: underline;">${value.call}</a>` : value.call,
     capitalRequired: dollarFmt.format(-value.moneySize),
     capitalRequiredUnderlying: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
 
@@ -213,7 +214,7 @@ function populateStrategyDetails(dataObj) {
 
     for (const [key, value] of Object.entries(d)) {
       clone.querySelectorAll(`.tpl-${key}`).forEach(el => {
-        el.textContent = value;
+        el.innerHTML = value;
       });
     }
 
