@@ -5,7 +5,6 @@
 // Contract: BTC-26JUN26
 // URL: https://www.deribit.com/futures/BTC-26JUN26
 
-
 // Stocks:
 // $IREN:
 // Long 100 stocks:
@@ -21,3 +20,9 @@
 // URL: https://finance.yahoo.com/quote/IREN260410C00022000/
 
 // Position --> URL
+
+class UrlRenderer {
+  // abstract method that takes a Position, and returns an URL (string).
+
+  // Two instances, Deribit and OptionStrat.
+}

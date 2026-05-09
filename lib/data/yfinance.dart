@@ -31,7 +31,8 @@ class YFinance {
       final quote =
           results["quote"] ?? (throw StateError("Did not find quote"));
       final money = Commodity(quote["currency"]);
-      final underlying = Commodity(quote["symbol"]);
+      final underlying =
+          Commodity(quote["symbol"], venues: {Venue.OptionStrat});
       // Will add this to markets last, to have the latest value.
       // Not using quote["bid"] and quote["ask"] because they tend
       // to be very wide.
@@ -113,7 +114,8 @@ class YFinance {
                   isPut: !isCall,
                   isCall: isCall,
                   expiration: currentExpirationDate,
-                  contractLot: 100.0),
+                  contractLot: 100.0,
+                  venues: {Venue.OptionStrat}),
               money: Commodity(option["currency"]), // USD
               bidPrice: bid * 100.0,
               askPrice: ask * 100.0);

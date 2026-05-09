@@ -2,6 +2,22 @@ import 'package:test/test.dart';
 import 'package:options_tools/assets.dart';
 
 void main() {
+  group('Asset', () {
+    test('Asset venues are stored and read correctly', () {
+      final comm = Commodity('BTC', venues: {Venue.Deribit});
+      expect(comm.venues, equals({Venue.Deribit}));
+
+      final opt = Option('BTC-1000-C',
+          underlying: comm,
+          money: Commodity('USD'),
+          strike: 1000.0,
+          isCall: true,
+          expiration: DateTime.now(),
+          venues: {Venue.OptionStrat});
+      expect(opt.venues, equals({Venue.OptionStrat}));
+    });
+  });
+
   group('Line', () {
     test('line creation and decomposition', () {
       final btc = Commodity.fromName('BTC');

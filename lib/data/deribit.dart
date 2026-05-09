@@ -79,7 +79,7 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
       return null;
     }
     // Only the underlying & the money are registered in the registry.
-    final underlying = Commodity(base_currency);
+    final underlying = Commodity(base_currency, venues: {Venue.Deribit});
     final money = Commodity(quote_currency);
     makeMarket(Asset asset) {
       final contractLot =
@@ -135,7 +135,8 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
           underlying: underlying,
           expiration: expirationDate,
           contractLot: 1.0,
-          minSize: 0.0001));
+          minSize: 0.0001,
+          venues: {Venue.Deribit}));
     }
     final strikesList = strikes.split('_');
     if (strikesList.length != 1) {
@@ -165,7 +166,8 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
           'TRX' => 10000.0,
           _ => 1.0,
         },
-        minSize: underlying.name == Deribit.BTC ? 0.1 : 1.0));
+        minSize: underlying.name == Deribit.BTC ? 0.1 : 1.0,
+        venues: {Venue.Deribit}));
   }
 
   // BTC-22NOV24-85000-P
