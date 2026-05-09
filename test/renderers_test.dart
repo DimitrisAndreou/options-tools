@@ -47,9 +47,9 @@ void main() {
       expect(() => renderer.render(future), throwsArgumentError);
     });
 
-    test('fails if not Future or Option', () {
+    test('renders Commodity correctly', () {
       final comm = Commodity('BTC', venues: {Venue.Deribit});
-      expect(() => renderer.render(comm), throwsArgumentError);
+      expect(renderer.render(comm), equals('https://www.deribit.com/spot/BTC_USDT'));
     });
   });
 

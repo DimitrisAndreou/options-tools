@@ -39,6 +39,8 @@ class CoveredCall {
 
   String? get callURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
 
+  String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
+
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
@@ -48,6 +50,7 @@ class CoveredCall {
         'underlyingYield': underlyingYield,
 
         'underlying': underlying.name,
+        'underlyingURL': underlyingURL,
         'underlyingToBuy': underlyingToBuy.size,
         'premiumToReceive': premiumToReceive.size,
         'money': money.name,

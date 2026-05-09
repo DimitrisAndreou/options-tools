@@ -37,11 +37,10 @@ class _OptionStratAssetRenderer implements AssetRenderer {
       throw ArgumentError('Asset does not support OptionStrat venue: $asset');
     }
 
-    if (asset is! Commodity && asset is! Option) {
-      throw ArgumentError('Asset must be a Commodity or an Option: $asset');
+    if (asset is Commodity || asset is Option) {
+      return 'https://finance.yahoo.com/quote/${asset.name}/';
     }
-
-    return 'https://finance.yahoo.com/quote/${asset.name}/';
+    throw ArgumentError('Asset must be a Commodity or an Option: $asset');
   }
 }
 
@@ -52,6 +51,9 @@ class _DeribitAssetRenderer implements AssetRenderer {
       throw ArgumentError('Asset does not support Deribit venue: $asset');
     }
 
+    if (asset is Commodity) {
+      return 'https://www.deribit.com/spot/${asset.name}_USDT';
+    }
     if (asset is DatedFuture) {
       return 'https://www.deribit.com/futures/${asset.name}';
     }
@@ -78,7 +80,8 @@ class _DeribitAssetRenderer implements AssetRenderer {
       final date = '$day$month$year';
       return 'https://www.deribit.com/options/$underlying/$underlying-$date/${asset.name}';
     }
-    throw ArgumentError('Asset must be a DatedFuture or an Option: $asset');
+    throw ArgumentError(
+        'Asset must be a Commodity, DatedFuture or an Option: $asset');
   }
 }
 

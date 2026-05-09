@@ -10,6 +10,7 @@ async function loadData(ticker, slippage, minDte, maxDte) {
     console.log({ coveredCallsJson });
     renderStrategyChart(coveredCallsJson, "strategyChartContainer");
 
+    document.getElementById('spot-ticker-name').textContent = ticker;
     document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(coveredCallsJson));
   } catch (error) {
     console.error("JavaScript caught Dart error:", error.error);

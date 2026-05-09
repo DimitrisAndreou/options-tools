@@ -47,6 +47,7 @@ function prepareCCData(value) {
 
   return {
     underlying,
+    underlyingName: value.underlyingURL ? `<a href="${value.underlyingURL}" target="_blank" style="color: inherit; text-decoration: underline;">${underlying}</a>` : underlying,
     money,
     strategyName: value.strategyURL ? `<a href="${value.strategyURL}" target="_blank" style="color: inherit; text-decoration: underline;">Covered Call</a>` : 'Covered Call',
     formattedDate: value.formattedDate,
