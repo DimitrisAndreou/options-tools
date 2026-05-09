@@ -5,6 +5,29 @@ abstract class AssetRenderer {
 
   factory AssetRenderer.deribit() = _DeribitAssetRenderer;
   factory AssetRenderer.optionStrat() = _OptionStratAssetRenderer;
+
+  static AssetRenderer? forVenue(Venue venue) {
+    switch (venue) {
+      case Venue.Deribit:
+        return AssetRenderer.deribit();
+      case Venue.OptionStrat:
+        return AssetRenderer.optionStrat();
+    }
+  }
+
+  static String? tryRenderFirst(Asset asset) {
+    for (final venue in asset.venues) {
+      final renderer = forVenue(venue);
+      if (renderer != null) {
+        try {
+          return renderer.render(asset);
+        } catch (_) {
+          // Ignore and try next venue if render fails
+        }
+      }
+    }
+    return null;
+  }
 }
 
 class _OptionStratAssetRenderer implements AssetRenderer {
@@ -63,6 +86,30 @@ abstract class PositionRenderer {
   String render(Position position);
 
   factory PositionRenderer.optionStrat() = _OptionStratPositionRenderer;
+
+  static PositionRenderer? forVenue(Venue venue) {
+    switch (venue) {
+      case Venue.OptionStrat:
+        return PositionRenderer.optionStrat();
+      case Venue.Deribit:
+        return null;
+    }
+  }
+
+  static String? tryRenderFirst(Position position) {
+    final venues = position.decompose().expand((l) => l.asset.venues).toSet();
+    for (final venue in venues) {
+      final renderer = forVenue(venue);
+      if (renderer != null) {
+        try {
+          return renderer.render(position);
+        } catch (_) {
+          // Ignore and try next venue if render fails
+        }
+      }
+    }
+    return null;
+  }
 }
 
 class _OptionStratPositionRenderer implements PositionRenderer {

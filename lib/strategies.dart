@@ -5,6 +5,7 @@ import 'assets.dart';
 import 'markets.dart';
 import 'oracle.dart';
 import 'position_analyzer.dart';
+import 'renderers.dart';
 
 class CoveredCall {
   final Commodity underlying;
@@ -36,8 +37,13 @@ class CoveredCall {
   late final PriceInfo breakEvenVsFullUnderlying;
   late final PriceInfo breakEvenVsFullMoney;
 
+  String? get callURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
+
+  String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
+
   Map<String, dynamic> toJson() => {
         'strategyType': 'coveredCall',
+        'strategyURL': strategyURL,
         'moneyYield': moneyYield,
         'underlyingYield': underlyingYield,
 
@@ -49,6 +55,7 @@ class CoveredCall {
         'moneyProfit': moneyProfit,
         'spotPrice': spotPrice,
         'call': optionLeg.asset.name,
+        'callURL': callURL,
         'callSize': optionLeg.size,
         'DTE': expiration.daysLeft,
         'formattedDate': expiration.formattedDate,

@@ -37,7 +37,7 @@ Future<String> deribitCoveredCalls(
     String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
   return jsonEncode(CoveredCall.generateAll(markets,
-          underlying: Commodity(ticker),
+          underlying: Commodity(ticker, venues: const {Venue.Deribit}),
           money: Commodity("USD"),
           slippage: slippage)
       .toList());
@@ -47,7 +47,7 @@ Future<String> deribitVerticalSpreads(
     String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
   return jsonEncode(VerticalSpread.generateAll(markets,
-          underlying: Commodity(ticker),
+          underlying: Commodity(ticker, venues: const {Venue.Deribit}),
           money: Commodity("USD"),
           slippage: slippage)
       .toList());
@@ -57,7 +57,7 @@ Future<String> deribitSyntheticBonds(
     String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
   return jsonEncode(SyntheticBond.generateAll(markets,
-          underlying: Commodity(ticker),
+          underlying: Commodity(ticker, venues: const {Venue.Deribit}),
           money: Commodity("USD"),
           slippage: slippage)
       .toList());
@@ -68,7 +68,7 @@ Future<String> yfinanceCoveredCalls(
   List<Market> markets = await (await YFinance.openConnection(_urlFetcher))
       .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
   return jsonEncode(CoveredCall.generateAll(markets,
-          underlying: Commodity(ticker),
+          underlying: Commodity(ticker, venues: const {Venue.OptionStrat}),
           money: Commodity("USD"),
           slippage: slippage)
       .toList());
