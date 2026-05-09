@@ -8816,26 +8816,26 @@ i(a){var s=this,r=s.e
 r===$&&A.E("delta")
 return"[("+A.f(s.a)+".."+A.f(s.b)+"), minValue="+A.f(s.bE(r))+", maxValue="+A.f(s.bE(-r))+", delta="+A.f(r)+"]"}}
 A.eG.prototype={
-cF(){var s,r,q,p,o,n,m,l,k,j,i=this,h="premiumToReceive",g=i.as
-g===$&&A.E(h)
-s=i.ay
-s===$&&A.E("moneyProfit")
-r=i.x
-q=i.d
-p=B.c.V(q.by(new A.ak(Date.now(),0,!1)).a,864e8)
-o=A.ml(q)-1
-if(!(o>=0&&o<12))return A.d(B.v,o)
-o=B.v[o]
-n=i.ax
-m=i.ch
-m===$&&A.E("moneyYield")
-l=i.CW
-l===$&&A.E("underlyingYield")
+cF(){var s,r,q,p,o,n,m,l,k,j,i=this,h="premiumToReceive",g=i.ch
+g===$&&A.E("moneyYield")
+s=i.CW
+s===$&&A.E("underlyingYield")
+r=i.as
+r===$&&A.E(h)
+q=i.ay
+q===$&&A.E("moneyProfit")
+p=i.x
+o=i.d
+n=B.c.V(o.by(new A.ak(Date.now(),0,!1)).a,864e8)
+m=A.ml(o)-1
+if(!(m>=0&&m<12))return A.d(B.v,m)
+m=B.v[m]
+l=i.ax
 k=i.cx
 k===$&&A.E("breakEvenVsFullUnderlying")
 j=i.cy
 j===$&&A.E("breakEvenVsFullMoney")
-return A.eV(["underlying",i.a.a,"underlyingToBuy",i.Q.b,h,g.b,"money",i.b.a,"moneySize",i.z.b,"moneyProfit",s,"spotPrice",i.at,"call",r.a.a,"callSize",r.b,"DTE",p,"formattedDate",""+A.mk(q)+" "+o+" "+A.mm(q),"strikeAbsolute",n.a,"strikeRelative",n.b,"moneyYield",m,"underlyingYield",l,"breakEvenVsFullUnderlyingAbsolute",k.a,"breakEvenVsFullUnderlyingRelative",k.b,"breakEvenVsFullMoneyAbsolute",j.a,"breakEvenVsFullMoneyRelative",j.b],t.N,t.z)},
+return A.eV(["strategyType","coveredCall","moneyYield",g,"underlyingYield",s,"underlying",i.a.a,"underlyingToBuy",i.Q.b,h,r.b,"money",i.b.a,"moneySize",i.z.b,"moneyProfit",q,"spotPrice",i.at,"call",p.a.a,"callSize",p.b,"DTE",n,"formattedDate",""+A.mk(o)+" "+m+" "+A.mm(o),"strikeAbsolute",l.a,"strikeRelative",l.b,"breakEvenVsFullUnderlyingAbsolute",k.a,"breakEvenVsFullUnderlyingRelative",k.b,"breakEvenVsFullMoneyAbsolute",j.a,"breakEvenVsFullMoneyRelative",j.b],t.N,t.z)},
 i(a){return B.j.b3(this,null)}}
 A.fp.prototype={
 cF(){var s,r=this,q=r.f,p=B.c.V(r.d.by(new A.ak(Date.now(),0,!1)).a,864e8),o=r.y

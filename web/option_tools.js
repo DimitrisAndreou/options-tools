@@ -122,10 +122,24 @@ function renderTooltipCC(d) {
   `;
 }
 
-const ccTooltipFormatter = function (params) {
+const StrategyRegistry = {
+  'coveredCall': {
+    templateId: 'coveredCall-details-template',
+    prepareData: prepareCCData,
+    renderTooltip: renderTooltipCC
+  }
+};
+
+const strategyTooltipFormatter = function (params) {
   if (!params || !params.value) return '';
-  const data = prepareCCData(params.value);
-  return renderTooltipCC(data);
+  const type = params.value.strategyType;
+  const config = StrategyRegistry[type];
+  if (!config) {
+    console.error(`Unknown strategyType: ${type}`);
+    return '';
+  }
+  const data = config.prepareData(params.value);
+  return config.renderTooltip(data);
 };
 
 const axisTitleNameTextStyle = {
@@ -182,11 +196,19 @@ function extractSpotPrice(data) {
 }
 
 function populateStrategyDetails(dataObj) {
-  const panel = document.getElementById('coveredCallDetailsPanel');
-  const template = document.getElementById('cc-details-template');
+  if (!dataObj || !dataObj.strategyType) {
+    throw new Error('Missing strategyType in data object');
+  }
+  const config = StrategyRegistry[dataObj.strategyType];
+  if (!config) {
+    throw new Error(`Unknown strategyType: ${dataObj.strategyType}`);
+  }
 
-  if (panel && template && dataObj) {
-    const d = prepareCCData(dataObj);
+  const panel = document.getElementById('strategyDetailsPanel');
+  const template = document.getElementById(config.templateId);
+
+  if (panel && template) {
+    const d = config.prepareData(dataObj);
     const clone = template.content.cloneNode(true);
 
     for (const [key, value] of Object.entries(d)) {
@@ -200,17 +222,21 @@ function populateStrategyDetails(dataObj) {
   }
 }
 
-function coveredCallChart(data, divId) {
+/**
+ * Renders the options strategy chart.
+ * 
+ * IMPORTANT: The elements in the `data` array MUST contain `moneyYield` and `underlyingYield` 
+ * properties, as these are required to map to the X and Y coordinates on the chart.
+ */
+function renderStrategyChart(data, divId) {
   {
     let chartDom = document.getElementById(divId);
     let existingChart = echarts.getInstanceByDom(chartDom);
     if (existingChart) existingChart.dispose();
   }
 
-  const spotPrice = extractSpotPrice(data);
   const money = data.at(0)?.money || '';
   const underlying = data.at(0)?.underlying || '';
-  // TODO: share this code across charts.
   const dataset = {
     id: "original",
     dimensions: ["moneyYield", "underlyingYield", "DTE"],
@@ -277,7 +303,7 @@ function coveredCallChart(data, divId) {
     },
     tooltip: {
       ...tooltipStyle,
-      formatter: ccTooltipFormatter,
+      formatter: strategyTooltipFormatter,
     },
     series: [
       ...datasetPerDTE.map(ds => ({

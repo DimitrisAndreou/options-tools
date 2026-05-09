@@ -37,6 +37,10 @@ class CoveredCall {
   late final PriceInfo breakEvenVsFullMoney;
 
   Map<String, dynamic> toJson() => {
+        'strategyType': 'coveredCall',
+        'moneyYield': moneyYield,
+        'underlyingYield': underlyingYield,
+
         'underlying': underlying.name,
         'underlyingToBuy': underlyingToBuy.size,
         'premiumToReceive': premiumToReceive.size,
@@ -50,9 +54,6 @@ class CoveredCall {
         'formattedDate': expiration.formattedDate,
         'strikeAbsolute': strikePrice.absolute,
         'strikeRelative': strikePrice.relative,
-
-        'moneyYield': moneyYield, // new Y-axis
-        'underlyingYield': underlyingYield, // new X-axis
 
         // Where does this CC meet with the strategy of 100% underlying?
         'breakEvenVsFullUnderlyingAbsolute': breakEvenVsFullUnderlying.absolute,
