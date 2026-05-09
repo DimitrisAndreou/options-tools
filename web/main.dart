@@ -1,6 +1,6 @@
 import 'dart:js_interop';
 
-import 'package:options_tools/js_interop_bindings.dart';
+import 'package:options_tools/strategies_gateway.dart';
 
 @JS()
 // Defined in deribit_main.js
