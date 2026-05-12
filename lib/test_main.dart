@@ -31,9 +31,9 @@ void main() async {
   // browseLinearContracts();
   // browseVerticalSpreads(markets);
   // browseBonds(markets);
-  browseCoveredCalls(markets);
+  // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
-  // browseLongCalls(markets);
+  browseLongCalls(markets);
 
   // printOptionChain(markets);
 
