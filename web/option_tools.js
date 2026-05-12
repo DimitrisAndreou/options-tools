@@ -241,19 +241,8 @@ function renderStrategyChart(data, divId) {
   const underlying = data.at(0)?.underlying || '';
   const dataset = {
     id: "original",
-    dimensions: ["moneyYield", "underlyingYield", "DTE", "x_new", "y_new"],
-    source: data.map(d => {
-      // const radius = d.DTE / 365.0;
-      // const radius = d.DTE / 30.0;
-      const radius = d.DTE;
-      // const radius = (d.moneyYield - 1.0) * (d.underlyingYield - 1.0) * 10000;
-      const angleRad = Math.atan2(d.underlyingYield - 1.0, d.moneyYield - 1.0);
-      return {
-        ...d,
-        x_new: radius * Math.sin(angleRad),
-        y_new: radius * Math.cos(angleRad)
-      };
-    })
+    dimensions: ["moneyYield", "underlyingYield", "DTE"],
+    source: data
   };
   const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
   const datasetPerDTE = uniqueDTEs.map(dte => ({
@@ -290,11 +279,12 @@ function renderStrategyChart(data, divId) {
       axisLabel: {
         ...axisXValuesNameTextStyle,
         formatter: function (value) {
-          return value.toFixed(2);
+          return `${percentFmt.format(value - 1.0)}`;
         },
       },
       axisLine,
-      min: 0,
+      min: function (value) { return Math.max(1.0, value.min - 0.5); },
+      max: function (value) { return value.max + 0.5; },
       position: 'bottom',
     },
     grid,
@@ -306,11 +296,12 @@ function renderStrategyChart(data, divId) {
       axisLabel: {
         ...axisYValuesNameTextStyle,
         formatter: function (value) {
-          return value.toFixed(2);
+          return `${percentFmt.format(value - 1.0)}`;
         },
       },
       axisLine,
-      min: 0
+      min: function (value) { return Math.max(1.0, value.min - 0.5); },
+      max: function (value) { return value.max + 0.5; }
     },
     tooltip: {
       ...tooltipStyle,
@@ -322,8 +313,8 @@ function renderStrategyChart(data, divId) {
         name: ds.label,
         datasetId: ds.id,
         encode: {
-          x: 'x_new',
-          y: 'y_new'
+          x: 'moneyYield',
+          y: 'underlyingYield'
         },
         symbolSize: function (data) {
           return 6;
@@ -344,7 +335,7 @@ function renderStrategyChart(data, divId) {
       {
         type: 'line',
         name: '45°',
-        data: [[0, 0], [2, 2]],
+        data: [[1, 1], [5, 5]],
         symbol: 'none',
         silent: true,
         animation: false,
@@ -371,15 +362,21 @@ function renderStrategyChart(data, divId) {
     dataZoom: [
       {
         type: 'inside',
+        maxValueSpan: 1.0,
         throttle: 50,
         xAxisIndex: 0,
-        filterMode: 'none'
+        filterMode: 'none',
+        startValue: 1.0,
+        endValue: 1.5
       },
       {
         type: 'inside',
+        maxValueSpan: 1.0,
         throttle: 50,
         yAxisIndex: 0,
-        filterMode: 'none'
+        filterMode: 'none',
+        startValue: 1.0,
+        endValue: 1.5
       }
     ],
   });
