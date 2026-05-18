@@ -22,7 +22,9 @@ void main() async {
   // testYFinance();
 
   List<Market> markets = await Deribit.fetchMarkets(
-      [Deribit.USDC], UrlFetcher(Duration(minutes: 15)));
+      [Deribit.BTC], UrlFetcher(Duration(minutes: 15)));
+  // List<Market> markets = await Deribit.fetchMarkets(
+  //     [Deribit.USDC], UrlFetcher(Duration(minutes: 15)));
   // [Deribit.BTC, Deribit.ETH], UrlFetcher(Duration(minutes: 15)));
   // ArchOracle oracle = Oracle.fromMarkets(markets);
 
@@ -167,31 +169,57 @@ void browseLongCalls(List<Market> allMarkets) {
   print(" ============== Long Calls ==============");
   final oracle = Oracle.fromMarkets(allMarkets);
   final spotMarket = oracle.marketFor(asset: underlying, money: money);
-  final ccs =
-      CoveredCall.generateAll(allMarkets, underlying: underlying, money: money);
-  for (final cc in ccs) {
-    final callContract = cc.callMarket.asset.toOption;
-    final longCall = cc.callMarket.long();
-    final longCallAnalyzer =
-        PositionAnalyzer(longCall, underlying: underlying, money: money);
-    final breakeven = longCallAnalyzer.breakevens.singleOrNull;
-    if (breakeven == null) {
-      continue;
-    }
-    // Find breakeven vs spot long position of the same max loss.
-    final longSpotAnalyzer = longCallAnalyzer.equalizeRisk(spotMarket.long());
-    final strike = callContract.strike;
-    final leverage = longCallAnalyzer.deltaAfter(strike) /
-        longSpotAnalyzer.deltaAfter(strike);
-    print("${callContract.toString().padLeft(32)} -->"
-        " Leverage: ${leverage.toStringAsFixed(1).padLeft(5)}X"
-        ", ITM @ ${percentify(asChange(strike, spotMarket.midPrice)).padLeft(7)}"
-        ", profit @ ${percentify(asChange(breakeven.price, spotMarket.midPrice)).padLeft(7)}"
-        " (\$${breakeven.price.toStringAsFixed(0).padLeft(6)})"
-        ", CC b.e.: ${percentify(asChange(cc.breakEvenVsFullMoney.absolute, spotMarket.midPrice)).padLeft(7)}"
-        " (\$${cc.breakEvenVsFullMoney.absolute.toStringAsFixed(0).padLeft(6)})"
-        " cc max profit: ${percentify(cc.moneyYield - 1.0)}");
+  // final ccs =
+  //     CoveredCall.generateAll(allMarkets, underlying: underlying, money: money);
+  // for (final cc in ccs) {
+  //   final callContract = cc.callMarket.asset.toOption;
+  //   final longCall = cc.callMarket.long();
+  //   final longCallAnalyzer =
+  //       PositionAnalyzer(longCall, underlying: underlying, money: money);
+  //   final breakeven = longCallAnalyzer.breakevens.singleOrNull;
+  //   if (breakeven == null) {
+  //     continue;
+  //   }
+  //   // Find breakeven vs spot long position of the same max loss.
+  //   final longSpotAnalyzer = longCallAnalyzer.equalizeRisk(spotMarket.long());
+  //   final strike = callContract.strike;
+  //   final leverage = longCallAnalyzer.deltaAfter(strike) /
+  //       longSpotAnalyzer.deltaAfter(strike);
+  //   print("${callContract.toString().padLeft(32)} -->"
+  //       " Leverage: ${leverage.toStringAsFixed(1).padLeft(5)}X"
+  //       ", ITM @ ${percentify(asChange(strike, spotMarket.midPrice)).padLeft(7)}"
+  //       ", profit @ ${percentify(asChange(breakeven.price, spotMarket.midPrice)).padLeft(7)}"
+  //       " (\$${breakeven.price.toStringAsFixed(0).padLeft(6)})"
+  //       ", CC b.e.: ${percentify(asChange(cc.breakEvenVsFullMoney.absolute, spotMarket.midPrice)).padLeft(7)}"
+  //       " (\$${cc.breakEvenVsFullMoney.absolute.toStringAsFixed(0).padLeft(6)})"
+  //       " cc max profit: ${percentify(cc.moneyYield - 1.0)}");
+  // }
+
+  for (LongCall s in LongCall.generateAll(allMarkets,
+      underlying: underlying, money: money)) {
+    final spot = s.spotMarket;
+    // final equalSizeLongStrategy = cc.analyzer.equalizeRisk(spot.long());
+    // final pricesWithSameMaxGain =
+    //     equalSizeLongStrategy.whereValueIs(cc.analyzer.maxValue);
+
+    // print("### ${s.option.name} moneySize: ${dollarify(s.moneyLeg.size)}, "
+    //     "leverage=${s.underlyingYield}X, moneyYield=${s.moneyYield}");
+    final callPrice = s.callMarket.midPrice;
+    final leverageU = spot.midPrice / callPrice;
+
+    ;
+    final longCallMinusLongSpot = PositionAnalyzer(
+        s.optionLeg - spotMarket.swap(s.moneyLeg) + s.moneyLeg,
+        underlying: underlying,
+        money: money);
+
+    print("# ${s.option.name}: cost: ${dollarify(callPrice)}, "
+        "leverage (U): ${leverageU.toStringAsFixed(2)}X, "
+        "breakEvenVsFullMoney (hurdle): ${dollarify(s.breakEvenVsFullMoney.absolute)} (${percentify(s.breakEvenVsFullMoney.relative - 1.0)}), "
+        "breakEvenVsFullUnderlying: ${dollarify(longCallMinusLongSpot.breakevens.last.price)}, "
+        "${s.analyzer.valueAt(longCallMinusLongSpot.breakevens.last.price)} ==? ${PositionAnalyzer(spotMarket.toAsset(-s.moneyLeg), underlying: underlying, money: money).valueAt(longCallMinusLongSpot.breakevens.last.price)}");
   }
+  print(spotMarket.midPrice);
 }
 
 void printOptionChain(List<Market> markets) {

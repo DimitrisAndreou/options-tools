@@ -90,27 +90,29 @@ class CoveredCall {
         underlyingLeg = strategy[underlying],
         optionLeg = strategy[option],
         underlyingToBuy = spotMarket.toAsset(-strategy[money]),
-        strikePrice = price(option.strike, spotPrice) {
+        strikePrice = PriceInfo.fromAbsolute(option.strike, spotPrice) {
     premiumToReceive =
         (strategy[underlying] - underlyingToBuy).singleton(underlying);
     moneyYield = analyzer.maxYield;
     underlyingYield = premiumToReceive.size / underlyingToBuy.size + 1.0;
     moneyProfit = analyzer.maxProfit;
-    breakEvenVsFullUnderlying = price(spotPrice * moneyYield, spotPrice);
+    // TODO: construct even this via PositionAnalyzer!
+    breakEvenVsFullUnderlying =
+        PriceInfo.fromAbsolute(spotPrice * moneyYield, spotPrice);
     if (analyzer.breakevens.isEmpty) {
       throw Exception("No breakeven!\nStrategy: $strategy\n"
           "Analyzer: $analyzer");
     }
     // Breakeven could be a whole range, for a profit-less strategy.
+    // TODO: construct even this via PositionAnalyzer!
     breakEvenVsFullMoney =
-        price(analyzer.breakevens.first.fromPrice, spotPrice);
+        PriceInfo.fromAbsolute(analyzer.breakevens.first.fromPrice, spotPrice);
   }
 
   static Iterable<CoveredCall> generateAll(Iterable<Market> allMarkets,
       {required Commodity underlying,
       required Commodity money,
       double slippage = 0.5}) sync* {
-    print("allMarkets in CC: $allMarkets");
     final oracle = Oracle.fromMarkets(allMarkets);
     final spotMarket = oracle.marketFor(asset: underlying, money: money);
     for (final call in allMarkets
@@ -133,7 +135,120 @@ class CoveredCall {
             expiration: call.asset.toExpirable.expiration,
             spotPrice: spotMarket.midPrice);
       } catch (e) {
-        print("Skipped Covered Call on $call due to error (see above)");
+        print("Skipped Covered Call on $call due to error: $e");
+      }
+    }
+  }
+}
+
+class LongCall {
+  final Commodity underlying;
+  final Commodity money;
+  final Option option;
+  final DateTime expiration;
+  final Market spotMarket;
+  final Market callMarket;
+
+  final PositionAnalyzer analyzer;
+
+  final Position strategy;
+  final Line optionLeg;
+  final Line moneyLeg;
+
+  final double spotPrice;
+  // Cost of the call in units of underlying.
+  final Line costInUnderlying;
+  late final double maxLeverage;
+
+  late final PriceInfo breakEvenVsFullUnderlying;
+  // This is also the hurdle.
+  late final PriceInfo breakEvenVsFullMoney;
+
+  String? get callURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
+
+  String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
+
+  String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
+
+  Map<String, dynamic> toJson() => {
+        'strategyType': 'longCall',
+        'strategyURL': strategyURL,
+        'maxLeverage': maxLeverage,
+
+        'underlying': underlying.name,
+        'underlyingURL': underlyingURL,
+        'costInUnderlying': costInUnderlying.size,
+        'costInMoney': moneyLeg.size,
+        'money': money.name,
+        'moneySize': moneyLeg.size,
+        'spotPrice': spotPrice,
+        'call': optionLeg.asset.name,
+        'callURL': callURL,
+        'callSize': optionLeg.size,
+        'DTE': expiration.daysLeft,
+        'formattedDate': expiration.formattedDate,
+
+        // // Where does this Long Call meet with the strategy of 100% underlying?
+        // 'breakEvenVsFullUnderlyingAbsolute': breakEvenVsFullUnderlying.absolute,
+        // 'breakEvenVsFullUnderlyingRelative': breakEvenVsFullUnderlying.relative,
+        // Where does this Long Call meet with the strategy of 100% money?
+        'breakEvenVsFullMoneyAbsolute': breakEvenVsFullMoney.absolute,
+        'breakEvenVsFullMoneyRelative': breakEvenVsFullMoney.relative,
+      };
+
+  @override
+  String toString() => jsonEncode(this);
+
+  LongCall._(this.strategy,
+      {required this.spotMarket,
+      required this.callMarket,
+      required this.underlying,
+      required this.money,
+      required this.option,
+      required this.expiration,
+      required this.spotPrice})
+      : analyzer =
+            PositionAnalyzer(strategy, underlying: underlying, money: money),
+        optionLeg = strategy[option],
+        moneyLeg = strategy[money],
+        costInUnderlying = spotMarket.toAsset(-strategy[money]) {
+    // TODO: construct even this via PositionAnalyzer!
+    breakEvenVsFullMoney =
+        PriceInfo.fromAbsolute(analyzer.breakevens.first.fromPrice, spotPrice);
+    maxLeverage = analyzer.deltaAfter(double.infinity) /
+        (option.contractLot * optionLeg.size);
+
+    // TODO: construct even this via PositionAnalyzer!
+    // breakEvenVsFullUnderlying = price(spotPrice * moneyYield, spotPrice);
+    // if (analyzer.breakevens.isEmpty) {
+    //   throw Exception("No breakeven!\nStrategy: $strategy\n"
+    //       "Analyzer: $analyzer");
+    // }
+  }
+
+  static Iterable<LongCall> generateAll(Iterable<Market> allMarkets,
+      {required Commodity underlying,
+      required Commodity money,
+      double slippage = 0.5}) sync* {
+    final oracle = Oracle.fromMarkets(allMarkets);
+    final spotMarket = oracle.marketFor(asset: underlying, money: money);
+    for (final call in allMarkets
+        .whereUnderlyingIs(underlying)
+        .calls
+        .coercedToMoney(money, oracle)
+        .sortByStrike(Order.asc)
+        .sortByExpiration(Order.asc)) {
+      try {
+        yield LongCall._(call.long(slippage) * call.asset.toOption.minSize,
+            spotMarket: spotMarket,
+            callMarket: call,
+            underlying: underlying,
+            money: money,
+            option: call.asset.toOption,
+            expiration: call.asset.toExpirable.expiration,
+            spotPrice: spotMarket.midPrice);
+      } catch (e) {
+        print("Skipped Long Call on $call due to error: $e");
       }
     }
   }
@@ -392,9 +507,12 @@ class PriceInfo {
   final double relative;
 
   PriceInfo(this.absolute, this.relative);
-}
 
-/// Helper to construct a price object pairing an absolute price
-/// with its relative value (e.g. against a spot price).
-PriceInfo price(double targetPrice, double basePrice) =>
-    PriceInfo(targetPrice, targetPrice / basePrice);
+  static PriceInfo fromAbsolute(
+          double absoluteTargetPrice, double baseAbsolutePrice) =>
+      PriceInfo(absoluteTargetPrice, absoluteTargetPrice / baseAbsolutePrice);
+
+  static PriceInfo fromRelative(
+          double relativeTargetPrice, double baseAbsolutePrice) =>
+      fromAbsolute(relativeTargetPrice * baseAbsolutePrice, baseAbsolutePrice);
+}
