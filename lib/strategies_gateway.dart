@@ -20,6 +20,12 @@ external set deribitSyntheticBondsDart(JSFunction value);
 @JS()
 external set yfinanceCoveredCallsDart(JSFunction value);
 
+@JS()
+external set deribitLongCallsDart(JSFunction value);
+
+@JS()
+external set yfinanceLongCallsDart(JSFunction value);
+
 UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 5));
 
 Future<List<Market>> deribitMarkets(
@@ -37,6 +43,16 @@ Future<String> deribitCoveredCalls(
     String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
   return jsonEncode(CoveredCall.generateAll(markets,
+          underlying: Commodity(ticker, venues: const {Venue.Deribit}),
+          money: Commodity("USD"),
+          slippage: slippage)
+      .toList());
+}
+
+Future<String> deribitLongCalls(
+    String ticker, double slippage, int minDTE, int maxDTE) async {
+  List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
+  return jsonEncode(LongCall.generateAll(markets,
           underlying: Commodity(ticker, venues: const {Venue.Deribit}),
           money: Commodity("USD"),
           slippage: slippage)
@@ -74,6 +90,17 @@ Future<String> yfinanceCoveredCalls(
       .toList());
 }
 
+Future<String> yfinanceLongCalls(
+    String ticker, double slippage, int minDTE, int maxDTE) async {
+  List<Market> markets = await (await YFinance.openConnection(_urlFetcher))
+      .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
+  return jsonEncode(LongCall.generateAll(markets,
+          underlying: Commodity(ticker, venues: const {Venue.OptionStrat}),
+          money: Commodity("USD"),
+          slippage: slippage)
+      .toList());
+}
+
 void setupJsInterop() {
   deribitCoveredCallsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
@@ -100,6 +127,22 @@ void setupJsInterop() {
   yfinanceCoveredCallsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
     return yfinanceCoveredCalls(ticker.toDart, slippage.toDartDouble,
+            minDTE.toDartInt, maxDTE.toDartInt)
+        .then((value) => value.toJS)
+        .toJS;
+  }.toJS;
+
+  deribitLongCallsDart =
+      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return deribitLongCalls(ticker.toDart, slippage.toDartDouble,
+            minDTE.toDartInt, maxDTE.toDartInt)
+        .then((value) => value.toJS)
+        .toJS;
+  }.toJS;
+
+  yfinanceLongCallsDart =
+      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return yfinanceLongCalls(ticker.toDart, slippage.toDartDouble,
             minDTE.toDartInt, maxDTE.toDartInt)
         .then((value) => value.toJS)
         .toJS;
