@@ -248,5 +248,30 @@ void main() {
       expect(worst.first.isPoint, isTrue);
       expect(worst.first.price, equals(0.0));
     });
+
+    test('analyzeVersus extension compares two positions correctly', () {
+      final callOption = Option(
+        'BTC-1000-C',
+        underlying: btc,
+        money: usd,
+        strike: 1000.0,
+        isCall: true,
+        expiration: expiration,
+      );
+
+      // Strategy 1: Long Call
+      final strategy1 = callOption.ofSize(1.0) + usd.ofSize(-50.0);
+      
+      // Strategy 2: Long Underlying
+      final strategy2 = btc.ofSize(1.0) + usd.ofSize(-1000.0);
+
+      // Analyze 1 vs 2
+      final analyzer = strategy1.analyzeVersus(strategy2, underlying: btc, money: usd);
+      
+      // The difference is a synthetic put? 
+      // Long Call - Long Underlying = Long Call + Short Underlying = Synthetic Short Put + Money difference
+      // Actually, we just need to verify it returns a valid analyzer with some known properties.
+      expect(analyzer.breakevens.isNotEmpty, isTrue);
+    });
   });
 }

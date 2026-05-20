@@ -83,6 +83,7 @@ class PositionAnalyzer {
 
   // Transforms a position to a position of different size, such as
   // the resulting position has the same maxRisk as this PositionAnalyzer.
+  // TODO: unused
   PositionAnalyzer equalizeRisk(Position position) => PositionAnalyzer(
       position *
           (maxRisk /
@@ -257,3 +258,14 @@ class _PnLSegment {
   String toString() => "[($minPrice..$maxPrice), "
       "minValue=$minValue, maxValue=$maxValue, delta=$delta]";
 }
+
+extension PositionAnalysis on Position {
+  /// Analyzes the relative performance of this position compared to another, 
+  /// useful for determining crossover points (breakevens) between two strategies.
+  PositionAnalyzer analyzeVersus(Position other,
+      {required Commodity underlying, required Commodity money}) {
+    return PositionAnalyzer(this - other,
+        underlying: underlying, money: money);
+  }
+}
+

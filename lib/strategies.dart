@@ -96,15 +96,19 @@ class CoveredCall {
     moneyYield = analyzer.maxYield;
     underlyingYield = premiumToReceive.size / underlyingToBuy.size + 1.0;
     moneyProfit = analyzer.maxProfit;
-    // TODO: construct even this via PositionAnalyzer!
-    breakEvenVsFullUnderlying =
-        PriceInfo.fromAbsolute(spotPrice * moneyYield, spotPrice);
+    breakEvenVsFullUnderlying = PriceInfo.fromAbsolute(
+        strategy
+            .analyzeVersus(moneyLeg + spotMarket.toAsset(-moneyLeg),
+                underlying: underlying, money: money)
+            .breakevens
+            .last
+            .price,
+        spotPrice);
     if (analyzer.breakevens.isEmpty) {
       throw Exception("No breakeven!\nStrategy: $strategy\n"
           "Analyzer: $analyzer");
     }
     // Breakeven could be a whole range, for a profit-less strategy.
-    // TODO: construct even this via PositionAnalyzer!
     breakEvenVsFullMoney =
         PriceInfo.fromAbsolute(analyzer.breakevens.first.fromPrice, spotPrice);
   }
@@ -188,9 +192,9 @@ class LongCall {
         'DTE': expiration.daysLeft,
         'formattedDate': expiration.formattedDate,
 
-        // // Where does this Long Call meet with the strategy of 100% underlying?
-        // 'breakEvenVsFullUnderlyingAbsolute': breakEvenVsFullUnderlying.absolute,
-        // 'breakEvenVsFullUnderlyingRelative': breakEvenVsFullUnderlying.relative,
+        // Where does this Long Call meet with the strategy of 100% underlying?
+        'breakEvenVsFullUnderlyingAbsolute': breakEvenVsFullUnderlying.absolute,
+        'breakEvenVsFullUnderlyingRelative': breakEvenVsFullUnderlying.relative,
         // Where does this Long Call meet with the strategy of 100% money?
         'breakEvenVsFullMoneyAbsolute': breakEvenVsFullMoney.absolute,
         'breakEvenVsFullMoneyRelative': breakEvenVsFullMoney.relative,
@@ -212,18 +216,22 @@ class LongCall {
         optionLeg = strategy[option],
         moneyLeg = strategy[money],
         costInUnderlying = spotMarket.toAsset(-strategy[money]) {
-    // TODO: construct even this via PositionAnalyzer!
+    if (analyzer.breakevens.isEmpty) {
+      throw Exception("No breakeven!\nStrategy: $strategy\n"
+          "Analyzer: $analyzer");
+    }
     breakEvenVsFullMoney =
         PriceInfo.fromAbsolute(analyzer.breakevens.first.fromPrice, spotPrice);
+
+    final breakevensVsUnderlying = strategy
+        .analyzeVersus(moneyLeg + spotMarket.toAsset(-moneyLeg),
+            underlying: underlying, money: money)
+        .breakevens;
+    breakEvenVsFullUnderlying =
+        PriceInfo.fromAbsolute(breakevensVsUnderlying.last.price, spotPrice);
+
     maxLeverage = analyzer.deltaAfter(double.infinity) /
         (option.contractLot * optionLeg.size);
-
-    // TODO: construct even this via PositionAnalyzer!
-    // breakEvenVsFullUnderlying = price(spotPrice * moneyYield, spotPrice);
-    // if (analyzer.breakevens.isEmpty) {
-    //   throw Exception("No breakeven!\nStrategy: $strategy\n"
-    //       "Analyzer: $analyzer");
-    // }
   }
 
   static Iterable<LongCall> generateAll(Iterable<Market> allMarkets,
