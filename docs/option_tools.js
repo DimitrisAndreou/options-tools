@@ -47,14 +47,17 @@ function prepareCCData(value) {
 
   return {
     underlying,
-    underlyingName: value.underlyingURL ? `<a href="${value.underlyingURL}" target="_blank" style="color: inherit; text-decoration: underline;">${underlying}</a>` : underlying,
+    underlyingName: underlying,
+    underlyingURL: value.underlyingURL,
     money,
-    strategyName: value.strategyURL ? `<a href="${value.strategyURL}" target="_blank" style="color: inherit; text-decoration: underline;">Covered Call</a>` : 'Covered Call',
+    strategyName: 'Covered Call',
+    strategyURL: value.strategyURL,
     formattedDate: value.formattedDate,
     DTE: value.DTE,
     strikeAbsolute: dollarFmt.format(value.strikeAbsolute),
     strikeRelative: percentFmt.format(value.strikeAbsolute / value.spotPrice - 1.0),
-    callName: value.callURL ? `<a href="${value.callURL}" target="_blank" style="color: inherit; text-decoration: underline;">${value.call}</a>` : value.call,
+    callName: value.call,
+    callURL: value.callURL,
     capitalRequired: dollarFmt.format(-value.moneySize),
     capitalRequiredUnderlying: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
 
@@ -77,17 +80,6 @@ function prepareCCData(value) {
     sellPremium: `${underlyingFmt.format(value.premiumToReceive)} ${underlying}`
   };
 }
-
-// Semantic color helpers for a premium look
-const fmtStyle = {
-  label: (str) => `<span class="text-label">${str}</span>`,
-  neutral: (str) => `<span class="text-neutral">${str}</span>`,
-  good: (str) => `<span class="text-good">${str}</span>`,
-  bad: (str) => `<span class="text-bad">${str}</span>`,
-  header: (str) => `<div class="strategy-header"><i class="fas fa-cube me-2"></i> ${str}</div>`
-};
-
-
 
 function renderTooltipCC(d) {
   return `
@@ -216,6 +208,14 @@ function populateStrategyDetails(dataObj) {
     for (const [key, value] of Object.entries(d)) {
       clone.querySelectorAll(`.tpl-${key}`).forEach(el => {
         el.innerHTML = value;
+      });
+      clone.querySelectorAll(`.tpl-href-${key}`).forEach(el => {
+        if (value) {
+          el.href = value;
+        } else {
+          // If there is no URL, unwrap the link
+          el.outerHTML = el.innerHTML;
+        }
       });
     }
 
