@@ -102,10 +102,14 @@
       <!-- Chart -->
       <div class="col-lg-7 col-12">
         <div class="card mb-4 mb-lg-0 h-100">
-          <div class="card-header">
-            <h5>
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
               <i class="fas fa-chart-line me-2 text-primary"></i>Strategies
             </h5>
+            <select id="strategy-select" class="form-select form-select-sm w-auto bg-dark text-white border-secondary">
+              <option value="coveredCall">Covered Calls</option>
+              <option value="longCall">Long Calls</option>
+            </select>
           </div>
           <div class="card-body">
             <div id="strategyChartContainer" class="chart-container"></div>
@@ -152,7 +156,10 @@
 
   <template id="coveredCall-details-template">
     <div class="strategy-header">
-      <i class="fas fa-cube me-2"></i> <a href="#" class="tpl-href-strategyURL" target="_blank" style="color: inherit; text-decoration: underline;"><span class="tpl-strategyName">Covered Call</span></a>&nbsp;on&nbsp;<a href="#" class="text-neutral tpl-href-underlyingURL" target="_blank" style="text-decoration: underline;"><span class="text-neutral tpl-underlyingName"></span></a>
+      <i class="fas fa-cube me-2"></i> <a href="#" class="tpl-href-strategyURL" target="_blank"
+        style="color: inherit; text-decoration: underline;"><span class="tpl-strategyName">Covered
+          Call</span></a>&nbsp;on&nbsp;<a href="#" class="text-neutral tpl-href-underlyingURL" target="_blank"
+        style="text-decoration: underline;"><span class="text-neutral tpl-underlyingName"></span></a>
     </div>
 
     <table class="strategy-table">
@@ -168,7 +175,8 @@
       </tr>
       <tr>
         <td><span class="text-label">Contract</span></td>
-        <td class="text-end contract-name"><a href="#" class="text-neutral tpl-href-callURL" target="_blank" style="text-decoration: underline;"><span class="text-neutral tpl-callName"></span></a></td>
+        <td class="text-end contract-name"><a href="#" class="text-neutral tpl-href-callURL" target="_blank"
+            style="text-decoration: underline;"><span class="text-neutral tpl-callName"></span></a></td>
       </tr>
       <tr>
         <td><span class="text-label">Capital Required</span></td>
@@ -218,6 +226,62 @@
       </div>
     </div>
   </template>
+
+  <template id="longCall-details-template">
+    <div class="strategy-header">
+      <i class="fas fa-arrow-trend-up me-2"></i> <a href="#" class="tpl-href-strategyURL" target="_blank"
+        style="color: inherit; text-decoration: underline;"><span class="tpl-strategyName">Long
+          Call</span></a>&nbsp;on&nbsp;<a href="#" class="text-neutral tpl-href-underlyingURL" target="_blank"
+        style="text-decoration: underline;"><span class="text-neutral tpl-underlyingName"></span></a>
+    </div>
+
+    <table class="strategy-table">
+      <tr>
+        <td><span class="text-label">Expiration</span></td>
+        <td class="text-end"><span class="text-neutral tpl-formattedDate"></span> <small class="text-bad">(<span
+              class="tpl-DTE"></span>d)</small></td>
+      </tr>
+      <tr>
+        <td><span class="text-label">Contract</span></td>
+        <td class="text-end contract-name"><a href="#" class="text-neutral tpl-href-callURL" target="_blank"
+            style="text-decoration: underline;"><span class="text-neutral tpl-callName"></span></a></td>
+      </tr>
+      <tr>
+        <td><span class="text-label">Capital Required</span></td>
+        <td class="text-end"><span class="text-neutral tpl-capitalRequired"></span> <small class="text-muted-alt">(<span
+              class="text-neutral tpl-capitalRequiredUnderlying"></span>)</small></td>
+      </tr>
+      <tr>
+        <td><span class="text-label">Leverage</span></td>
+        <td class="text-end"><span class="text-good tpl-maxLeverage"></span></td>
+      </tr>
+    </table>
+
+    <div class="warnings-panel">
+      <div class="warning-row">
+        <i class="fas fa-rocket me-1 text-warning-icon"></i>
+        If <span class="tpl-underlying"></span> surpasses <span class="text-good tpl-capAbsolute"></span> (<span
+          class="text-good tpl-capRelative"></span>),
+        you will have <span class="text-good">more</span> <span class="tpl-underlying"></span> than starting with a 100%
+        <span class="tpl-underlying"></span> allocation. As if you had <span class="text-good tpl-maxLeverage"></span>
+        bigger long <span class="tpl-underlying"></span> position!
+      </div>
+      <div class="warning-row">
+        <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
+        If <span class="tpl-underlying"></span> is not above <span class="text-bad tpl-beAbsolute"></span> (<span
+          class="text-bad tpl-beRelative"></span>),
+        you will have <span class="text-bad">less</span> <span class="tpl-money"></span> than starting with a 100% <span
+          class="tpl-money"></span> allocation.
+      </div>
+      <div class="warning-row">
+        <i class="fas fa-skull-crossbones me-1 text-warning-icon"></i>
+        If <span class="tpl-underlying"></span> is below <span class="text-neutral tpl-strikeAbsolute"></span> (<span
+          class="text-neutral tpl-strikeRelative"></span>),
+        <b>you lose the entire (<span class="text-bad">-100%</span>) invested capital</b>.
+      </div>
+    </div>
+  </template>
+
 
   <!-- Bootstrap JS Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,17 +1,43 @@
-async function loadData(ticker, slippage, minDte, maxDte) {
+async function loadCoveredCalls(ticker, slippage, minDte, maxDte, chartDom) {
+  const coveredCallsJson = JSON.parse(await (
+    ticker === "BTC" || ticker === "ETH" || ticker === "SOL"
+      ? deribitCoveredCallsDart(ticker, slippage, minDte, maxDte)
+      : yfinanceCoveredCallsDart(ticker, slippage, minDte, maxDte)
+  ));
+  console.log({ coveredCallsJson });
+  renderCoveredCallsChart(coveredCallsJson, chartDom);
+
+  document.getElementById('spot-ticker-name').textContent = ticker;
+  document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(coveredCallsJson));
+}
+
+async function loadLongCalls(ticker, slippage, minDte, maxDte, chartDom) {
+  const longCallsJson = JSON.parse(await (
+    ticker === "BTC" || ticker === "ETH" || ticker === "SOL"
+      ? deribitLongCallsDart(ticker, slippage, minDte, maxDte)
+      : yfinanceLongCallsDart(ticker, slippage, minDte, maxDte)
+  ));
+  console.log({ longCallsJson });
+  renderLongCallsChart(longCallsJson, chartDom);
+
+  document.getElementById('spot-ticker-name').textContent = ticker;
+  document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(longCallsJson));
+}
+
+async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) {
   if (!ticker) return;
   try {
-    const coveredCallsJson = JSON.parse(await (
-      ticker === "BTC" || ticker === "ETH" || ticker === "SOL" ||
-        ticker === "AVAX" || ticker === "TRX" || ticker === "XRP"
-        ? deribitCoveredCallsDart(ticker, slippage, minDte, maxDte)
-        : yfinanceCoveredCallsDart(ticker, slippage, minDte, maxDte)
-    ));
-    console.log({ coveredCallsJson });
-    renderStrategyChart(coveredCallsJson, "strategyChartContainer");
+    let chartDom = document.getElementById("strategyChartContainer");
+    let existingChart = echarts.getInstanceByDom(chartDom);
+    if (existingChart) existingChart.dispose();
 
-    document.getElementById('spot-ticker-name').textContent = ticker;
-    document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(coveredCallsJson));
+    if (strategyName === 'coveredCall') {
+      await loadCoveredCalls(ticker, slippage, minDte, maxDte, chartDom);
+    } else if (strategyName === 'longCall') {
+      await loadLongCalls(ticker, slippage, minDte, maxDte, chartDom);
+    } else {
+      console.warn(`Strategy ${strategyName} is not implemented yet.`);
+    }
   } catch (error) {
     console.error("JavaScript caught Dart error:", error.error);
     console.error("Dart stack trace:", error.stack);
@@ -30,6 +56,7 @@ async function jsMain() {
   if (ticker) {
     ticker = ticker.toUpperCase();
   }
+  let strategy = urlParams.get('strategy') || 'coveredCall';
 
   const initialSlippage = urlParams.get('slippage');
   const initialMinDTE = urlParams.get('minDTE');
@@ -104,19 +131,36 @@ async function jsMain() {
     }
   }
 
+  const strategySelect = document.getElementById('strategy-select');
+  if (strategySelect) {
+    strategySelect.value = strategy;
+    strategySelect.addEventListener('change', (e) => {
+      strategy = e.target.value;
+      reloadData();
+    });
+  }
+
   function reloadData() {
     if (!ticker) return;
-    const slippage = slippageInput ? parseFloat(slippageInput.value) : 0.0;
+    const slippage = slippageInput ? parseFloat(slippageInput.value) : 0.5;
     const minDte = minDteInput ? parseInt(minDteInput.value, 10) : 7;
-    const maxDte = maxDteInput ? parseInt(maxDteInput.value, 10) : 1095;
+    const maxDte = maxDteInput ? parseInt(maxDteInput.value, 10) : 1092;
 
     const url = new URL(window.location);
-    url.searchParams.set('slippage', slippage);
-    url.searchParams.set('minDTE', minDte);
-    url.searchParams.set('maxDTE', maxDte);
+    if (slippage !== 0.5) url.searchParams.set('slippage', slippage);
+    else url.searchParams.delete('slippage');
+
+    if (minDte !== 7) url.searchParams.set('minDTE', minDte);
+    else url.searchParams.delete('minDTE');
+
+    if (maxDte !== 1092) url.searchParams.set('maxDTE', maxDte);
+    else url.searchParams.delete('maxDTE');
+
+    if (strategy !== 'coveredCall') url.searchParams.set('strategy', strategy);
+    else url.searchParams.delete('strategy');
     window.history.replaceState({}, '', url);
 
-    loadData(ticker, slippage, minDte, maxDte);
+    loadStrategyData(ticker, slippage, minDte, maxDte, strategy);
   }
 
   if (slippageInput && slippageValueDisplay) {

@@ -160,6 +160,7 @@ class LongCall {
   final Line moneyLeg;
 
   final double spotPrice;
+  final PriceInfo strikePrice;
   // Cost of the call in units of underlying.
   final Line costInUnderlying;
   late final double maxLeverage;
@@ -182,15 +183,16 @@ class LongCall {
         'underlying': underlying.name,
         'underlyingURL': underlyingURL,
         'costInUnderlying': costInUnderlying.size,
-        'costInMoney': moneyLeg.size,
+        'costInMoney': -moneyLeg.size,
         'money': money.name,
-        'moneySize': moneyLeg.size,
         'spotPrice': spotPrice,
         'call': optionLeg.asset.name,
         'callURL': callURL,
         'callSize': optionLeg.size,
         'DTE': expiration.daysLeft,
         'formattedDate': expiration.formattedDate,
+        'strikeAbsolute': strikePrice.absolute,
+        'strikeRelative': strikePrice.relative,
 
         // Where does this Long Call meet with the strategy of 100% underlying?
         'breakEvenVsFullUnderlyingAbsolute': breakEvenVsFullUnderlying.absolute,
@@ -215,7 +217,8 @@ class LongCall {
             PositionAnalyzer(strategy, underlying: underlying, money: money),
         optionLeg = strategy[option],
         moneyLeg = strategy[money],
-        costInUnderlying = spotMarket.toAsset(-strategy[money]) {
+        costInUnderlying = spotMarket.toAsset(-strategy[money]),
+        strikePrice = PriceInfo.fromAbsolute(option.strike, spotPrice) {
     if (analyzer.breakevens.isEmpty) {
       throw Exception("No breakeven!\nStrategy: $strategy\n"
           "Analyzer: $analyzer");
@@ -230,8 +233,10 @@ class LongCall {
     breakEvenVsFullUnderlying =
         PriceInfo.fromAbsolute(breakevensVsUnderlying.last.price, spotPrice);
 
-    maxLeverage = analyzer.deltaAfter(double.infinity) /
-        (option.contractLot * optionLeg.size);
+    // TODO: compute this as follows:
+    // analyzer.deltaAfter(double.infinity) /
+    // analyzer(fullUnderlyingStrategy).deltaAfter(double.infinity)
+    maxLeverage = optionLeg.size / costInUnderlying.size;
   }
 
   static Iterable<LongCall> generateAll(Iterable<Market> allMarkets,
