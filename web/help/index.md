@@ -4,6 +4,195 @@ title: Options Lab Documentation
 favicon: /options-tools/favicon.jpg
 ---
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
+<style>
+  /* Root color definitions matching index.html */
+  body, html {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    line-height: 1.75 !important;
+  }
+  
+  /* Container layout override to fit premium docs style */
+  .markdown-body, main, .page-content, .wrapper {
+    max-width: 850px !important;
+    margin: 0 auto !important;
+    padding: 2rem 1.5rem !important;
+    background-color: #0f172a !important;
+  }
+  
+  /* Typography and Headings */
+  h1, h2, h3, h4 {
+    color: #fcd34d !important; /* Accent Gold */
+    font-weight: 700 !important;
+    margin-top: 2.5rem !important;
+    margin-bottom: 1rem !important;
+    border-bottom: 1px solid #334155 !important;
+    padding-bottom: 0.5rem !important;
+  }
+  h1 {
+    font-size: 2.25rem !important;
+    color: #38bdf8 !important; /* Primary Blue for main title */
+    border-bottom: 2px solid #38bdf8 !important;
+    margin-top: 0 !important;
+  }
+  h3 {
+    font-size: 1.3rem !important;
+    color: #cbd5e1 !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-top: 1.5rem !important;
+  }
+  
+  /* Links & Hover States */
+  a {
+    color: #38bdf8 !important;
+    text-decoration: underline !important;
+    transition: color 0.15s ease !important;
+  }
+  a:hover {
+    color: #00ffa3 !important; /* Success Green for hover transitions */
+  }
+  
+  /* Navigation Button Style */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background-color: #1e293b;
+    color: #38bdf8 !important;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    text-decoration: none !important;
+    font-weight: bold;
+    margin-bottom: 2rem;
+    transition: all 0.2s ease !important;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  }
+  .back-btn:hover {
+    background-color: #38bdf8;
+    color: #0f172a !important;
+    border-color: #38bdf8;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.3);
+  }
+  .back-btn i {
+    transition: transform 0.2s ease;
+  }
+  .back-btn:hover i {
+    transform: translateX(-4px);
+  }
+  
+  /* Alerts / Blockquotes */
+  blockquote, .note {
+    background-color: #1e293b !important;
+    border-left: 4px solid #38bdf8 !important;
+    border-radius: 6px !important;
+    color: #cbd5e1 !important;
+    padding: 1.25rem 1.5rem !important;
+    margin: 2rem 0 !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2) !important;
+  }
+  blockquote p {
+    margin: 0 !important;
+  }
+  
+  /* Inline code & Code Blocks */
+  code {
+    font-family: 'Roboto Mono', monospace !important;
+    background-color: #1e293b !important;
+    color: #fcd34d !important;
+    padding: 0.2rem 0.4rem !important;
+    border-radius: 4px !important;
+    border: 1px solid #334155 !important;
+    font-size: 0.9em !important;
+  }
+  pre {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+    padding: 1.25rem !important;
+    overflow-x: auto !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3) !important;
+  }
+  pre code {
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    color: #f8fafc !important;
+  }
+  
+  /* Target Jekyll's Native Kramdown Auto-Generated TOC (#markdown-toc) */
+  #markdown-toc {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.5rem 1.5rem 1.5rem 2.5rem !important;
+    margin: 2rem 0;
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.4);
+    list-style-type: decimal !important;
+  }
+  
+  /* Add Header Icon & Styling to TOC */
+  #markdown-toc::before {
+    content: "\f0ca   Table of Contents";
+    font-family: 'Font Awesome 6 Free', 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: 1.15rem;
+    color: #fcd34d;
+    display: block;
+    margin-bottom: 1rem;
+    margin-left: -1.2rem;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 0.6rem;
+  }
+  
+  #markdown-toc li {
+    margin-bottom: 0.6rem;
+    font-weight: 600;
+  }
+  
+  #markdown-toc li a {
+    text-decoration: none !important;
+    color: #38bdf8 !important;
+    display: inline-block;
+  }
+  
+  #markdown-toc li a:hover {
+    text-decoration: underline !important;
+    color: #00ffa3 !important;
+  }
+  
+  /* Subsections (nested lists) */
+  #markdown-toc ul {
+    list-style-type: none !important;
+    padding-left: 1.5rem !important;
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
+    border-left: 1px dashed #475569;
+  }
+  
+  #markdown-toc ul li {
+    margin-bottom: 0.4rem;
+    font-weight: normal;
+    font-size: 0.95rem;
+  }
+  
+  #markdown-toc ul li a {
+    color: #94a3b8 !important;
+  }
+  
+  #markdown-toc ul li a:hover {
+    color: #38bdf8 !important;
+  }
+</style>
+
+<a href="../" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Options Lab</a>
+
 # Options Lab: Visualizing Strategy _Families_!
 
 > [!NOTE]
@@ -19,6 +208,9 @@ The primary focus of the tool is helping you understand _covered calls_, which i
 the most quintessential options strategy relevant to virtually _everyone_ (see below).
 
 Other strategies are also included and offered in the same spirit of the "entire market at a glance" concept.
+
+* TOC
+{:toc}
 
 ## A note on terminology
 
@@ -44,7 +236,6 @@ Anything else is fetched from Yahoo Finance, which supports options for American
 
 > [!NOTE]
 > The Yahoo Finance integration is currently only compatible with Google Chrome.
-
 
 ## Loading Data
 
@@ -124,4 +315,4 @@ These intermediate choices are also not the same as, "oh let's do 60% allocation
 in the stock, and let's keep the remaining 40% as cash-equivalent". That combination
 would be equivalent to _two_ covered calls, one simulating the stock allocation,
 one simulating the cash allocation. The intermediate choices offered by covered calls
-are allocating _the entire capital_ in a single strategy. 
+are allocating _the entire capital_ in a single strategy.
