@@ -267,6 +267,136 @@ class LongCall {
   }
 }
 
+class LongPut {
+  final Commodity underlying;
+  final Commodity money;
+  final Option option;
+  final DateTime expiration;
+  final Market spotMarket;
+  final Market putMarket;
+
+  final PositionAnalyzer analyzer;
+
+  final Position strategy;
+  final Line optionLeg;
+  final Line moneyLeg;
+
+  final double spotPrice;
+  final PriceInfo strikePrice;
+  // Cost of the put in units of underlying.
+  final Line costInUnderlying;
+  late final double maxLeverage;
+
+  // Referring to the money Yield (the profit, relative to the capital used) if the underlying goes to zero!
+  late final double maxMoneyYield;
+  // Referring to the money Profit (the absolute profit) if the underlying goes to zero!
+  late final double maxMoneyProfit;
+
+  late final PriceInfo breakEvenVsFullUnderlying;
+  // This is also the hurdle.
+  late final PriceInfo breakEvenVsFullMoney;
+
+  String? get putURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
+
+  String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
+
+  String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
+
+  Map<String, dynamic> toJson() => {
+        'strategyType': 'longPut',
+        'strategyURL': strategyURL,
+        'maxLeverage': maxLeverage,
+        'maxMoneyYield': maxMoneyYield,
+        'maxMoneyProfit': maxMoneyProfit,
+        'underlying': underlying.name,
+        'underlyingURL': underlyingURL,
+        'costInUnderlying': costInUnderlying.size,
+        'costInMoney': -moneyLeg.size,
+        'money': money.name,
+        'spotPrice': spotPrice,
+        'put': optionLeg.asset.name,
+        'putURL': putURL,
+        'putSize': optionLeg.size,
+        'DTE': expiration.daysLeft,
+        'formattedDate': expiration.formattedDate,
+        'strikeAbsolute': strikePrice.absolute,
+        'strikeRelative': strikePrice.relative,
+
+        // Where does this Long Put meet with the strategy of 100% underlying?
+        'breakEvenVsFullUnderlyingAbsolute': breakEvenVsFullUnderlying.absolute,
+        'breakEvenVsFullUnderlyingRelative': breakEvenVsFullUnderlying.relative,
+        // Where does this Long Put meet with the strategy of 100% money?
+        'breakEvenVsFullMoneyAbsolute': breakEvenVsFullMoney.absolute,
+        'breakEvenVsFullMoneyRelative': breakEvenVsFullMoney.relative,
+      };
+
+  @override
+  String toString() => jsonEncode(this);
+
+  LongPut._(this.strategy,
+      {required this.spotMarket,
+      required this.putMarket,
+      required this.underlying,
+      required this.money,
+      required this.option,
+      required this.expiration,
+      required this.spotPrice})
+      : analyzer =
+            PositionAnalyzer(strategy, underlying: underlying, money: money),
+        optionLeg = strategy[option],
+        moneyLeg = strategy[money],
+        costInUnderlying = spotMarket.toAsset(-strategy[money]),
+        strikePrice = PriceInfo.fromAbsolute(option.strike, spotPrice) {
+    if (analyzer.breakevens.isEmpty) {
+      throw Exception("No breakeven!\nStrategy: $strategy\n"
+          "Analyzer: $analyzer");
+    }
+    breakEvenVsFullMoney =
+        PriceInfo.fromAbsolute(analyzer.breakevens.first.fromPrice, spotPrice);
+
+    final breakevensVsUnderlying = strategy
+        .analyzeVersus(moneyLeg + spotMarket.toAsset(-moneyLeg),
+            underlying: underlying, money: money)
+        .breakevens;
+    breakEvenVsFullUnderlying =
+        PriceInfo.fromAbsolute(breakevensVsUnderlying.last.price, spotPrice);
+
+    // TODO: compute this as follows:
+    // analyzer.deltaBefore(0.0) /
+    // analyzer(fullUnderlyingStrategy).deltaBefore(0.0)
+    maxLeverage = optionLeg.size / costInUnderlying.size;
+    maxMoneyYield = analyzer.maxYield;
+    maxMoneyProfit = analyzer.maxProfit;
+  }
+
+  static Iterable<LongPut> generateAll(Iterable<Market> allMarkets,
+      {required Commodity underlying,
+      required Commodity money,
+      double slippage = 0.5}) sync* {
+    final oracle = Oracle.fromMarkets(allMarkets);
+    final spotMarket = oracle.marketFor(asset: underlying, money: money);
+    for (final put in allMarkets
+        .whereUnderlyingIs(underlying)
+        .puts
+        .coercedToMoney(money, oracle)
+        .sortByStrike(Order.desc)
+        .sortByExpiration(Order.asc)) {
+      try {
+        yield LongPut._(put.long(slippage) * put.asset.toOption.minSize,
+            spotMarket: spotMarket,
+            putMarket: put,
+            underlying: underlying,
+            money: money,
+            option: put.asset.toOption,
+            expiration: put.asset.toExpirable.expiration,
+            spotPrice: spotMarket.midPrice);
+      } catch (e) {
+        print("Skipped Long Put on $put due to error: $e");
+      }
+    }
+  }
+}
+
 class SyntheticBond {
   final Commodity underlying;
   final Commodity money;

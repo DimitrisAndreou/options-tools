@@ -11,17 +11,17 @@ async function loadCoveredCalls(ticker, slippage, minDte, maxDte, chartDom) {
   document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(coveredCallsJson));
 }
 
-async function loadLongCalls(ticker, slippage, minDte, maxDte, chartDom) {
-  const longCallsJson = JSON.parse(await (
+async function loadLongOptions(ticker, slippage, minDte, maxDte, chartDom) {
+  const longOptionsJson = JSON.parse(await (
     ticker === "BTC" || ticker === "ETH" || ticker === "SOL"
-      ? deribitLongCallsDart(ticker, slippage, minDte, maxDte)
-      : yfinanceLongCallsDart(ticker, slippage, minDte, maxDte)
+      ? deribitLongOptionsDart(ticker, slippage, minDte, maxDte)
+      : yfinanceLongOptionsDart(ticker, slippage, minDte, maxDte)
   ));
-  console.log({ longCallsJson });
-  renderLongCallsChart(longCallsJson, chartDom);
+  console.log({ longOptionsJson });
+  renderLongOptionsChart(longOptionsJson, chartDom);
 
   document.getElementById('spot-ticker-name').textContent = ticker;
-  document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(longCallsJson));
+  document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(longOptionsJson));
 }
 
 async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) {
@@ -33,8 +33,8 @@ async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) 
 
     if (strategyName === 'coveredCall') {
       await loadCoveredCalls(ticker, slippage, minDte, maxDte, chartDom);
-    } else if (strategyName === 'longCall') {
-      await loadLongCalls(ticker, slippage, minDte, maxDte, chartDom);
+    } else if (strategyName === 'longOption') {
+      await loadLongOptions(ticker, slippage, minDte, maxDte, chartDom);
     } else {
       console.warn(`Strategy ${strategyName} is not implemented yet.`);
     }

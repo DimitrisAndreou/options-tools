@@ -108,7 +108,7 @@
             </h5>
             <select id="strategy-select" class="form-select form-select-sm w-auto bg-dark text-white border-secondary">
               <option value="coveredCall">Covered Calls</option>
-              <option value="longCall">Long Calls</option>
+              <option value="longOption">Long Options</option>
             </select>
           </div>
           <div class="card-body">
@@ -188,12 +188,12 @@
     <div class="outcomes-panel">
       <div class="outcomes-header">Outcomes at Expiration:</div>
       <div class="outcome-row">
-        <span>If Price &ge; <span class="tpl-strikeAbsolute"></span>:</span>
+        <span>If <span class="tpl-underlying"></span> &ge; <span class="tpl-strikeAbsolute"></span>:</span>
         <span><span class="text-good tpl-moneyYield"></span> <span class="text-good tpl-money"></span> <small
             class="text-good-alt">(+<span class="tpl-moneyProfit"></span>)</small></span>
       </div>
       <div class="outcome-row mb-0">
-        <span>If Price &lt; <span class="tpl-strikeAbsolute"></span>:</span>
+        <span>If <span class="tpl-underlying"></span> &lt; <span class="tpl-strikeAbsolute"></span>:</span>
         <span><span class="text-good tpl-underlyingYield"></span> <span class="text-good tpl-underlying"></span> <small
             class="text-good-alt">(+<span class="tpl-underlyingProfit"></span>)</small></span>
       </div>
@@ -255,6 +255,12 @@
         <td><span class="text-label">Leverage</span></td>
         <td class="text-end"><span class="text-good tpl-maxLeverage"></span></td>
       </tr>
+      <tr>
+        <td><span class="text-label">Price for Profit</span></td>
+        <td class="text-end"><span class="text-neutral"><span class="tpl-underlying"></span> &ge; <span
+              class="tpl-beAbsolute"></span></span> <small class="text-bad">(<span
+              class="tpl-beRelative"></span>)</small></td>
+      </tr>
     </table>
 
     <div class="warnings-panel">
@@ -278,6 +284,90 @@
         If <span class="tpl-underlying"></span> is below <span class="text-neutral tpl-strikeAbsolute"></span> (<span
           class="text-neutral tpl-strikeRelative"></span>),
         <b>you lose the entire (<span class="text-bad">-100%</span>) invested capital</b>.
+      </div>
+    </div>
+
+    <div class="instructions-panel">
+      <div class="instructions-header">Execution Instructions</div>
+      <div class="instructions-content">
+        &bull; <b>Buy</b> <span class="text-good tpl-callSize"></span> call(s) for <span
+          class="text-bad tpl-costInMoney"></span> <span class="text-neutral">(<span
+            class="tpl-costInUnderlying"></span> <span class="tpl-underlying"></span>)</span>
+      </div>
+    </div>
+  </template>
+
+  <template id="longPut-details-template">
+    <div class="strategy-header">
+      <i class="fas fa-arrow-trend-down me-2"></i> <a href="#" class="tpl-href-strategyURL" target="_blank"
+        style="color: inherit; text-decoration: underline;"><span class="tpl-strategyName">Long
+          Put</span></a>&nbsp;on&nbsp;<a href="#" class="text-neutral tpl-href-underlyingURL" target="_blank"
+        style="text-decoration: underline;"><span class="text-neutral tpl-underlyingName"></span></a>
+    </div>
+
+    <table class="strategy-table">
+      <tr>
+        <td><span class="text-label">Expiration</span></td>
+        <td class="text-end"><span class="text-neutral tpl-formattedDate"></span> <small class="text-bad">(<span
+              class="tpl-DTE"></span>d)</small></td>
+      </tr>
+      <tr>
+        <td><span class="text-label">Contract</span></td>
+        <td class="text-end contract-name"><a href="#" class="text-neutral tpl-href-putURL" target="_blank"
+            style="text-decoration: underline;"><span class="text-neutral tpl-putName"></span></a></td>
+      </tr>
+      <tr>
+        <td><span class="text-label">Capital Required</span></td>
+        <td class="text-end"><span class="text-neutral tpl-capitalRequired"></span> <small class="text-muted-alt">(<span
+              class="text-neutral tpl-capitalRequiredUnderlying"></span>)</small></td>
+      </tr>
+      <tr>
+        <td><span class="text-label">Leverage</span></td>
+        <td class="text-end"><span class="text-good tpl-maxLeverage"></span></td>
+      </tr>
+      <tr>
+        <td><span class="text-label">Hurdle</span></td>
+        <td class="text-end"><span class="text-neutral"><span class="tpl-underlying"></span> &le; <span
+              class="tpl-beAbsolute"></span></span> <small class="text-bad">(<span
+              class="tpl-beRelative"></span>)</small></td>
+      </tr>
+    </table>
+
+    <div class="warnings-panel">
+      <div class="warning-row">
+        <i class="fas fa-rocket me-1 text-warning-icon"></i>
+        If <span class="tpl-underlying"></span> falls below <span class="text-good tpl-capAbsolute"></span> (<span
+          class="text-good tpl-capRelative"></span>),
+        you will have <span class="text-good">more</span> <span class="tpl-underlying"></span> than starting with a 100%
+        <span class="tpl-underlying"></span> allocation. As if you had <span class="text-good tpl-maxLeverage"></span>
+        bigger short <span class="tpl-underlying"></span> position!
+      </div>
+      <div class="warning-row">
+        <i class="fas fa-coins me-1 text-warning-icon"></i>
+        If <span class="tpl-underlying"></span> goes to zero, your maximum money yield is <span
+          class="text-good tpl-maxMoneyYield"></span>.
+      </div>
+      <div class="warning-row">
+        <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
+        If <span class="tpl-underlying"></span> is not below <span class="text-bad tpl-beAbsolute"></span> (<span
+          class="text-bad tpl-beRelative"></span>),
+        you will have <span class="text-bad">less</span> <span class="tpl-money"></span> than starting with a 100% <span
+          class="tpl-money"></span> allocation.
+      </div>
+      <div class="warning-row">
+        <i class="fas fa-skull-crossbones me-1 text-warning-icon"></i>
+        If <span class="tpl-underlying"></span> is above <span class="text-neutral tpl-strikeAbsolute"></span> (<span
+          class="text-neutral tpl-strikeRelative"></span>),
+        <b>you lose the entire (<span class="text-bad">-100%</span>) invested capital</b>.
+      </div>
+    </div>
+
+    <div class="instructions-panel">
+      <div class="instructions-header">Execution Instructions</div>
+      <div class="instructions-content">
+        &bull; <b>Buy</b> <span class="text-good tpl-putSize"></span> put(s) for <span
+          class="text-bad tpl-costInMoney"></span> <span class="text-neutral">(<span
+            class="tpl-costInUnderlying"></span> <span class="tpl-underlying"></span>)</span>
       </div>
     </div>
   </template>

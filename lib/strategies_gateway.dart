@@ -21,10 +21,10 @@ external set deribitSyntheticBondsDart(JSFunction value);
 external set yfinanceCoveredCallsDart(JSFunction value);
 
 @JS()
-external set deribitLongCallsDart(JSFunction value);
+external set deribitLongOptionsDart(JSFunction value);
 
 @JS()
-external set yfinanceLongCallsDart(JSFunction value);
+external set yfinanceLongOptionsDart(JSFunction value);
 
 UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 5));
 
@@ -49,14 +49,18 @@ Future<String> deribitCoveredCalls(
       .toList());
 }
 
-Future<String> deribitLongCalls(
+Future<String> deribitLongOptions(
     String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
-  return jsonEncode(LongCall.generateAll(markets,
-          underlying: Commodity(ticker, venues: const {Venue.Deribit}),
-          money: Commodity("USD"),
-          slippage: slippage)
-      .toList());
+  final underlying = Commodity(ticker, venues: const {Venue.Deribit});
+  final money = Commodity("USD");
+  final calls = LongCall.generateAll(markets,
+          underlying: underlying, money: money, slippage: slippage)
+      .map((e) => e.toJson());
+  final puts = LongPut.generateAll(markets,
+          underlying: underlying, money: money, slippage: slippage)
+      .map((e) => e.toJson());
+  return jsonEncode([...calls, ...puts]);
 }
 
 Future<String> deribitVerticalSpreads(
@@ -90,15 +94,19 @@ Future<String> yfinanceCoveredCalls(
       .toList());
 }
 
-Future<String> yfinanceLongCalls(
+Future<String> yfinanceLongOptions(
     String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await (await YFinance.openConnection(_urlFetcher))
       .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
-  return jsonEncode(LongCall.generateAll(markets,
-          underlying: Commodity(ticker, venues: const {Venue.OptionStrat}),
-          money: Commodity("USD"),
-          slippage: slippage)
-      .toList());
+  final underlying = Commodity(ticker, venues: const {Venue.OptionStrat});
+  final money = Commodity("USD");
+  final calls = LongCall.generateAll(markets,
+          underlying: underlying, money: money, slippage: slippage)
+      .map((e) => e.toJson());
+  final puts = LongPut.generateAll(markets,
+          underlying: underlying, money: money, slippage: slippage)
+      .map((e) => e.toJson());
+  return jsonEncode([...calls, ...puts]);
 }
 
 void setupJsInterop() {
@@ -132,17 +140,17 @@ void setupJsInterop() {
         .toJS;
   }.toJS;
 
-  deribitLongCallsDart =
+  deribitLongOptionsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return deribitLongCalls(ticker.toDart, slippage.toDartDouble,
+    return deribitLongOptions(ticker.toDart, slippage.toDartDouble,
             minDTE.toDartInt, maxDTE.toDartInt)
         .then((value) => value.toJS)
         .toJS;
   }.toJS;
 
-  yfinanceLongCallsDart =
+  yfinanceLongOptionsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return yfinanceLongCalls(ticker.toDart, slippage.toDartDouble,
+    return yfinanceLongOptions(ticker.toDart, slippage.toDartDouble,
             minDTE.toDartInt, maxDTE.toDartInt)
         .then((value) => value.toJS)
         .toJS;

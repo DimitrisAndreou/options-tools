@@ -131,6 +131,7 @@ function prepareLongCallData(value) {
     DTE: value.DTE,
     callName: value.call,
     callURL: value.callURL,
+    callSize: value.callSize,
 
     costInMoney: dollarFmt.format(value.costInMoney),
     costInUnderlying: underlyingFmt.format(value.costInUnderlying),
@@ -185,6 +186,77 @@ function renderTooltipLongCall(d) {
   `;
 }
 
+function prepareLongPutData(value) {
+  const money = value.money;
+  const underlying = value.underlying;
+
+  return {
+    underlying,
+    underlyingName: underlying,
+    underlyingURL: value.underlyingURL,
+    money,
+    strategyName: 'Long Put',
+    strategyURL: value.strategyURL,
+    formattedDate: value.formattedDate,
+    DTE: value.DTE,
+    putName: value.put,
+    putURL: value.putURL,
+    putSize: value.putSize,
+
+    costInMoney: dollarFmt.format(value.costInMoney),
+    costInUnderlying: underlyingFmt.format(value.costInUnderlying),
+    maxLeverage: value.maxLeverage.toFixed(2) + 'x',
+    maxMoneyYield: percentFmt.format(value.maxMoneyYield - 1.0) + ' (+' + dollarFmt.format(value.maxMoneyProfit) + ')',
+
+    strikeAbsolute: dollarFmt.format(value.strikeAbsolute),
+    strikeRelative: percentFmt.format(value.strikeRelative - 1.0),
+
+    // Breakeven / Caps
+    beAbsolute: dollarFmt.format(value.breakEvenVsFullMoneyAbsolute),
+    beRelative: percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0),
+    capAbsolute: dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute),
+    capRelative: percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0),
+
+    capitalRequired: dollarFmt.format(value.costInMoney),
+    capitalRequiredUnderlying: `${underlyingFmt.format(value.costInUnderlying)} ${underlying}`
+  };
+}
+
+function renderTooltipLongPut(d) {
+  return `
+    <div class="tooltip-container">
+      <div class="tooltip-header">
+        <span class="tooltip-date">${d.formattedDate}</span>
+        <span class="text-bad">${d.DTE}d</span>
+      </div>
+      
+      <div class="tooltip-body">
+        <div class="tooltip-yield-bad">-100% ⬆</div>
+        <div class="tooltip-divider"></div>
+        <div class="tooltip-strike-badge">
+          ${d.strikeAbsolute} <span class="strike-relative">(${d.strikeRelative})</span>
+        </div>
+        <div class="tooltip-divider"></div>
+        <div class="tooltip-yield-good">${d.maxLeverage} Leverage ⬇</div>
+      </div>
+
+      <div class="tooltip-breakeven">
+        <span class="text-label">Even vs full ${d.money}:</span> 
+        <span class="text-neutral">${d.beAbsolute}</span>
+        <span class="text-bad ms-1">(${d.beRelative})</span>
+        <br/>
+        <span class="text-label">Even vs full ${d.underlying}:</span> 
+        <span class="text-neutral">${d.capAbsolute}</span>
+        <span class="text-good ms-1">(${d.capRelative})</span>
+      </div>
+      
+      <div class="tooltip-footer">
+        Minimum position: <span class="text-light-alt">${d.capitalRequired}</span> (${d.capitalRequiredUnderlying})
+      </div>
+    </div>
+  `;
+}
+
 const StrategyRegistry = {
   'coveredCall': {
     templateId: 'coveredCall-details-template',
@@ -195,6 +267,11 @@ const StrategyRegistry = {
     templateId: 'longCall-details-template',
     prepareData: prepareLongCallData,
     renderTooltip: renderTooltipLongCall
+  },
+  'longPut': {
+    templateId: 'longPut-details-template',
+    prepareData: prepareLongPutData,
+    renderTooltip: renderTooltipLongPut
   }
 };
 
@@ -464,9 +541,9 @@ function renderCoveredCallsChart(data, chartDom) {
 }
 
 /**
- * Renders the long calls options chart.
+ * Renders the long options chart.
  */
-function renderLongCallsChart(data, chartDom) {
+function renderLongOptionsChart(data, chartDom) {
   const underlying = data.at(0)?.underlying || '';
   const dataset = {
     id: "original",
@@ -519,7 +596,7 @@ function renderLongCallsChart(data, chartDom) {
     grid,
     yAxis: {
       type: 'value',
-      name: `⬆ Required Price Rise`,
+      name: `⇳ Required Price Change`,
       nameLocation: 'end',
       nameTextStyle: yAxisTitleNameTextStyle,
       axisLabel: {
@@ -529,7 +606,7 @@ function renderLongCallsChart(data, chartDom) {
         },
       },
       axisLine,
-      min: function (value) { return Math.max(1.0, value.min - 0.05); },
+      min: function (value) { return Math.max(0.0, value.min - 0.05); },
       max: function (value) { return value.max + 0.05; }
     },
     tooltip: {
@@ -545,9 +622,14 @@ function renderLongCallsChart(data, chartDom) {
           x: 'maxLeverage',
           y: 'breakEvenVsFullUnderlyingRelative'
         },
-        symbolSize: function (data) {
-          return 6;
+        symbol: 'triangle',
+        symbolRotate: function (value, params) {
+          if (params && params.data && params.data.strategyType === 'longPut') {
+            return 180;
+          }
+          return 0;
         },
+        symbolSize: 8,
         emphasis: {
           scale: 2,
           itemStyle: {
@@ -577,8 +659,8 @@ function renderLongCallsChart(data, chartDom) {
         type: 'inside',
         yAxisIndex: 0,
         filterMode: 'none',
-        startValue: 0.0,
-        endValue: 1.0
+        startValue: 0.8,
+        endValue: 1.2
       }
     ],
   });
