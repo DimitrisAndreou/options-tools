@@ -133,7 +133,7 @@ function prepareLongCallData(value) {
     callURL: value.callURL,
     callSize: value.callSize,
 
-    costInMoney: dollarFmt.format(value.costInMoney),
+    costInMoney: dollarFmt.format(-value.moneySize),
     costInUnderlying: underlyingFmt.format(value.costInUnderlying),
     maxLeverage: value.maxLeverage.toFixed(2) + 'x',
 
@@ -146,7 +146,7 @@ function prepareLongCallData(value) {
     capAbsolute: dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute),
     capRelative: percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0),
 
-    capitalRequired: dollarFmt.format(value.costInMoney),
+    capitalRequired: dollarFmt.format(-value.moneySize),
     capitalRequiredUnderlying: `${underlyingFmt.format(value.costInUnderlying)} ${underlying}`
   };
 }
@@ -203,7 +203,7 @@ function prepareLongPutData(value) {
     putURL: value.putURL,
     putSize: value.putSize,
 
-    costInMoney: dollarFmt.format(value.costInMoney),
+    costInMoney: dollarFmt.format(-value.moneySize),
     costInUnderlying: underlyingFmt.format(value.costInUnderlying),
     maxLeverage: value.maxLeverage.toFixed(2) + 'x',
     maxMoneyYield: percentFmt.format(value.maxMoneyYield - 1.0) + ' (+' + dollarFmt.format(value.maxMoneyProfit) + ')',
@@ -217,7 +217,7 @@ function prepareLongPutData(value) {
     capAbsolute: dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute),
     capRelative: percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0),
 
-    capitalRequired: dollarFmt.format(value.costInMoney),
+    capitalRequired: dollarFmt.format(-value.moneySize),
     capitalRequiredUnderlying: `${underlyingFmt.format(value.costInUnderlying)} ${underlying}`
   };
 }
