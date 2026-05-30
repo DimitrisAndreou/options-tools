@@ -216,4 +216,126 @@ void main() {
           'breakEvenVsFullMoneyRelative': 0.95
         }));
   });
+
+  test('VerticalSpread JSON generation golden test', () {
+    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
+    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
+
+    final spotMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 1000.0,
+      askPrice: 1000.0,
+    );
+
+    final callOption1 = Option(
+      'BTC-1000-C',
+      underlying: btc,
+      money: usd,
+      strike: 1000.0,
+      isCall: true,
+      expiration: expiration,
+      venues: {Venue.Deribit},
+    );
+
+    final callMarket1 = Market.create(
+      asset: callOption1,
+      money: usd,
+      bidPrice: 50.0,
+      askPrice: 50.0,
+    );
+
+    final callOption2 = Option(
+      'BTC-1100-C',
+      underlying: btc,
+      money: usd,
+      strike: 1100.0,
+      isCall: true,
+      expiration: expiration,
+      venues: {Venue.Deribit},
+    );
+
+    final callMarket2 = Market.create(
+      asset: callOption2,
+      money: usd,
+      bidPrice: 20.0,
+      askPrice: 20.0,
+    );
+
+    final spreads = VerticalSpread.generateAll(
+      [spotMarket, callMarket1, callMarket2],
+      underlying: btc,
+      money: usd,
+      slippage: 0.0,
+    ).toList();
+
+    expect(spreads.length, equals(2));
+    final overVs = spreads.firstWhere((vs) => vs.type == VerticalSpreadType.over);
+    final underVs = spreads.firstWhere((vs) => vs.type == VerticalSpreadType.under);
+
+    final overJson = overVs.toJson();
+    final overDte = overJson.remove('DTE');
+    expect(overDte, isNotNull);
+
+    expect(
+        overJson,
+        equals({
+          'strategyType': 'verticalSpread',
+          'strategyURL': null,
+          'underlying': 'BTC',
+          'underlyingURL': 'https://www.deribit.com/spot/BTC_USDT',
+          'money': 'USD',
+          'credit': 30.0,
+          'spotPrice': 1000.0,
+          'shortLeg': 'BTC-1000-C',
+          'shortLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
+          'longLeg': 'BTC-1100-C',
+          'longLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1100-C',
+          'type': 'over',
+          'formattedDate': '31 December 2026',
+          'breakEvenVsFullMoneyAbsolute': 1030.0,
+          'breakEvenVsFullMoneyRelative': 1.03,
+          'breakEvenVsFullUnderlyingAbsolute': 1030.9278350515465,
+          'breakEvenVsFullUnderlyingRelative': 1.0309278350515465,
+          'maxYield': 1.4285714285714286,
+          'maxYieldAtAbsolute': 1000.0,
+          'maxYieldAtRelative': 1.0,
+          'maxRisk': 70.0,
+          'maxRiskAtAbsolute': 1100.0,
+          'maxRiskAtRelative': 1.1
+        }));
+
+    final underJson = underVs.toJson();
+    final underDte = underJson.remove('DTE');
+    expect(underDte, isNotNull);
+
+    expect(
+        underJson,
+        equals({
+          'strategyType': 'verticalSpread',
+          'strategyURL': null,
+          'underlying': 'BTC',
+          'underlyingURL': 'https://www.deribit.com/spot/BTC_USDT',
+          'money': 'USD',
+          'credit': -30.0,
+          'spotPrice': 1000.0,
+          'shortLeg': 'BTC-1100-C',
+          'shortLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1100-C',
+          'longLeg': 'BTC-1000-C',
+          'longLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
+          'type': 'under',
+          'formattedDate': '31 December 2026',
+          'breakEvenVsFullMoneyAbsolute': 1030.0,
+          'breakEvenVsFullMoneyRelative': 1.03,
+          'breakEvenVsFullUnderlyingAbsolute': 1030.9278350515465,
+          'breakEvenVsFullUnderlyingRelative': 1.0309278350515465,
+          'maxYield': 3.3333333333333335,
+          'maxYieldAtAbsolute': 1100.0,
+          'maxYieldAtRelative': 1.1,
+          'maxRisk': 30.0,
+          'maxRiskAtAbsolute': 1000.0,
+          'maxRiskAtRelative': 1.0
+        }));
+  });
 }

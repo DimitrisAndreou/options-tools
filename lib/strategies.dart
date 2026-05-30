@@ -409,71 +409,88 @@ class VerticalSpread {
 
   final PositionAnalyzer analyzer;
 
+  final Option shortOption;
+  final Option longOption;
+
   final Position strategy;
-  late final Line shortLeg;
-  late final Line longLeg;
-  late final Line moneyLeg;
+  final Line shortLeg;
+  final Line longLeg;
+  final Line moneyLeg;
   late final VerticalSpreadType type;
 
+  final Market spotMarket;
   final double spotPrice;
 
-  late final double? breakeven;
-  late final double? breakevenAsChange;
+  late final PriceInfo? breakEvenVsFullMoney;
+  late final PriceInfo? breakEvenVsFullUnderlying;
   late final double maxYield;
-  late final double maxYieldAt;
-  late final double maxYieldAtChange;
+  late final PriceInfo maxYieldAt;
   late final double maxRisk;
-  late final double maxRiskAt;
-  late final double maxRiskAtChange;
+  late final PriceInfo maxRiskAt;
+
+  String? get shortLegURL => AssetRenderer.tryRenderFirst(shortLeg.asset);
+  String? get longLegURL => AssetRenderer.tryRenderFirst(longLeg.asset);
+  String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
+  String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
+        'strategyType': 'verticalSpread',
+        'strategyURL': strategyURL,
         'underlying': underlying.name,
+        'underlyingURL': underlyingURL,
         'money': money.name,
         'credit': moneyLeg.size,
         'spotPrice': spotPrice,
         'shortLeg': shortLeg.asset.name,
+        'shortLegURL': shortLegURL,
         'longLeg': longLeg.asset.name,
+        'longLegURL': longLegURL,
         'type': type.name,
         'DTE': expiration.daysLeft,
-        'breakEven': breakeven,
-        'breakEvenAsChange': breakevenAsChange,
+        'formattedDate': expiration.formattedDate,
+        'breakEvenVsFullMoneyAbsolute': breakEvenVsFullMoney?.absolute,
+        'breakEvenVsFullMoneyRelative': breakEvenVsFullMoney?.relative,
+        'breakEvenVsFullUnderlyingAbsolute': breakEvenVsFullUnderlying?.absolute,
+        'breakEvenVsFullUnderlyingRelative': breakEvenVsFullUnderlying?.relative,
         'maxYield': maxYield,
-        'maxYieldAt': maxYieldAt,
-        'maxYieldAtChange': maxYieldAtChange,
+        'maxYieldAtAbsolute': maxYieldAt.absolute,
+        'maxYieldAtRelative': maxYieldAt.relative,
         'maxRisk': maxRisk,
-        'maxRiskAt': maxRiskAt,
-        'maxRiskAtChange': maxRiskAtChange,
+        'maxRiskAtAbsolute': maxRiskAt.absolute,
+        'maxRiskAtRelative': maxRiskAt.relative,
       };
 
   VerticalSpread._(this.strategy,
       {required this.underlying,
       required this.money,
+      required this.shortOption,
+      required this.longOption,
       required this.expiration,
+      required this.spotMarket,
       required this.spotPrice})
       : analyzer =
-            PositionAnalyzer(strategy, underlying: underlying, money: money) {
-    for (final p in strategy.decompose()) {
-      if (p.asset == money) {
-        moneyLeg = p;
-      } else if (p.size > 0) {
-        longLeg = p;
-      } else if (p.size < 0) {
-        shortLeg = p;
-      } else {
-        throw ArgumentError("Unexpected leg: $p, in ${strategy.decompose()}");
-      }
-    }
+            PositionAnalyzer(strategy, underlying: underlying, money: money),
+        moneyLeg = strategy[money],
+        shortLeg = strategy[shortOption],
+        longLeg = strategy[longOption] {
     type = longLeg.asset.toOption.strike > shortLeg.asset.toOption.strike
         ? VerticalSpreadType.over
         : VerticalSpreadType.under;
-    breakeven = pickNearestBoundary(spotPrice, analyzer.breakevens);
-    breakevenAsChange = breakeven != null ? breakeven! / spotPrice : null;
+
+    final double? breakevenDouble = pickNearestBoundary(spotPrice, analyzer.breakevens);
+    breakEvenVsFullMoney = breakevenDouble != null ? PriceInfo.fromAbsolute(breakevenDouble, spotPrice) : null;
+
+    final breakevensVsUnderlying = strategy
+        .analyzeVersus(moneyLeg + spotMarket.toAsset(-moneyLeg),
+            underlying: underlying, money: money)
+        .breakevens;
+    final double? breakevenUnderlyingDouble = pickNearestBoundary(spotPrice, breakevensVsUnderlying);
+    breakEvenVsFullUnderlying = breakevenUnderlyingDouble != null ? PriceInfo.fromAbsolute(breakevenUnderlyingDouble, spotPrice) : null;
+
     maxYield = analyzer.maxYield;
-    maxYieldAt = pickNearestBoundary(spotPrice, analyzer.bestPrices)!;
-    maxYieldAtChange = maxYieldAt / spotPrice;
+    maxYieldAt = PriceInfo.fromAbsolute(pickNearestBoundary(spotPrice, analyzer.bestPrices)!, spotPrice);
     maxRisk = analyzer.maxRisk;
-    maxRiskAt = pickNearestBoundary(spotPrice, analyzer.worstPrices)!;
-    maxRiskAtChange = maxRiskAt / spotPrice;
+    maxRiskAt = PriceInfo.fromAbsolute(pickNearestBoundary(spotPrice, analyzer.worstPrices)!, spotPrice);
   }
 
   static double? pickNearestBoundary(
@@ -520,10 +537,13 @@ class VerticalSpread {
             .entries) {
       final expiration = expirationToStrike.key,
           strikeToOptions = expirationToStrike.value;
-      VerticalSpread makeSpread(Position position) => VerticalSpread._(position,
+      VerticalSpread makeSpread(Position position, Option shortOption, Option longOption) => VerticalSpread._(position,
           underlying: underlying,
           money: money,
+          shortOption: shortOption,
+          longOption: longOption,
           expiration: expiration,
+          spotMarket: spotMarket,
           spotPrice: spotPrice);
 
       for (final (lowStrike, highStrike) in _pairUp(strikeToOptions.keys)) {
@@ -533,17 +553,17 @@ class VerticalSpread {
         // under @ lowStrike
         VerticalSpread? under = keepBestValidSpread([
           if (lowPut != null && highPut != null)
-            makeSpread(highPut.long(slippage) + lowPut.short(slippage)),
+            makeSpread(highPut.long(slippage) + lowPut.short(slippage), lowPut.asset.toOption, highPut.asset.toOption),
           if (lowCall != null && highCall != null)
-            makeSpread(highCall.long(slippage) + lowCall.short(slippage)),
+            makeSpread(highCall.long(slippage) + lowCall.short(slippage), lowCall.asset.toOption, highCall.asset.toOption),
         ]);
 
         // over @ highStrike
         VerticalSpread? over = keepBestValidSpread([
           if (lowPut != null && highPut != null)
-            makeSpread(highPut.short(slippage) + lowPut.long(slippage)),
+            makeSpread(highPut.short(slippage) + lowPut.long(slippage), highPut.asset.toOption, lowPut.asset.toOption),
           if (lowCall != null && highCall != null)
-            makeSpread(highCall.short(slippage) + lowCall.long(slippage)),
+            makeSpread(highCall.short(slippage) + lowCall.long(slippage), highCall.asset.toOption, lowCall.asset.toOption),
         ]);
 
         yield* [under, over].nonNulls;
