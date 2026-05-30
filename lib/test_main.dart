@@ -132,16 +132,6 @@ void browseVerticalSpreads(List<Market> markets) {
   }
 }
 
-void browseBonds(List<Market> markets) {
-  final money = Commodity("USD");
-  final underlying = Commodity("BTC");
-  print(" ============== BONDS ==============");
-  for (SyntheticBond bond in SyntheticBond.generateAll(markets,
-      underlying: underlying, money: money)) {
-    print("Bond: ${bond.toJson()}");
-  }
-}
-
 void browseCoveredCalls(List<Market> markets) {
   final money = Commodity("USD");
   final underlying = Commodity("TRX");

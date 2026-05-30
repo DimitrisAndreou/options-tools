@@ -15,9 +15,6 @@ external set deribitCoveredCallsDart(JSFunction value);
 external set deribitVerticalSpreadsDart(JSFunction value);
 
 @JS()
-external set deribitSyntheticBondsDart(JSFunction value);
-
-@JS()
 external set yfinanceCoveredCallsDart(JSFunction value);
 
 UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 5));
@@ -53,16 +50,6 @@ Future<String> deribitVerticalSpreads(
       .toList());
 }
 
-Future<String> deribitSyntheticBonds(
-    String ticker, double slippage, int minDTE, int maxDTE) async {
-  List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
-  return jsonEncode(SyntheticBond.generateAll(markets,
-          underlying: Commodity(ticker, venues: const {Venue.Deribit}),
-          money: Commodity("USD"),
-          slippage: slippage)
-      .toList());
-}
-
 Future<String> yfinanceCoveredCalls(
     String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await (await YFinance.openConnection(_urlFetcher))
@@ -89,14 +76,6 @@ void setupJsInterop() {
         .then((value) => value.toJS)
         .toJS;
   }.toJS;
-  deribitSyntheticBondsDart =
-      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return deribitSyntheticBonds(ticker.toDart, slippage.toDartDouble,
-            minDTE.toDartInt, maxDTE.toDartInt)
-        .then((value) => value.toJS)
-        .toJS;
-  }.toJS;
-
   yfinanceCoveredCallsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
     return yfinanceCoveredCalls(ticker.toDart, slippage.toDartDouble,
