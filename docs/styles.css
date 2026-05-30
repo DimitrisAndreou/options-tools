@@ -259,6 +259,12 @@ footer {
   font-size: 1.1em;
 }
 
+.tooltip-yield-bad {
+  color: var(--danger);
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
 .tooltip-strike-badge {
   background: #334155;
   padding: 2px 12px;

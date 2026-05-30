@@ -47,14 +47,17 @@ function prepareCCData(value) {
 
   return {
     underlying,
-    underlyingName: value.underlyingURL ? `<a href="${value.underlyingURL}" target="_blank" style="color: inherit; text-decoration: underline;">${underlying}</a>` : underlying,
+    underlyingName: underlying,
+    underlyingURL: value.underlyingURL,
     money,
-    strategyName: value.strategyURL ? `<a href="${value.strategyURL}" target="_blank" style="color: inherit; text-decoration: underline;">Covered Call</a>` : 'Covered Call',
+    strategyName: 'Covered Call',
+    strategyURL: value.strategyURL,
     formattedDate: value.formattedDate,
     DTE: value.DTE,
     strikeAbsolute: dollarFmt.format(value.strikeAbsolute),
     strikeRelative: percentFmt.format(value.strikeAbsolute / value.spotPrice - 1.0),
-    callName: value.callURL ? `<a href="${value.callURL}" target="_blank" style="color: inherit; text-decoration: underline;">${value.call}</a>` : value.call,
+    callName: value.call,
+    callURL: value.callURL,
     capitalRequired: dollarFmt.format(-value.moneySize),
     capitalRequiredUnderlying: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
 
@@ -77,17 +80,6 @@ function prepareCCData(value) {
     sellPremium: `${underlyingFmt.format(value.premiumToReceive)} ${underlying}`
   };
 }
-
-// Semantic color helpers for a premium look
-const fmtStyle = {
-  label: (str) => `<span class="text-label">${str}</span>`,
-  neutral: (str) => `<span class="text-neutral">${str}</span>`,
-  good: (str) => `<span class="text-good">${str}</span>`,
-  bad: (str) => `<span class="text-bad">${str}</span>`,
-  header: (str) => `<div class="strategy-header"><i class="fas fa-cube me-2"></i> ${str}</div>`
-};
-
-
 
 function renderTooltipCC(d) {
   return `
@@ -124,11 +116,162 @@ function renderTooltipCC(d) {
   `;
 }
 
+function prepareLongCallData(value) {
+  const money = value.money;
+  const underlying = value.underlying;
+
+  return {
+    underlying,
+    underlyingName: underlying,
+    underlyingURL: value.underlyingURL,
+    money,
+    strategyName: 'Long Call',
+    strategyURL: value.strategyURL,
+    formattedDate: value.formattedDate,
+    DTE: value.DTE,
+    callName: value.call,
+    callURL: value.callURL,
+    callSize: value.callSize,
+
+    costInMoney: dollarFmt.format(value.costInMoney),
+    costInUnderlying: underlyingFmt.format(value.costInUnderlying),
+    maxLeverage: value.maxLeverage.toFixed(2) + 'x',
+
+    strikeAbsolute: dollarFmt.format(value.strikeAbsolute),
+    strikeRelative: percentFmt.format(value.strikeRelative - 1.0),
+
+    // Breakeven / Caps
+    beAbsolute: dollarFmt.format(value.breakEvenVsFullMoneyAbsolute),
+    beRelative: percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0),
+    capAbsolute: dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute),
+    capRelative: percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0),
+
+    capitalRequired: dollarFmt.format(value.costInMoney),
+    capitalRequiredUnderlying: `${underlyingFmt.format(value.costInUnderlying)} ${underlying}`
+  };
+}
+
+function renderTooltipLongCall(d) {
+  return `
+    <div class="tooltip-container">
+      <div class="tooltip-header">
+        <span class="tooltip-date">${d.formattedDate}</span>
+        <span class="text-bad">${d.DTE}d</span>
+      </div>
+      
+      <div class="tooltip-body">
+        <div class="tooltip-yield-good">${d.maxLeverage} Leverage ⬆</div>
+        <div class="tooltip-divider"></div>
+        <div class="tooltip-strike-badge">
+          ${d.strikeAbsolute} <span class="strike-relative">(${d.strikeRelative})</span>
+        </div>
+        <div class="tooltip-divider"></div>
+        <div class="tooltip-yield-bad">-100% ⬇</div>
+      </div>
+
+      <div class="tooltip-breakeven">
+        <span class="text-label">Even vs full ${d.money}:</span> 
+        <span class="text-neutral">${d.beAbsolute}</span>
+        <span class="text-bad ms-1">(${d.beRelative})</span>
+        <br/>
+        <span class="text-label">Even vs full ${d.underlying}:</span> 
+        <span class="text-neutral">${d.capAbsolute}</span>
+        <span class="text-good ms-1">(${d.capRelative})</span>
+      </div>
+      
+      <div class="tooltip-footer">
+        Minimum position: <span class="text-light-alt">${d.capitalRequired}</span> (${d.capitalRequiredUnderlying})
+      </div>
+    </div>
+  `;
+}
+
+function prepareLongPutData(value) {
+  const money = value.money;
+  const underlying = value.underlying;
+
+  return {
+    underlying,
+    underlyingName: underlying,
+    underlyingURL: value.underlyingURL,
+    money,
+    strategyName: 'Long Put',
+    strategyURL: value.strategyURL,
+    formattedDate: value.formattedDate,
+    DTE: value.DTE,
+    putName: value.put,
+    putURL: value.putURL,
+    putSize: value.putSize,
+
+    costInMoney: dollarFmt.format(value.costInMoney),
+    costInUnderlying: underlyingFmt.format(value.costInUnderlying),
+    maxLeverage: value.maxLeverage.toFixed(2) + 'x',
+    maxMoneyYield: percentFmt.format(value.maxMoneyYield - 1.0) + ' (+' + dollarFmt.format(value.maxMoneyProfit) + ')',
+
+    strikeAbsolute: dollarFmt.format(value.strikeAbsolute),
+    strikeRelative: percentFmt.format(value.strikeRelative - 1.0),
+
+    // Breakeven / Caps
+    beAbsolute: dollarFmt.format(value.breakEvenVsFullMoneyAbsolute),
+    beRelative: percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0),
+    capAbsolute: dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute),
+    capRelative: percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0),
+
+    capitalRequired: dollarFmt.format(value.costInMoney),
+    capitalRequiredUnderlying: `${underlyingFmt.format(value.costInUnderlying)} ${underlying}`
+  };
+}
+
+function renderTooltipLongPut(d) {
+  return `
+    <div class="tooltip-container">
+      <div class="tooltip-header">
+        <span class="tooltip-date">${d.formattedDate}</span>
+        <span class="text-bad">${d.DTE}d</span>
+      </div>
+      
+      <div class="tooltip-body">
+        <div class="tooltip-yield-bad">-100% ⬆</div>
+        <div class="tooltip-divider"></div>
+        <div class="tooltip-strike-badge">
+          ${d.strikeAbsolute} <span class="strike-relative">(${d.strikeRelative})</span>
+        </div>
+        <div class="tooltip-divider"></div>
+        <div class="tooltip-yield-good">${d.maxLeverage} Leverage ⬇</div>
+      </div>
+
+      <div class="tooltip-breakeven">
+        <span class="text-label">Even vs full ${d.money}:</span> 
+        <span class="text-neutral">${d.beAbsolute}</span>
+        <span class="text-bad ms-1">(${d.beRelative})</span>
+        <br/>
+        <span class="text-label">Even vs full ${d.underlying}:</span> 
+        <span class="text-neutral">${d.capAbsolute}</span>
+        <span class="text-good ms-1">(${d.capRelative})</span>
+      </div>
+      
+      <div class="tooltip-footer">
+        Minimum position: <span class="text-light-alt">${d.capitalRequired}</span> (${d.capitalRequiredUnderlying})
+      </div>
+    </div>
+  `;
+}
+
 const StrategyRegistry = {
   'coveredCall': {
     templateId: 'coveredCall-details-template',
     prepareData: prepareCCData,
     renderTooltip: renderTooltipCC
+  },
+  'longCall': {
+    templateId: 'longCall-details-template',
+    prepareData: prepareLongCallData,
+    renderTooltip: renderTooltipLongCall
+  },
+  'longPut': {
+    templateId: 'longPut-details-template',
+    prepareData: prepareLongPutData,
+    renderTooltip: renderTooltipLongPut
   }
 };
 
@@ -217,6 +360,14 @@ function populateStrategyDetails(dataObj) {
       clone.querySelectorAll(`.tpl-${key}`).forEach(el => {
         el.innerHTML = value;
       });
+      clone.querySelectorAll(`.tpl-href-${key}`).forEach(el => {
+        if (value) {
+          el.href = value;
+        } else {
+          // If there is no URL, unwrap the link
+          el.outerHTML = el.innerHTML;
+        }
+      });
     }
 
     panel.innerHTML = '';
@@ -225,18 +376,12 @@ function populateStrategyDetails(dataObj) {
 }
 
 /**
- * Renders the options strategy chart.
+ * Renders the covered calls options chart.
  * 
  * IMPORTANT: The elements in the `data` array MUST contain `moneyYield` and `underlyingYield` 
  * properties, as these are required to map to the X and Y coordinates on the chart.
  */
-function renderStrategyChart(data, divId) {
-  {
-    let chartDom = document.getElementById(divId);
-    let existingChart = echarts.getInstanceByDom(chartDom);
-    if (existingChart) existingChart.dispose();
-  }
-
+function renderCoveredCallsChart(data, chartDom) {
   const money = data.at(0)?.money || '';
   const underlying = data.at(0)?.underlying || '';
   const dataset = {
@@ -258,7 +403,7 @@ function renderStrategyChart(data, divId) {
     }
   }));
 
-  const chart = echarts.init(document.getElementById(divId));
+  const chart = echarts.init(chartDom);
   window.addEventListener('resize', function () {
     chart.resize();
   });
@@ -377,6 +522,145 @@ function renderStrategyChart(data, divId) {
         filterMode: 'none',
         startValue: 1.0,
         endValue: 1.5
+      }
+    ],
+  });
+
+  chart.on('click', function (params) {
+    if (params.componentType === 'series' && params.data) {
+      populateStrategyDetails(params.data);
+    }
+  });
+  chart.on('datazoom', function () {
+    chart.dispatchAction({
+      type: 'hideTip'
+    });
+  });
+
+  return chart;
+}
+
+/**
+ * Renders the long options chart.
+ */
+function renderLongOptionsChart(data, chartDom) {
+  const underlying = data.at(0)?.underlying || '';
+  const dataset = {
+    id: "original",
+    dimensions: ["maxLeverage", "breakEvenVsFullUnderlyingRelative", "DTE"],
+    source: data
+  };
+  const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
+  const datasetPerDTE = uniqueDTEs.map(dte => ({
+    id: `dte_${dte}`,
+    fromDatasetId: 'original',
+    label: `${dte}`,
+    transform: {
+      type: 'filter',
+      config: {
+        dimension: 'DTE',
+        '=': dte
+      }
+    }
+  }));
+
+  const chart = echarts.init(chartDom);
+  window.addEventListener('resize', function () {
+    chart.resize();
+  });
+
+  chart.setOption({
+    dataset: [dataset, ...datasetPerDTE],
+    xAxis: {
+      type: 'value',
+      name: `Achieved Leverage➡`,
+      nameLocation: 'end',
+      nameGap: 0,
+      nameTextStyle: {
+        ...axisTitleNameTextStyle,
+        align: 'right',
+        verticalAlign: 'top',
+        padding: [30, 0, 0, 0]
+      },
+      axisLabel: {
+        ...axisXValuesNameTextStyle,
+        formatter: function (value) {
+          return `${value.toFixed(1)}x`;
+        },
+      },
+      axisLine,
+      min: function (value) { return Math.max(0, value.min - 1.0); },
+      max: function (value) { return value.max + 1.0; },
+      position: 'bottom',
+    },
+    grid,
+    yAxis: {
+      type: 'value',
+      name: `⇳ Required Price Change`,
+      nameLocation: 'end',
+      nameTextStyle: yAxisTitleNameTextStyle,
+      axisLabel: {
+        ...axisYValuesNameTextStyle,
+        formatter: function (value) {
+          return `${percentFmt.format(value - 1.0)}`;
+        },
+      },
+      axisLine,
+      min: function (value) { return Math.max(0.0, value.min - 0.05); },
+      max: function (value) { return value.max + 0.05; }
+    },
+    tooltip: {
+      ...tooltipStyle,
+      formatter: strategyTooltipFormatter,
+    },
+    series: [
+      ...datasetPerDTE.map(ds => ({
+        type: 'line',
+        name: ds.label,
+        datasetId: ds.id,
+        encode: {
+          x: 'maxLeverage',
+          y: 'breakEvenVsFullUnderlyingRelative'
+        },
+        symbol: 'triangle',
+        symbolRotate: function (value, params) {
+          if (params && params.data && params.data.strategyType === 'longPut') {
+            return 180;
+          }
+          return 0;
+        },
+        symbolSize: 8,
+        emphasis: {
+          scale: 2,
+          itemStyle: {
+            color: 'red',
+            borderColor: 'white',
+            borderWidth: 2
+          },
+          focus: 'series',
+        },
+        label: {
+          show: false
+        }
+      }))
+    ],
+    legend: legend,
+    animationDurationUpdate: 800,
+    animationEasingUpdate: 'quinticOut',
+    dataZoom: [
+      {
+        type: 'inside',
+        xAxisIndex: 0,
+        filterMode: 'none',
+        startValue: 0.0,
+        endValue: 10.0
+      },
+      {
+        type: 'inside',
+        yAxisIndex: 0,
+        filterMode: 'none',
+        startValue: 0.8,
+        endValue: 1.2
       }
     ],
   });

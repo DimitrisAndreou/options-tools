@@ -3,6 +3,7 @@ favicon.jpg
 help/index.md
 index.html
 main.dart.js
+main.dart.js.deps
 main.js
 option_tools.js
 packages/$sdk/dev_compiler/amd/require.js
