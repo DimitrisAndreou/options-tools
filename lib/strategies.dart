@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:collection';
+import 'dart:math';
 
 import 'assets.dart';
 import 'markets.dart';
@@ -397,6 +398,183 @@ class LongPut {
   }
 }
 
+class Straddle {
+  final Commodity underlying;
+  final Commodity money;
+  final Option callOption;
+  final Option putOption;
+  final DateTime expiration;
+  final Market spotMarket;
+  final Market callMarket;
+  final Market putMarket;
+
+  final PositionAnalyzer analyzer;
+
+  final Position strategy;
+  final Line callLeg;
+  final Line putLeg;
+  final Line moneyLeg;
+
+  final double spotPrice;
+  final PriceInfo strikePrice;
+  // Cost of the straddle in units of underlying.
+  final Line costInUnderlying;
+
+  late final PriceInfo breakEvenVsFullUnderlyingDown;
+  late final PriceInfo breakEvenVsFullUnderlyingUp;
+  late final PriceInfo breakEvenVsFullMoneyDown;
+  late final PriceInfo breakEvenVsFullMoneyUp;
+
+  String? get callURL => AssetRenderer.tryRenderFirst(callLeg.asset);
+  String? get putURL => AssetRenderer.tryRenderFirst(putLeg.asset);
+  String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
+  String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
+
+  Map<String, dynamic> toJson() => {
+        'strategyType': 'straddle',
+        'strategyURL': strategyURL,
+        'underlying': underlying.name,
+        'underlyingURL': underlyingURL,
+        'costInUnderlying': costInUnderlying.size,
+        'moneySize': moneyLeg.size,
+        'money': money.name,
+        'spotPrice': spotPrice,
+        'call': callLeg.asset.name,
+        'callURL': callURL,
+        'callSize': callLeg.size,
+        'put': putLeg.asset.name,
+        'putURL': putURL,
+        'putSize': putLeg.size,
+        'DTE': expiration.daysLeft,
+        'formattedDate': expiration.formattedDate,
+        'strikeAbsolute': strikePrice.absolute,
+        'strikeRelative': strikePrice.relative,
+        'breakEvenVsFullMoneyDownAbsolute': breakEvenVsFullMoneyDown.absolute,
+        'breakEvenVsFullMoneyDownRelative': breakEvenVsFullMoneyDown.relative,
+        'breakEvenVsFullMoneyUpAbsolute': breakEvenVsFullMoneyUp.absolute,
+        'breakEvenVsFullMoneyUpRelative': breakEvenVsFullMoneyUp.relative,
+        'breakEvenVsFullUnderlyingDownAbsolute':
+            breakEvenVsFullUnderlyingDown.absolute,
+        'breakEvenVsFullUnderlyingDownRelative':
+            breakEvenVsFullUnderlyingDown.relative,
+        'breakEvenVsFullUnderlyingUpAbsolute':
+            breakEvenVsFullUnderlyingUp.absolute,
+        'breakEvenVsFullUnderlyingUpRelative':
+            breakEvenVsFullUnderlyingUp.relative,
+      };
+
+  @override
+  String toString() => jsonEncode(this);
+
+  Straddle._(this.strategy,
+      {required this.spotMarket,
+      required this.callMarket,
+      required this.putMarket,
+      required this.underlying,
+      required this.money,
+      required this.expiration,
+      required this.spotPrice})
+      : callOption = callMarket.asset.toOption,
+        putOption = putMarket.asset.toOption,
+        analyzer =
+            PositionAnalyzer(strategy, underlying: underlying, money: money),
+        callLeg = strategy[callMarket.asset.toOption],
+        putLeg = strategy[putMarket.asset.toOption],
+        moneyLeg = strategy[money],
+        costInUnderlying = spotMarket.toAsset(-strategy[money]),
+        strikePrice = PriceInfo.fromAbsolute(
+            callMarket.asset.toOption.strike, spotPrice) {
+    final bvsMoney = analyzer.breakevens.toList();
+    if (bvsMoney.length < 2) {
+      throw Exception(
+          "Expected at least two breakevens versus money for Straddle!\n"
+          "Strategy: $strategy\n"
+          "Analyzer: $analyzer");
+    }
+    breakEvenVsFullMoneyDown =
+        PriceInfo.fromAbsolute(bvsMoney.first.fromPrice, spotPrice);
+    breakEvenVsFullMoneyUp =
+        PriceInfo.fromAbsolute(bvsMoney.last.fromPrice, spotPrice);
+
+    final breakevensVsUnderlying = strategy
+        .analyzeVersus(moneyLeg + spotMarket.toAsset(-moneyLeg),
+            underlying: underlying, money: money)
+        .breakevens
+        .toList();
+    if (breakevensVsUnderlying.length < 2) {
+      throw Exception(
+          "Expected at least two breakevens versus underlying for Straddle!\n"
+          "Strategy: $strategy\n"
+          "Analyzer: $analyzer");
+    }
+    breakEvenVsFullUnderlyingDown = PriceInfo.fromAbsolute(
+        breakevensVsUnderlying.first.fromPrice, spotPrice);
+    breakEvenVsFullUnderlyingUp = PriceInfo.fromAbsolute(
+        breakevensVsUnderlying.last.fromPrice, spotPrice);
+  }
+
+  static Iterable<Straddle> generateAll(Iterable<Market> allMarkets,
+      {required Commodity underlying,
+      required Commodity money,
+      double slippage = 0.5}) sync* {
+    final oracle = Oracle.fromMarkets(allMarkets);
+    final spotMarket = oracle.marketFor(asset: underlying, money: money);
+    final spotPrice = spotMarket.midPrice;
+
+    // Group option markets by expiration, then by strike
+    final expirationGroups = allMarkets
+        .whereUnderlyingIs(underlying)
+        .optionsWithStrikeInMoney(money)
+        .coercedToMoney(money, oracle)
+        .groupByExpiration(Order.asc);
+
+    for (final entry in expirationGroups.entries) {
+      final expiration = entry.key;
+      final strikeGroups = entry.value.groupByStrike(Order.asc);
+
+      Straddle? bestStraddle;
+
+      for (final strikeEntry in strikeGroups.entries) {
+        final strike = strikeEntry.key;
+        final markets = strikeEntry.value;
+        final callMarket = markets.calls.singleOrNull;
+        final putMarket = markets.puts.singleOrNull;
+
+        if (callMarket != null && putMarket != null) {
+          try {
+            final minSize = max(callMarket.asset.toOption.minSize,
+                putMarket.asset.toOption.minSize);
+            final strategy = (callMarket.long(slippage) * minSize) +
+                (putMarket.long(slippage) * minSize);
+            final straddle = Straddle._(
+              strategy,
+              callMarket: callMarket,
+              putMarket: putMarket,
+              spotMarket: spotMarket,
+              underlying: underlying,
+              money: money,
+              expiration: expiration,
+              spotPrice: spotPrice,
+            );
+
+            // Retain the strategy which has the maximum money leg
+            if (bestStraddle == null ||
+                straddle.moneyLeg.size > bestStraddle.moneyLeg.size) {
+              bestStraddle = straddle;
+            }
+          } catch (e) {
+            // print("Skipped Straddle at strike $strike due to error: $e");
+          }
+        }
+      }
+
+      if (bestStraddle != null) {
+        yield bestStraddle;
+      }
+    }
+  }
+}
+
 // touch is OTM Over/Under which closes on touch
 // not touch is ITM Over/Under which closes on touch
 
@@ -450,8 +628,10 @@ class VerticalSpread {
         'formattedDate': expiration.formattedDate,
         'breakEvenVsFullMoneyAbsolute': breakEvenVsFullMoney?.absolute,
         'breakEvenVsFullMoneyRelative': breakEvenVsFullMoney?.relative,
-        'breakEvenVsFullUnderlyingAbsolute': breakEvenVsFullUnderlying?.absolute,
-        'breakEvenVsFullUnderlyingRelative': breakEvenVsFullUnderlying?.relative,
+        'breakEvenVsFullUnderlyingAbsolute':
+            breakEvenVsFullUnderlying?.absolute,
+        'breakEvenVsFullUnderlyingRelative':
+            breakEvenVsFullUnderlying?.relative,
         'maxYield': maxYield,
         'maxYieldAtAbsolute': maxYieldAt.absolute,
         'maxYieldAtRelative': maxYieldAt.relative,
@@ -477,20 +657,28 @@ class VerticalSpread {
         ? VerticalSpreadType.over
         : VerticalSpreadType.under;
 
-    final double? breakevenDouble = pickNearestBoundary(spotPrice, analyzer.breakevens);
-    breakEvenVsFullMoney = breakevenDouble != null ? PriceInfo.fromAbsolute(breakevenDouble, spotPrice) : null;
+    final double? breakevenDouble =
+        pickNearestBoundary(spotPrice, analyzer.breakevens);
+    breakEvenVsFullMoney = breakevenDouble != null
+        ? PriceInfo.fromAbsolute(breakevenDouble, spotPrice)
+        : null;
 
     final breakevensVsUnderlying = strategy
         .analyzeVersus(moneyLeg + spotMarket.toAsset(-moneyLeg),
             underlying: underlying, money: money)
         .breakevens;
-    final double? breakevenUnderlyingDouble = pickNearestBoundary(spotPrice, breakevensVsUnderlying);
-    breakEvenVsFullUnderlying = breakevenUnderlyingDouble != null ? PriceInfo.fromAbsolute(breakevenUnderlyingDouble, spotPrice) : null;
+    final double? breakevenUnderlyingDouble =
+        pickNearestBoundary(spotPrice, breakevensVsUnderlying);
+    breakEvenVsFullUnderlying = breakevenUnderlyingDouble != null
+        ? PriceInfo.fromAbsolute(breakevenUnderlyingDouble, spotPrice)
+        : null;
 
     maxYield = analyzer.maxYield;
-    maxYieldAt = PriceInfo.fromAbsolute(pickNearestBoundary(spotPrice, analyzer.bestPrices)!, spotPrice);
+    maxYieldAt = PriceInfo.fromAbsolute(
+        pickNearestBoundary(spotPrice, analyzer.bestPrices)!, spotPrice);
     maxRisk = analyzer.maxRisk;
-    maxRiskAt = PriceInfo.fromAbsolute(pickNearestBoundary(spotPrice, analyzer.worstPrices)!, spotPrice);
+    maxRiskAt = PriceInfo.fromAbsolute(
+        pickNearestBoundary(spotPrice, analyzer.worstPrices)!, spotPrice);
   }
 
   static double? pickNearestBoundary(
@@ -537,14 +725,16 @@ class VerticalSpread {
             .entries) {
       final expiration = expirationToStrike.key,
           strikeToOptions = expirationToStrike.value;
-      VerticalSpread makeSpread(Position position, Option shortOption, Option longOption) => VerticalSpread._(position,
-          underlying: underlying,
-          money: money,
-          shortOption: shortOption,
-          longOption: longOption,
-          expiration: expiration,
-          spotMarket: spotMarket,
-          spotPrice: spotPrice);
+      VerticalSpread makeSpread(
+              Position position, Option shortOption, Option longOption) =>
+          VerticalSpread._(position,
+              underlying: underlying,
+              money: money,
+              shortOption: shortOption,
+              longOption: longOption,
+              expiration: expiration,
+              spotMarket: spotMarket,
+              spotPrice: spotPrice);
 
       for (final (lowStrike, highStrike) in _pairUp(strikeToOptions.keys)) {
         final (call: lowCall, put: lowPut) = strikeToOptions[lowStrike]!;
@@ -553,17 +743,21 @@ class VerticalSpread {
         // under @ lowStrike
         VerticalSpread? under = keepBestValidSpread([
           if (lowPut != null && highPut != null)
-            makeSpread(highPut.long(slippage) + lowPut.short(slippage), lowPut.asset.toOption, highPut.asset.toOption),
+            makeSpread(highPut.long(slippage) + lowPut.short(slippage),
+                lowPut.asset.toOption, highPut.asset.toOption),
           if (lowCall != null && highCall != null)
-            makeSpread(highCall.long(slippage) + lowCall.short(slippage), lowCall.asset.toOption, highCall.asset.toOption),
+            makeSpread(highCall.long(slippage) + lowCall.short(slippage),
+                lowCall.asset.toOption, highCall.asset.toOption),
         ]);
 
         // over @ highStrike
         VerticalSpread? over = keepBestValidSpread([
           if (lowPut != null && highPut != null)
-            makeSpread(highPut.short(slippage) + lowPut.long(slippage), highPut.asset.toOption, lowPut.asset.toOption),
+            makeSpread(highPut.short(slippage) + lowPut.long(slippage),
+                highPut.asset.toOption, lowPut.asset.toOption),
           if (lowCall != null && highCall != null)
-            makeSpread(highCall.short(slippage) + lowCall.long(slippage), highCall.asset.toOption, lowCall.asset.toOption),
+            makeSpread(highCall.short(slippage) + lowCall.long(slippage),
+                highCall.asset.toOption, lowCall.asset.toOption),
         ]);
 
         yield* [under, over].nonNulls;

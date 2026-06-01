@@ -34,7 +34,8 @@ void main() async {
   // browseVerticalSpreads(markets);
   // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
-  browseLongCalls(markets);
+  // browseLongCalls(markets);
+  browseStraddles(markets);
 
   // printOptionChain(markets);
 
@@ -209,6 +210,22 @@ void browseLongCalls(List<Market> allMarkets) {
         "${s.analyzer.valueAt(longCallMinusLongSpot.breakevens.last.price)} ==? ${PositionAnalyzer(spotMarket.toAsset(-s.moneyLeg), underlying: underlying, money: money).valueAt(longCallMinusLongSpot.breakevens.last.price)}");
   }
   print(spotMarket.midPrice);
+}
+
+void browseStraddles(List<Market> markets) {
+  final money = Commodity("USD");
+  final underlying = Commodity("BTC");
+
+  print(" ============== Straddles ==============");
+  for (Straddle s
+      in Straddle.generateAll(markets, underlying: underlying, money: money)) {
+    print("Strike: ${s.strikePrice.absolute}, "
+        "DTE: ${s.expiration.daysLeft}, "
+        "Cost(U): ${s.costInUnderlying.size.toStringAsFixed(4)}, "
+        "MoneySize: ${dollarify(s.moneyLeg.size)}, "
+        "BEvsMoneyDown: ${s.breakEvenVsFullMoneyDown.absolute.toStringAsFixed(0)} (${percentify(s.breakEvenVsFullMoneyDown.relative - 1.0, decimals: 1)}), "
+        "BEvsMoneyUp: ${s.breakEvenVsFullMoneyUp.absolute.toStringAsFixed(0)} (${percentify(s.breakEvenVsFullMoneyUp.relative - 1.0, decimals: 1)})");
+  }
 }
 
 void printOptionChain(List<Market> markets) {
