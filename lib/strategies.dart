@@ -419,7 +419,7 @@ class Straddle {
   final PriceInfo strikePrice;
   // Cost of the straddle in units of underlying.
   final Line costInUnderlying;
-  late final PriceInfo expectedMove;
+  late final PriceInfo distanceBetweenBreakEvens;
 
   late final PriceInfo breakEvenVsFullUnderlyingDown;
   late final PriceInfo breakEvenVsFullUnderlyingUp;
@@ -450,8 +450,8 @@ class Straddle {
         'formattedDate': expiration.formattedDate,
         'strikeAbsolute': strikePrice.absolute,
         'strikeRelative': strikePrice.relative,
-        'expectedMoveAbsolute': expectedMove.absolute,
-        'expectedMoveRelative': expectedMove.relative,
+        'distanceBetweenBreakEvensAbsolute': distanceBetweenBreakEvens.absolute,
+        'distanceBetweenBreakEvensRelative': distanceBetweenBreakEvens.relative,
         'breakEvenVsFullMoneyDownAbsolute': breakEvenVsFullMoneyDown.absolute,
         'breakEvenVsFullMoneyDownRelative': breakEvenVsFullMoneyDown.relative,
         'breakEvenVsFullMoneyUpAbsolute': breakEvenVsFullMoneyUp.absolute,
@@ -476,8 +476,7 @@ class Straddle {
       required this.underlying,
       required this.money,
       required this.expiration,
-      required this.spotPrice,
-      required double size})
+      required this.spotPrice})
       : callOption = callMarket.asset.toOption,
         putOption = putMarket.asset.toOption,
         analyzer =
@@ -488,8 +487,8 @@ class Straddle {
         costInUnderlying = spotMarket.toAsset(-strategy[money]),
         strikePrice = PriceInfo.fromAbsolute(
             callMarket.asset.toOption.strike, spotPrice) {
-    expectedMove =
-        PriceInfo.fromRelative(-moneyLeg.size / (spotPrice * size), spotPrice);
+    // ignore: unused_local_variable
+    final size = callLeg.size;
     final bvsMoney = analyzer.breakevens.toList();
     if (bvsMoney.length < 2) {
       throw Exception(
@@ -501,6 +500,9 @@ class Straddle {
         PriceInfo.fromAbsolute(bvsMoney.first.fromPrice, spotPrice);
     breakEvenVsFullMoneyUp =
         PriceInfo.fromAbsolute(bvsMoney.last.fromPrice, spotPrice);
+    distanceBetweenBreakEvens = PriceInfo.fromAbsolute(
+        breakEvenVsFullMoneyUp.absolute - breakEvenVsFullMoneyDown.absolute,
+        spotPrice);
 
     final breakevensVsUnderlying = strategy
         .analyzeVersus(moneyLeg + spotMarket.toAsset(-moneyLeg),
@@ -541,7 +543,6 @@ class Straddle {
       Straddle? bestStraddle;
 
       for (final strikeEntry in strikeGroups.entries) {
-        final strike = strikeEntry.key;
         final markets = strikeEntry.value;
         final callMarket = markets.calls.singleOrNull;
         final putMarket = markets.puts.singleOrNull;
@@ -561,7 +562,6 @@ class Straddle {
               money: money,
               expiration: expiration,
               spotPrice: spotPrice,
-              size: minSize,
             );
 
             // Retain the strategy which has the maximum money leg

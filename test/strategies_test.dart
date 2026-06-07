@@ -406,8 +406,8 @@ void main() {
           'formattedDate': '31 December 2026',
           'strikeAbsolute': 1000.0,
           'strikeRelative': 1.0,
-          'expectedMoveAbsolute': 80.0,
-          'expectedMoveRelative': 0.08,
+          'distanceBetweenBreakEvensAbsolute': 160.0,
+          'distanceBetweenBreakEvensRelative': 0.16,
 
           // Breakevens vs full money
           'breakEvenVsFullMoneyDownAbsolute': 920.0,

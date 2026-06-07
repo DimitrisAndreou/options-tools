@@ -197,7 +197,6 @@ void browseLongCalls(List<Market> allMarkets) {
     final callPrice = s.callMarket.midPrice;
     final leverageU = spot.midPrice / callPrice;
 
-    ;
     final longCallMinusLongSpot = PositionAnalyzer(
         s.optionLeg - spotMarket.swap(s.moneyLeg) + s.moneyLeg,
         underlying: underlying,
@@ -223,7 +222,7 @@ void browseStraddles(List<Market> markets) {
       in Straddle.generateAll(markets, underlying: underlying, money: money)) {
     print("Strike: ${s.strikePrice.absolute}, "
         "DTE: ${s.expiration.daysLeft}, "
-        "ExpectedMove: ${dollarify(s.expectedMove.absolute)} (${percentify(s.expectedMove.relative, decimals: 1)}), "
+        "DistanceBetweenBreakEvens: ${dollarify(s.distanceBetweenBreakEvens.absolute)} (${percentify(s.distanceBetweenBreakEvens.relative, decimals: 1, sign: false)}), "
         "BEvsMoneyDown: ${s.breakEvenVsFullMoneyDown.absolute.toStringAsFixed(0)} (${percentify(s.breakEvenVsFullMoneyDown.relative - 1.0, decimals: 1)}), "
         "BEvsMoneyUp: ${s.breakEvenVsFullMoneyUp.absolute.toStringAsFixed(0)} (${percentify(s.breakEvenVsFullMoneyUp.relative - 1.0, decimals: 1)})");
   }
