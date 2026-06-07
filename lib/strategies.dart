@@ -419,6 +419,7 @@ class Straddle {
   final PriceInfo strikePrice;
   // Cost of the straddle in units of underlying.
   final Line costInUnderlying;
+  late final PriceInfo expectedMove;
 
   late final PriceInfo breakEvenVsFullUnderlyingDown;
   late final PriceInfo breakEvenVsFullUnderlyingUp;
@@ -449,6 +450,8 @@ class Straddle {
         'formattedDate': expiration.formattedDate,
         'strikeAbsolute': strikePrice.absolute,
         'strikeRelative': strikePrice.relative,
+        'expectedMoveAbsolute': expectedMove.absolute,
+        'expectedMoveRelative': expectedMove.relative,
         'breakEvenVsFullMoneyDownAbsolute': breakEvenVsFullMoneyDown.absolute,
         'breakEvenVsFullMoneyDownRelative': breakEvenVsFullMoneyDown.relative,
         'breakEvenVsFullMoneyUpAbsolute': breakEvenVsFullMoneyUp.absolute,
@@ -473,7 +476,8 @@ class Straddle {
       required this.underlying,
       required this.money,
       required this.expiration,
-      required this.spotPrice})
+      required this.spotPrice,
+      required double size})
       : callOption = callMarket.asset.toOption,
         putOption = putMarket.asset.toOption,
         analyzer =
@@ -484,6 +488,8 @@ class Straddle {
         costInUnderlying = spotMarket.toAsset(-strategy[money]),
         strikePrice = PriceInfo.fromAbsolute(
             callMarket.asset.toOption.strike, spotPrice) {
+    expectedMove =
+        PriceInfo.fromRelative(-moneyLeg.size / (spotPrice * size), spotPrice);
     final bvsMoney = analyzer.breakevens.toList();
     if (bvsMoney.length < 2) {
       throw Exception(
@@ -555,6 +561,7 @@ class Straddle {
               money: money,
               expiration: expiration,
               spotPrice: spotPrice,
+              size: minSize,
             );
 
             // Retain the strategy which has the maximum money leg

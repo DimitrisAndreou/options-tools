@@ -221,8 +221,7 @@ void browseStraddles(List<Market> markets) {
       in Straddle.generateAll(markets, underlying: underlying, money: money)) {
     print("Strike: ${s.strikePrice.absolute}, "
         "DTE: ${s.expiration.daysLeft}, "
-        "Cost(U): ${s.costInUnderlying.size.toStringAsFixed(4)}, "
-        "MoneySize: ${dollarify(s.moneyLeg.size)}, "
+        "ExpectedMove: ${dollarify(s.expectedMove.absolute)} (${percentify(s.expectedMove.relative, decimals: 1)}), "
         "BEvsMoneyDown: ${s.breakEvenVsFullMoneyDown.absolute.toStringAsFixed(0)} (${percentify(s.breakEvenVsFullMoneyDown.relative - 1.0, decimals: 1)}), "
         "BEvsMoneyUp: ${s.breakEvenVsFullMoneyUp.absolute.toStringAsFixed(0)} (${percentify(s.breakEvenVsFullMoneyUp.relative - 1.0, decimals: 1)})");
   }
