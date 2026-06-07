@@ -216,6 +216,8 @@ void browseStraddles(List<Market> markets) {
   final money = Commodity("USD");
   final underlying = Commodity("BTC");
 
+  final spotMarket =
+      Oracle.fromMarkets(markets).marketFor(asset: underlying, money: money);
   print(" ============== Straddles ==============");
   for (Straddle s
       in Straddle.generateAll(markets, underlying: underlying, money: money)) {
@@ -225,6 +227,7 @@ void browseStraddles(List<Market> markets) {
         "BEvsMoneyDown: ${s.breakEvenVsFullMoneyDown.absolute.toStringAsFixed(0)} (${percentify(s.breakEvenVsFullMoneyDown.relative - 1.0, decimals: 1)}), "
         "BEvsMoneyUp: ${s.breakEvenVsFullMoneyUp.absolute.toStringAsFixed(0)} (${percentify(s.breakEvenVsFullMoneyUp.relative - 1.0, decimals: 1)})");
   }
+  print('Spot price: ${spotMarket.midPrice}');
 }
 
 void printOptionChain(List<Market> markets) {
