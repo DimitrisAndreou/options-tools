@@ -808,7 +808,7 @@ function renderStraddlesChart(data, chartDom) {
     grid,
     yAxis: {
       type: 'value',
-      name: `⇳ Breakeven vs Cash (${money})`,
+      name: `⇳ Breakevens`,
       nameLocation: 'end',
       nameTextStyle: yAxisTitleNameTextStyle,
       axisLabel: {
