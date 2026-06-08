@@ -142,6 +142,7 @@ footer {
 .text-neutral { color: var(--primary); font-weight: bold; }
 .text-label { color: var(--text-muted); font-weight: bold; }
 .text-good-alt { color: var(--success); }
+.text-neutral-alt { color: var(--primary); }
 .text-muted-alt { color: var(--secondary); }
 .text-light-alt { color: #cbd5e1; }
 .text-warning-icon { color: var(--accent); }

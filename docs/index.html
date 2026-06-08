@@ -408,33 +408,27 @@
         <td class="text-end"><span class="text-neutral tpl-costInMoney"></span> <small class="text-muted-alt">(<span
               class="text-neutral tpl-costInUnderlying"></span> <span class="tpl-underlying"></span>)</small></td>
       </tr>
-      <tr>
-        <td><span class="text-label">Risk Zone</span></td>
-        <td class="text-end"><span class="text-neutral tpl-distanceRelative"></span></td>
-      </tr>
     </table>
 
     <div class="outcomes-panel">
-      <div class="outcomes-header">Breakevens</div>
-      <div class="outcome-row mb-0">
-        <span>🡅</span>
-        <span><span class="text-good tpl-beMoneyUpAbsolute"></span> <small class="text-good-alt">(<span
-              class="tpl-beMoneyUpRelative"></span>)</small></span>
+      <div class="outcomes-header">Profit when</div>
+      <div class="outcome-row">
+        <span>&le; <span class="text-good tpl-beMoneyDownAbsolute"></span> <small class="text-neutral-alt">(<span
+              class="tpl-beMoneyDownRelative"></span>)</small></span>
       </div>
       <div class="outcome-row">
-        <span>🡇</span>
-        <span><span class="text-good tpl-beMoneyDownAbsolute"></span> <small class="text-good-alt">(<span
-              class="tpl-beMoneyDownRelative"></span>)</small></span>
+        <span>&ge; <span class="text-good tpl-beMoneyUpAbsolute"></span> <small class="text-neutral-alt">(<span
+              class="tpl-beMoneyUpRelative"></span>)</small></span>
+      </div>
+      <div class="outcomes-header mt-2">Loss when</div>
+      <div class="outcome-row mb-0">
+        <span>Between <span class="text-bad tpl-beMoneyDownAbsolute"></span> <small class="text-neutral-alt">(<span
+              class="tpl-beMoneyDownRelative"></span>)</small> and <span class="text-bad tpl-beMoneyUpAbsolute"></span>
+          <small class="text-neutral-alt">(<span class="tpl-beMoneyUpRelative"></span>)</small></span>
       </div>
     </div>
 
     <div class="warnings-panel">
-      <div class="warning-row">
-        <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-        If <span class="tpl-underlying"></span> stays between <span class="text-neutraltpl-beMoneyDownAbsolute"></span>
-        and
-        <span class="text-neutral tpl-beMoneyUpAbsolute"></span> at expiration, you will underperform holding 100% Cash.
-      </div>
       <div class="warning-row">
         <i class="fas fa-skull-crossbones me-1 text-warning-icon"></i>
         Maximum loss is <span class="text-bad tpl-costInMoney"></span> <small class="text-bad">(-100%)</small> if <span
