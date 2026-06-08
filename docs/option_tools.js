@@ -282,10 +282,14 @@ function prepareStraddleData(value) {
     callName: value.call,
     callURL: value.callURL,
     callSize: value.callSize,
+    callCostInMoney: dollarFmt.format(value.callCostInMoney),
+    callCostInUnderlying: underlyingFmt.format(value.callCostInUnderlying),
 
     putName: value.put,
     putURL: value.putURL,
     putSize: value.putSize,
+    putCostInMoney: dollarFmt.format(value.putCostInMoney),
+    putCostInUnderlying: underlyingFmt.format(value.putCostInUnderlying),
 
     costInMoney: dollarFmt.format(-value.moneySize),
     costInUnderlying: underlyingFmt.format(value.costInUnderlying),
@@ -941,29 +945,12 @@ function renderStraddlesChart(data, chartDom) {
     legend: { show: false },
     animationDurationUpdate: 800,
     animationEasingUpdate: 'quinticOut',
-    dataZoom: [
-      {
-        type: 'inside',
-        xAxisIndex: 0,
-        filterMode: 'none'
-      },
-      {
-        type: 'inside',
-        yAxisIndex: 0,
-        filterMode: 'none'
-      }
-    ],
   });
 
   chart.on('click', function (params) {
     if (params.componentType === 'series' && params.data) {
       populateStrategyDetails(params.data);
     }
-  });
-  chart.on('datazoom', function () {
-    chart.dispatchAction({
-      type: 'hideTip'
-    });
   });
 
   return chart;

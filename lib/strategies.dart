@@ -407,6 +407,7 @@ class Straddle {
   final Market spotMarket;
   final Market callMarket;
   final Market putMarket;
+  final double slippage;
 
   final PositionAnalyzer analyzer;
 
@@ -443,9 +444,19 @@ class Straddle {
         'call': callLeg.asset.name,
         'callURL': callURL,
         'callSize': callLeg.size,
+        'callCostInMoney': callLeg.size * callMarket.buyPrice(slippage),
+        'callCostInUnderlying': spotMarket
+            .toAsset(money.ofSize(callLeg.size * callMarket.buyPrice(slippage)),
+                slippage)
+            .size,
         'put': putLeg.asset.name,
         'putURL': putURL,
         'putSize': putLeg.size,
+        'putCostInMoney': putLeg.size * putMarket.buyPrice(slippage),
+        'putCostInUnderlying': spotMarket
+            .toAsset(money.ofSize(putLeg.size * putMarket.buyPrice(slippage)),
+                slippage)
+            .size,
         'DTE': expiration.daysLeft,
         'formattedDate': expiration.formattedDate,
         'strikeAbsolute': strikePrice.absolute,
@@ -476,7 +487,8 @@ class Straddle {
       required this.underlying,
       required this.money,
       required this.expiration,
-      required this.spotPrice})
+      required this.spotPrice,
+      required this.slippage})
       : callOption = callMarket.asset.toOption,
         putOption = putMarket.asset.toOption,
         analyzer =
@@ -562,6 +574,7 @@ class Straddle {
               money: money,
               expiration: expiration,
               spotPrice: spotPrice,
+              slippage: slippage,
             );
 
             // Retain the strategy which has the maximum money leg
