@@ -24,6 +24,19 @@ async function loadLongOptions(ticker, slippage, minDte, maxDte, chartDom) {
   document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(longOptionsJson));
 }
 
+async function loadStraddles(ticker, slippage, minDte, maxDte, chartDom) {
+  const straddlesJson = JSON.parse(await (
+    ticker === "BTC" || ticker === "ETH" || ticker === "SOL"
+      ? deribitStraddlesDart(ticker, slippage, minDte, maxDte)
+      : yfinanceStraddlesDart(ticker, slippage, minDte, maxDte)
+  ));
+  console.log({ straddlesJson });
+  renderStraddlesChart(straddlesJson, chartDom);
+
+  document.getElementById('spot-ticker-name').textContent = ticker;
+  document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(straddlesJson));
+}
+
 async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) {
   if (!ticker) return;
   try {
@@ -35,6 +48,8 @@ async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) 
       await loadCoveredCalls(ticker, slippage, minDte, maxDte, chartDom);
     } else if (strategyName === 'longOption') {
       await loadLongOptions(ticker, slippage, minDte, maxDte, chartDom);
+    } else if (strategyName === 'straddle') {
+      await loadStraddles(ticker, slippage, minDte, maxDte, chartDom);
     } else {
       console.warn(`Strategy ${strategyName} is not implemented yet.`);
     }
