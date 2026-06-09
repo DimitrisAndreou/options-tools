@@ -219,7 +219,8 @@ void browseStraddles(List<Market> markets) {
       Oracle.fromMarkets(markets).marketFor(asset: underlying, money: money);
   print(" ============== Straddles ==============");
   for (Straddle s
-      in Straddle.generateAll(markets, underlying: underlying, money: money)) {
+      in Straddle.generateAll(markets, underlying: underlying, money: money)
+          .toList()) {
     print("Strike: ${s.strikePrice.absolute}, "
         "DTE: ${s.expiration.daysLeft}, "
         "DistanceBetweenBreakEvens: ${dollarify(s.distanceBetweenBreakEvens.absolute)} (${percentify(s.distanceBetweenBreakEvens.relative, decimals: 1, sign: false)}), "

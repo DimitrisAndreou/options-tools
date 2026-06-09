@@ -577,13 +577,13 @@ class Straddle {
               slippage: slippage,
             );
 
-            // Retain the strategy which has the maximum money leg
+            // Retain the cheapest straddle.
             if (bestStraddle == null ||
                 straddle.moneyLeg.size > bestStraddle.moneyLeg.size) {
               bestStraddle = straddle;
             }
           } catch (e) {
-            // print("Skipped Straddle at strike $strike due to error: $e");
+            print("Skipped Straddle at ${strikeEntry.key} due to error: $e");
           }
         }
       }

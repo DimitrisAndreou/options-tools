@@ -339,7 +339,7 @@ void main() {
         }));
   });
 
-  test('Straddle JSON generation and cheapest selection test', () {
+  test('Straddle JSON generation and centered selection test', () {
     final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
     final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
@@ -351,23 +351,23 @@ void main() {
       askPrice: 1000.0,
     );
 
-    // Strike 900 options - total cost 120
+    // Strike 900 options (cheaper but less centered) - total cost 120
     final call900 = Option('BTC-900-C', underlying: btc, money: usd, strike: 900.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket900 = Market.create(asset: call900, money: usd, bidPrice: 110.0, askPrice: 110.0);
+    final callMarket900 = Market.create(asset: call900, money: usd, bidPrice: 60.0, askPrice: 60.0);
     final put900 = Option('BTC-900-P', underlying: btc, money: usd, strike: 900.0, isPut: true, expiration: expiration, venues: {Venue.Deribit});
-    final putMarket900 = Market.create(asset: put900, money: usd, bidPrice: 10.0, askPrice: 10.0);
+    final putMarket900 = Market.create(asset: put900, money: usd, bidPrice: 60.0, askPrice: 60.0);
 
-    // Strike 1000 options (ATM - cheapest straddle) - total cost 80
+    // Strike 1000 options (ATM - more expensive but perfectly centered) - total cost 140
     final call1000 = Option('BTC-1000-C', underlying: btc, money: usd, strike: 1000.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket1000 = Market.create(asset: call1000, money: usd, bidPrice: 40.0, askPrice: 40.0);
+    final callMarket1000 = Market.create(asset: call1000, money: usd, bidPrice: 70.0, askPrice: 70.0);
     final put1000 = Option('BTC-1000-P', underlying: btc, money: usd, strike: 1000.0, isPut: true, expiration: expiration, venues: {Venue.Deribit});
-    final putMarket1000 = Market.create(asset: put1000, money: usd, bidPrice: 40.0, askPrice: 40.0);
+    final putMarket1000 = Market.create(asset: put1000, money: usd, bidPrice: 70.0, askPrice: 70.0);
 
-    // Strike 1100 options - total cost 120
+    // Strike 1100 options (cheaper but less centered) - total cost 120
     final call1100 = Option('BTC-1100-C', underlying: btc, money: usd, strike: 1100.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket1100 = Market.create(asset: call1100, money: usd, bidPrice: 10.0, askPrice: 10.0);
+    final callMarket1100 = Market.create(asset: call1100, money: usd, bidPrice: 60.0, askPrice: 60.0);
     final put1100 = Option('BTC-1100-P', underlying: btc, money: usd, strike: 1100.0, isPut: true, expiration: expiration, venues: {Venue.Deribit});
-    final putMarket1100 = Market.create(asset: put1100, money: usd, bidPrice: 110.0, askPrice: 110.0);
+    final putMarket1100 = Market.create(asset: put1100, money: usd, bidPrice: 60.0, askPrice: 60.0);
 
     final straddles = Straddle.generateAll(
       [spotMarket, callMarket900, putMarket900, callMarket1000, putMarket1000, callMarket1100, putMarket1100],
@@ -380,7 +380,7 @@ void main() {
     final straddle = straddles.first;
 
     expect(straddle.strikePrice.absolute, equals(1000.0));
-    expect(straddle.moneyLeg.size, equals(-80.0)); // cost of 40 call + 40 put
+    expect(straddle.moneyLeg.size, equals(-140.0)); // cost of 70 call + 70 put
 
     final json = straddle.toJson();
     final dte = json.remove('DTE');
@@ -393,37 +393,37 @@ void main() {
           'strategyURL': null,
           'underlying': 'BTC',
           'underlyingURL': 'https://www.deribit.com/spot/BTC_USDT',
-          'costInUnderlying': 0.08,
-          'moneySize': -80.0,
+          'costInUnderlying': 0.14,
+          'moneySize': -140.0,
           'money': 'USD',
           'spotPrice': 1000.0,
           'call': 'BTC-1000-C',
           'callURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
           'callSize': 1.0,
-          'callCostInMoney': 40.0,
-          'callCostInUnderlying': 0.04,
+          'callCostInMoney': 70.0,
+          'callCostInUnderlying': 0.07,
           'put': 'BTC-1000-P',
           'putURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-P',
           'putSize': 1.0,
-          'putCostInMoney': 40.0,
-          'putCostInUnderlying': 0.04,
+          'putCostInMoney': 70.0,
+          'putCostInUnderlying': 0.07,
           'formattedDate': '31 December 2026',
           'strikeAbsolute': 1000.0,
           'strikeRelative': 1.0,
-          'distanceBetweenBreakEvensAbsolute': 160.0,
-          'distanceBetweenBreakEvensRelative': 0.16,
+          'distanceBetweenBreakEvensAbsolute': 280.0,
+          'distanceBetweenBreakEvensRelative': 0.28,
 
           // Breakevens vs full money
-          'breakEvenVsFullMoneyDownAbsolute': 920.0,
-          'breakEvenVsFullMoneyDownRelative': 0.92,
-          'breakEvenVsFullMoneyUpAbsolute': 1080.0,
-          'breakEvenVsFullMoneyUpRelative': 1.08,
+          'breakEvenVsFullMoneyDownAbsolute': 860.0,
+          'breakEvenVsFullMoneyDownRelative': 0.86,
+          'breakEvenVsFullMoneyUpAbsolute': 1140.0,
+          'breakEvenVsFullMoneyUpRelative': 1.14,
 
           // Breakevens vs full underlying
-          'breakEvenVsFullUnderlyingDownAbsolute': 925.9259259259259,
-          'breakEvenVsFullUnderlyingDownRelative': 0.9259259259259258,
-          'breakEvenVsFullUnderlyingUpAbsolute': 1086.9565217391305,
-          'breakEvenVsFullUnderlyingUpRelative': 1.0869565217391306,
+          'breakEvenVsFullUnderlyingDownAbsolute': 877.1929824561404,
+          'breakEvenVsFullUnderlyingDownRelative': 0.8771929824561404,
+          'breakEvenVsFullUnderlyingUpAbsolute': 1162.7906976744186,
+          'breakEvenVsFullUnderlyingUpRelative': 1.1627906976744186,
         }));
   });
 }
