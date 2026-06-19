@@ -57,9 +57,19 @@ async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) 
     console.error("JavaScript caught Dart error:", error.error);
     console.error("Dart stack trace:", error.stack);
 
-    document.getElementById('error-message').textContent =
-      `Error! This tool only works in Chrome (sorry!). ` +
-      `If you are using Chrome, check the ticker.`;
+    let errorMsg = "An unexpected error occurred.";
+    if (error) {
+      if (error.error) {
+        errorMsg = String(error.error);
+      } else {
+        errorMsg = String(error);
+      }
+    }
+
+    // Clean common prefixes (e.g. "Exception: ", "StateError: ")
+    errorMsg = errorMsg.replace(/^(Exception|StateError|Error):\s*/i, "");
+
+    document.getElementById('error-message').textContent = errorMsg;
     const myModal = new bootstrap.Modal(document.getElementById('errorModal'));
     myModal.show();
   }

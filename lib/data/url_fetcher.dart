@@ -7,7 +7,7 @@ class UrlFetcher {
 
   // Cloudflare worker.
   static const String _proxyBase =
-      'https://yahoo-proxy.jim-andreou.workers.dev';
+      'https://yahoo-proxy-v2.jim-andreou.workers.dev';
 
   UrlFetcher(Duration duration) : _duration = duration;
 

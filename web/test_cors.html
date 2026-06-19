@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CORS & Proxy Diagnostics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --success: #4ade80;
+      --error: #f87171;
+      --warning: #facc15;
+      --info: #a78bfa;
+      --border-color: #334155;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 2rem 0;
+    }
+
+    h1, h2, h3, h4 {
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    .card-custom {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      padding: 1.5rem;
+      height: 100%;
+      transition: border-color 0.2s ease;
+    }
+
+    .card-custom:hover {
+      border-color: #475569;
+    }
+
+    .btn-custom {
+      background-color: var(--primary);
+      color: #0f172a;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-custom:hover {
+      background-color: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary-custom {
+      background-color: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary-custom:hover {
+      background-color: var(--border-color);
+    }
+
+    /* Terminal Console Styling */
+    .console-container {
+      background-color: #020617;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.9rem;
+      display: flex;
+      flex-direction: column;
+      height: 450px;
+      box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.06);
+    }
+
+    .console-header {
+      background-color: #0f172a;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top-left-radius: 11px;
+      border-top-right-radius: 11px;
+    }
+
+    .console-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .console-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .console-dot.red { background-color: #ef4444; }
+    .console-dot.yellow { background-color: #eab308; }
+    .console-dot.green { background-color: #22c55e; }
+
+    .console-body {
+      padding: 1rem;
+      overflow-y: auto;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .log-entry {
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
+    .log-time {
+      color: var(--text-muted);
+      margin-right: 8px;
+      font-size: 0.8rem;
+    }
+
+    .log-info { color: var(--info); }
+    .log-success { color: var(--success); }
+    .log-warning { color: var(--warning); }
+    .log-error { color: var(--error); }
+    .log-default { color: var(--text-main); }
+
+    .input-field {
+      background-color: #0f172a;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: 8px;
+      padding: 0.6rem;
+      font-family: 'Roboto Mono', monospace;
+      width: 100%;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="row mb-4">
+      <div class="col-12 text-center">
+        <h1 class="text-white"><i class="fa-solid fa-flask text-info me-2"></i>CORS & Cloudflare Worker Diagnostics</h1>
+        <p class="text-muted">Use this page to check Same-Origin Policy behavior, debug cookie capturing, and test your new/old Workers.</p>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <!-- Configuration Panel -->
+      <div class="col-md-5">
+        <div class="card-custom">
+          <h3 class="h5 mb-4 text-white"><i class="fa-solid fa-sliders text-primary me-2"></i>Configuration</h3>
+          
+          <div class="mb-3">
+            <label for="proxy-url">Proxy Worker URL</label>
+            <input type="text" id="proxy-url" class="input-field" value="https://yahoo-proxy.jim-andreou.workers.dev">
+            <small class="text-muted mt-1 d-block">Enter your deployed worker URL (e.g. your new V2 worker endpoint).</small>
+          </div>
+
+          <div class="mb-4">
+            <label for="ticker-input">Test Ticker</label>
+            <input type="text" id="ticker-input" class="input-field" value="GOOG" style="text-transform: uppercase;">
+          </div>
+
+          <div class="d-grid gap-2">
+            <button class="btn-custom" onclick="runDirectFetch()"><i class="fa-solid fa-shield-halved me-2"></i>Test 1: Direct Fetch (No Proxy)</button>
+            <button class="btn-custom" onclick="runProxyHandshake()"><i class="fa-solid fa-network-wired me-2"></i>Test 2: Proxy Handshake (JS)</button>
+            <button id="btn-dart-test" class="btn-custom" onclick="runDartInteropTest()" disabled><i class="fa-solid fa-dharmachakra me-2"></i>Test 3: Dart JS Interop (Yahoo)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Log Terminal -->
+      <div class="col-md-7">
+        <div class="console-container">
+          <div class="console-header">
+            <div class="console-dots">
+              <div class="console-dot red"></div>
+              <div class="console-dot.yellow yellow"></div>
+              <div class="console-dot.green green"></div>
+            </div>
+            <div class="text-muted" style="font-size: 0.8rem; font-weight: 500;">Console Output Log</div>
+            <div>
+              <button class="btn btn-sm btn-outline-secondary py-0" onclick="clearConsole()" style="font-size: 0.75rem;">Clear</button>
+            </div>
+          </div>
+          <div class="console-body" id="console-body">
+            <div class="log-entry"><span class="log-time">[System]</span><span class="log-info">Diagnostics page ready.</span></div>
+            <div class="log-entry"><span class="log-time">[System]</span><span class="log-warning">Waiting for Dart compiler payload... (Make sure to serve or compile option_tools.js / main.dart.js)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. Setup global jsMain mock so that compiled Dart initialization doesn't throw a null dereference
+    window.jsMain = function() {
+      log('Dart JS Interop', 'Dart SDK compiled and loaded successfully!', 'success');
+      document.getElementById('btn-dart-test').disabled = false;
+      log('Dart JS Interop', 'Test 3 (Dart JS Interop) is now ENABLED.', 'info');
+    };
+
+    function log(category, message, type = 'default') {
+      const consoleBody = document.getElementById('console-body');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'log-time';
+      const now = new Date();
+      timeSpan.textContent = `[${now.toTimeString().split(' ')[0]}] [${category}]`;
+      
+      const msgSpan = document.createElement('span');
+      msgSpan.className = `log-${type}`;
+      msgSpan.textContent = ` ${message}`;
+      
+      entry.appendChild(timeSpan);
+      entry.appendChild(msgSpan);
+      consoleBody.appendChild(entry);
+      consoleBody.scrollTop = consoleBody.scrollHeight;
+    }
+
+    function clearConsole() {
+      document.getElementById('console-body').innerHTML = '';
+      log('System', 'Console cleared.', 'info');
+    }
+
+    // TEST 1: Direct fetch to Yahoo Finance (Will fail due to CORS)
+    async function runDirectFetch() {
+      log('Test 1', 'Starting direct fetch (no proxy) to fc.yahoo.com...', 'info');
+      try {
+        const response = await fetch('https://fc.yahoo.com', {
+          method: 'GET',
+          headers: {
+            'Accept': '*/*'
+          }
+        });
+        log('Test 1', `Success! Status: ${response.status}`, 'success');
+      } catch (err) {
+        log('Test 1', `Expected CORS Block: ${err.message}`, 'error');
+        log('Test 1', 'The browser Same-Origin Policy prevented Javascript from reading the response.', 'warning');
+      }
+    }
+
+    // Clean cookie header utility equivalent to Dart version
+    function cleanCookieHeader(rawCookie) {
+      if (!rawCookie) return '';
+      const cleanParts = [];
+      const parts = rawCookie.split(/,(?=[^;]*=)/);
+      const metadata = new Set(['expires', 'domain', 'path', 'samesite', 'max-age', 'secure', 'httponly']);
+
+      for (const part of parts) {
+        const subParts = part.split(';');
+        for (const sub of subParts) {
+          const trimmed = sub.trim();
+          if (trimmed.includes('=')) {
+            const key = trimmed.split('=')[0].toLowerCase();
+            if (!metadata.has(key)) {
+              cleanParts.push(trimmed);
+            }
+          }
+        }
+      }
+      return [...new Set(cleanParts)].join('; ');
+    }
+
+    // TEST 2: Simulate Handshake + Crumb Fetch using the Proxy input
+    async function runProxyHandshake() {
+      const proxyUrl = document.getElementById('proxy-url').value.trim();
+      if (!proxyUrl) {
+        log('Test 2', 'Error: Proxy Worker URL is empty.', 'error');
+        return;
+      }
+      log('Test 2', `Starting Proxy Handshake via worker: ${proxyUrl}`, 'info');
+
+      try {
+        // Phase 1: fc.yahoo.com
+        const fcUrl = `${proxyUrl}?target=${encodeURIComponent('https://fc.yahoo.com')}`;
+        log('Test 2', 'Phase 1: Fetching cookie from fc.yahoo.com...', 'info');
+        
+        const res1 = await fetch(fcUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': '*/*'
+          }
+        });
+
+        log('Test 2', `Phase 1 Status: ${res1.status}`, 'info');
+
+        // Access Exposed Headers
+        let rawCookie = res1.headers.get('x-yahoo-cookie') || res1.headers.get('X-Yahoo-Cookie');
+        if (!rawCookie) {
+          log('Test 2', 'Warning: x-yahoo-cookie not found in response headers.', 'warning');
+          log('Test 2', `Available headers: ${[...res1.headers.keys()].join(', ') || 'none'}`, 'warning');
+          log('Test 2', 'If running in Safari/Firefox, the wildcard Access-Control-Expose-Headers: * might be failing.', 'error');
+          throw new Error('Could not capture cookie');
+        }
+
+        log('Test 2', `Captured cookie! Raw length: ${rawCookie.length}`, 'success');
+        const cleanedCookie = cleanCookieHeader(rawCookie);
+        log('Test 2', `Cleaned cookie: ${cleanedCookie}`, 'info');
+
+        // Phase 2: getcrumb
+        log('Test 2', 'Phase 2: Requesting crumb...', 'info');
+        const crumbUrl = `${proxyUrl}?target=${encodeURIComponent('https://query2.finance.yahoo.com/v1/test/getcrumb')}`;
+        
+        const res2 = await fetch(crumbUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': '*/*',
+            'x-proxy-cookie': cleanedCookie
+          }
+        });
+
+        const crumb = await res2.text();
+        if (crumb.includes('<html')) {
+          log('Test 2', 'Phase 2 failed: Crumb request returned HTML (Session Rejected).', 'error');
+          throw new Error('Session rejected');
+        }
+
+        log('Test 2', `Success! Crumb captured: ${crumb}`, 'success');
+      } catch (err) {
+        log('Test 2', `Proxy Handshake Failed: ${err.message}`, 'error');
+      }
+    }
+
+    // TEST 3: Invoke the compiled Dart Covered Calls JS interop
+    async function runDartInteropTest() {
+      const ticker = document.getElementById('ticker-input').value.trim().toUpperCase();
+      if (!ticker) {
+        log('Test 3', 'Error: Ticker is empty.', 'error');
+        return;
+      }
+      log('Test 3', `Requesting Covered Calls for ${ticker} via Dart JS Interop...`, 'info');
+
+      try {
+        if (typeof window.yfinanceCoveredCallsDart !== 'function') {
+          throw new Error('yfinanceCoveredCallsDart function is not defined on window.');
+        }
+
+        log('Test 3', 'Calling yfinanceCoveredCallsDart (this runs the Dart code and uses fetch internally)...', 'info');
+        
+        // yfinanceCoveredCallsDart returns a Promise
+        const resultPromise = window.yfinanceCoveredCallsDart(ticker, 0.5, 7, 1092);
+        const resultJson = await resultPromise;
+        
+        log('Test 3', `Successfully received result from Dart!`, 'success');
+        const data = JSON.parse(resultJson);
+        log('Test 3', `Parsed ${data.length} options strategies. Spot price: ${data[0]?.spotMarket?.bidPrice || 'unknown'}`, 'success');
+        console.log(data);
+      } catch (err) {
+        log('Test 3', `Dart Interop Error: ${err.message || err}`, 'error');
+        if (err.stack) {
+          console.error(err);
+        }
+      }
+    }
+  </script>
+
+  <!-- Load Compiled Dart scripts -->
+  <script defer src="main.dart.js"></script>
+</body>
+</html>

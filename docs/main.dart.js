@@ -8711,7 +8711,7 @@ q=f
 s=1
 break}}p=4
 m=B.a.D(a7,"yahoo.com")
-l=m?A.cZ("https://yahoo-proxy.jim-andreou.workers.dev?target="+A.ma(2,a7,B.f,!1)):A.cZ(a7)
+l=m?A.cZ("https://yahoo-proxy-v2.jim-andreou.workers.dev?target="+A.ma(2,a7,B.f,!1)):A.cZ(a7)
 s=7
 return A.Y(A.tf(l,a8),$async$aK)
 case 7:k=b0
