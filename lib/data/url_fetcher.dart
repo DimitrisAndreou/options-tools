@@ -14,7 +14,8 @@ class UrlFetcher {
   Future<String> fetch(String uri, {Map<String, String>? headers}) async {
     final cacheKey = _getCacheKeyIgnoringCrumb(uri);
 
-    final isHandshake = uri.contains('fc.yahoo.com') || uri.contains('getcrumb');
+    final isHandshake =
+        uri.contains('fc.yahoo.com') || uri.contains('getcrumb');
 
     if (!isHandshake) {
       String? cached = _cache.read<String>(cacheKey);
@@ -31,10 +32,26 @@ class UrlFetcher {
           ? Uri.parse('$_proxyBase?target=${Uri.encodeComponent(uri)}')
           : Uri.parse(uri);
 
-      // 2. Execute the request
-      http.Response response = await http.get(finalUri, headers: headers);
+      // 2. Prepare headers for the browser environment
+      // We strip 'User-Agent' and 'Accept' when calling the proxy because
+      // browsers forbid client JS from setting User-Agent, and attempts to do so
+      // trigger CORS preflight blocks. The worker sets these automatically anyway.
+      Map<String, String>? requestHeaders;
+      if (headers != null) {
+        requestHeaders = Map<String, String>.from(headers);
+        if (isYahoo) {
+          requestHeaders.remove('User-Agent');
+          requestHeaders.remove('user-agent');
+          requestHeaders.remove('Accept');
+          requestHeaders.remove('accept');
+        }
+      }
 
-      // 3. Status Code Validation
+      // 4. Execute the request
+      http.Response response =
+          await http.get(finalUri, headers: requestHeaders);
+
+      // 5. Status Code Validation
       // We allow Yahoo's 404 on the cookie-granting endpoint (fc.yahoo.com)
       // because it still provides the necessary session headers.
       if (response.statusCode != 200) {
@@ -48,7 +65,7 @@ class UrlFetcher {
         }
       }
 
-      // 4. Extract Camouflaged Cookie
+      // 6. Extract Camouflaged Cookie
       // If the Worker sent back our custom header, inject it into the mutable
       // headers map so the next call (the Crumb or Data) already has it.
       if (isYahoo) {
@@ -68,7 +85,7 @@ class UrlFetcher {
         }
       }
 
-      // 5. Cache and Return
+      // 7. Cache and Return
       String value = response.body;
       if (!isHandshake) {
         _cache.create(cacheKey, value, expiry: _duration);
@@ -87,13 +104,17 @@ class UrlFetcher {
       if (parsed.queryParameters.containsKey('crumb')) {
         final queryParams = Map<String, String>.from(parsed.queryParameters);
         queryParams.remove('crumb');
-        
-        final newUri = parsed.replace(
-          query: queryParams.isEmpty ? '' : Uri(queryParameters: queryParams).query,
-        ).toString();
-        
-        cacheKey = queryParams.isEmpty && newUri.endsWith('?') 
-            ? newUri.substring(0, newUri.length - 1) 
+
+        final newUri = parsed
+            .replace(
+              query: queryParams.isEmpty
+                  ? ''
+                  : Uri(queryParameters: queryParams).query,
+            )
+            .toString();
+
+        cacheKey = queryParams.isEmpty && newUri.endsWith('?')
+            ? newUri.substring(0, newUri.length - 1)
             : newUri;
       }
     } catch (_) {}
