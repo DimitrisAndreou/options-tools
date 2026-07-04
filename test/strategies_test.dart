@@ -50,6 +50,7 @@ void main() {
     expect(
         json,
         equals({
+          'id': '2026-12-31~1000',
           'strategyType': 'coveredCall',
           'strategyURL': null,
           'moneyYield': 1.0526315789473684,
@@ -122,6 +123,7 @@ void main() {
     expect(
         json,
         equals({
+          'id': '2026-12-31~1000',
           'strategyType': 'longCall',
           'strategyURL': null,
           'maxLeverage': 20.0,
@@ -191,6 +193,7 @@ void main() {
     expect(
         json,
         equals({
+          'id': '2026-12-31~1000',
           'strategyType': 'longPut',
           'strategyURL': null,
           'maxLeverage': 20.0,
@@ -281,6 +284,7 @@ void main() {
     expect(
         overJson,
         equals({
+          'id': '2026-12-31~1000~1100~call',
           'strategyType': 'verticalSpread',
           'strategyURL': null,
           'underlying': 'BTC',
@@ -313,6 +317,7 @@ void main() {
     expect(
         underJson,
         equals({
+          'id': '2026-12-31~1100~1000~call',
           'strategyType': 'verticalSpread',
           'strategyURL': null,
           'underlying': 'BTC',
@@ -389,6 +394,7 @@ void main() {
     expect(
         json,
         equals({
+          'id': '2026-12-31~1000',
           'strategyType': 'straddle',
           'strategyURL': null,
           'underlying': 'BTC',

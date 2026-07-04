@@ -1,41 +1,20 @@
-async function loadCoveredCalls(ticker, slippage, minDte, maxDte, chartDom) {
-  const coveredCallsJson = JSON.parse(await (
-    ticker === "BTC" || ticker === "ETH" || ticker === "SOL"
-      ? deribitCoveredCallsDart(ticker, slippage, minDte, maxDte)
-      : yfinanceCoveredCallsDart(ticker, slippage, minDte, maxDte)
-  ));
-  console.log({ coveredCallsJson });
-  renderCoveredCallsChart(coveredCallsJson, chartDom);
-
-  document.getElementById('spot-ticker-name').textContent = ticker;
-  document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(coveredCallsJson));
-}
-
-async function loadLongOptions(ticker, slippage, minDte, maxDte, chartDom) {
-  const longOptionsJson = JSON.parse(await (
-    ticker === "BTC" || ticker === "ETH" || ticker === "SOL"
-      ? deribitLongOptionsDart(ticker, slippage, minDte, maxDte)
-      : yfinanceLongOptionsDart(ticker, slippage, minDte, maxDte)
-  ));
-  console.log({ longOptionsJson });
-  renderLongOptionsChart(longOptionsJson, chartDom);
-
-  document.getElementById('spot-ticker-name').textContent = ticker;
-  document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(longOptionsJson));
-}
-
-async function loadStraddles(ticker, slippage, minDte, maxDte, chartDom) {
-  const straddlesJson = JSON.parse(await (
-    ticker === "BTC" || ticker === "ETH" || ticker === "SOL"
-      ? deribitStraddlesDart(ticker, slippage, minDte, maxDte)
-      : yfinanceStraddlesDart(ticker, slippage, minDte, maxDte)
-  ));
-  console.log({ straddlesJson });
-  renderStraddlesChart(straddlesJson, chartDom);
-
-  document.getElementById('spot-ticker-name').textContent = ticker;
-  document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(straddlesJson));
-}
+const STRATEGY_CONFIGS = {
+  coveredCall: {
+    deribitFetcherName: 'deribitCoveredCallsDart',
+    yfinanceFetcherName: 'yfinanceCoveredCallsDart',
+    renderer: renderCoveredCallsChart
+  },
+  longOption: {
+    deribitFetcherName: 'deribitLongOptionsDart',
+    yfinanceFetcherName: 'yfinanceLongOptionsDart',
+    renderer: renderLongOptionsChart
+  },
+  straddle: {
+    deribitFetcherName: 'deribitStraddlesDart',
+    yfinanceFetcherName: 'yfinanceStraddlesDart',
+    renderer: renderStraddlesChart
+  }
+};
 
 async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) {
   if (!ticker) return;
@@ -44,15 +23,29 @@ async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) 
     let existingChart = echarts.getInstanceByDom(chartDom);
     if (existingChart) existingChart.dispose();
 
-    if (strategyName === 'coveredCall') {
-      await loadCoveredCalls(ticker, slippage, minDte, maxDte, chartDom);
-    } else if (strategyName === 'longOption') {
-      await loadLongOptions(ticker, slippage, minDte, maxDte, chartDom);
-    } else if (strategyName === 'straddle') {
-      await loadStraddles(ticker, slippage, minDte, maxDte, chartDom);
-    } else {
+    const config = STRATEGY_CONFIGS[strategyName];
+    if (!config) {
       console.warn(`Strategy ${strategyName} is not implemented yet.`);
+      return;
     }
+
+    const isCrypto = ["BTC", "ETH", "SOL"].includes(ticker);
+    const fetcherName = isCrypto ? config.deribitFetcherName : config.yfinanceFetcherName;
+    const fetcher = window[fetcherName];
+    if (!fetcher) {
+      throw new Error(`Fetcher ${fetcherName} is not registered on window by Dart.`);
+    }
+
+    const rawData = await fetcher(ticker, slippage, minDte, maxDte);
+    const dataJson = JSON.parse(rawData);
+    console.log({ strategyName, dataJson });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetId = urlParams.get('id');
+    config.renderer(dataJson, chartDom, targetId);
+
+    document.getElementById('spot-ticker-name').textContent = ticker;
+    document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(dataJson));
   } catch (error) {
     console.error("JavaScript caught Dart error:", error.error);
     console.error("Dart stack trace:", error.stack);

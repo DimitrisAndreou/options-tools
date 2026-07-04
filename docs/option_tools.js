@@ -432,10 +432,59 @@ function extractSpotPrice(data) {
   return data.at(0)?.spotPrice;
 }
 
+function selectStrategyById(chart, data, idToSelect) {
+  const panel = document.getElementById('strategyDetailsPanel');
+  if (panel) {
+    panel.innerHTML = '';
+  }
+  if (!idToSelect) return;
+  const targetItem = data.find(item => item.id === idToSelect);
+  if (!targetItem) {
+    const url = new URL(window.location);
+    url.searchParams.delete('id');
+    window.history.replaceState({}, '', url);
+    return;
+  }
+
+  populateStrategyDetails(targetItem);
+
+  let seriesIndex, dataIndex;
+  if (targetItem.strategyType === 'straddle') {
+    seriesIndex = 0;
+    dataIndex = data.findIndex(item => item.id === idToSelect);
+  } else {
+    const dte = targetItem.DTE;
+    const uniqueDTEs = [...new Set(data.map(item => item.DTE))];
+    seriesIndex = uniqueDTEs.indexOf(dte);
+    const filteredData = data.filter(item => item.DTE === dte);
+    dataIndex = filteredData.findIndex(item => item.id === idToSelect);
+  }
+
+  if (seriesIndex !== -1 && dataIndex !== -1) {
+    chart.dispatchAction({
+      type: 'highlight',
+      seriesIndex: seriesIndex,
+      dataIndex: dataIndex
+    });
+    chart.dispatchAction({
+      type: 'showTip',
+      seriesIndex: seriesIndex,
+      dataIndex: dataIndex
+    });
+  }
+}
+
 function populateStrategyDetails(dataObj) {
   if (!dataObj || !dataObj.strategyType) {
     throw new Error('Missing strategyType in data object');
   }
+
+  if (dataObj.id) {
+    const url = new URL(window.location);
+    url.searchParams.set('id', dataObj.id);
+    window.history.replaceState({}, '', url);
+  }
+
   const config = StrategyRegistry[dataObj.strategyType];
   if (!config) {
     throw new Error(`Unknown strategyType: ${dataObj.strategyType}`);
@@ -473,7 +522,7 @@ function populateStrategyDetails(dataObj) {
  * IMPORTANT: The elements in the `data` array MUST contain `moneyYield` and `underlyingYield` 
  * properties, as these are required to map to the X and Y coordinates on the chart.
  */
-function renderCoveredCallsChart(data, chartDom) {
+function renderCoveredCallsChart(data, chartDom, idToSelect) {
   const money = data.at(0)?.money || '';
   const underlying = data.at(0)?.underlying || '';
   const dataset = {
@@ -629,13 +678,14 @@ function renderCoveredCallsChart(data, chartDom) {
     });
   });
 
+  selectStrategyById(chart, data, idToSelect);
   return chart;
 }
 
 /**
  * Renders the long options chart.
  */
-function renderLongOptionsChart(data, chartDom) {
+function renderLongOptionsChart(data, chartDom, idToSelect) {
   const underlying = data.at(0)?.underlying || '';
   const dataset = {
     id: "original",
@@ -768,10 +818,11 @@ function renderLongOptionsChart(data, chartDom) {
     });
   });
 
+  selectStrategyById(chart, data, idToSelect);
   return chart;
 }
 
-function renderStraddlesChart(data, chartDom) {
+function renderStraddlesChart(data, chartDom, idToSelect) {
   const money = data.at(0)?.money || '';
   const underlying = data.at(0)?.underlying || '';
   const dataset = {
@@ -953,5 +1004,6 @@ function renderStraddlesChart(data, chartDom) {
     }
   });
 
+  selectStrategyById(chart, data, idToSelect);
   return chart;
 }

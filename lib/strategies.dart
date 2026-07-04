@@ -45,6 +45,7 @@ class CoveredCall {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
+        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
         'strategyType': 'coveredCall',
         'strategyURL': strategyURL,
         'moneyYield': moneyYield,
@@ -177,6 +178,7 @@ class LongCall {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
+        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
         'strategyType': 'longCall',
         'strategyURL': strategyURL,
         'maxLeverage': maxLeverage,
@@ -304,6 +306,7 @@ class LongPut {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
+        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
         'strategyType': 'longPut',
         'strategyURL': strategyURL,
         'maxLeverage': maxLeverage,
@@ -433,6 +436,7 @@ class Straddle {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
+        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
         'strategyType': 'straddle',
         'strategyURL': strategyURL,
         'underlying': underlying.name,
@@ -577,9 +581,10 @@ class Straddle {
               slippage: slippage,
             );
 
-            // Retain the cheapest straddle.
+            // Retain the centered straddle (closest to spot price).
             if (bestStraddle == null ||
-                straddle.moneyLeg.size > bestStraddle.moneyLeg.size) {
+                (straddle.strikePrice.absolute - spotPrice).abs() <
+                    (bestStraddle.strikePrice.absolute - spotPrice).abs()) {
               bestStraddle = straddle;
             }
           } catch (e) {
@@ -632,6 +637,7 @@ class VerticalSpread {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
+        'id': '${_formatDate(expiration)}~${_formatDouble(shortOption.strike)}~${_formatDouble(longOption.strike)}~${shortOption.isCall ? 'call' : 'put'}',
         'strategyType': 'verticalSpread',
         'strategyURL': strategyURL,
         'underlying': underlying.name,
@@ -824,4 +830,14 @@ class PriceInfo {
   static PriceInfo fromRelative(
           double relativeTargetPrice, double baseAbsolutePrice) =>
       fromAbsolute(relativeTargetPrice * baseAbsolutePrice, baseAbsolutePrice);
+}
+
+String _formatDate(DateTime dt) =>
+    "${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}";
+
+String _formatDouble(double val) {
+  if (val == val.toInt()) {
+    return val.toInt().toString();
+  }
+  return val.toString();
 }
