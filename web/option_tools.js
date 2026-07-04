@@ -44,6 +44,22 @@ const tooltipStyle = {
   shadowColor: 'rgba(0,0,0,0.5)'
 };
 
+const selectionHighlightSeries = {
+  id: 'selectionHighlight',
+  type: 'scatter',
+  datasetId: 'highlightDataset',
+  symbol: 'circle',
+  symbolSize: 80,
+  itemStyle: {
+    color: 'transparent',
+    borderColor: 'rgba(255, 255, 255, 1.0)',
+    borderWidth: 4,
+    borderType: 'dashed'
+  },
+  silent: true,
+  z: 10
+};
+
 /**
  * Prepares and formats the raw data for display.
  */
@@ -437,41 +453,37 @@ function selectStrategyById(chart, data, idToSelect) {
   if (panel) {
     panel.innerHTML = '';
   }
-  if (!idToSelect) return;
+  if (!idToSelect) {
+    chart.setOption({
+      dataset: [{
+        id: 'highlightDataset',
+        transform: { type: 'filter', config: { dimension: 'id', '=': '' } }
+      }]
+    });
+    return;
+  }
   const targetItem = data.find(item => item.id === idToSelect);
   if (!targetItem) {
     const url = new URL(window.location);
     url.searchParams.delete('id');
     window.history.replaceState({}, '', url);
+    chart.setOption({
+      dataset: [{
+        id: 'highlightDataset',
+        transform: { type: 'filter', config: { dimension: 'id', '=': '' } }
+      }]
+    });
     return;
   }
 
   populateStrategyDetails(targetItem);
 
-  let seriesIndex, dataIndex;
-  if (targetItem.strategyType === 'straddle') {
-    seriesIndex = 0;
-    dataIndex = data.findIndex(item => item.id === idToSelect);
-  } else {
-    const dte = targetItem.DTE;
-    const uniqueDTEs = [...new Set(data.map(item => item.DTE))];
-    seriesIndex = uniqueDTEs.indexOf(dte);
-    const filteredData = data.filter(item => item.DTE === dte);
-    dataIndex = filteredData.findIndex(item => item.id === idToSelect);
-  }
-
-  if (seriesIndex !== -1 && dataIndex !== -1) {
-    chart.dispatchAction({
-      type: 'highlight',
-      seriesIndex: seriesIndex,
-      dataIndex: dataIndex
-    });
-    chart.dispatchAction({
-      type: 'showTip',
-      seriesIndex: seriesIndex,
-      dataIndex: dataIndex
-    });
-  }
+  chart.setOption({
+    dataset: [{
+      id: 'highlightDataset',
+      transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect } }
+    }]
+  });
 }
 
 function populateStrategyDetails(dataObj) {
@@ -527,8 +539,13 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
   const underlying = data.at(0)?.underlying || '';
   const dataset = {
     id: "original",
-    dimensions: ["moneyYield", "underlyingYield", "DTE"],
+    dimensions: ["moneyYield", "underlyingYield", "DTE", "id"],
     source: data
+  };
+  const highlightDataset = {
+    id: 'highlightDataset',
+    fromDatasetId: 'original',
+    transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
   };
   const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
   const datasetPerDTE = uniqueDTEs.map(dte => ({
@@ -550,7 +567,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
   });
 
   chart.setOption({
-    dataset: [dataset, ...datasetPerDTE],
+    dataset: [dataset, highlightDataset, ...datasetPerDTE],
     xAxis: {
       type: 'value',
       name: `${money}➡`,
@@ -619,6 +636,10 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
         }
       })),
       {
+        ...selectionHighlightSeries,
+        encode: { x: 'moneyYield', y: 'underlyingYield' }
+      },
+      {
         type: 'line',
         name: '45°',
         data: [[1, 1], [5, 5]],
@@ -669,7 +690,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
 
   chart.on('click', function (params) {
     if (params.componentType === 'series' && params.data) {
-      populateStrategyDetails(params.data);
+      selectStrategyById(chart, data, params.data.id);
     }
   });
   chart.on('datazoom', function () {
@@ -689,8 +710,13 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
   const underlying = data.at(0)?.underlying || '';
   const dataset = {
     id: "original",
-    dimensions: ["maxLeverage", "breakEvenVsFullUnderlyingRelative", "DTE"],
+    dimensions: ["maxLeverage", "breakEvenVsFullUnderlyingRelative", "DTE", "id"],
     source: data
+  };
+  const highlightDataset = {
+    id: 'highlightDataset',
+    fromDatasetId: 'original',
+    transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
   };
   const uniqueDTEs = [...new Set(dataset.source.map(item => item.DTE))];
   const datasetPerDTE = uniqueDTEs.map(dte => ({
@@ -712,7 +738,7 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
   });
 
   chart.setOption({
-    dataset: [dataset, ...datasetPerDTE],
+    dataset: [dataset, highlightDataset, ...datasetPerDTE],
     xAxis: {
       type: 'value',
       name: `Achieved Leverage➡`,
@@ -784,7 +810,11 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
         label: {
           show: false
         }
-      }))
+      })),
+      {
+        ...selectionHighlightSeries,
+        encode: { x: 'maxLeverage', y: 'breakEvenVsFullUnderlyingRelative' }
+      }
     ],
     legend: legend,
     animationDurationUpdate: 800,
@@ -809,7 +839,7 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
 
   chart.on('click', function (params) {
     if (params.componentType === 'series' && params.data) {
-      populateStrategyDetails(params.data);
+      selectStrategyById(chart, data, params.data.id);
     }
   });
   chart.on('datazoom', function () {
@@ -831,9 +861,15 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
       "DTE",
       "breakEvenVsFullMoneyDownRelative",
       "breakEvenVsFullMoneyUpRelative",
-      "strikeRelative"
+      "strikeRelative",
+      "id"
     ],
     source: data
+  };
+  const highlightDataset = {
+    id: 'highlightDataset',
+    fromDatasetId: 'original',
+    transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
   };
 
   const chart = echarts.init(chartDom);
@@ -842,7 +878,7 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
   });
 
   chart.setOption({
-    dataset: [dataset],
+    dataset: [dataset, highlightDataset],
     xAxis: {
       type: 'value',
       name: 'DTE (Days to Expiration)➡',
@@ -991,6 +1027,10 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
           "strikeRelative"
         ],
         datasetId: 'original'
+      },
+      {
+        ...selectionHighlightSeries,
+        encode: { x: 'DTE', y: 'strikeRelative' }
       }
     ],
     legend: { show: false },
@@ -1000,7 +1040,7 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
 
   chart.on('click', function (params) {
     if (params.componentType === 'series' && params.data) {
-      populateStrategyDetails(params.data);
+      selectStrategyById(chart, data, params.data.id);
     }
   });
 

@@ -178,7 +178,7 @@ class LongCall {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
-        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
+        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}~C',
         'strategyType': 'longCall',
         'strategyURL': strategyURL,
         'maxLeverage': maxLeverage,
@@ -306,7 +306,7 @@ class LongPut {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
-        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
+        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}~P',
         'strategyType': 'longPut',
         'strategyURL': strategyURL,
         'maxLeverage': maxLeverage,

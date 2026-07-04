@@ -9272,7 +9272,7 @@ m=k.ax
 m===$&&A.B("breakEvenVsFullUnderlying")
 l=k.ay
 l===$&&A.B("breakEvenVsFullMoney")
-return A.cO(["id",i+"~"+f,"strategyType","longCall","strategyURL",e,"maxLeverage",d,"underlying",s.a,"underlyingURL",r,"costInUnderlying",k.as.b,"moneySize",k.y.b,"money",k.b.a,"spotPrice",k.z,"call",p.a,"callURL",o,"callSize",q.b,"DTE",n,"formattedDate",j,"strikeAbsolute",g,"strikeRelative",h.b,"breakEvenVsFullUnderlyingAbsolute",m.a,"breakEvenVsFullUnderlyingRelative",m.b,"breakEvenVsFullMoneyAbsolute",l.a,"breakEvenVsFullMoneyRelative",l.b],t.N,t.z)},
+return A.cO(["id",i+"~"+f+"~C","strategyType","longCall","strategyURL",e,"maxLeverage",d,"underlying",s.a,"underlyingURL",r,"costInUnderlying",k.as.b,"moneySize",k.y.b,"money",k.b.a,"spotPrice",k.z,"call",p.a,"callURL",o,"callSize",q.b,"DTE",n,"formattedDate",j,"strikeAbsolute",g,"strikeRelative",h.b,"breakEvenVsFullUnderlyingAbsolute",m.a,"breakEvenVsFullUnderlyingRelative",m.b,"breakEvenVsFullMoneyAbsolute",l.a,"breakEvenVsFullMoneyRelative",l.b],t.N,t.z)},
 i(a){return B.e.am(this,null)}}
 A.cd.prototype={
 aD(){var s,r,q,p,o,n,m,l,k,j,i=this,h=i.d,g=A.hk(h),f=i.Q,e=f.a,d=A.eD(e),c=A.fy(i.w),b=i.at
@@ -9292,7 +9292,7 @@ k=i.ch
 k===$&&A.B("breakEvenVsFullUnderlying")
 j=i.CW
 j===$&&A.B("breakEvenVsFullMoney")
-return A.cO(["id",g+"~"+d,"strategyType","longPut","strategyURL",c,"maxLeverage",b,"maxMoneyYield",s,"maxMoneyProfit",r,"underlying",q.a,"underlyingURL",p,"costInUnderlying",i.as.b,"moneySize",i.y.b,"money",i.b.a,"spotPrice",i.z,"put",n.a,"putURL",m,"putSize",o.b,"DTE",l,"formattedDate",h,"strikeAbsolute",e,"strikeRelative",f.b,"breakEvenVsFullUnderlyingAbsolute",k.a,"breakEvenVsFullUnderlyingRelative",k.b,"breakEvenVsFullMoneyAbsolute",j.a,"breakEvenVsFullMoneyRelative",j.b],t.N,t.z)},
+return A.cO(["id",g+"~"+d+"~P","strategyType","longPut","strategyURL",c,"maxLeverage",b,"maxMoneyYield",s,"maxMoneyProfit",r,"underlying",q.a,"underlyingURL",p,"costInUnderlying",i.as.b,"moneySize",i.y.b,"money",i.b.a,"spotPrice",i.z,"put",n.a,"putURL",m,"putSize",o.b,"DTE",l,"formattedDate",h,"strikeAbsolute",e,"strikeRelative",f.b,"breakEvenVsFullUnderlyingAbsolute",k.a,"breakEvenVsFullUnderlyingRelative",k.b,"breakEvenVsFullMoneyAbsolute",j.a,"breakEvenVsFullMoneyRelative",j.b],t.N,t.z)},
 i(a){return B.e.am(this,null)}}
 A.fK.prototype={
 aD(){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d=this,c=d.e,b=A.hk(c),a=d.ay,a0=a.a,a1=A.eD(a0),a2=A.fy(d.z),a3=d.a,a4=A.b1(a3),a5=d.b,a6=d.Q,a7=a6.a,a8=A.b1(a7)
