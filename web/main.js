@@ -16,6 +16,17 @@ const STRATEGY_CONFIGS = {
   }
 };
 
+function clearAllStrategyParams(url) {
+  UrlManager.set(url, URL_PARAMS.ID, null);
+  for (const key in StrategyRegistry) {
+    const config = StrategyRegistry[key];
+    if (config && config.urlParams) {
+      UrlManager.clearParams(url, config.urlParams);
+    }
+  }
+}
+
+
 async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) {
   if (!ticker) return;
   try {
@@ -40,8 +51,7 @@ async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) 
     const dataJson = JSON.parse(rawData);
     console.log({ strategyName, dataJson });
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const targetId = urlParams.get('id');
+    const targetId = UrlManager.get(URL_PARAMS.ID);
     config.renderer(dataJson, chartDom, targetId);
 
     document.getElementById('spot-ticker-name').textContent = ticker;
@@ -69,16 +79,15 @@ async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) 
 }
 
 async function jsMain() {
-  const urlParams = new URLSearchParams(window.location.search);
-  let ticker = urlParams.get('ticker');
+  let ticker = UrlManager.get(URL_PARAMS.TICKER);
   if (ticker) {
     ticker = ticker.toUpperCase();
   }
-  let strategy = urlParams.get('strategy') || 'coveredCall';
+  let strategy = UrlManager.get(URL_PARAMS.STRATEGY, 'coveredCall');
 
-  const initialSlippage = urlParams.get('slippage');
-  const initialMinDTE = urlParams.get('minDTE');
-  const initialMaxDTE = urlParams.get('maxDTE');
+  const initialSlippage = UrlManager.get(URL_PARAMS.SLIPPAGE);
+  const initialMinDTE = UrlManager.get(URL_PARAMS.MIN_DTE);
+  const initialMaxDTE = UrlManager.get(URL_PARAMS.MAX_DTE);
 
   const tickerInput = document.getElementById('ticker-input');
   if (tickerInput && ticker) {
@@ -91,8 +100,9 @@ async function jsMain() {
       e.preventDefault();
       const userInput = tickerInput.value.trim().toUpperCase();
       if (userInput) {
-        const url = new URL(window.location);
-        url.searchParams.set('ticker', userInput);
+        const url = UrlManager.createUrl();
+        UrlManager.set(url, URL_PARAMS.TICKER, userInput);
+        clearAllStrategyParams(url);
         window.location.href = url.toString();
       }
     });
@@ -154,6 +164,9 @@ async function jsMain() {
     strategySelect.value = strategy;
     strategySelect.addEventListener('change', (e) => {
       strategy = e.target.value;
+      const url = UrlManager.createUrl();
+      clearAllStrategyParams(url);
+      UrlManager.replaceState(url);
       reloadData();
     });
   }
@@ -164,19 +177,12 @@ async function jsMain() {
     const minDte = minDteInput ? parseInt(minDteInput.value, 10) : 7;
     const maxDte = maxDteInput ? parseInt(maxDteInput.value, 10) : 1092;
 
-    const url = new URL(window.location);
-    if (slippage !== 0.5) url.searchParams.set('slippage', slippage);
-    else url.searchParams.delete('slippage');
-
-    if (minDte !== 7) url.searchParams.set('minDTE', minDte);
-    else url.searchParams.delete('minDTE');
-
-    if (maxDte !== 1092) url.searchParams.set('maxDTE', maxDte);
-    else url.searchParams.delete('maxDTE');
-
-    if (strategy !== 'coveredCall') url.searchParams.set('strategy', strategy);
-    else url.searchParams.delete('strategy');
-    window.history.replaceState({}, '', url);
+    const url = UrlManager.createUrl();
+    UrlManager.setWithDefault(url, URL_PARAMS.SLIPPAGE, slippage, 0.5);
+    UrlManager.setWithDefault(url, URL_PARAMS.MIN_DTE, minDte, 7);
+    UrlManager.setWithDefault(url, URL_PARAMS.MAX_DTE, maxDte, 1092);
+    UrlManager.setWithDefault(url, URL_PARAMS.STRATEGY, strategy, 'coveredCall');
+    UrlManager.replaceState(url);
 
     loadStrategyData(ticker, slippage, minDte, maxDte, strategy);
   }

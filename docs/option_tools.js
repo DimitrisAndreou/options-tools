@@ -364,7 +364,86 @@ const StrategyRegistry = {
   'coveredCall': {
     templateId: 'coveredCall-details-template',
     prepareData: prepareCCData,
-    renderTooltip: renderTooltipCC
+    renderTooltip: renderTooltipCC,
+    urlParams: [
+      URL_PARAMS.OPEN_DTE,
+      URL_PARAMS.OPEN_MONEY_YIELD,
+      URL_PARAMS.OPEN_UNDERLYING_YIELD
+    ],
+    updateUrlParams: function(url, dataObj) {
+      UrlManager.set(url, URL_PARAMS.OPEN_DTE, dataObj.DTE);
+      UrlManager.set(url, URL_PARAMS.OPEN_MONEY_YIELD, dataObj.moneyYield !== undefined ? Number(dataObj.moneyYield).toFixed(4) : null);
+      UrlManager.set(url, URL_PARAMS.OPEN_UNDERLYING_YIELD, dataObj.underlyingYield !== undefined ? Number(dataObj.underlyingYield).toFixed(4) : null);
+    },
+    unrealizedTemplateId: 'unrealized-results-template',
+    prepareUnrealizedData: function(dataObj) {
+      const openMoneyYieldStr = UrlManager.get(URL_PARAMS.OPEN_MONEY_YIELD);
+      const openUnderlyingYieldStr = UrlManager.get(URL_PARAMS.OPEN_UNDERLYING_YIELD);
+      const openDteStr = UrlManager.get(URL_PARAMS.OPEN_DTE);
+
+      let openMoneyYield = openMoneyYieldStr !== null ? parseFloat(openMoneyYieldStr) : NaN;
+      let openUnderlyingYield = openUnderlyingYieldStr !== null ? parseFloat(openUnderlyingYieldStr) : NaN;
+      let openDTE = openDteStr !== null ? parseInt(openDteStr, 10) : NaN;
+
+      let urlModified = false;
+      const url = UrlManager.createUrl();
+      if (openMoneyYieldStr !== null && isNaN(openMoneyYield)) {
+        UrlManager.set(url, URL_PARAMS.OPEN_MONEY_YIELD, null);
+        urlModified = true;
+      }
+      if (openUnderlyingYieldStr !== null && isNaN(openUnderlyingYield)) {
+        UrlManager.set(url, URL_PARAMS.OPEN_UNDERLYING_YIELD, null);
+        urlModified = true;
+      }
+      if (openDteStr !== null && isNaN(openDTE)) {
+        UrlManager.set(url, URL_PARAMS.OPEN_DTE, null);
+        urlModified = true;
+      }
+      if (urlModified) {
+        UrlManager.replaceState(url);
+      }
+
+      const moneyRatio = !isNaN(openMoneyYield) && dataObj.moneyYield ? openMoneyYield / dataObj.moneyYield : null;
+      const underlyingRatio = !isNaN(openUnderlyingYield) && dataObj.underlyingYield ? openUnderlyingYield / dataObj.underlyingYield : null;
+
+      const moneyDiffers = moneyRatio !== null && Math.abs(moneyRatio - 1.0) > 0.0001;
+      const underlyingDiffers = underlyingRatio !== null && Math.abs(underlyingRatio - 1.0) > 0.0001;
+
+      if (!moneyDiffers && !underlyingDiffers) {
+        return null;
+      }
+
+      const res = {};
+      if (moneyRatio !== null) {
+        const val = (moneyRatio - 1.0) * 100;
+        const sign = val >= 0 ? '+' : '';
+        res.unrealizedMoneyYield = sign + val.toFixed(2) + '%';
+        res.moneyYieldClass = moneyRatio >= 1.0 ? 'text-good' : 'text-bad';
+      } else {
+        res.unrealizedMoneyYield = 'N/A';
+        res.moneyYieldClass = 'text-muted-alt';
+      }
+
+      if (underlyingRatio !== null) {
+        const val = (underlyingRatio - 1.0) * 100;
+        const sign = val >= 0 ? '+' : '';
+        res.unrealizedUnderlyingYield = sign + val.toFixed(2) + '%';
+        res.underlyingYieldClass = underlyingRatio >= 1.0 ? 'text-good' : 'text-bad';
+      } else {
+        res.unrealizedUnderlyingYield = 'N/A';
+        res.underlyingYieldClass = 'text-muted-alt';
+      }
+
+      let timePassed = 'N/A';
+      if (!isNaN(openDTE) && dataObj.DTE !== undefined) {
+        const diff = openDTE - dataObj.DTE;
+        const pct = openDTE > 0 ? (diff / openDTE) * 100 : 0;
+        timePassed = `${diff} days (${pct.toFixed(2)}%)`;
+      }
+      res.timePassed = timePassed;
+
+      return res;
+    }
   },
   'longCall': {
     templateId: 'longCall-details-template',
@@ -453,7 +532,17 @@ function selectStrategyById(chart, data, idToSelect) {
   if (panel) {
     panel.innerHTML = '';
   }
+  const strategyType = data.at(0)?.strategyType;
   if (!idToSelect) {
+    const url = UrlManager.createUrl();
+    UrlManager.set(url, URL_PARAMS.ID, null);
+    if (strategyType) {
+      const config = StrategyRegistry[strategyType];
+      if (config && config.urlParams) {
+        UrlManager.clearParams(url, config.urlParams);
+      }
+    }
+    UrlManager.replaceState(url);
     chart.setOption({
       dataset: [{
         id: 'highlightDataset',
@@ -464,9 +553,15 @@ function selectStrategyById(chart, data, idToSelect) {
   }
   const targetItem = data.find(item => item.id === idToSelect);
   if (!targetItem) {
-    const url = new URL(window.location);
-    url.searchParams.delete('id');
-    window.history.replaceState({}, '', url);
+    const url = UrlManager.createUrl();
+    UrlManager.set(url, URL_PARAMS.ID, null);
+    if (strategyType) {
+      const config = StrategyRegistry[strategyType];
+      if (config && config.urlParams) {
+        UrlManager.clearParams(url, config.urlParams);
+      }
+    }
+    UrlManager.replaceState(url);
     chart.setOption({
       dataset: [{
         id: 'highlightDataset',
@@ -491,15 +586,53 @@ function populateStrategyDetails(dataObj) {
     throw new Error('Missing strategyType in data object');
   }
 
-  if (dataObj.id) {
-    const url = new URL(window.location);
-    url.searchParams.set('id', dataObj.id);
-    window.history.replaceState({}, '', url);
-  }
-
   const config = StrategyRegistry[dataObj.strategyType];
   if (!config) {
     throw new Error(`Unknown strategyType: ${dataObj.strategyType}`);
+  }
+
+  if (dataObj.id) {
+    const url = UrlManager.createUrl();
+    const previousUrlId = url.searchParams.get(URL_PARAMS.ID);
+    UrlManager.set(url, URL_PARAMS.ID, dataObj.id);
+
+    const hasParams = config.urlParams && config.urlParams.every(param => url.searchParams.has(param));
+    if (previousUrlId !== dataObj.id || !hasParams) {
+      if (config.urlParams) {
+        UrlManager.clearParams(url, config.urlParams);
+      }
+      if (config.updateUrlParams) {
+        config.updateUrlParams(url, dataObj);
+      }
+    }
+    UrlManager.replaceState(url);
+  }
+
+  const unrealizedPanel = document.getElementById('unrealizedResultsPanel');
+  if (unrealizedPanel) {
+    unrealizedPanel.innerHTML = '';
+    unrealizedPanel.style.display = 'none';
+  }
+
+  if (config.unrealizedTemplateId && config.prepareUnrealizedData) {
+    const unrealizedData = config.prepareUnrealizedData(dataObj);
+    const template = document.getElementById(config.unrealizedTemplateId);
+    if (unrealizedData && unrealizedPanel && template) {
+      const clone = template.content.cloneNode(true);
+      for (const [key, value] of Object.entries(unrealizedData)) {
+        if (key.endsWith('Class')) {
+          clone.querySelectorAll(`.tpl-${key}`).forEach(el => {
+            el.className = `tpl-${key} ${value}`;
+          });
+        } else {
+          clone.querySelectorAll(`.tpl-${key}`).forEach(el => {
+            el.innerHTML = value;
+          });
+        }
+      }
+      unrealizedPanel.appendChild(clone);
+      unrealizedPanel.style.display = 'block';
+    }
   }
 
   const panel = document.getElementById('strategyDetailsPanel');

@@ -33,3 +33,4 @@ packages/vm_service/src/README.md
 packages/web/fix_data.yaml
 styles.css
 test_cors.html
+url_manager.js
