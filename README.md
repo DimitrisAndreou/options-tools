@@ -13,6 +13,13 @@ dart pub global activate webdev
 webdev serve
 ```
 
+For a first time setup, you would also likely need:
+```
+echo 'export PATH="$PATH":"$HOME/.pub-cache/bin"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+
 To build a production version ready for deployment,
 use the `webdev build` command:
 
