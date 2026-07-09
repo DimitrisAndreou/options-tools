@@ -145,6 +145,14 @@
                   <span class="text-label">Unrealized Underlying Yield</span>
                   <span :class="$store.app.unrealized?.underlyingYieldClass" x-text="$store.app.unrealized?.unrealizedUnderlyingYield"></span>
                 </div>
+                <div class="outcome-row" x-show="$store.app.unrealized?.openMoney">
+                  <span class="text-label">Open Money</span>
+                  <span class="text-neutral-alt" x-text="$store.app.unrealized?.openMoney"></span>
+                </div>
+                <div class="outcome-row" x-show="$store.app.unrealized?.openUnderlying">
+                  <span class="text-label">Open Underlying</span>
+                  <span class="text-neutral-alt" x-text="$store.app.unrealized?.openUnderlying"></span>
+                </div>
                 <div class="outcome-row">
                   <span class="text-label">Time Passed</span>
                   <span class="text-neutral-alt" x-text="$store.app.unrealized?.timePassed"></span>

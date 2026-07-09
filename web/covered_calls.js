@@ -4,10 +4,14 @@ function getOpenParams() {
   const openMoneyYieldStr = UrlManager.get(URL_PARAMS.OPEN_MONEY_YIELD);
   const openUnderlyingYieldStr = UrlManager.get(URL_PARAMS.OPEN_UNDERLYING_YIELD);
   const openDteStr = UrlManager.get(URL_PARAMS.OPEN_DTE);
+  const openMoneyStr = UrlManager.get(URL_PARAMS.OPEN_MONEY);
+  const openUnderlyingStr = UrlManager.get(URL_PARAMS.OPEN_UNDERLYING);
 
   const openMoneyYield = openMoneyYieldStr !== null ? parseFloat(openMoneyYieldStr) : NaN;
   const openUnderlyingYield = openUnderlyingYieldStr !== null ? parseFloat(openUnderlyingYieldStr) : NaN;
   const openDTE = openDteStr !== null ? parseInt(openDteStr, 10) : NaN;
+  const openMoney = openMoneyStr !== null ? parseFloat(openMoneyStr) : NaN;
+  const openUnderlying = openUnderlyingStr !== null ? parseFloat(openUnderlyingStr) : NaN;
 
   let failed = false;
   let urlModified = false;
@@ -28,6 +32,16 @@ function getOpenParams() {
     urlModified = true;
     failed = true;
   }
+  if (openMoneyStr !== null && isNaN(openMoney)) {
+    UrlManager.set(url, URL_PARAMS.OPEN_MONEY, null);
+    urlModified = true;
+    failed = true;
+  }
+  if (openUnderlyingStr !== null && isNaN(openUnderlying)) {
+    UrlManager.set(url, URL_PARAMS.OPEN_UNDERLYING, null);
+    urlModified = true;
+    failed = true;
+  }
 
   if (urlModified) {
     UrlManager.replaceState(url);
@@ -40,7 +54,9 @@ function getOpenParams() {
   return {
     openMoneyYield,
     openUnderlyingYield,
-    openDTE
+    openDTE,
+    openMoney: isNaN(openMoney) ? null : openMoney,
+    openUnderlying: isNaN(openUnderlying) ? null : openUnderlying
   };
 }
 
@@ -125,12 +141,21 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
   urlParams = [
     URL_PARAMS.OPEN_DTE,
     URL_PARAMS.OPEN_MONEY_YIELD,
+    URL_PARAMS.OPEN_UNDERLYING_YIELD,
+    URL_PARAMS.OPEN_MONEY,
+    URL_PARAMS.OPEN_UNDERLYING
+  ];
+  requiredUrlParams = [
+    URL_PARAMS.OPEN_DTE,
+    URL_PARAMS.OPEN_MONEY_YIELD,
     URL_PARAMS.OPEN_UNDERLYING_YIELD
   ];
   updateUrlParams(url, dataObj) {
     UrlManager.set(url, URL_PARAMS.OPEN_DTE, dataObj.DTE);
     UrlManager.set(url, URL_PARAMS.OPEN_MONEY_YIELD, dataObj.moneyYield !== undefined ? Number(dataObj.moneyYield).toFixed(5) : null);
     UrlManager.set(url, URL_PARAMS.OPEN_UNDERLYING_YIELD, dataObj.underlyingYield !== undefined ? Number(dataObj.underlyingYield).toFixed(5) : null);
+    UrlManager.set(url, URL_PARAMS.OPEN_MONEY, dataObj.moneySize !== undefined ? Number(-dataObj.moneySize).toFixed(5) : null);
+    UrlManager.set(url, URL_PARAMS.OPEN_UNDERLYING, dataObj.underlyingToBuy !== undefined ? Number(dataObj.underlyingToBuy).toFixed(5) : null);
   }
   prepareUnrealizedData(dataObj) {
     const openParams = getOpenParams();
@@ -140,6 +165,8 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     const openMoneyYield = openParams.openMoneyYield;
     const openUnderlyingYield = openParams.openUnderlyingYield;
     const openDTE = openParams.openDTE;
+    const openMoney = openParams.openMoney;
+    const openUnderlying = openParams.openUnderlying;
 
     const moneyRatio = !isNaN(openMoneyYield) && dataObj.moneyYield ? openMoneyYield / dataObj.moneyYield : null;
     const underlyingRatio = !isNaN(openUnderlyingYield) && dataObj.underlyingYield ? openUnderlyingYield / dataObj.underlyingYield : null;
@@ -179,6 +206,13 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       timePassed = `${diff} days (${pct.toFixed(2)}%)`;
     }
     res.timePassed = timePassed;
+
+    if (openMoney !== null && !isNaN(openMoney)) {
+      res.openMoney = dollarFmt.format(openMoney);
+    }
+    if (openUnderlying !== null && !isNaN(openUnderlying)) {
+      res.openUnderlying = `${underlyingFmt.format(openUnderlying)} ${dataObj.underlying}`;
+    }
 
     return res;
   }

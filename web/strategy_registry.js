@@ -8,6 +8,9 @@ class BaseStrategyConfig {
   /** @type {string[]} */
   urlParams = [];
 
+  /** @type {string[]} */
+  requiredUrlParams = [];
+
   /**
    * Prepares strategy-specific data for binding to the details template.
    * @param {object} dataObj - The raw strategy item data.
@@ -119,7 +122,8 @@ function selectStrategyById(idToSelect) {
 
   const config = StrategyRegistry[targetItem.strategyType];
   if (config) {
-    const hasParams = config.urlParams && config.urlParams.every(param => url.searchParams.has(param));
+    const requiredParams = config.requiredUrlParams || config.urlParams;
+    const hasParams = requiredParams && requiredParams.every(param => url.searchParams.has(param));
     if (previousUrlId !== idToSelect || !hasParams) {
       if (config.urlParams) {
         UrlManager.clearParams(url, config.urlParams);
@@ -160,7 +164,8 @@ function populateStrategyDetails(dataObj) {
     const previousUrlId = url.searchParams.get(URL_PARAMS.ID);
     UrlManager.set(url, URL_PARAMS.ID, dataObj.id);
 
-    const hasParams = config.urlParams && config.urlParams.every(param => url.searchParams.has(param));
+    const requiredParams = config.requiredUrlParams || config.urlParams;
+    const hasParams = requiredParams && requiredParams.every(param => url.searchParams.has(param));
     if (previousUrlId !== dataObj.id || !hasParams) {
       if (config.urlParams) {
         UrlManager.clearParams(url, config.urlParams);
