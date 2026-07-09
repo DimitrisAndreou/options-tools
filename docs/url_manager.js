@@ -7,7 +7,9 @@ const URL_PARAMS = {
   ID: 'id',
   OPEN_DTE: 'openDTE',
   OPEN_MONEY_YIELD: 'openMoneyYield',
-  OPEN_UNDERLYING_YIELD: 'openUnderlyingYield'
+  OPEN_UNDERLYING_YIELD: 'openUnderlyingYield',
+  OPEN_MONEY: 'openMoney',
+  OPEN_UNDERLYING: 'openUnderlying'
 };
 
 const UrlManager = {

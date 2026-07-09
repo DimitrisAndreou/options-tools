@@ -1,11 +1,13 @@
 .dart_tool/package_config.json
+covered_calls.js
 favicon.jpg
+formatters.js
 help/index.md
 index.html
+long_options.js
 main.dart.js
 main.dart.js.deps
 main.js
-option_tools.js
 packages/$sdk/dev_compiler/amd/require.js
 packages/$sdk/dev_compiler/ddc/ddc_module_loader.js
 packages/$sdk/dev_compiler/web/dart_stack_trace_mapper.js
@@ -31,6 +33,8 @@ packages/vm_service/DEPENDENCIES.md
 packages/vm_service/src/DEPENDENCIES.md
 packages/vm_service/src/README.md
 packages/web/fix_data.yaml
+straddles.js
+strategy_registry.js
 styles.css
 test_cors.html
 url_manager.js
