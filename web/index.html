@@ -63,11 +63,11 @@
               <div class="position-absolute" id="dte-slider-range" :style="$store.app.dteRangeStyle"
                 style="height: 6px; background: var(--primary); top: 12px; border-radius: 10px; z-index: 2;"></div>
               <input type="range" id="min-dte-input" min="0" max="1095" step="7" x-model.number="$store.app.minDte"
-                     @input="if ($store.app.minDte > $store.app.maxDte) $store.app.maxDte = $store.app.minDte"
-                     @change="$store.app.reloadData()">
+                @input="if ($store.app.minDte > $store.app.maxDte) $store.app.maxDte = $store.app.minDte"
+                @change="$store.app.reloadData()">
               <input type="range" id="max-dte-input" min="0" max="1095" step="7" x-model.number="$store.app.maxDte"
-                     @input="if ($store.app.maxDte < $store.app.minDte) $store.app.minDte = $store.app.maxDte"
-                     @change="$store.app.reloadData()">
+                @input="if ($store.app.maxDte < $store.app.minDte) $store.app.minDte = $store.app.maxDte"
+                @change="$store.app.reloadData()">
             </div>
           </div>
           <span id="dte-value-display" class="text-white ms-lg-2 mt-2 mt-lg-0" x-text="$store.app.dteValueDisplay"
@@ -87,17 +87,10 @@
             <option value="0.75"></option>
             <option value="1.0"></option>
           </datalist>
-          <span id="slippage-value" class="text-white ms-2" style="font-family: monospace; min-width: 45px;" x-text="Math.round($store.app.slippage * 100) + '%'"></span>
+          <span id="slippage-value" class="text-white ms-2" style="font-family: monospace; min-width: 45px;"
+            x-text="Math.round($store.app.slippage * 100) + '%'"></span>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- Spot Price Display -->
-  <div class="card shadow-sm border-0 bg-dark mb-4 mx-auto" style="width: fit-content;" x-show="$store.app.spotPrice !== null" x-data>
-    <div class="card-body">
-      <h5 class="text-white mb-0"><span x-text="$store.app.ticker || 'Spot'"></span> Price: <span class="fw-bold"
-          style="color: #00ff00;" x-text="$store.app.spotPriceDisplay"></span></h5>
     </div>
   </div>
 
@@ -106,16 +99,23 @@
       <!-- Chart -->
       <div class="col-lg-7 col-12">
         <div class="card mb-4 mb-lg-0 h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-              <i class="fas fa-chart-line me-2 text-primary"></i>Strategies
-            </h5>
-            <select id="strategy-select" class="form-select form-select-sm w-auto bg-dark text-white border-secondary"
-                    x-model="$store.app.strategy" @change="$store.app.changeStrategy()">
-              <option value="coveredCall">Covered Calls</option>
-              <option value="longOption">Long Options</option>
-              <option value="straddle">Straddles</option>
-            </select>
+          <div class="card-header d-flex align-items-center">
+            <h4 class="mb-0 text-white" x-show="$store.app.spotPrice !== null"
+              style="font-size: 1.35rem; font-weight: 600;">
+              <span x-text="$store.app.ticker || 'Spot'"></span> Price: <span class="fw-bold" style="color: #00ff00;"
+                x-text="$store.app.spotPriceDisplay"></span>
+            </h4>
+            <div class="d-flex align-items-center gap-2 ms-auto">
+              <h5 class="mb-0">
+                <i class="fas fa-chart-line me-2 text-primary"></i>Strategies
+              </h5>
+              <select id="strategy-select" class="form-select form-select-sm w-auto bg-dark text-white border-secondary"
+                x-model="$store.app.strategy" @change="$store.app.changeStrategy()">
+                <option value="coveredCall">Covered Calls</option>
+                <option value="longOption">Long Options</option>
+                <option value="straddle">Straddles</option>
+              </select>
+            </div>
           </div>
           <div class="card-body">
             <div id="strategyChartContainer" class="chart-container"></div>
@@ -132,18 +132,21 @@
           </div>
           <div class="card-body">
             <!-- Unrealized results panel -->
-            <div id="unrealizedResultsPanel" x-show="$store.app.unrealized" class="text-white mb-3" style="font-family: monospace;">
+            <div id="unrealizedResultsPanel" x-show="$store.app.unrealized" class="text-white mb-3"
+              style="font-family: monospace;">
               <div class="strategy-header">
                 <i class="fas fa-chart-line me-2"></i> Unrealized Results
               </div>
               <div class="outcomes-panel">
                 <div class="outcome-row">
                   <span class="text-label">Unrealized Money Yield</span>
-                  <span :class="$store.app.unrealized?.moneyYieldClass" x-text="$store.app.unrealized?.unrealizedMoneyYield"></span>
+                  <span :class="$store.app.unrealized?.moneyYieldClass"
+                    x-text="$store.app.unrealized?.unrealizedMoneyYield"></span>
                 </div>
                 <div class="outcome-row">
                   <span class="text-label">Unrealized Underlying Yield</span>
-                  <span :class="$store.app.unrealized?.underlyingYieldClass" x-text="$store.app.unrealized?.unrealizedUnderlyingYield"></span>
+                  <span :class="$store.app.unrealized?.underlyingYieldClass"
+                    x-text="$store.app.unrealized?.unrealizedUnderlyingYield"></span>
                 </div>
                 <div class="outcome-row" x-show="$store.app.unrealized?.openMoney">
                   <span class="text-label">Open Money</span>
@@ -165,21 +168,24 @@
               <div x-show="!$store.app.details">
                 Select a point on the chart to view details.
               </div>
-              
+
               <div x-show="$store.app.details">
                 <!-- Covered Call Details -->
                 <div x-show="$store.app.strategy === 'coveredCall'">
                   <div class="strategy-header">
                     <i class="fas fa-cube me-2"></i>
                     <template x-if="$store.app.details?.strategyURL">
-                      <a :href="$store.app.details.strategyURL" target="_blank" style="color: inherit; text-decoration: underline;" x-text="$store.app.details.strategyName"></a>
+                      <a :href="$store.app.details.strategyURL" target="_blank"
+                        style="color: inherit; text-decoration: underline;"
+                        x-text="$store.app.details.strategyName"></a>
                     </template>
                     <template x-if="!$store.app.details?.strategyURL">
                       <span x-text="$store.app.details?.strategyName"></span>
                     </template>
                     <span> on </span>
                     <template x-if="$store.app.details?.underlyingURL">
-                      <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank" style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
+                      <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank"
+                        style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
                     </template>
                     <template x-if="!$store.app.details?.underlyingURL">
                       <span class="text-neutral" x-text="$store.app.details?.underlyingName"></span>
@@ -205,7 +211,8 @@
                       <td><span class="text-label">Contract</span></td>
                       <td class="text-end contract-name">
                         <template x-if="$store.app.details?.callURL">
-                          <a :href="$store.app.details.callURL" class="text-neutral" target="_blank" style="text-decoration: underline;" x-text="$store.app.details.callName"></a>
+                          <a :href="$store.app.details.callURL" class="text-neutral" target="_blank"
+                            style="text-decoration: underline;" x-text="$store.app.details.callName"></a>
                         </template>
                         <template x-if="!$store.app.details?.callURL">
                           <span class="text-neutral" x-text="$store.app.details?.callName"></span>
@@ -216,7 +223,8 @@
                       <td><span class="text-label">Capital Required</span></td>
                       <td class="text-end">
                         <span class="text-neutral" x-text="$store.app.details?.capitalRequired"></span>
-                        <small class="text-muted-alt">(<span x-text="$store.app.details?.capitalRequiredUnderlying"></span>)</small>
+                        <small class="text-muted-alt">(<span
+                            x-text="$store.app.details?.capitalRequiredUnderlying"></span>)</small>
                       </td>
                     </tr>
                   </table>
@@ -224,33 +232,49 @@
                   <div class="outcomes-panel">
                     <div class="outcomes-header">Outcomes at Expiration</div>
                     <div class="outcome-row">
-                      <span>If <span x-text="$store.app.details?.underlying"></span> &ge; <span x-text="$store.app.details?.strikeAbsolute"></span></span>
-                      <span><span class="text-good" x-text="$store.app.details?.moneyYield"></span> <span class="text-good" x-text="$store.app.details?.money"></span> <small class="text-good-alt">(+<span x-text="$store.app.details?.moneyProfit"></span>)</small></span>
+                      <span>If <span x-text="$store.app.details?.underlying"></span> &ge; <span
+                          x-text="$store.app.details?.strikeAbsolute"></span></span>
+                      <span><span class="text-good" x-text="$store.app.details?.moneyYield"></span> <span
+                          class="text-good" x-text="$store.app.details?.money"></span> <small
+                          class="text-good-alt">(+<span x-text="$store.app.details?.moneyProfit"></span>)</small></span>
                     </div>
                     <div class="outcome-row mb-0">
-                      <span>If <span x-text="$store.app.details?.underlying"></span> &lt; <span x-text="$store.app.details?.strikeAbsolute"></span></span>
-                      <span><span class="text-good" x-text="$store.app.details?.underlyingYield"></span> <span class="text-good" x-text="$store.app.details?.underlying"></span> <small class="text-good-alt">(+<span x-text="$store.app.details?.underlyingProfit"></span>)</small></span>
+                      <span>If <span x-text="$store.app.details?.underlying"></span> &lt; <span
+                          x-text="$store.app.details?.strikeAbsolute"></span></span>
+                      <span><span class="text-good" x-text="$store.app.details?.underlyingYield"></span> <span
+                          class="text-good" x-text="$store.app.details?.underlying"></span> <small
+                          class="text-good-alt">(+<span
+                            x-text="$store.app.details?.underlyingProfit"></span>)</small></span>
                     </div>
                   </div>
 
                   <div class="warnings-panel">
                     <div class="warning-row">
                       <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-                      If <span x-text="$store.app.details?.underlying"></span> falls below <span class="text-bad" x-text="$store.app.details?.beAbsolute"></span> (<span class="text-bad" x-text="$store.app.details?.beRelative"></span>),
-                      you will have <span class="text-bad">less</span> <span x-text="$store.app.details?.money"></span> than starting with a 100% <span x-text="$store.app.details?.money"></span> allocation.
+                      If <span x-text="$store.app.details?.underlying"></span> falls below <span class="text-bad"
+                        x-text="$store.app.details?.beAbsolute"></span> (<span class="text-bad"
+                        x-text="$store.app.details?.beRelative"></span>),
+                      you will have <span class="text-bad">less</span> <span x-text="$store.app.details?.money"></span>
+                      than starting with a 100% <span x-text="$store.app.details?.money"></span> allocation.
                     </div>
                     <div class="warning-row">
                       <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-                      If <span x-text="$store.app.details?.underlying"></span> surpasses <span class="text-good" x-text="$store.app.details?.capAbsolute"></span> (<span class="text-good" x-text="$store.app.details?.capRelative"></span>),
-                      you will have <span class="text-bad">less</span> <span x-text="$store.app.details?.underlying"></span> than starting with a 100% <span x-text="$store.app.details?.underlying"></span> allocation.
+                      If <span x-text="$store.app.details?.underlying"></span> surpasses <span class="text-good"
+                        x-text="$store.app.details?.capAbsolute"></span> (<span class="text-good"
+                        x-text="$store.app.details?.capRelative"></span>),
+                      you will have <span class="text-bad">less</span> <span
+                        x-text="$store.app.details?.underlying"></span> than starting with a 100% <span
+                        x-text="$store.app.details?.underlying"></span> allocation.
                     </div>
                   </div>
 
                   <div class="instructions-panel">
                     <div class="instructions-header">Execution Instructions</div>
                     <div class="instructions-content">
-                      &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.buyAmount"></span> for <span class="text-bad" x-text="$store.app.details?.buyCost"></span><br />
-                      &bull; <b>Buy</b> <span class="text-bad" x-text="$store.app.details?.sellAmount"></span> for <span class="text-good" x-text="$store.app.details?.sellPremium"></span>
+                      &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.buyAmount"></span> for <span
+                        class="text-bad" x-text="$store.app.details?.buyCost"></span><br />
+                      &bull; <b>Buy</b> <span class="text-bad" x-text="$store.app.details?.sellAmount"></span> for <span
+                        class="text-good" x-text="$store.app.details?.sellPremium"></span>
                     </div>
                   </div>
                 </div>
@@ -263,14 +287,17 @@
                       <div class="strategy-header">
                         <i class="fas fa-arrow-trend-up me-2"></i>
                         <template x-if="$store.app.details?.strategyURL">
-                          <a :href="$store.app.details.strategyURL" target="_blank" style="color: inherit; text-decoration: underline;" x-text="$store.app.details.strategyName"></a>
+                          <a :href="$store.app.details.strategyURL" target="_blank"
+                            style="color: inherit; text-decoration: underline;"
+                            x-text="$store.app.details.strategyName"></a>
                         </template>
                         <template x-if="!$store.app.details?.strategyURL">
                           <span x-text="$store.app.details?.strategyName"></span>
                         </template>
                         <span> on </span>
                         <template x-if="$store.app.details?.underlyingURL">
-                          <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank" style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
+                          <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank"
+                            style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
                         </template>
                         <template x-if="!$store.app.details?.underlyingURL">
                           <span class="text-neutral" x-text="$store.app.details?.underlyingName"></span>
@@ -289,7 +316,8 @@
                           <td><span class="text-label">Contract</span></td>
                           <td class="text-end contract-name">
                             <template x-if="$store.app.details?.callURL">
-                              <a :href="$store.app.details.callURL" class="text-neutral" target="_blank" style="text-decoration: underline;" x-text="$store.app.details.callName"></a>
+                              <a :href="$store.app.details.callURL" class="text-neutral" target="_blank"
+                                style="text-decoration: underline;" x-text="$store.app.details.callName"></a>
                             </template>
                             <template x-if="!$store.app.details?.callURL">
                               <span class="text-neutral" x-text="$store.app.details?.callName"></span>
@@ -300,17 +328,20 @@
                           <td><span class="text-label">Capital Required</span></td>
                           <td class="text-end">
                             <span class="text-neutral" x-text="$store.app.details?.capitalRequired"></span>
-                            <small class="text-muted-alt">(<span x-text="$store.app.details?.capitalRequiredUnderlying"></span>)</small>
+                            <small class="text-muted-alt">(<span
+                                x-text="$store.app.details?.capitalRequiredUnderlying"></span>)</small>
                           </td>
                         </tr>
                         <tr>
                           <td><span class="text-label">Leverage</span></td>
-                          <td class="text-end"><span class="text-good" x-text="$store.app.details?.maxLeverage"></span></td>
+                          <td class="text-end"><span class="text-good" x-text="$store.app.details?.maxLeverage"></span>
+                          </td>
                         </tr>
                         <tr>
                           <td><span class="text-label">Price for Profit</span></td>
                           <td class="text-end">
-                            <span class="text-neutral"><span x-text="$store.app.details?.underlying"></span> &ge; <span x-text="$store.app.details?.beAbsolute"></span></span>
+                            <span class="text-neutral"><span x-text="$store.app.details?.underlying"></span> &ge; <span
+                                x-text="$store.app.details?.beAbsolute"></span></span>
                             <small class="text-bad">(<span x-text="$store.app.details?.beRelative"></span>)</small>
                           </td>
                         </tr>
@@ -319,19 +350,29 @@
                       <div class="warnings-panel">
                         <div class="warning-row">
                           <i class="fas fa-rocket me-1 text-warning-icon"></i>
-                          If <span x-text="$store.app.details?.underlying"></span> surpasses <span class="text-good" x-text="$store.app.details?.capAbsolute"></span> (<span class="text-good" x-text="$store.app.details?.capRelative"></span>),
-                          you will have <span class="text-good">more</span> <span x-text="$store.app.details?.underlying"></span> than starting with a 100%
-                          <span x-text="$store.app.details?.underlying"></span> allocation. As if you had <span class="text-good" x-text="$store.app.details?.maxLeverage"></span>
+                          If <span x-text="$store.app.details?.underlying"></span> surpasses <span class="text-good"
+                            x-text="$store.app.details?.capAbsolute"></span> (<span class="text-good"
+                            x-text="$store.app.details?.capRelative"></span>),
+                          you will have <span class="text-good">more</span> <span
+                            x-text="$store.app.details?.underlying"></span> than starting with a 100%
+                          <span x-text="$store.app.details?.underlying"></span> allocation. As if you had <span
+                            class="text-good" x-text="$store.app.details?.maxLeverage"></span>
                           bigger long <span x-text="$store.app.details?.underlying"></span> position!
                         </div>
                         <div class="warning-row">
                           <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-                          If <span x-text="$store.app.details?.underlying"></span> is not above <span class="text-bad" x-text="$store.app.details?.beAbsolute"></span> (<span class="text-bad" x-text="$store.app.details?.beRelative"></span>),
-                          you will have <span class="text-bad">less</span> <span x-text="$store.app.details?.money"></span> than starting with a 100% <span x-text="$store.app.details?.money"></span> allocation.
+                          If <span x-text="$store.app.details?.underlying"></span> is not above <span class="text-bad"
+                            x-text="$store.app.details?.beAbsolute"></span> (<span class="text-bad"
+                            x-text="$store.app.details?.beRelative"></span>),
+                          you will have <span class="text-bad">less</span> <span
+                            x-text="$store.app.details?.money"></span> than starting with a 100% <span
+                            x-text="$store.app.details?.money"></span> allocation.
                         </div>
                         <div class="warning-row">
                           <i class="fas fa-skull-crossbones me-1 text-warning-icon"></i>
-                          If <span x-text="$store.app.details?.underlying"></span> is below <span class="text-neutral" x-text="$store.app.details?.strikeAbsolute"></span> (<span class="text-neutral" x-text="$store.app.details?.strikeRelative"></span>),
+                          If <span x-text="$store.app.details?.underlying"></span> is below <span class="text-neutral"
+                            x-text="$store.app.details?.strikeAbsolute"></span> (<span class="text-neutral"
+                            x-text="$store.app.details?.strikeRelative"></span>),
                           <b>you lose the entire (<span class="text-bad">-100%</span>) invested capital</b>.
                         </div>
                       </div>
@@ -339,7 +380,10 @@
                       <div class="instructions-panel">
                         <div class="instructions-header">Execution Instructions</div>
                         <div class="instructions-content">
-                          &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.callSize"></span> call(s) for <span class="text-bad" x-text="$store.app.details?.costInMoney"></span> <span class="text-neutral">(<span x-text="$store.app.details?.costInUnderlying"></span> <span x-text="$store.app.details?.underlying"></span>)</span>
+                          &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.callSize"></span>
+                          call(s) for <span class="text-bad" x-text="$store.app.details?.costInMoney"></span> <span
+                            class="text-neutral">(<span x-text="$store.app.details?.costInUnderlying"></span> <span
+                              x-text="$store.app.details?.underlying"></span>)</span>
                         </div>
                       </div>
                     </div>
@@ -351,14 +395,17 @@
                       <div class="strategy-header">
                         <i class="fas fa-arrow-trend-down me-2"></i>
                         <template x-if="$store.app.details?.strategyURL">
-                          <a :href="$store.app.details.strategyURL" target="_blank" style="color: inherit; text-decoration: underline;" x-text="$store.app.details.strategyName"></a>
+                          <a :href="$store.app.details.strategyURL" target="_blank"
+                            style="color: inherit; text-decoration: underline;"
+                            x-text="$store.app.details.strategyName"></a>
                         </template>
                         <template x-if="!$store.app.details?.strategyURL">
                           <span x-text="$store.app.details?.strategyName"></span>
                         </template>
                         <span> on </span>
                         <template x-if="$store.app.details?.underlyingURL">
-                          <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank" style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
+                          <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank"
+                            style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
                         </template>
                         <template x-if="!$store.app.details?.underlyingURL">
                           <span class="text-neutral" x-text="$store.app.details?.underlyingName"></span>
@@ -377,7 +424,8 @@
                           <td><span class="text-label">Contract</span></td>
                           <td class="text-end contract-name">
                             <template x-if="$store.app.details?.putURL">
-                              <a :href="$store.app.details.putURL" class="text-neutral" target="_blank" style="text-decoration: underline;" x-text="$store.app.details.putName"></a>
+                              <a :href="$store.app.details.putURL" class="text-neutral" target="_blank"
+                                style="text-decoration: underline;" x-text="$store.app.details.putName"></a>
                             </template>
                             <template x-if="!$store.app.details?.putURL">
                               <span class="text-neutral" x-text="$store.app.details?.putName"></span>
@@ -388,17 +436,20 @@
                           <td><span class="text-label">Capital Required</span></td>
                           <td class="text-end">
                             <span class="text-neutral" x-text="$store.app.details?.capitalRequired"></span>
-                            <small class="text-muted-alt">(<span x-text="$store.app.details?.capitalRequiredUnderlying"></span>)</small>
+                            <small class="text-muted-alt">(<span
+                                x-text="$store.app.details?.capitalRequiredUnderlying"></span>)</small>
                           </td>
                         </tr>
                         <tr>
                           <td><span class="text-label">Leverage</span></td>
-                          <td class="text-end"><span class="text-good" x-text="$store.app.details?.maxLeverage"></span></td>
+                          <td class="text-end"><span class="text-good" x-text="$store.app.details?.maxLeverage"></span>
+                          </td>
                         </tr>
                         <tr>
                           <td><span class="text-label">Price for Profit</span></td>
                           <td class="text-end">
-                            <span class="text-neutral"><span x-text="$store.app.details?.underlying"></span> &le; <span x-text="$store.app.details?.beAbsolute"></span></span>
+                            <span class="text-neutral"><span x-text="$store.app.details?.underlying"></span> &le; <span
+                                x-text="$store.app.details?.beAbsolute"></span></span>
                             <small class="text-bad">(<span x-text="$store.app.details?.beRelative"></span>)</small>
                           </td>
                         </tr>
@@ -407,12 +458,18 @@
                       <div class="warnings-panel">
                         <div class="warning-row">
                           <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-                          If <span x-text="$store.app.details?.underlying"></span> is not below <span class="text-bad" x-text="$store.app.details?.beAbsolute"></span> (<span class="text-bad" x-text="$store.app.details?.beRelative"></span>),
-                          you will have <span class="text-bad">less</span> <span x-text="$store.app.details?.money"></span> than starting with a 100% <span x-text="$store.app.details?.money"></span> allocation.
+                          If <span x-text="$store.app.details?.underlying"></span> is not below <span class="text-bad"
+                            x-text="$store.app.details?.beAbsolute"></span> (<span class="text-bad"
+                            x-text="$store.app.details?.beRelative"></span>),
+                          you will have <span class="text-bad">less</span> <span
+                            x-text="$store.app.details?.money"></span> than starting with a 100% <span
+                            x-text="$store.app.details?.money"></span> allocation.
                         </div>
                         <div class="warning-row">
                           <i class="fas fa-skull-crossbones me-1 text-warning-icon"></i>
-                          If <span x-text="$store.app.details?.underlying"></span> is above <span class="text-neutral" x-text="$store.app.details?.strikeAbsolute"></span> (<span class="text-neutral" x-text="$store.app.details?.strikeRelative"></span>),
+                          If <span x-text="$store.app.details?.underlying"></span> is above <span class="text-neutral"
+                            x-text="$store.app.details?.strikeAbsolute"></span> (<span class="text-neutral"
+                            x-text="$store.app.details?.strikeRelative"></span>),
                           <b>you lose the entire (<span class="text-bad">-100%</span>) invested capital</b>.
                         </div>
                       </div>
@@ -420,7 +477,10 @@
                       <div class="instructions-panel">
                         <div class="instructions-header">Execution Instructions</div>
                         <div class="instructions-content">
-                          &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.putSize"></span> put(s) for <span class="text-bad" x-text="$store.app.details?.costInMoney"></span> <span class="text-neutral">(<span x-text="$store.app.details?.costInUnderlying"></span> <span x-text="$store.app.details?.underlying"></span>)</span>
+                          &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.putSize"></span> put(s)
+                          for <span class="text-bad" x-text="$store.app.details?.costInMoney"></span> <span
+                            class="text-neutral">(<span x-text="$store.app.details?.costInUnderlying"></span> <span
+                              x-text="$store.app.details?.underlying"></span>)</span>
                         </div>
                       </div>
                     </div>
@@ -432,14 +492,17 @@
                   <div class="strategy-header">
                     <i class="fas fa-arrows-left-right me-2"></i>
                     <template x-if="$store.app.details?.strategyURL">
-                      <a :href="$store.app.details.strategyURL" target="_blank" style="color: inherit; text-decoration: underline;" x-text="$store.app.details.strategyName"></a>
+                      <a :href="$store.app.details.strategyURL" target="_blank"
+                        style="color: inherit; text-decoration: underline;"
+                        x-text="$store.app.details.strategyName"></a>
                     </template>
                     <template x-if="!$store.app.details?.strategyURL">
                       <span x-text="$store.app.details?.strategyName"></span>
                     </template>
                     <span> on </span>
                     <template x-if="$store.app.details?.underlyingURL">
-                      <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank" style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
+                      <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank"
+                        style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
                     </template>
                     <template x-if="!$store.app.details?.underlyingURL">
                       <span class="text-neutral" x-text="$store.app.details?.underlyingName"></span>
@@ -465,14 +528,16 @@
                       <td><span class="text-label">Contracts</span></td>
                       <td class="text-end contract-name">
                         <template x-if="$store.app.details?.callURL">
-                          <a :href="$store.app.details.callURL" class="text-neutral" target="_blank" style="text-decoration: underline;" x-text="$store.app.details.callName"></a>
+                          <a :href="$store.app.details.callURL" class="text-neutral" target="_blank"
+                            style="text-decoration: underline;" x-text="$store.app.details.callName"></a>
                         </template>
                         <template x-if="!$store.app.details?.callURL">
                           <span class="text-neutral" x-text="$store.app.details?.callName"></span>
                         </template>
                         <br />
                         <template x-if="$store.app.details?.putURL">
-                          <a :href="$store.app.details.putURL" class="text-neutral" target="_blank" style="text-decoration: underline;" x-text="$store.app.details.putName"></a>
+                          <a :href="$store.app.details.putURL" class="text-neutral" target="_blank"
+                            style="text-decoration: underline;" x-text="$store.app.details.putName"></a>
                         </template>
                         <template x-if="!$store.app.details?.putURL">
                           <span class="text-neutral" x-text="$store.app.details?.putName"></span>
@@ -483,7 +548,8 @@
                       <td><span class="text-label">Capital Required</span></td>
                       <td class="text-end">
                         <span class="text-neutral" x-text="$store.app.details?.costInMoney"></span>
-                        <small class="text-muted-alt">(<span x-text="$store.app.details?.costInUnderlying"></span> <span x-text="$store.app.details?.underlying"></span>)</small>
+                        <small class="text-muted-alt">(<span x-text="$store.app.details?.costInUnderlying"></span> <span
+                            x-text="$store.app.details?.underlying"></span>)</small>
                       </td>
                     </tr>
                   </table>
@@ -491,29 +557,45 @@
                   <div class="outcomes-panel">
                     <div class="outcomes-header">Profit when</div>
                     <div class="outcome-row">
-                      <span>&le; <span class="text-good" x-text="$store.app.details?.beMoneyDownAbsolute"></span> <small class="text-neutral-alt">(<span x-text="$store.app.details?.beMoneyDownRelative"></span>)</small></span>
+                      <span>&le; <span class="text-good" x-text="$store.app.details?.beMoneyDownAbsolute"></span> <small
+                          class="text-neutral-alt">(<span
+                            x-text="$store.app.details?.beMoneyDownRelative"></span>)</small></span>
                     </div>
                     <div class="outcome-row">
-                      <span>&ge; <span class="text-good" x-text="$store.app.details?.beMoneyUpAbsolute"></span> <small class="text-neutral-alt">(<span x-text="$store.app.details?.beMoneyUpRelative"></span>)</small></span>
+                      <span>&ge; <span class="text-good" x-text="$store.app.details?.beMoneyUpAbsolute"></span> <small
+                          class="text-neutral-alt">(<span
+                            x-text="$store.app.details?.beMoneyUpRelative"></span>)</small></span>
                     </div>
                     <div class="outcomes-header mt-2">Loss when</div>
                     <div class="outcome-row mb-0">
-                      <span>Between <span class="text-bad" x-text="$store.app.details?.beMoneyDownAbsolute"></span> <small class="text-neutral-alt">(<span x-text="$store.app.details?.beMoneyDownRelative"></span>)</small> and <span class="text-bad" x-text="$store.app.details?.beMoneyUpAbsolute"></span> <small class="text-neutral-alt">(<span x-text="$store.app.details?.beMoneyUpRelative"></span>)</small></span>
+                      <span>Between <span class="text-bad" x-text="$store.app.details?.beMoneyDownAbsolute"></span>
+                        <small class="text-neutral-alt">(<span
+                            x-text="$store.app.details?.beMoneyDownRelative"></span>)</small> and <span class="text-bad"
+                          x-text="$store.app.details?.beMoneyUpAbsolute"></span> <small class="text-neutral-alt">(<span
+                            x-text="$store.app.details?.beMoneyUpRelative"></span>)</small></span>
                     </div>
                   </div>
 
                   <div class="warnings-panel">
                     <div class="warning-row">
                       <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-                      Maximum loss is <span class="text-bad" x-text="$store.app.details?.costInMoney"></span> <small class="text-bad">(-100%)</small> if <span x-text="$store.app.details?.underlying"></span> expires exactly at <span class="text-neutral" x-text="$store.app.details?.strikeAbsolute"></span>.
+                      Maximum loss is <span class="text-bad" x-text="$store.app.details?.costInMoney"></span> <small
+                        class="text-bad">(-100%)</small> if <span x-text="$store.app.details?.underlying"></span>
+                      expires exactly at <span class="text-neutral" x-text="$store.app.details?.strikeAbsolute"></span>.
                     </div>
                   </div>
 
                   <div class="instructions-panel">
                     <div class="instructions-header">Execution Instructions</div>
                     <div class="instructions-content">
-                      &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.callSize"></span> call(s) for <span class="text-bad" x-text="$store.app.details?.callCostInMoney"></span> <span class="text-neutral">(<span x-text="$store.app.details?.callCostInUnderlying"></span> <span x-text="$store.app.details?.underlying"></span>)</span><br />
-                      &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.putSize"></span> put(s) for <span class="text-bad" x-text="$store.app.details?.putCostInMoney"></span> <span class="text-neutral">(<span x-text="$store.app.details?.putCostInUnderlying"></span> <span x-text="$store.app.details?.underlying"></span>)</span>
+                      &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.callSize"></span> call(s)
+                      for <span class="text-bad" x-text="$store.app.details?.callCostInMoney"></span> <span
+                        class="text-neutral">(<span x-text="$store.app.details?.callCostInUnderlying"></span> <span
+                          x-text="$store.app.details?.underlying"></span>)</span><br />
+                      &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.putSize"></span> put(s) for
+                      <span class="text-bad" x-text="$store.app.details?.putCostInMoney"></span> <span
+                        class="text-neutral">(<span x-text="$store.app.details?.putCostInUnderlying"></span> <span
+                          x-text="$store.app.details?.underlying"></span>)</span>
                     </div>
                   </div>
                 </div>
