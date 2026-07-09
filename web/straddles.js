@@ -79,10 +79,21 @@ function renderTooltipStraddle(d) {
   `;
 }
 
-StrategyRegistry['straddle'] = {
-  templateId: 'straddle-details-template',
-  prepareData: prepareStraddleData,
-  renderTooltip: renderTooltipStraddle
+StrategyRegistry['straddle'] = new class extends BaseStrategyConfig {
+  prepareData = prepareStraddleData;
+  renderTooltip = renderTooltipStraddle;
+  updateSelection(idToSelect) {
+    const chartDom = document.getElementById("strategyChartContainer");
+    const chart = echarts.getInstanceByDom(chartDom);
+    if (!chart) return;
+
+    chart.setOption({
+      dataset: [{
+        id: 'highlightDataset',
+        transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
+      }]
+    });
+  }
 };
 
 function renderStraddlesChart(data, chartDom, idToSelect) {
@@ -273,10 +284,10 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
 
   chart.on('click', function (params) {
     if (params.componentType === 'series' && params.data) {
-      selectStrategyById(chart, data, params.data.id);
+      selectStrategyById(params.data.id);
     }
   });
 
-  selectStrategyById(chart, data, idToSelect);
+  selectStrategyById(idToSelect);
   return chart;
 }

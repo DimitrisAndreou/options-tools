@@ -119,22 +119,20 @@ function renderTooltipCC(d) {
   `;
 }
 
-StrategyRegistry['coveredCall'] = {
-  templateId: 'coveredCall-details-template',
-  prepareData: prepareCCData,
-  renderTooltip: renderTooltipCC,
-  urlParams: [
+StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
+  prepareData = prepareCCData;
+  renderTooltip = renderTooltipCC;
+  urlParams = [
     URL_PARAMS.OPEN_DTE,
     URL_PARAMS.OPEN_MONEY_YIELD,
     URL_PARAMS.OPEN_UNDERLYING_YIELD
-  ],
-  updateUrlParams: function (url, dataObj) {
+  ];
+  updateUrlParams(url, dataObj) {
     UrlManager.set(url, URL_PARAMS.OPEN_DTE, dataObj.DTE);
     UrlManager.set(url, URL_PARAMS.OPEN_MONEY_YIELD, dataObj.moneyYield !== undefined ? Number(dataObj.moneyYield).toFixed(5) : null);
     UrlManager.set(url, URL_PARAMS.OPEN_UNDERLYING_YIELD, dataObj.underlyingYield !== undefined ? Number(dataObj.underlyingYield).toFixed(5) : null);
-  },
-  unrealizedTemplateId: 'unrealized-results-template',
-  prepareUnrealizedData: function (dataObj) {
+  }
+  prepareUnrealizedData(dataObj) {
     const openParams = getOpenParams();
     if (!openParams) {
       return null;
@@ -184,30 +182,56 @@ StrategyRegistry['coveredCall'] = {
 
     return res;
   }
+  updateSelection(idToSelect) {
+    const store = getAppStore();
+    const chartDom = document.getElementById("strategyChartContainer");
+    const chart = echarts.getInstanceByDom(chartDom);
+    if (!chart || !store || !store.chartData) return;
+
+    const targetItem = store.chartData.find(item => item.id === idToSelect);
+    const overlay = calculateOverlay(targetItem);
+
+    chart.setOption({
+      dataset: [{
+        id: 'highlightDataset',
+        transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
+      }],
+      series: [{
+        id: 'openOverlay',
+        markPoint: {
+          data: overlay ? [{ coord: overlay.open }] : []
+        },
+        markLine: {
+          data: overlay ? [[{ coord: overlay.open }, { coord: overlay.current }]] : []
+        }
+      }]
+    });
+  }
 };
+
+function calculateOverlay(target) {
+  const openParams = getOpenParams();
+  if (!openParams || !target) return null;
+
+  const { openMoneyYield, openUnderlyingYield } = openParams;
+  const moneyRatio = target.moneyYield ? openMoneyYield / target.moneyYield : null;
+  const underlyingRatio = target.underlyingYield ? openUnderlyingYield / target.underlyingYield : null;
+  const moneyDiffers = moneyRatio !== null && Math.abs(moneyRatio - 1.0) > 0.0001;
+  const underlyingDiffers = underlyingRatio !== null && Math.abs(underlyingRatio - 1.0) > 0.0001;
+
+  if (moneyDiffers || underlyingDiffers) {
+    return {
+      open: [openMoneyYield, openUnderlyingYield],
+      current: [target.moneyYield, target.underlyingYield]
+    };
+  }
+  return null;
+}
+
 
 function renderCoveredCallsChart(data, chartDom, idToSelect) {
   const money = data.at(0)?.money || '';
   const underlying = data.at(0)?.underlying || '';
-
-  function calculateOverlay(target) {
-    const openParams = getOpenParams();
-    if (!openParams || !target) return null;
-
-    const { openMoneyYield, openUnderlyingYield } = openParams;
-    const moneyRatio = target.moneyYield ? openMoneyYield / target.moneyYield : null;
-    const underlyingRatio = target.underlyingYield ? openUnderlyingYield / target.underlyingYield : null;
-    const moneyDiffers = moneyRatio !== null && Math.abs(moneyRatio - 1.0) > 0.0001;
-    const underlyingDiffers = underlyingRatio !== null && Math.abs(underlyingRatio - 1.0) > 0.0001;
-
-    if (moneyDiffers || underlyingDiffers) {
-      return {
-        open: [openMoneyYield, openUnderlyingYield],
-        current: [target.moneyYield, target.underlyingYield]
-      };
-    }
-    return null;
-  }
 
   const targetItem = data.find(item => item.id === idToSelect);
   const overlay = calculateOverlay(targetItem);
@@ -392,22 +416,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
 
   chart.on('click', function (params) {
     if (params.componentType === 'series' && params.data) {
-      selectStrategyById(chart, data, params.data.id);
-
-      const targetItem = data.find(item => item.id === params.data.id);
-      const overlay = calculateOverlay(targetItem);
-
-      chart.setOption({
-        series: [{
-          id: 'openOverlay',
-          markPoint: {
-            data: overlay ? [{ coord: overlay.open }] : []
-          },
-          markLine: {
-            data: overlay ? [[{ coord: overlay.open }, { coord: overlay.current }]] : []
-          }
-        }]
-      });
+      selectStrategyById(params.data.id);
     }
   });
   chart.on('datazoom', function () {
@@ -416,6 +425,6 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
     });
   });
 
-  selectStrategyById(chart, data, idToSelect);
+  selectStrategyById(idToSelect);
   return chart;
 }

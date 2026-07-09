@@ -139,16 +139,38 @@ function renderTooltipLongPut(d) {
   `;
 }
 
-StrategyRegistry['longCall'] = {
-  templateId: 'longCall-details-template',
-  prepareData: prepareLongCallData,
-  renderTooltip: renderTooltipLongCall
+StrategyRegistry['longCall'] = new class extends BaseStrategyConfig {
+  prepareData = prepareLongCallData;
+  renderTooltip = renderTooltipLongCall;
+  updateSelection(idToSelect) {
+    const chartDom = document.getElementById("strategyChartContainer");
+    const chart = echarts.getInstanceByDom(chartDom);
+    if (!chart) return;
+
+    chart.setOption({
+      dataset: [{
+        id: 'highlightDataset',
+        transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
+      }]
+    });
+  }
 };
 
-StrategyRegistry['longPut'] = {
-  templateId: 'longPut-details-template',
-  prepareData: prepareLongPutData,
-  renderTooltip: renderTooltipLongPut
+StrategyRegistry['longPut'] = new class extends BaseStrategyConfig {
+  prepareData = prepareLongPutData;
+  renderTooltip = renderTooltipLongPut;
+  updateSelection(idToSelect) {
+    const chartDom = document.getElementById("strategyChartContainer");
+    const chart = echarts.getInstanceByDom(chartDom);
+    if (!chart) return;
+
+    chart.setOption({
+      dataset: [{
+        id: 'highlightDataset',
+        transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
+      }]
+    });
+  }
 };
 
 function renderLongOptionsChart(data, chartDom, idToSelect) {
@@ -284,7 +306,7 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
 
   chart.on('click', function (params) {
     if (params.componentType === 'series' && params.data) {
-      selectStrategyById(chart, data, params.data.id);
+      selectStrategyById(params.data.id);
     }
   });
   chart.on('datazoom', function () {
@@ -293,6 +315,6 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
     });
   });
 
-  selectStrategyById(chart, data, idToSelect);
+  selectStrategyById(idToSelect);
   return chart;
 }

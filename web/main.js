@@ -1,3 +1,187 @@
+document.addEventListener('alpine:init', () => {
+  Alpine.store('app', {
+    ticker: '',
+    strategy: 'coveredCall',
+    slippage: 0.5,
+    minDte: 7,
+    maxDte: 1092,
+    selectedId: null,
+    details: null,
+    unrealized: null,
+    spotPrice: null,
+    chartData: null,
+
+    // DTE Formatting helper
+    formatDte(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      const dateString = new Intl.DateTimeFormat('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }).format(date);
+      return `${dateString} (${days}d)`;
+    },
+
+    get dteValueDisplay() {
+      return `${this.formatDte(this.minDte)} - ${this.formatDte(this.maxDte)}`;
+    },
+
+    get dteRangeStyle() {
+      const min = 0;
+      const max = 1095;
+      const percent1 = ((this.minDte - min) / (max - min)) * 100;
+      const percent2 = ((this.maxDte - min) / (max - min)) * 100;
+      return {
+        left: percent1 + '%',
+        width: (percent2 - percent1) + '%'
+      };
+    },
+
+    get spotPriceDisplay() {
+      if (this.spotPrice === null) return '';
+      return dollarFmt.format(this.spotPrice);
+    },
+
+    init() {
+      // 1. Load initial params from URL
+      let urlTicker = UrlManager.get(URL_PARAMS.TICKER);
+      if (urlTicker) {
+        this.ticker = urlTicker.toUpperCase();
+      }
+      this.strategy = UrlManager.get(URL_PARAMS.STRATEGY, 'coveredCall');
+      this.slippage = parseFloat(UrlManager.get(URL_PARAMS.SLIPPAGE, '0.5'));
+      this.minDte = parseInt(UrlManager.get(URL_PARAMS.MIN_DTE, '7'), 10);
+      this.maxDte = parseInt(UrlManager.get(URL_PARAMS.MAX_DTE, '1092'), 10);
+      this.selectedId = UrlManager.get(URL_PARAMS.ID);
+
+      // Listen to popstate for back/forward browser navigation
+      window.addEventListener('popstate', () => {
+        this.syncFromUrl();
+      });
+    },
+
+    syncFromUrl() {
+      let urlTicker = UrlManager.get(URL_PARAMS.TICKER);
+      if (urlTicker) {
+        this.ticker = urlTicker.toUpperCase();
+      } else {
+        this.ticker = '';
+      }
+      this.strategy = UrlManager.get(URL_PARAMS.STRATEGY, 'coveredCall');
+      this.slippage = parseFloat(UrlManager.get(URL_PARAMS.SLIPPAGE, '0.5'));
+      this.minDte = parseInt(UrlManager.get(URL_PARAMS.MIN_DTE, '7'), 10);
+      this.maxDte = parseInt(UrlManager.get(URL_PARAMS.MAX_DTE, '1092'), 10);
+      
+      const newSelectedId = UrlManager.get(URL_PARAMS.ID);
+      if (this.selectedId !== newSelectedId) {
+        this.selectedId = newSelectedId;
+        selectStrategyById(this.selectedId);
+      }
+
+      if (this.ticker) {
+        this.loadData(true); // pass skipUrlUpdate = true
+      }
+    },
+
+    clearAllStrategyParams(url) {
+      UrlManager.set(url, URL_PARAMS.ID, null);
+      for (const key in StrategyRegistry) {
+        const config = StrategyRegistry[key];
+        if (config && config.urlParams) {
+          UrlManager.clearParams(url, config.urlParams);
+        }
+      }
+    },
+
+    submitTicker() {
+      const userInput = this.ticker.trim().toUpperCase();
+      if (userInput) {
+        const url = UrlManager.createUrl();
+        UrlManager.set(url, URL_PARAMS.TICKER, userInput);
+        this.clearAllStrategyParams(url);
+        window.location.href = url.toString();
+      }
+    },
+
+    changeStrategy() {
+      const url = UrlManager.createUrl();
+      this.clearAllStrategyParams(url);
+      UrlManager.set(url, URL_PARAMS.STRATEGY, this.strategy);
+      UrlManager.replaceState(url);
+      
+      // Clear selection & details when switching strategy types
+      this.selectedId = null;
+      this.details = null;
+      this.unrealized = null;
+
+      this.loadData();
+    },
+
+    reloadData() {
+      if (!this.ticker) return;
+      this.loadData();
+    },
+
+    async loadData(skipUrlUpdate = false) {
+      if (!this.ticker) return;
+      try {
+        if (!skipUrlUpdate) {
+          const url = UrlManager.createUrl();
+          UrlManager.setWithDefault(url, URL_PARAMS.SLIPPAGE, this.slippage, 0.5);
+          UrlManager.setWithDefault(url, URL_PARAMS.MIN_DTE, this.minDte, 7);
+          UrlManager.setWithDefault(url, URL_PARAMS.MAX_DTE, this.maxDte, 1092);
+          UrlManager.setWithDefault(url, URL_PARAMS.STRATEGY, this.strategy, 'coveredCall');
+          UrlManager.replaceState(url);
+        }
+
+        const chartDom = document.getElementById("strategyChartContainer");
+        let existingChart = echarts.getInstanceByDom(chartDom);
+        if (existingChart) existingChart.dispose();
+
+        const config = STRATEGY_CONFIGS[this.strategy];
+        if (!config) {
+          console.warn(`Strategy ${this.strategy} is not implemented yet.`);
+          return;
+        }
+
+        const isCrypto = ["BTC", "ETH", "SOL"].includes(this.ticker);
+        const fetcherName = isCrypto ? config.deribitFetcherName : config.yfinanceFetcherName;
+        const fetcher = window[fetcherName];
+        if (!fetcher) {
+          throw new Error(`Fetcher ${fetcherName} is not registered on window by Dart.`);
+        }
+
+        const rawData = await fetcher(this.ticker, this.slippage, this.minDte, this.maxDte);
+        const dataJson = JSON.parse(rawData);
+        console.log({ strategy: this.strategy, dataJson });
+
+        this.chartData = dataJson;
+        this.spotPrice = extractSpotPrice(dataJson);
+
+        config.renderer(dataJson, chartDom, this.selectedId);
+
+      } catch (error) {
+        console.error("JavaScript caught Dart error:", error.error || error);
+        
+        let errorMsg = "An unexpected error occurred.";
+        if (error) {
+          if (error.error) {
+            errorMsg = String(error.error);
+          } else {
+            errorMsg = String(error);
+          }
+        }
+        errorMsg = errorMsg.replace(/^(Exception|StateError|Error):\s*/i, "");
+
+        document.getElementById('error-message').textContent = errorMsg;
+        const myModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        myModal.show();
+      }
+    }
+  });
+});
+
 const STRATEGY_CONFIGS = {
   coveredCall: {
     deribitFetcherName: 'deribitCoveredCallsDart',
@@ -16,212 +200,10 @@ const STRATEGY_CONFIGS = {
   }
 };
 
-function clearAllStrategyParams(url) {
-  UrlManager.set(url, URL_PARAMS.ID, null);
-  for (const key in StrategyRegistry) {
-    const config = StrategyRegistry[key];
-    if (config && config.urlParams) {
-      UrlManager.clearParams(url, config.urlParams);
-    }
+window.jsMain = function() {
+  const store = getAppStore();
+  if (store && store.ticker) {
+    store.loadData();
   }
-}
+};
 
-
-async function loadStrategyData(ticker, slippage, minDte, maxDte, strategyName) {
-  if (!ticker) return;
-  try {
-    let chartDom = document.getElementById("strategyChartContainer");
-    let existingChart = echarts.getInstanceByDom(chartDom);
-    if (existingChart) existingChart.dispose();
-
-    const config = STRATEGY_CONFIGS[strategyName];
-    if (!config) {
-      console.warn(`Strategy ${strategyName} is not implemented yet.`);
-      return;
-    }
-
-    const isCrypto = ["BTC", "ETH", "SOL"].includes(ticker);
-    const fetcherName = isCrypto ? config.deribitFetcherName : config.yfinanceFetcherName;
-    const fetcher = window[fetcherName];
-    if (!fetcher) {
-      throw new Error(`Fetcher ${fetcherName} is not registered on window by Dart.`);
-    }
-
-    const rawData = await fetcher(ticker, slippage, minDte, maxDte);
-    const dataJson = JSON.parse(rawData);
-    console.log({ strategyName, dataJson });
-
-    const targetId = UrlManager.get(URL_PARAMS.ID);
-    config.renderer(dataJson, chartDom, targetId);
-
-    document.getElementById('spot-ticker-name').textContent = ticker;
-    document.getElementById('spot-price').textContent = dollarFmt.format(extractSpotPrice(dataJson));
-  } catch (error) {
-    console.error("JavaScript caught Dart error:", error.error);
-    console.error("Dart stack trace:", error.stack);
-
-    let errorMsg = "An unexpected error occurred.";
-    if (error) {
-      if (error.error) {
-        errorMsg = String(error.error);
-      } else {
-        errorMsg = String(error);
-      }
-    }
-
-    // Clean common prefixes (e.g. "Exception: ", "StateError: ")
-    errorMsg = errorMsg.replace(/^(Exception|StateError|Error):\s*/i, "");
-
-    document.getElementById('error-message').textContent = errorMsg;
-    const myModal = new bootstrap.Modal(document.getElementById('errorModal'));
-    myModal.show();
-  }
-}
-
-async function jsMain() {
-  let ticker = UrlManager.get(URL_PARAMS.TICKER);
-  if (ticker) {
-    ticker = ticker.toUpperCase();
-  }
-  let strategy = UrlManager.get(URL_PARAMS.STRATEGY, 'coveredCall');
-
-  const initialSlippage = UrlManager.get(URL_PARAMS.SLIPPAGE);
-  const initialMinDTE = UrlManager.get(URL_PARAMS.MIN_DTE);
-  const initialMaxDTE = UrlManager.get(URL_PARAMS.MAX_DTE);
-
-  const tickerInput = document.getElementById('ticker-input');
-  if (tickerInput && ticker) {
-    tickerInput.value = ticker;
-  }
-
-  const tickerForm = document.getElementById('ticker-form');
-  if (tickerForm) {
-    tickerForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const userInput = tickerInput.value.trim().toUpperCase();
-      if (userInput) {
-        const url = UrlManager.createUrl();
-        UrlManager.set(url, URL_PARAMS.TICKER, userInput);
-        clearAllStrategyParams(url);
-        window.location.href = url.toString();
-      }
-    });
-  }
-
-  const slippageInput = document.getElementById('slippage-input');
-  const slippageValueDisplay = document.getElementById('slippage-value');
-  const minDteInput = document.getElementById('min-dte-input');
-  const maxDteInput = document.getElementById('max-dte-input');
-  const dteValueDisplay = document.getElementById('dte-value-display');
-  const dteSliderRange = document.getElementById('dte-slider-range');
-
-  if (slippageInput && initialSlippage !== null) {
-    slippageInput.value = initialSlippage;
-    if (slippageValueDisplay) {
-      slippageValueDisplay.textContent = Math.round(parseFloat(initialSlippage) * 100) + '%';
-    }
-  }
-
-  if (minDteInput && initialMinDTE !== null) {
-    minDteInput.value = initialMinDTE;
-  }
-
-  if (maxDteInput && initialMaxDTE !== null) {
-    maxDteInput.value = initialMaxDTE;
-  }
-
-  function updateDteUI() {
-    if (!minDteInput || !maxDteInput || !dteValueDisplay) return;
-    const minVal = parseInt(minDteInput.value, 10);
-    const maxVal = parseInt(maxDteInput.value, 10);
-
-    function formatDte(days) {
-      const date = new Date();
-      date.setDate(date.getDate() + days);
-      const dateString = new Intl.DateTimeFormat('en-GB', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      }).format(date);
-
-      return `${dateString} (${days}d)`;
-    }
-
-    dteValueDisplay.textContent = `${formatDte(minVal)} - ${formatDte(maxVal)}`;
-
-    if (dteSliderRange) {
-      const min = parseInt(minDteInput.min, 10) || 0;
-      const max = parseInt(minDteInput.max, 10) || 1095;
-      const percent1 = ((minVal - min) / (max - min)) * 100;
-      const percent2 = ((maxVal - min) / (max - min)) * 100;
-      dteSliderRange.style.left = percent1 + '%';
-      dteSliderRange.style.width = (percent2 - percent1) + '%';
-    }
-  }
-
-  const strategySelect = document.getElementById('strategy-select');
-  if (strategySelect) {
-    strategySelect.value = strategy;
-    strategySelect.addEventListener('change', (e) => {
-      strategy = e.target.value;
-      const url = UrlManager.createUrl();
-      clearAllStrategyParams(url);
-      UrlManager.replaceState(url);
-      reloadData();
-    });
-  }
-
-  function reloadData() {
-    if (!ticker) return;
-    const slippage = slippageInput ? parseFloat(slippageInput.value) : 0.5;
-    const minDte = minDteInput ? parseInt(minDteInput.value, 10) : 7;
-    const maxDte = maxDteInput ? parseInt(maxDteInput.value, 10) : 1092;
-
-    const url = UrlManager.createUrl();
-    UrlManager.setWithDefault(url, URL_PARAMS.SLIPPAGE, slippage, 0.5);
-    UrlManager.setWithDefault(url, URL_PARAMS.MIN_DTE, minDte, 7);
-    UrlManager.setWithDefault(url, URL_PARAMS.MAX_DTE, maxDte, 1092);
-    UrlManager.setWithDefault(url, URL_PARAMS.STRATEGY, strategy, 'coveredCall');
-    UrlManager.replaceState(url);
-
-    loadStrategyData(ticker, slippage, minDte, maxDte, strategy);
-  }
-
-  if (slippageInput && slippageValueDisplay) {
-    slippageInput.addEventListener('input', (e) => {
-      const val = parseFloat(e.target.value);
-      slippageValueDisplay.textContent = Math.round(val * 100) + '%';
-    });
-    slippageInput.addEventListener('change', reloadData);
-  }
-
-  if (minDteInput && maxDteInput) {
-    minDteInput.addEventListener('input', (e) => {
-      let minVal = parseInt(e.target.value, 10);
-      let maxVal = parseInt(maxDteInput.value, 10);
-      if (minVal > maxVal) {
-        maxDteInput.value = minVal;
-      }
-      updateDteUI();
-    });
-    minDteInput.addEventListener('change', reloadData);
-
-    maxDteInput.addEventListener('input', (e) => {
-      let maxVal = parseInt(e.target.value, 10);
-      let minVal = parseInt(minDteInput.value, 10);
-      if (maxVal < minVal) {
-        minDteInput.value = maxVal;
-      }
-      updateDteUI();
-    });
-    maxDteInput.addEventListener('change', reloadData);
-
-    updateDteUI();
-  }
-
-  if (!ticker) {
-    return;
-  }
-
-  reloadData();
-}
