@@ -1,53 +1,16 @@
 // Return the properties of a previously opened position on this strategy,
-// from URL params, if such a position is found.
+// from Alpine store's openPosition, if found.
 function getOpenParams() {
-  const openMoneyYieldStr = UrlManager.get(URL_PARAMS.OPEN_MONEY_YIELD);
-  const openUnderlyingYieldStr = UrlManager.get(URL_PARAMS.OPEN_UNDERLYING_YIELD);
-  const openDteStr = UrlManager.get(URL_PARAMS.OPEN_DTE);
-  const openMoneyStr = UrlManager.get(URL_PARAMS.OPEN_MONEY);
-  const openUnderlyingStr = UrlManager.get(URL_PARAMS.OPEN_UNDERLYING);
+  const store = getAppStore();
+  if (!store || !store.openPosition) return null;
+  const p = store.openPosition;
+  const openMoneyYield = p.moneyYield !== undefined && p.moneyYield !== null ? parseFloat(p.moneyYield) : NaN;
+  const openUnderlyingYield = p.underlyingYield !== undefined && p.underlyingYield !== null ? parseFloat(p.underlyingYield) : NaN;
+  const openDTE = p.DTE !== undefined && p.DTE !== null ? parseInt(p.DTE, 10) : NaN;
+  const openMoney = p.money !== undefined && p.money !== null ? parseFloat(p.money) : null;
+  const openUnderlying = p.underlying !== undefined && p.underlying !== null ? parseFloat(p.underlying) : null;
 
-  const openMoneyYield = openMoneyYieldStr !== null ? parseFloat(openMoneyYieldStr) : NaN;
-  const openUnderlyingYield = openUnderlyingYieldStr !== null ? parseFloat(openUnderlyingYieldStr) : NaN;
-  const openDTE = openDteStr !== null ? parseInt(openDteStr, 10) : NaN;
-  const openMoney = openMoneyStr !== null ? parseFloat(openMoneyStr) : NaN;
-  const openUnderlying = openUnderlyingStr !== null ? parseFloat(openUnderlyingStr) : NaN;
-
-  let failed = false;
-  let urlModified = false;
-  const url = UrlManager.createUrl();
-
-  if (openMoneyYieldStr !== null && isNaN(openMoneyYield)) {
-    UrlManager.set(url, URL_PARAMS.OPEN_MONEY_YIELD, null);
-    urlModified = true;
-    failed = true;
-  }
-  if (openUnderlyingYieldStr !== null && isNaN(openUnderlyingYield)) {
-    UrlManager.set(url, URL_PARAMS.OPEN_UNDERLYING_YIELD, null);
-    urlModified = true;
-    failed = true;
-  }
-  if (openDteStr !== null && isNaN(openDTE)) {
-    UrlManager.set(url, URL_PARAMS.OPEN_DTE, null);
-    urlModified = true;
-    failed = true;
-  }
-  if (openMoneyStr !== null && isNaN(openMoney)) {
-    UrlManager.set(url, URL_PARAMS.OPEN_MONEY, null);
-    urlModified = true;
-    failed = true;
-  }
-  if (openUnderlyingStr !== null && isNaN(openUnderlying)) {
-    UrlManager.set(url, URL_PARAMS.OPEN_UNDERLYING, null);
-    urlModified = true;
-    failed = true;
-  }
-
-  if (urlModified) {
-    UrlManager.replaceState(url);
-  }
-
-  if (failed || isNaN(openMoneyYield) || isNaN(openUnderlyingYield) || isNaN(openDTE)) {
+  if (isNaN(openMoneyYield) || isNaN(openUnderlyingYield) || isNaN(openDTE)) {
     return null;
   }
 
@@ -55,8 +18,8 @@ function getOpenParams() {
     openMoneyYield,
     openUnderlyingYield,
     openDTE,
-    openMoney: isNaN(openMoney) ? null : openMoney,
-    openUnderlying: isNaN(openUnderlying) ? null : openUnderlying
+    openMoney: openMoney === null || isNaN(openMoney) ? null : openMoney,
+    openUnderlying: openUnderlying === null || isNaN(openUnderlying) ? null : openUnderlying
   };
 }
 
@@ -138,24 +101,20 @@ function renderTooltipCC(d) {
 StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
   prepareData = prepareCCData;
   renderTooltip = renderTooltipCC;
-  urlParams = [
-    URL_PARAMS.OPEN_DTE,
-    URL_PARAMS.OPEN_MONEY_YIELD,
-    URL_PARAMS.OPEN_UNDERLYING_YIELD,
-    URL_PARAMS.OPEN_MONEY,
-    URL_PARAMS.OPEN_UNDERLYING
-  ];
-  requiredUrlParams = [
-    URL_PARAMS.OPEN_DTE,
-    URL_PARAMS.OPEN_MONEY_YIELD,
-    URL_PARAMS.OPEN_UNDERLYING_YIELD
-  ];
-  updateUrlParams(url, dataObj) {
-    UrlManager.set(url, URL_PARAMS.OPEN_DTE, dataObj.DTE);
-    UrlManager.set(url, URL_PARAMS.OPEN_MONEY_YIELD, dataObj.moneyYield !== undefined ? Number(dataObj.moneyYield).toFixed(5) : null);
-    UrlManager.set(url, URL_PARAMS.OPEN_UNDERLYING_YIELD, dataObj.underlyingYield !== undefined ? Number(dataObj.underlyingYield).toFixed(5) : null);
-    UrlManager.set(url, URL_PARAMS.OPEN_MONEY, dataObj.moneySize !== undefined ? Number(-dataObj.moneySize).toFixed(5) : null);
-    UrlManager.set(url, URL_PARAMS.OPEN_UNDERLYING, dataObj.underlyingToBuy !== undefined ? Number(dataObj.underlyingToBuy).toFixed(5) : null);
+  createOpenPosition(dataObj) {
+    if (dataObj.moneyYield === undefined || dataObj.underlyingYield === undefined ||
+      dataObj.moneySize === undefined || dataObj.underlyingToBuy === undefined ||
+      dataObj.DTE === undefined) {
+      console.log("Not creating an open position from", dataObj);
+      return null;
+    }
+    return {
+      moneyYield: Number(dataObj.moneyYield),
+      underlyingYield: Number(dataObj.underlyingYield),
+      money: Number(-dataObj.moneySize),
+      underlying: Number(dataObj.underlyingToBuy),
+      DTE: Number(dataObj.DTE)
+    };
   }
   prepareUnrealizedData(dataObj) {
     const openParams = getOpenParams();
@@ -170,13 +129,6 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const moneyRatio = !isNaN(openMoneyYield) && dataObj.moneyYield ? openMoneyYield / dataObj.moneyYield : null;
     const underlyingRatio = !isNaN(openUnderlyingYield) && dataObj.underlyingYield ? openUnderlyingYield / dataObj.underlyingYield : null;
-
-    const moneyDiffers = moneyRatio !== null && Math.abs(moneyRatio - 1.0) > 0.0001;
-    const underlyingDiffers = underlyingRatio !== null && Math.abs(underlyingRatio - 1.0) > 0.0001;
-
-    if (!moneyDiffers && !underlyingDiffers) {
-      return null;
-    }
 
     const res = {};
     if (moneyRatio !== null) {

@@ -1,6 +1,7 @@
 document.addEventListener('alpine:init', () => {
   Alpine.store('app', {
     ticker: '',
+    tickerInput: '',
     strategy: 'coveredCall',
     slippage: 0.5,
     minDte: 7,
@@ -10,6 +11,7 @@ document.addEventListener('alpine:init', () => {
     unrealized: null,
     spotPrice: null,
     chartData: null,
+    openPosition: null,
 
     // DTE Formatting helper
     formatDte(days) {
@@ -43,17 +45,88 @@ document.addEventListener('alpine:init', () => {
       return dollarFmt.format(this.spotPrice);
     },
 
+    get selectedItem() {
+      if (!this.selectedId || !this.chartData) return null;
+      return this.chartData.find(item => item.id === this.selectedId);
+    },
+
+    updateOpenPosition() {
+      const url = UrlManager.createUrl();
+      if (this.openPosition) {
+        const item = this.selectedItem;
+        const strategyType = item ? item.strategyType : this.strategy;
+        const config = StrategyRegistry[strategyType];
+        if (config) {
+          const encoded = config.encodeOpenPosition(this.openPosition);
+          UrlManager.set(url, URL_PARAMS.POS, encoded);
+        } else {
+          const encoded = UrlManager.encodeState(this.openPosition);
+          UrlManager.set(url, URL_PARAMS.POS, encoded);
+        }
+      } else {
+        UrlManager.set(url, URL_PARAMS.POS, null);
+      }
+      UrlManager.replaceState(url);
+      
+      this.updateUnrealized();
+
+      const item = this.selectedItem;
+      if (item) {
+        const config = StrategyRegistry[item.strategyType];
+        if (config && config.updateSelection) {
+          config.updateSelection(this.selectedId);
+        }
+      }
+    },
+
+    updateUnrealized() {
+      const item = this.selectedItem;
+      if (!item) {
+        this.unrealized = null;
+        return;
+      }
+      const config = StrategyRegistry[item.strategyType];
+      if (config && config.prepareUnrealizedData) {
+        this.unrealized = config.prepareUnrealizedData(item);
+      } else {
+        this.unrealized = null;
+      }
+    },
+
+    clearOpenPosition() {
+      this.openPosition = null;
+      this.updateOpenPosition();
+    },
+
+    initOpenPositionFromSelection() {
+      const item = this.selectedItem;
+      if (!item) return;
+      const config = StrategyRegistry[item.strategyType];
+      if (config && config.createOpenPosition) {
+        this.openPosition = config.createOpenPosition(item);
+      }
+      this.updateOpenPosition();
+    },
+
     init() {
       // 1. Load initial params from URL
       let urlTicker = UrlManager.get(URL_PARAMS.TICKER);
       if (urlTicker) {
         this.ticker = urlTicker.toUpperCase();
+        this.tickerInput = this.ticker;
       }
       this.strategy = UrlManager.get(URL_PARAMS.STRATEGY, 'coveredCall');
       this.slippage = parseFloat(UrlManager.get(URL_PARAMS.SLIPPAGE, '0.5'));
       this.minDte = parseInt(UrlManager.get(URL_PARAMS.MIN_DTE, '7'), 10);
       this.maxDte = parseInt(UrlManager.get(URL_PARAMS.MAX_DTE, '1092'), 10);
       this.selectedId = UrlManager.get(URL_PARAMS.ID);
+
+      const encodedPos = UrlManager.get(URL_PARAMS.POS);
+      if (encodedPos) {
+        this.openPosition = UrlManager.decodeState(encodedPos);
+      } else {
+        this.openPosition = null;
+      }
 
       // Listen to popstate for back/forward browser navigation
       window.addEventListener('popstate', () => {
@@ -65,8 +138,10 @@ document.addEventListener('alpine:init', () => {
       let urlTicker = UrlManager.get(URL_PARAMS.TICKER);
       if (urlTicker) {
         this.ticker = urlTicker.toUpperCase();
+        this.tickerInput = this.ticker;
       } else {
         this.ticker = '';
+        this.tickerInput = '';
       }
       this.strategy = UrlManager.get(URL_PARAMS.STRATEGY, 'coveredCall');
       this.slippage = parseFloat(UrlManager.get(URL_PARAMS.SLIPPAGE, '0.5'));
@@ -79,6 +154,14 @@ document.addEventListener('alpine:init', () => {
         selectStrategyById(this.selectedId);
       }
 
+      const encodedPos = UrlManager.get(URL_PARAMS.POS);
+      if (encodedPos) {
+        this.openPosition = UrlManager.decodeState(encodedPos);
+      } else {
+        this.openPosition = null;
+      }
+      this.updateUnrealized();
+
       if (this.ticker) {
         this.loadData(true); // pass skipUrlUpdate = true
       }
@@ -86,16 +169,11 @@ document.addEventListener('alpine:init', () => {
 
     clearAllStrategyParams(url) {
       UrlManager.set(url, URL_PARAMS.ID, null);
-      for (const key in StrategyRegistry) {
-        const config = StrategyRegistry[key];
-        if (config && config.urlParams) {
-          UrlManager.clearParams(url, config.urlParams);
-        }
-      }
+      UrlManager.clearParams(url, [URL_PARAMS.POS]);
     },
 
     submitTicker() {
-      const userInput = this.ticker.trim().toUpperCase();
+      const userInput = this.tickerInput.trim().toUpperCase();
       if (userInput) {
         const url = UrlManager.createUrl();
         UrlManager.set(url, URL_PARAMS.TICKER, userInput);
@@ -166,10 +244,30 @@ document.addEventListener('alpine:init', () => {
         
         let errorMsg = "An unexpected error occurred.";
         if (error) {
-          if (error.error) {
-            errorMsg = String(error.error);
+          const getMsg = (val) => {
+            if (!val) return '';
+            if (typeof val === 'string') return val;
+            if (typeof val === 'object') {
+              if (val.message) return String(val.message);
+              if (typeof val.toString === 'function') {
+                const s = val.toString();
+                if (s !== '[object Object]') return s;
+              }
+              try {
+                return JSON.stringify(val);
+              } catch (e) {
+                return '[Complex Object]';
+              }
+            }
+            return String(val);
+          };
+
+          if (error.message) {
+            errorMsg = getMsg(error.message);
+          } else if (error.error) {
+            errorMsg = getMsg(error.error);
           } else {
-            errorMsg = String(error);
+            errorMsg = getMsg(error);
           }
         }
         errorMsg = errorMsg.replace(/^(Exception|StateError|Error):\s*/i, "");

@@ -5,11 +5,7 @@ const URL_PARAMS = {
   MIN_DTE: 'minDTE',
   MAX_DTE: 'maxDTE',
   ID: 'id',
-  OPEN_DTE: 'openDTE',
-  OPEN_MONEY_YIELD: 'openMoneyYield',
-  OPEN_UNDERLYING_YIELD: 'openUnderlyingYield',
-  OPEN_MONEY: 'openMoney',
-  OPEN_UNDERLYING: 'openUnderlying'
+  POS: 'pos'
 };
 
 const UrlManager = {
@@ -55,5 +51,31 @@ const UrlManager = {
 
   replaceState(url) {
     window.history.replaceState({}, '', url);
+  },
+
+  encodeState(obj) {
+    try {
+      const str = JSON.stringify(obj);
+      const base64 = btoa(unescape(encodeURIComponent(str)));
+      return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    } catch (e) {
+      console.error("Failed to encode state:", e);
+      return null;
+    }
+  },
+
+  decodeState(str) {
+    if (!str) return null;
+    try {
+      let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) {
+        base64 += '=';
+      }
+      const decoded = decodeURIComponent(escape(atob(base64)));
+      return JSON.parse(decoded);
+    } catch (e) {
+      console.error("Failed to decode state:", e);
+      return null;
+    }
   }
 };

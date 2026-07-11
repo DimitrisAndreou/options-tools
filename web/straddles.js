@@ -79,9 +79,57 @@ function renderTooltipStraddle(d) {
   `;
 }
 
+function prepareStraddleUnrealizedData(dataObj) {
+  const store = getAppStore();
+  if (!store || !store.openPosition) return null;
+  const p = store.openPosition;
+  const openDTE = p.DTE !== undefined && p.DTE !== null ? parseInt(p.DTE, 10) : NaN;
+  const openMoney = p.money !== undefined && p.money !== null ? parseFloat(p.money) : null;
+  const openUnderlying = p.underlying !== undefined && p.underlying !== null ? parseFloat(p.underlying) : null;
+
+  if (isNaN(openDTE) && openMoney === null && openUnderlying === null) {
+    return null;
+  }
+
+  const res = {};
+
+  let timePassed = 'N/A';
+  if (!isNaN(openDTE) && dataObj.DTE !== undefined) {
+    const diff = openDTE - dataObj.DTE;
+    const pct = openDTE > 0 ? (diff / openDTE) * 100 : 0;
+    timePassed = `${diff} days (${pct.toFixed(2)}%)`;
+  }
+  res.timePassed = timePassed;
+
+  if (openMoney !== null && !isNaN(openMoney)) {
+    res.openMoney = dollarFmt.format(openMoney);
+  }
+  if (openUnderlying !== null && !isNaN(openUnderlying)) {
+    res.openUnderlying = `${underlyingFmt.format(openUnderlying)} ${dataObj.underlying}`;
+  }
+
+  return res;
+}
+
 StrategyRegistry['straddle'] = new class extends BaseStrategyConfig {
   prepareData = prepareStraddleData;
   renderTooltip = renderTooltipStraddle;
+
+  createOpenPosition(dataObj) {
+    if (dataObj.moneySize === undefined || dataObj.costInUnderlying === undefined || dataObj.DTE === undefined) {
+      throw new Error("Missing required properties in dataObj for straddle open position");
+    }
+    return {
+      money: Number(-dataObj.moneySize),
+      underlying: Number(dataObj.costInUnderlying),
+      DTE: Number(dataObj.DTE)
+    };
+  }
+
+  prepareUnrealizedData(dataObj) {
+    return prepareStraddleUnrealizedData(dataObj);
+  }
+
   updateSelection(idToSelect) {
     const chartDom = document.getElementById("strategyChartContainer");
     const chart = echarts.getInstanceByDom(chartDom);

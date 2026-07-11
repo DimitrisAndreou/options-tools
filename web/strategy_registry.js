@@ -5,12 +5,6 @@ class BaseStrategyConfig {
     }
   }
 
-  /** @type {string[]} */
-  urlParams = [];
-
-  /** @type {string[]} */
-  requiredUrlParams = [];
-
   /**
    * Prepares strategy-specific data for binding to the details template.
    * @param {object} dataObj - The raw strategy item data.
@@ -34,7 +28,16 @@ class BaseStrategyConfig {
    * @param {URL} url
    * @param {object} dataObj
    */
-  updateUrlParams(url, dataObj) {}
+  updateUrlParams(url, dataObj) {
+    const openPos = this.createOpenPosition(dataObj);
+    if (!openPos) return;
+    const store = getAppStore();
+    if (store) {
+      store.openPosition = openPos;
+    }
+    const encoded = this.encodeOpenPosition(openPos);
+    UrlManager.set(url, URL_PARAMS.POS, encoded);
+  }
 
   /**
    * Optional callback preparing data for the unrealized template.
@@ -50,6 +53,20 @@ class BaseStrategyConfig {
    * @param {string|null} idToSelect - The strategy item ID selected, or null to clear selection.
    */
   updateSelection(idToSelect) {}
+
+  createOpenPosition(dataObj) {
+    return null;
+  }
+
+  encodeOpenPosition(openPosition) {
+    if (!openPosition) return null;
+    return UrlManager.encodeState(openPosition);
+  }
+
+  decodeOpenPosition(encoded) {
+    if (!encoded) return null;
+    return UrlManager.decodeState(encoded);
+  }
 }
 
 function getAppStore() {
@@ -93,6 +110,7 @@ function selectStrategyById(idToSelect) {
     store.selectedId = null;
     store.details = null;
     store.unrealized = null;
+    store.openPosition = null;
 
     const url = UrlManager.createUrl();
     UrlManager.set(url, URL_PARAMS.ID, null);
@@ -101,9 +119,7 @@ function selectStrategyById(idToSelect) {
     for (const type of registryTypes) {
       const config = StrategyRegistry[type];
       if (config) {
-        if (config.urlParams) {
-          UrlManager.clearParams(url, config.urlParams);
-        }
+        UrlManager.clearParams(url, [URL_PARAMS.POS]);
         if (config.updateSelection) {
           config.updateSelection(null);
         }
@@ -122,12 +138,9 @@ function selectStrategyById(idToSelect) {
 
   const config = StrategyRegistry[targetItem.strategyType];
   if (config) {
-    const requiredParams = config.requiredUrlParams || config.urlParams;
-    const hasParams = requiredParams && requiredParams.every(param => url.searchParams.has(param));
+    const hasParams = url.searchParams.has(URL_PARAMS.POS);
     if (previousUrlId !== idToSelect || !hasParams) {
-      if (config.urlParams) {
-        UrlManager.clearParams(url, config.urlParams);
-      }
+      UrlManager.clearParams(url, [URL_PARAMS.POS]);
       if (config.updateUrlParams) {
         config.updateUrlParams(url, targetItem);
       }
@@ -164,12 +177,9 @@ function populateStrategyDetails(dataObj) {
     const previousUrlId = url.searchParams.get(URL_PARAMS.ID);
     UrlManager.set(url, URL_PARAMS.ID, dataObj.id);
 
-    const requiredParams = config.requiredUrlParams || config.urlParams;
-    const hasParams = requiredParams && requiredParams.every(param => url.searchParams.has(param));
+    const hasParams = url.searchParams.has(URL_PARAMS.POS);
     if (previousUrlId !== dataObj.id || !hasParams) {
-      if (config.urlParams) {
-        UrlManager.clearParams(url, config.urlParams);
-      }
+      UrlManager.clearParams(url, [URL_PARAMS.POS]);
       if (config.updateUrlParams) {
         config.updateUrlParams(url, dataObj);
       }
