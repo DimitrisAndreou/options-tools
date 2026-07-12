@@ -26,7 +26,7 @@
 
 <body>
   <!-- Header -->
-  <header class="header">
+  <header class="header" x-data>
     <div class="container">
       <div class="d-flex justify-content-between align-items-center">
         <h2 class="mb-0">
@@ -35,6 +35,10 @@
           <a href="./help/" class="text-white-50 ms-2"
             style="font-size: 0.6em; text-decoration: none; vertical-align: middle;">(Docs)</a>
         </h2>
+        <!-- Share Strategy Button -->
+        <button class="btn btn-outline-primary btn-sm px-3" id="share-url-btn" @click="$store.app.shareUrl()">
+          <i class="fas fa-share-alt me-2"></i>Share Strategy
+        </button>
       </div>
     </div>
   </header>
@@ -687,6 +691,36 @@
         </div>
         <div class="modal-body">
           <p id="error-message"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share URL Modal -->
+  <div class="modal fade" id="shareModal" tabindex="-1" aria-hidden="true" x-data>
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark text-white border-primary">
+        <div class="modal-header border-primary">
+          <h5 class="modal-title text-primary">
+            <i class="fas fa-share-alt me-2"></i>Share Strategy
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-light-alt small mb-3">Copy this shortened link to share your options strategy setup:</p>
+          <div class="input-group mb-3">
+            <input type="text" id="share-url-input" class="form-control bg-secondary text-white border-0 font-monospace" readonly>
+            <button class="btn btn-primary" type="button" id="copy-share-url-btn" @click="$store.app.copyShareUrl()">
+              <i class="fas fa-copy me-1" id="copy-icon"></i><span id="copy-btn-text">Copy</span>
+            </button>
+          </div>
+          <div id="share-loading" class="text-center py-2" style="display: none;">
+            <div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
+            <span class="small text-muted">Shortening link...</span>
+          </div>
+          <div id="share-error" class="text-danger small mt-2" style="display: none;">
+            Failed to shorten URL. Displaying full link instead.
+          </div>
         </div>
       </div>
     </div>

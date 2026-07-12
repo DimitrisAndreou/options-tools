@@ -296,6 +296,74 @@ document.addEventListener('alpine:init', () => {
         const myModal = new bootstrap.Modal(document.getElementById('errorModal'));
         myModal.show();
       }
+    },
+
+    async shareUrl() {
+      const modalEl = document.getElementById('shareModal');
+      const modalInput = document.getElementById('share-url-input');
+      const copyBtnText = document.getElementById('copy-btn-text');
+      const copyIcon = document.getElementById('copy-icon');
+      const loadingEl = document.getElementById('share-loading');
+      const errorEl = document.getElementById('share-error');
+
+      // Show modal
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+
+      // Reset UI state
+      modalInput.value = '';
+      copyBtnText.textContent = 'Copy';
+      copyIcon.className = 'fas fa-copy me-1';
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+
+      const longUrl = window.location.href;
+
+      try {
+        const target = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`;
+        const proxyUrl = `https://yahoo-proxy-v2.jim-andreou.workers.dev/?target=${encodeURIComponent(target)}`;
+        
+        const res = await fetch(proxyUrl);
+        if (!res.ok) {
+          throw new Error(`Proxy returned status ${res.status}`);
+        }
+        const shortUrl = (await res.text()).trim();
+        if (!shortUrl.startsWith('http')) {
+          throw new Error(`Invalid short URL received: ${shortUrl}`);
+        }
+        modalInput.value = shortUrl;
+      } catch (err) {
+        console.error("URL shortening failed:", err);
+        modalInput.value = longUrl;
+        errorEl.style.display = 'block';
+      } finally {
+        loadingEl.style.display = 'none';
+      }
+    },
+
+    copyShareUrl() {
+      const modalInput = document.getElementById('share-url-input');
+      if (!modalInput || !modalInput.value) return;
+
+      modalInput.select();
+      modalInput.setSelectionRange(0, 99999); // For mobile devices
+
+      navigator.clipboard.writeText(modalInput.value)
+        .then(() => {
+          const copyBtnText = document.getElementById('copy-btn-text');
+          const copyIcon = document.getElementById('copy-icon');
+          
+          copyBtnText.textContent = 'Copied!';
+          copyIcon.className = 'fas fa-check me-1';
+          
+          setTimeout(() => {
+            copyBtnText.textContent = 'Copy';
+            copyIcon.className = 'fas fa-copy me-1';
+          }, 2000);
+        })
+        .catch(err => {
+          console.error('Failed to copy text: ', err);
+        });
     }
   });
 });

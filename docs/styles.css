@@ -303,3 +303,18 @@ footer {
   font-size: 0.75em;
   color: var(--text-muted);
 }
+
+/* Custom Share Button & Modal Styling */
+#share-url-btn {
+  color: var(--primary);
+  border-color: var(--primary);
+  transition: all 0.2s ease-in-out;
+  background-color: transparent;
+  font-weight: 600;
+}
+
+#share-url-btn:hover {
+  background-color: var(--primary);
+  color: var(--bg-dark);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
