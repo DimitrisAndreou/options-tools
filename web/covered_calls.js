@@ -4,22 +4,12 @@ function getOpenParams() {
   const store = getAppStore();
   if (!store || !store.openPosition) return null;
   const p = store.openPosition;
-  const openMoneyYield = p.moneyYield !== undefined && p.moneyYield !== null ? parseFloat(p.moneyYield) : NaN;
-  const openUnderlyingYield = p.underlyingYield !== undefined && p.underlyingYield !== null ? parseFloat(p.underlyingYield) : NaN;
-  const openDTE = p.DTE !== undefined && p.DTE !== null ? parseInt(p.DTE, 10) : NaN;
-  const openMoney = p.money !== undefined && p.money !== null ? parseFloat(p.money) : null;
-  const openUnderlying = p.underlying !== undefined && p.underlying !== null ? parseFloat(p.underlying) : null;
-
-  if (isNaN(openMoneyYield) || isNaN(openUnderlyingYield) || isNaN(openDTE)) {
-    return null;
-  }
-
   return {
-    openMoneyYield,
-    openUnderlyingYield,
-    openDTE,
-    openMoney: openMoney === null || isNaN(openMoney) ? null : openMoney,
-    openUnderlying: openUnderlying === null || isNaN(openUnderlying) ? null : openUnderlying
+    moneyYield: p.moneyYield !== undefined && p.moneyYield !== null ? parseFloat(p.moneyYield) : NaN,
+    underlyingYield: p.underlyingYield !== undefined && p.underlyingYield !== null ? parseFloat(p.underlyingYield) : NaN,
+    DTE: p.DTE !== undefined && p.DTE !== null ? parseInt(p.DTE, 10) : NaN,
+    money: p.money !== undefined && p.money !== null ? parseFloat(p.money) : NaN,
+    underlying: p.underlying !== undefined && p.underlying !== null ? parseFloat(p.underlying) : NaN,
   };
 }
 
@@ -117,57 +107,55 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     };
   }
   prepareUnrealizedData(dataObj) {
-    const openParams = getOpenParams();
-    if (!openParams) {
+    const currentPos = {
+      moneyYield: dataObj.moneyYield,
+      underlyingYield: dataObj.underlyingYield,
+      money: -dataObj.moneySize,
+      underlying: dataObj.underlyingToBuy,
+      DTE: dataObj.DTE
+    };
+    function isValidPosition(pos) {
+      if (!pos) return false;
+      return !isNaN(pos.moneyYield) && pos.moneyYield !== null &&
+        !isNaN(pos.underlyingYield) && pos.underlyingYield !== null &&
+        !isNaN(pos.money) && pos.money !== null &&
+        !isNaN(pos.underlying) && pos.underlying !== null &&
+        !isNaN(pos.DTE) && pos.DTE !== null;
+    };
+    const entryPos = getOpenParams();
+    if (!isValidPosition(entryPos) || !isValidPosition(currentPos)) {
       return null;
     }
-    const openMoneyYield = openParams.openMoneyYield;
-    const openUnderlyingYield = openParams.openUnderlyingYield;
-    const openDTE = openParams.openDTE;
-    const openMoney = openParams.openMoney;
-    const openUnderlying = openParams.openUnderlying;
-
-    const moneyRatio = !isNaN(openMoneyYield) && dataObj.moneyYield ? openMoneyYield / dataObj.moneyYield : null;
-    const underlyingRatio = !isNaN(openUnderlyingYield) && dataObj.underlyingYield ? openUnderlyingYield / dataObj.underlyingYield : null;
-
     const res = {};
-    if (moneyRatio !== null) {
-      const val = (moneyRatio - 1.0) * 100;
-      const sign = val >= 0 ? '+' : '';
-      res.unrealizedMoneyYield = sign + val.toFixed(2) + '%';
-      res.moneyYieldClass = moneyRatio >= 1.0 ? 'text-good' : 'text-bad';
-    } else {
-      res.unrealizedMoneyYield = 'N/A';
-      res.moneyYieldClass = 'text-muted-alt';
-    }
 
-    if (underlyingRatio !== null) {
-      const val = (underlyingRatio - 1.0) * 100;
-      const sign = val >= 0 ? '+' : '';
-      res.unrealizedUnderlyingYield = sign + val.toFixed(2) + '%';
-      res.underlyingYieldClass = underlyingRatio >= 1.0 ? 'text-good' : 'text-bad';
-    } else {
-      res.unrealizedUnderlyingYield = 'N/A';
-      res.underlyingYieldClass = 'text-muted-alt';
-    }
+    // Money Yield
+    res.unrealizedMoneyYield = entryPos.moneyYield / currentPos.moneyYield;
+    res.moneyYieldClass = formatYieldAsClass(res.unrealizedMoneyYield);
 
-    let timePassed = 'N/A';
-    if (!isNaN(openDTE) && dataObj.DTE !== undefined) {
-      const diff = openDTE - dataObj.DTE;
-      const pct = openDTE > 0 ? (diff / openDTE) * 100 : 0;
-      timePassed = `${diff} days (${pct.toFixed(2)}%)`;
-    }
-    res.timePassed = timePassed;
+    // Underlying Yield
+    res.unrealizedUnderlyingYield = entryPos.underlyingYield / currentPos.underlyingYield;
+    res.underlyingYieldClass = formatYieldAsClass(res.unrealizedUnderlyingYield);
 
-    if (openMoney !== null && !isNaN(openMoney)) {
-      res.openMoney = dollarFmt.format(openMoney);
-    }
-    if (openUnderlying !== null && !isNaN(openUnderlying)) {
-      res.openUnderlying = `${underlyingFmt.format(openUnderlying)} ${dataObj.underlying}`;
-    }
+    // Time Passed
+    res.timePassed = formatDaysDiff(entryPos.DTE, currentPos.DTE);
 
+    // Money PnL
+    const moneyPnL = formatPnL(currentPos.money, entryPos.money, dollarFmt.format, dataObj.money);
+    res.openMoney = dollarFmt.format(entryPos.money);
+    res.unrealizedMoneyPnLPct = moneyPnL.pct;
+    res.unrealizedMoneyPnLAbs = moneyPnL.abs;
+    res.moneyPnLClass = moneyPnL.className;
+
+    // Underlying PnL
+    const underlyingPnL = formatPnL(currentPos.underlying, entryPos.underlying, underlyingFmt.format, dataObj.underlying, dataObj.underlying);
+    res.openUnderlying = `${underlyingFmt.format(entryPos.underlying)} ${dataObj.underlying}`;
+    res.unrealizedUnderlyingPnLPct = underlyingPnL.pct;
+    res.unrealizedUnderlyingPnLAbs = underlyingPnL.abs;
+    res.underlyingPnLClass = underlyingPnL.className;
+    console.log({ entryPos, currentPos, res });
     return res;
   }
+
   updateSelection(idToSelect) {
     const store = getAppStore();
     const chartDom = document.getElementById("strategyChartContainer");
@@ -199,15 +187,15 @@ function calculateOverlay(target) {
   const openParams = getOpenParams();
   if (!openParams || !target) return null;
 
-  const { openMoneyYield, openUnderlyingYield } = openParams;
-  const moneyRatio = target.moneyYield ? openMoneyYield / target.moneyYield : null;
-  const underlyingRatio = target.underlyingYield ? openUnderlyingYield / target.underlyingYield : null;
+  const { moneyYield, underlyingYield } = openParams;
+  const moneyRatio = target.moneyYield ? moneyYield / target.moneyYield : null;
+  const underlyingRatio = target.underlyingYield ? underlyingYield / target.underlyingYield : null;
   const moneyDiffers = moneyRatio !== null && Math.abs(moneyRatio - 1.0) > 0.0001;
   const underlyingDiffers = underlyingRatio !== null && Math.abs(underlyingRatio - 1.0) > 0.0001;
 
   if (moneyDiffers || underlyingDiffers) {
     return {
-      open: [openMoneyYield, openUnderlyingYield],
+      open: [moneyYield, underlyingYield],
       current: [target.moneyYield, target.underlyingYield]
     };
   }
@@ -402,7 +390,13 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
 
   chart.on('click', function (params) {
     if (params.componentType === 'series' && params.data) {
-      selectStrategyById(params.data.id);
+      const store = getAppStore();
+      const isCtrl = params.event && params.event.event && (params.event.event.ctrlKey || params.event.event.metaKey || params.event.event.shiftKey);
+      if (isCtrl && store && store.selectedId) {
+        store.initOpenPositionFromData(params.data);
+      } else {
+        selectStrategyById(params.data.id);
+      }
     }
   });
   chart.on('datazoom', function () {

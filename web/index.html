@@ -575,7 +575,7 @@
     </div>
 
     <!-- Second Row: Open Position Parameters & Unrealized Results -->
-    <div class="row justify-content-center mt-4 mb-4">
+    <div class="row justify-content-center mt-4 mb-4" x-show="$store.app.strategy === 'coveredCall'">
       <!-- Open Position Parameters Card -->
       <div class="col-lg-7 col-12">
         <div class="card h-100">
@@ -583,18 +583,16 @@
             <h5 class="mb-0 text-white">
               <i class="fas fa-edit me-2 text-primary"></i>Open Position Parameters
             </h5>
-            <button type="button" class="btn btn-sm btn-outline-danger" 
-                    x-show="$store.app.openPosition"
-                    @click="$store.app.clearOpenPosition()">
+            <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.openPosition"
+              @click="$store.app.clearOpenPosition()">
               <i class="fas fa-trash-alt me-1"></i>Clear
             </button>
           </div>
           <div class="card-body">
             <div x-show="!$store.app.openPosition" class="text-muted text-center py-4">
               <p class="mb-3">No active open position.</p>
-              <button type="button" class="btn btn-sm btn-outline-primary"
-                      x-show="$store.app.details"
-                      @click="$store.app.initOpenPositionFromSelection()">
+              <button type="button" class="btn btn-sm btn-outline-primary" x-show="$store.app.details"
+                @click="$store.app.initOpenPositionFromSelection()">
                 <i class="fas fa-plus me-1"></i>Initialize at Selection
               </button>
             </div>
@@ -603,72 +601,37 @@
               <!-- Covered Call Form fields -->
               <template x-if="$store.app.strategy === 'coveredCall' && $store.app.openPosition">
                 <div class="row g-3">
-                  <div class="col-md-4 col-sm-6">
+                  <div class="col-md-6 col-12">
                     <label class="form-label small text-white-50">Money Yield at Entry</label>
-                    <input type="number" step="0.005" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.moneyYield" @input="$store.app.updateOpenPosition()">
+                    <input type="number" step="0.005"
+                      class="form-control form-control-sm bg-dark text-white border-secondary"
+                      x-model.number="$store.app.openPosition.moneyYield" @input="$store.app.updateOpenPosition()">
                   </div>
-                  <div class="col-md-4 col-sm-6">
+                  <div class="col-md-6 col-12">
+                    <label class="form-label small text-white-50">Capital Required (Money)</label>
+                    <input type="number" step="1"
+                      class="form-control form-control-sm bg-dark text-white border-secondary"
+                      x-model.number="$store.app.openPosition.money" @input="$store.app.updateOpenPosition()">
+                  </div>
+
+                  <div class="col-md-6 col-12">
                     <label class="form-label small text-white-50">Underlying Yield at Entry</label>
-                    <input type="number" step="0.005" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.underlyingYield" @input="$store.app.updateOpenPosition()">
+                    <input type="number" step="0.005"
+                      class="form-control form-control-sm bg-dark text-white border-secondary"
+                      x-model.number="$store.app.openPosition.underlyingYield" @input="$store.app.updateOpenPosition()">
                   </div>
-                  <div class="col-md-4 col-sm-6">
-                    <label class="form-label small text-white-50">DTE at Entry (days)</label>
-                    <input type="number" step="1" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.DTE" @input="$store.app.updateOpenPosition()">
-                  </div>
-                  <div class="col-md-6 col-sm-6">
-                    <label class="form-label small text-white-50">Capital Required (Money)</label>
-                    <input type="number" step="1" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.money" @input="$store.app.updateOpenPosition()">
-                  </div>
-                  <div class="col-md-6 col-sm-6">
+                  <div class="col-md-6 col-12">
                     <label class="form-label small text-white-50">Capital Required (Underlying)</label>
-                    <input type="number" step="0.01" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.underlying" @input="$store.app.updateOpenPosition()">
+                    <input type="number" step="0.01"
+                      class="form-control form-control-sm bg-dark text-white border-secondary"
+                      x-model.number="$store.app.openPosition.underlying" @input="$store.app.updateOpenPosition()">
                   </div>
-                </div>
-              </template>
 
-              <!-- Long Option Form fields -->
-              <template x-if="$store.app.strategy === 'longOption' && $store.app.openPosition">
-                <div class="row g-3">
-                  <div class="col-md-4 col-sm-12">
+                  <div class="col-md-6 col-12">
                     <label class="form-label small text-white-50">DTE at Entry (days)</label>
-                    <input type="number" step="1" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.DTE" @input="$store.app.updateOpenPosition()">
-                  </div>
-                  <div class="col-md-4 col-sm-6">
-                    <label class="form-label small text-white-50">Capital Required (Money)</label>
-                    <input type="number" step="1" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.money" @input="$store.app.updateOpenPosition()">
-                  </div>
-                  <div class="col-md-4 col-sm-6">
-                    <label class="form-label small text-white-50">Capital Required (Underlying)</label>
-                    <input type="number" step="0.01" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.underlying" @input="$store.app.updateOpenPosition()">
-                  </div>
-                </div>
-              </template>
-
-              <!-- Straddle Form fields -->
-              <template x-if="$store.app.strategy === 'straddle' && $store.app.openPosition">
-                <div class="row g-3">
-                  <div class="col-md-4 col-sm-12">
-                    <label class="form-label small text-white-50">DTE at Entry (days)</label>
-                    <input type="number" step="1" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.DTE" @input="$store.app.updateOpenPosition()">
-                  </div>
-                  <div class="col-md-4 col-sm-6">
-                    <label class="form-label small text-white-50">Capital Required (Money)</label>
-                    <input type="number" step="1" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.money" @input="$store.app.updateOpenPosition()">
-                  </div>
-                  <div class="col-md-4 col-sm-6">
-                    <label class="form-label small text-white-50">Capital Required (Underlying)</label>
-                    <input type="number" step="0.01" class="form-control form-control-sm bg-dark text-white border-secondary"
-                           x-model.number="$store.app.openPosition.underlying" @input="$store.app.updateOpenPosition()">
+                    <input type="number" step="1"
+                      class="form-control form-control-sm bg-dark text-white border-secondary"
+                      x-model.number="$store.app.openPosition.DTE" @input="$store.app.updateOpenPosition()">
                   </div>
                 </div>
               </template>
@@ -705,6 +668,26 @@
                     <span class="text-label">Unrealized Underlying Yield</span>
                     <span :class="$store.app.unrealized?.underlyingYieldClass"
                       x-text="$store.app.unrealized?.unrealizedUnderlyingYield"></span>
+                  </div>
+                </template>
+                <template x-if="$store.app.unrealized?.unrealizedMoneyPnLPct !== undefined">
+                  <div class="outcome-row">
+                    <span class="text-label">Unrealized Money PnL</span>
+                    <span :class="$store.app.unrealized?.moneyPnLClass" class="fw-bold">
+                      <span x-text="$store.app.unrealized?.unrealizedMoneyPnLPct"></span>
+                      <span class="small font-monospace ms-1" style="opacity: 0.6;"
+                        x-text="'(' + $store.app.unrealized?.unrealizedMoneyPnLAbs + ')'"></span>
+                    </span>
+                  </div>
+                </template>
+                <template x-if="$store.app.unrealized?.unrealizedUnderlyingPnLPct !== undefined">
+                  <div class="outcome-row">
+                    <span class="text-label">Unrealized Underlying PnL</span>
+                    <span :class="$store.app.unrealized?.underlyingPnLClass" class="fw-bold">
+                      <span x-text="$store.app.unrealized?.unrealizedUnderlyingPnLPct"></span>
+                      <span class="small font-monospace ms-1" style="opacity: 0.6;"
+                        x-text="'(' + $store.app.unrealized?.unrealizedUnderlyingPnLAbs + ')'"></span>
+                    </span>
                   </div>
                 </template>
                 <div class="outcome-row" x-show="$store.app.unrealized?.openMoney">

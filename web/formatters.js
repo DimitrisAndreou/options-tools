@@ -114,3 +114,30 @@ const legend = {
   },
   width: '75%',
 };
+
+function formatYieldAsPercent(theYield) {
+  const val = (theYield - 1.0) * 100;
+  return (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+}
+function formatYieldAsClass(theYield) {
+  return theYield >= 1.0 ? 'text-good' : 'text-bad';
+}
+
+function formatPnL(current, open, formatter, pctSuffix = '', absSuffix = '') {
+  const diff = current - open;
+  const pct = open > 0 ? (diff / open) * 100 : 0;
+  const sign = diff >= 0 ? '+' : '';
+  const pctSuffixStr = pctSuffix ? ' ' + pctSuffix : '';
+  const absSuffixStr = absSuffix ? ' ' + absSuffix : '';
+  return {
+    pct: sign + pct.toFixed(1) + '%' + pctSuffixStr,
+    abs: sign + formatter(diff) + absSuffixStr,
+    className: diff >= 0 ? 'text-good' : 'text-bad'
+  };
+}
+
+function formatDaysDiff(openDTE, currentDTE) {
+  const diffDte = openDTE - currentDTE;
+  const pctDte = openDTE > 0 ? (diffDte / openDTE) * 100 : 0;
+  return `${diffDte} days (${pctDte.toFixed(2)}%)`;
+}

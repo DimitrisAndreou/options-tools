@@ -108,6 +108,15 @@ document.addEventListener('alpine:init', () => {
       this.updateOpenPosition();
     },
 
+    initOpenPositionFromData(dataObj) {
+      if (!dataObj) return;
+      const config = StrategyRegistry[dataObj.strategyType];
+      if (config && config.createOpenPosition) {
+        this.openPosition = config.createOpenPosition(dataObj);
+      }
+      this.updateOpenPosition();
+    },
+
     init() {
       // 1. Load initial params from URL
       let urlTicker = UrlManager.get(URL_PARAMS.TICKER);
@@ -122,7 +131,7 @@ document.addEventListener('alpine:init', () => {
       this.selectedId = UrlManager.get(URL_PARAMS.ID);
 
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
-      if (encodedPos) {
+      if (this.strategy === 'coveredCall' && encodedPos) {
         this.openPosition = UrlManager.decodeState(encodedPos);
       } else {
         this.openPosition = null;
@@ -155,7 +164,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
-      if (encodedPos) {
+      if (this.strategy === 'coveredCall' && encodedPos) {
         this.openPosition = UrlManager.decodeState(encodedPos);
       } else {
         this.openPosition = null;
@@ -192,6 +201,7 @@ document.addEventListener('alpine:init', () => {
       this.selectedId = null;
       this.details = null;
       this.unrealized = null;
+      this.openPosition = null;
 
       this.loadData();
     },
