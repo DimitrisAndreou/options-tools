@@ -282,10 +282,10 @@ document.addEventListener('alpine:init', () => {
             return String(val);
           };
 
-          if (error.message) {
-            errorMsg = getMsg(error.message);
-          } else if (error.error) {
+          if (error.error) {
             errorMsg = getMsg(error.error);
+          } else if (error.message) {
+            errorMsg = getMsg(error.message);
           } else {
             errorMsg = getMsg(error);
           }
