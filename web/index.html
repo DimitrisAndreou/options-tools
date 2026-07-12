@@ -140,111 +140,7 @@
               <div x-show="$store.app.details">
                 <!-- Covered Call Details -->
                 <div x-show="$store.app.strategy === 'coveredCall'">
-                  <div class="strategy-header">
-                    <i class="fas fa-cube me-2"></i>
-                    <template x-if="$store.app.details?.strategyURL">
-                      <a :href="$store.app.details.strategyURL" target="_blank"
-                        style="color: inherit; text-decoration: underline;"
-                        x-text="$store.app.details.strategyName"></a>
-                    </template>
-                    <template x-if="!$store.app.details?.strategyURL">
-                      <span x-text="$store.app.details?.strategyName"></span>
-                    </template>
-                    <span> on </span>
-                    <template x-if="$store.app.details?.underlyingURL">
-                      <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank"
-                        style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
-                    </template>
-                    <template x-if="!$store.app.details?.underlyingURL">
-                      <span class="text-neutral" x-text="$store.app.details?.underlyingName"></span>
-                    </template>
-                  </div>
-
-                  <table class="strategy-table">
-                    <tr>
-                      <td><span class="text-label">Expiration</span></td>
-                      <td class="text-end">
-                        <span class="text-neutral" x-text="$store.app.details?.formattedDate"></span>
-                        <small class="text-bad">(<span x-text="$store.app.details?.DTE"></span>d)</small>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><span class="text-label">Strike Price</span></td>
-                      <td class="text-end">
-                        <span class="text-neutral" x-text="$store.app.details?.strikeAbsolute"></span>
-                        <span class="strike-relative">(<span x-text="$store.app.details?.strikeRelative"></span>)</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><span class="text-label">Contract</span></td>
-                      <td class="text-end contract-name">
-                        <template x-if="$store.app.details?.callURL">
-                          <a :href="$store.app.details.callURL" class="text-neutral" target="_blank"
-                            style="text-decoration: underline;" x-text="$store.app.details.callName"></a>
-                        </template>
-                        <template x-if="!$store.app.details?.callURL">
-                          <span class="text-neutral" x-text="$store.app.details?.callName"></span>
-                        </template>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><span class="text-label">Capital Required</span></td>
-                      <td class="text-end">
-                        <span class="text-neutral" x-text="$store.app.details?.capitalRequired"></span>
-                        <small class="text-muted-alt">(<span
-                            x-text="$store.app.details?.capitalRequiredUnderlying"></span>)</small>
-                      </td>
-                    </tr>
-                  </table>
-
-                  <div class="outcomes-panel">
-                    <div class="outcomes-header">Outcomes at Expiration</div>
-                    <div class="outcome-row">
-                      <span>If <span x-text="$store.app.details?.underlying"></span> &ge; <span
-                          x-text="$store.app.details?.strikeAbsolute"></span></span>
-                      <span><span class="text-good" x-text="$store.app.details?.moneyYield"></span> <span
-                          class="text-good" x-text="$store.app.details?.money"></span> <small
-                          class="text-good-alt">(+<span x-text="$store.app.details?.moneyProfit"></span>)</small></span>
-                    </div>
-                    <div class="outcome-row mb-0">
-                      <span>If <span x-text="$store.app.details?.underlying"></span> &lt; <span
-                          x-text="$store.app.details?.strikeAbsolute"></span></span>
-                      <span><span class="text-good" x-text="$store.app.details?.underlyingYield"></span> <span
-                          class="text-good" x-text="$store.app.details?.underlying"></span> <small
-                          class="text-good-alt">(+<span
-                            x-text="$store.app.details?.underlyingProfit"></span>)</small></span>
-                    </div>
-                  </div>
-
-                  <div class="warnings-panel">
-                    <div class="warning-row">
-                      <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-                      If <span x-text="$store.app.details?.underlying"></span> falls below <span class="text-bad"
-                        x-text="$store.app.details?.beAbsolute"></span> (<span class="text-bad"
-                        x-text="$store.app.details?.beRelative"></span>),
-                      you will have <span class="text-bad">less</span> <span x-text="$store.app.details?.money"></span>
-                      than starting with a 100% <span x-text="$store.app.details?.money"></span> allocation.
-                    </div>
-                    <div class="warning-row">
-                      <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-                      If <span x-text="$store.app.details?.underlying"></span> surpasses <span class="text-good"
-                        x-text="$store.app.details?.capAbsolute"></span> (<span class="text-good"
-                        x-text="$store.app.details?.capRelative"></span>),
-                      you will have <span class="text-bad">less</span> <span
-                        x-text="$store.app.details?.underlying"></span> than starting with a 100% <span
-                        x-text="$store.app.details?.underlying"></span> allocation.
-                    </div>
-                  </div>
-
-                  <div class="instructions-panel">
-                    <div class="instructions-header">Execution Instructions</div>
-                    <div class="instructions-content">
-                      &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.buyAmount"></span> for <span
-                        class="text-bad" x-text="$store.app.details?.buyCost"></span><br />
-                      &bull; <b>Buy</b> <span class="text-bad" x-text="$store.app.details?.sellAmount"></span> for <span
-                        class="text-good" x-text="$store.app.details?.sellPremium"></span>
-                    </div>
-                  </div>
+                  <div class="cc-details-placeholder" x-data="{ get d() { return $store.app.details; } }"></div>
                 </div>
 
                 <!-- Long Option Details -->
@@ -574,79 +470,21 @@
       </div>
     </div>
 
-    <!-- Second Row: Open Position Parameters & Unrealized Results -->
-    <div class="row justify-content-center mt-4 mb-4" x-show="$store.app.strategy === 'coveredCall'">
-      <!-- Open Position Parameters Card -->
-      <div class="col-lg-7 col-12">
-        <div class="card h-100">
-          <div class="card-header d-flex align-items-center justify-content-between">
-            <h5 class="mb-0 text-white">
-              <i class="fas fa-edit me-2 text-primary"></i>Open Position Parameters
-            </h5>
-            <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.openPosition"
-              @click="$store.app.clearOpenPosition()">
-              <i class="fas fa-trash-alt me-1"></i>Clear
-            </button>
-          </div>
-          <div class="card-body">
-            <div x-show="!$store.app.openPosition" class="text-muted text-center py-4">
-              <p class="mb-3">No active open position.</p>
-              <button type="button" class="btn btn-sm btn-outline-primary" x-show="$store.app.details"
-                @click="$store.app.initOpenPositionFromSelection()">
-                <i class="fas fa-plus me-1"></i>Initialize at Selection
-              </button>
-            </div>
-
-            <div x-show="$store.app.openPosition">
-              <!-- Covered Call Form fields -->
-              <template x-if="$store.app.strategy === 'coveredCall' && $store.app.openPosition">
-                <div class="row g-3">
-                  <div class="col-md-6 col-12">
-                    <label class="form-label small text-white-50">Money Yield at Entry</label>
-                    <input type="number" step="0.005"
-                      class="form-control form-control-sm bg-dark text-white border-secondary"
-                      x-model.number="$store.app.openPosition.moneyYield" @input="$store.app.updateOpenPosition()">
-                  </div>
-                  <div class="col-md-6 col-12">
-                    <label class="form-label small text-white-50">Capital Required (Money)</label>
-                    <input type="number" step="1"
-                      class="form-control form-control-sm bg-dark text-white border-secondary"
-                      x-model.number="$store.app.openPosition.money" @input="$store.app.updateOpenPosition()">
-                  </div>
-
-                  <div class="col-md-6 col-12">
-                    <label class="form-label small text-white-50">Underlying Yield at Entry</label>
-                    <input type="number" step="0.005"
-                      class="form-control form-control-sm bg-dark text-white border-secondary"
-                      x-model.number="$store.app.openPosition.underlyingYield" @input="$store.app.updateOpenPosition()">
-                  </div>
-                  <div class="col-md-6 col-12">
-                    <label class="form-label small text-white-50">Capital Required (Underlying)</label>
-                    <input type="number" step="0.01"
-                      class="form-control form-control-sm bg-dark text-white border-secondary"
-                      x-model.number="$store.app.openPosition.underlying" @input="$store.app.updateOpenPosition()">
-                  </div>
-
-                  <div class="col-md-6 col-12">
-                    <label class="form-label small text-white-50">DTE at Entry (days)</label>
-                    <input type="number" step="1"
-                      class="form-control form-control-sm bg-dark text-white border-secondary"
-                      x-model.number="$store.app.openPosition.DTE" @input="$store.app.updateOpenPosition()">
-                  </div>
-                </div>
-              </template>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <!-- Second Row: Unrealized Results & Entry Strategy Details -->
+    <!-- TODO: Temporary condition. Remove x-show when open position is supported for other strategies -->
+    <div x-show="$store.app.strategy === 'coveredCall'">
+      <div class="row justify-content-center mt-4 mb-4">
       <!-- Unrealized Results Card -->
-      <div class="col-lg-5 col-12" style="max-width: 600px;">
-        <div class="card h-100">
-          <div class="card-header d-flex align-items-center">
+      <div class="col-lg-7 col-12 d-flex flex-column">
+        <div class="card w-100 flex-grow-1">
+          <div class="card-header d-flex align-items-center justify-content-between">
             <h5 class="mb-0 text-white">
               <i class="fas fa-chart-line me-2 text-primary"></i>Unrealized Results
             </h5>
+            <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.openPosition"
+              @click="$store.app.clearOpenPosition()">
+              <i class="fas fa-trash-alt me-1"></i>Clear Entry
+            </button>
           </div>
           <div class="card-body">
             <div x-show="!$store.app.unrealized" class="text-muted text-center py-4">
@@ -707,8 +545,139 @@
           </div>
         </div>
       </div>
+
+      <!-- Entry Strategy Details Card -->
+      <div class="col-lg-5 col-12 d-flex flex-column" style="max-width: 600px;">
+        <div class="card w-100 flex-grow-1">
+          <div class="card-header">
+            <h5 class="mb-0 text-white">
+              <i class="fas fa-info-circle me-2 text-primary"></i>Entry Strategy Details
+            </h5>
+          </div>
+          <div class="card-body">
+            <div x-show="!$store.app.openPosition" class="text-muted text-center py-4">
+              Select a point on the chart with Ctrl+Click to set the Entry position.
+            </div>
+
+            <div x-show="$store.app.openPosition" class="text-white" style="font-family: monospace">
+              <div class="cc-details-placeholder" x-data="{ get d() { return $store.app.entryDetails; } }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+</div>
+  <template id="cc-details-tpl">
+    <div>
+      <div class="strategy-header">
+        <i class="fas fa-cube me-2"></i>
+        <template x-if="d?.strategyURL">
+          <a :href="d.strategyURL" target="_blank"
+            style="color: inherit; text-decoration: underline;"
+            x-text="d.strategyName"></a>
+        </template>
+        <template x-if="!d?.strategyURL">
+          <span x-text="d?.strategyName"></span>
+        </template>
+        <span> on </span>
+        <template x-if="d?.underlyingURL">
+          <a :href="d.underlyingURL" class="text-neutral" target="_blank"
+            style="text-decoration: underline;" x-text="d.underlyingName"></a>
+        </template>
+        <template x-if="!d?.underlyingURL">
+          <span class="text-neutral" x-text="d?.underlyingName"></span>
+        </template>
+      </div>
+
+      <table class="strategy-table">
+        <tr>
+          <td><span class="text-label">Expiration</span></td>
+          <td class="text-end">
+            <span class="text-neutral" x-text="d?.formattedDate"></span>
+            <small class="text-bad">(<span x-text="d?.DTE"></span>d)</small>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="text-label">Strike Price</span></td>
+          <td class="text-end">
+            <span class="text-neutral" x-text="d?.strikeAbsolute"></span>
+            <span class="strike-relative">(<span x-text="d?.strikeRelative"></span>)</span>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="text-label">Contract</span></td>
+          <td class="text-end contract-name">
+            <template x-if="d?.callURL">
+              <a :href="d.callURL" class="text-neutral" target="_blank"
+                style="text-decoration: underline;" x-text="d.callName"></a>
+            </template>
+            <template x-if="!d?.callURL">
+              <span class="text-neutral" x-text="d?.callName"></span>
+            </template>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="text-label">Capital Required</span></td>
+          <td class="text-end">
+            <span class="text-neutral" x-text="d?.capitalRequired"></span>
+            <small class="text-muted-alt">(<span
+                x-text="d?.capitalRequiredUnderlying"></span>)</small>
+          </td>
+        </tr>
+      </table>
+
+      <div class="outcomes-panel">
+        <div class="outcomes-header">Outcomes at Expiration</div>
+        <div class="outcome-row">
+          <span>If <span x-text="d?.underlying"></span> &ge; <span
+              x-text="d?.strikeAbsolute"></span></span>
+          <span><span class="text-good" x-text="d?.moneyYield"></span> <span
+              class="text-good" x-text="d?.money"></span> <small
+              class="text-good-alt">(+<span x-text="d?.moneyProfit"></span>)</small></span>
+        </div>
+        <div class="outcome-row mb-0">
+          <span>If <span x-text="d?.underlying"></span> &lt; <span
+              x-text="d?.strikeAbsolute"></span></span>
+          <span><span class="text-good" x-text="d?.underlyingYield"></span> <span
+              class="text-good" x-text="d?.underlying"></span> <small
+              class="text-good-alt">(+<span
+                x-text="d?.underlyingProfit"></span>)</small></span>
+        </div>
+      </div>
+
+      <div class="warnings-panel">
+        <div class="warning-row">
+          <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
+          If <span x-text="d?.underlying"></span> falls below <span class="text-bad"
+            x-text="d?.beAbsolute"></span> (<span class="text-bad"
+            x-text="d?.beRelative"></span>),
+          you will have <span class="text-bad">less</span> <span x-text="d?.money"></span>
+          than starting with a 100% <span x-text="d?.money"></span> allocation.
+        </div>
+        <div class="warning-row">
+          <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
+          If <span x-text="d?.underlying"></span> surpasses <span class="text-good"
+            x-text="d?.capAbsolute"></span> (<span class="text-good"
+            x-text="d?.capRelative"></span>),
+          you will have <span class="text-bad">less</span> <span
+            x-text="d?.underlying"></span> than starting with a 100% <span
+            x-text="d?.underlying"></span> allocation.
+        </div>
+      </div>
+
+      <div class="instructions-panel">
+        <div class="instructions-header">Execution Instructions</div>
+        <div class="instructions-content">
+          &bull; <b>Buy</b> <span class="text-good" x-text="d?.buyAmount"></span> for <span
+            class="text-bad" x-text="d?.buyCost"></span><br />
+          &bull; <b>Sell</b> <span class="text-bad" x-text="d?.sellAmount"></span> for <span
+            class="text-good" x-text="d?.sellPremium"></span>
+        </div>
+      </div>
+    </div>
+  </template>
+
   <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content bg-dark text-white border-danger">

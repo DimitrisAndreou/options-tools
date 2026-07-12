@@ -1,17 +1,4 @@
-// Return the properties of a previously opened position on this strategy,
-// from Alpine store's openPosition, if found.
-function getOpenParams() {
-  const store = getAppStore();
-  if (!store || !store.openPosition) return null;
-  const p = store.openPosition;
-  return {
-    moneyYield: p.moneyYield !== undefined && p.moneyYield !== null ? parseFloat(p.moneyYield) : NaN,
-    underlyingYield: p.underlyingYield !== undefined && p.underlyingYield !== null ? parseFloat(p.underlyingYield) : NaN,
-    DTE: p.DTE !== undefined && p.DTE !== null ? parseInt(p.DTE, 10) : NaN,
-    money: p.money !== undefined && p.money !== null ? parseFloat(p.money) : NaN,
-    underlying: p.underlying !== undefined && p.underlying !== null ? parseFloat(p.underlying) : NaN,
-  };
-}
+
 
 function prepareCCData(value) {
   const money = value.money;
@@ -92,47 +79,52 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
   prepareData = prepareCCData;
   renderTooltip = renderTooltipCC;
   createOpenPosition(dataObj) {
-    if (dataObj.moneyYield === undefined || dataObj.underlyingYield === undefined ||
-      dataObj.moneySize === undefined || dataObj.underlyingToBuy === undefined ||
-      dataObj.DTE === undefined) {
+    if (!dataObj || dataObj.id === undefined) {
       console.log("Not creating an open position from", dataObj);
       return null;
     }
-    return {
+    return dataObj;
+  }
+  prepareUnrealizedData(dataObj) {
+    const store = getAppStore();
+    const entryData = store ? store.openPosition : null;
+    if (!entryData || !dataObj) return null;
+
+    const entryPos = {
+      moneyYield: Number(entryData.moneyYield),
+      underlyingYield: Number(entryData.underlyingYield),
+      money: Number(-entryData.moneySize),
+      underlying: Number(entryData.underlyingToBuy),
+      DTE: Number(entryData.DTE)
+    };
+    const currentPos = {
       moneyYield: Number(dataObj.moneyYield),
       underlyingYield: Number(dataObj.underlyingYield),
       money: Number(-dataObj.moneySize),
       underlying: Number(dataObj.underlyingToBuy),
       DTE: Number(dataObj.DTE)
     };
-  }
-  prepareUnrealizedData(dataObj) {
-    const currentPos = {
-      moneyYield: dataObj.moneyYield,
-      underlyingYield: dataObj.underlyingYield,
-      money: -dataObj.moneySize,
-      underlying: dataObj.underlyingToBuy,
-      DTE: dataObj.DTE
-    };
+
     function isValidPosition(pos) {
       if (!pos) return false;
-      return !isNaN(pos.moneyYield) && pos.moneyYield !== null &&
-        !isNaN(pos.underlyingYield) && pos.underlyingYield !== null &&
-        !isNaN(pos.money) && pos.money !== null &&
-        !isNaN(pos.underlying) && pos.underlying !== null &&
-        !isNaN(pos.DTE) && pos.DTE !== null;
-    };
-    const entryPos = getOpenParams();
+      return typeof pos.moneyYield === 'number' && !isNaN(pos.moneyYield) &&
+             typeof pos.underlyingYield === 'number' && !isNaN(pos.underlyingYield) &&
+             typeof pos.money === 'number' && !isNaN(pos.money) &&
+             typeof pos.underlying === 'number' && !isNaN(pos.underlying) &&
+             typeof pos.DTE === 'number' && !isNaN(pos.DTE);
+    }
+
     if (!isValidPosition(entryPos) || !isValidPosition(currentPos)) {
       return null;
     }
+
     const res = {};
 
-    // Money Yield
+    // Money Yield ratio
     res.unrealizedMoneyYield = entryPos.moneyYield / currentPos.moneyYield;
     res.moneyYieldClass = formatYieldAsClass(res.unrealizedMoneyYield);
 
-    // Underlying Yield
+    // Underlying Yield ratio
     res.unrealizedUnderlyingYield = entryPos.underlyingYield / currentPos.underlyingYield;
     res.underlyingYieldClass = formatYieldAsClass(res.unrealizedUnderlyingYield);
 
@@ -152,7 +144,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     res.unrealizedUnderlyingPnLPct = underlyingPnL.pct;
     res.unrealizedUnderlyingPnLAbs = underlyingPnL.abs;
     res.underlyingPnLClass = underlyingPnL.className;
-    console.log({ entryPos, currentPos, res });
+
     return res;
   }
 
@@ -184,10 +176,11 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 };
 
 function calculateOverlay(target) {
-  const openParams = getOpenParams();
-  if (!openParams || !target) return null;
+  const store = getAppStore();
+  const openPosition = store ? store.openPosition : null;
+  if (!openPosition || !target) return null;
 
-  const { moneyYield, underlyingYield } = openParams;
+  const { moneyYield, underlyingYield } = openPosition;
   const moneyRatio = target.moneyYield ? moneyYield / target.moneyYield : null;
   const underlyingRatio = target.underlyingYield ? underlyingYield / target.underlyingYield : null;
   const moneyDiffers = moneyRatio !== null && Math.abs(moneyRatio - 1.0) > 0.0001;

@@ -79,56 +79,9 @@ function renderTooltipStraddle(d) {
   `;
 }
 
-function prepareStraddleUnrealizedData(dataObj) {
-  const store = getAppStore();
-  if (!store || !store.openPosition) return null;
-  const p = store.openPosition;
-  const openDTE = p.DTE !== undefined && p.DTE !== null ? parseInt(p.DTE, 10) : NaN;
-  const openMoney = p.money !== undefined && p.money !== null ? parseFloat(p.money) : null;
-  const openUnderlying = p.underlying !== undefined && p.underlying !== null ? parseFloat(p.underlying) : null;
-
-  if (isNaN(openDTE) && openMoney === null && openUnderlying === null) {
-    return null;
-  }
-
-  const res = {};
-
-  let timePassed = 'N/A';
-  if (!isNaN(openDTE) && dataObj.DTE !== undefined) {
-    const diff = openDTE - dataObj.DTE;
-    const pct = openDTE > 0 ? (diff / openDTE) * 100 : 0;
-    timePassed = `${diff} days (${pct.toFixed(2)}%)`;
-  }
-  res.timePassed = timePassed;
-
-  if (openMoney !== null && !isNaN(openMoney)) {
-    res.openMoney = dollarFmt.format(openMoney);
-  }
-  if (openUnderlying !== null && !isNaN(openUnderlying)) {
-    res.openUnderlying = `${underlyingFmt.format(openUnderlying)} ${dataObj.underlying}`;
-  }
-
-  return res;
-}
-
 StrategyRegistry['straddle'] = new class extends BaseStrategyConfig {
   prepareData = prepareStraddleData;
   renderTooltip = renderTooltipStraddle;
-
-  createOpenPosition(dataObj) {
-    if (dataObj.moneySize === undefined || dataObj.costInUnderlying === undefined || dataObj.DTE === undefined) {
-      throw new Error("Missing required properties in dataObj for straddle open position");
-    }
-    return {
-      money: Number(-dataObj.moneySize),
-      underlying: Number(dataObj.costInUnderlying),
-      DTE: Number(dataObj.DTE)
-    };
-  }
-
-  prepareUnrealizedData(dataObj) {
-    return prepareStraddleUnrealizedData(dataObj);
-  }
 
   updateSelection(idToSelect) {
     const chartDom = document.getElementById("strategyChartContainer");
@@ -147,15 +100,10 @@ StrategyRegistry['straddle'] = new class extends BaseStrategyConfig {
 function renderStraddlesChart(data, chartDom, idToSelect) {
   const money = data.at(0)?.money || '';
   const underlying = data.at(0)?.underlying || '';
+
   const dataset = {
     id: "original",
-    dimensions: [
-      "DTE",
-      "breakEvenVsFullMoneyDownRelative",
-      "breakEvenVsFullMoneyUpRelative",
-      "strikeRelative",
-      "id"
-    ],
+    dimensions: ["DTE", "breakEvenVsFullMoneyDownRelative", "breakEvenVsFullMoneyUpRelative", "strikeRelative", "id"],
     source: data
   };
   const highlightDataset = {
@@ -173,7 +121,7 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
     dataset: [dataset, highlightDataset],
     xAxis: {
       type: 'value',
-      name: 'DTE (Days to Expiration)➡',
+      name: `DTE➡`,
       nameLocation: 'end',
       nameGap: 0,
       nameTextStyle: {
@@ -184,14 +132,14 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
       },
       axisLabel: axisXValuesNameTextStyle,
       axisLine,
-      min: function (value) { return Math.max(0, value.min - 7); },
-      max: function (value) { return value.max + 7; },
+      min: function (value) { return Math.max(0, value.min - 5); },
+      max: function (value) { return value.max + 5; },
       position: 'bottom',
     },
     grid,
     yAxis: {
       type: 'value',
-      name: `⇳ Breakevens`,
+      name: `⇳ Required Price Change`,
       nameLocation: 'end',
       nameTextStyle: yAxisTitleNameTextStyle,
       axisLabel: {
@@ -211,20 +159,20 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
     series: [
       {
         type: 'custom',
-        name: 'Straddles',
+        name: 'Straddle BE range',
         renderItem: function (params, api) {
-          var dte = api.value(0);
-          var down = api.value(1);
-          var up = api.value(2);
-          var strike = api.value(3);
+          const xVal = api.value(0);
+          const yDown = api.value(1);
+          const yUp = api.value(2);
+          const strikeRel = api.value(3);
+          if (xVal === null || yDown === null || yUp === null || strikeRel === null) return;
 
-          var coordDown = api.coord([dte, down]);
-          var coordUp = api.coord([dte, up]);
-          var coordStrike = api.coord([dte, strike]);
+          const coordStrike = api.coord([xVal, strikeRel]);
+          const coordDown = api.coord([xVal, yDown]);
+          const coordUp = api.coord([xVal, yUp]);
 
-          var barWidth = 3;
-          var capRadius = 5;
-          var strikeRadius = 4;
+          const strikeRadius = 4;
+          const rangeWidth = 2;
 
           return {
             type: 'group',
@@ -238,13 +186,13 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
                   y2: coordUp[1]
                 },
                 style: api.style({
-                  stroke: '#ef4444',
-                  lineWidth: barWidth
+                  stroke: '#60a5fa',
+                  lineWidth: rangeWidth
                 }),
                 emphasis: {
                   style: {
-                    stroke: 'red',
-                    lineWidth: barWidth + 1
+                    stroke: '#60a5fa',
+                    lineWidth: 3
                   }
                 }
               },
@@ -253,14 +201,14 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
                 shape: {
                   cx: coordDown[0],
                   cy: coordDown[1],
-                  r: capRadius
+                  r: 3
                 },
                 style: api.style({
-                  fill: '#10b981'
+                  fill: '#60a5fa'
                 }),
                 emphasis: {
                   style: {
-                    fill: '#10b981',
+                    fill: '#60a5fa',
                     stroke: 'white',
                     lineWidth: 2
                   }
@@ -271,14 +219,14 @@ function renderStraddlesChart(data, chartDom, idToSelect) {
                 shape: {
                   cx: coordUp[0],
                   cy: coordUp[1],
-                  r: capRadius
+                  r: 3
                 },
                 style: api.style({
-                  fill: '#10b981'
+                  fill: '#60a5fa'
                 }),
                 emphasis: {
                   style: {
-                    fill: '#10b981',
+                    fill: '#60a5fa',
                     stroke: 'white',
                     lineWidth: 2
                   }

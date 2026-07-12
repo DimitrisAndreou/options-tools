@@ -1,3 +1,13 @@
+// Clone covered call details template into placeholders before Alpine compiles them
+document.addEventListener('DOMContentLoaded', () => {
+  const tpl = document.getElementById('cc-details-tpl');
+  if (tpl) {
+    document.querySelectorAll('.cc-details-placeholder').forEach(el => {
+      el.appendChild(tpl.content.cloneNode(true));
+    });
+  }
+});
+
 document.addEventListener('alpine:init', () => {
   Alpine.store('app', {
     ticker: '',
@@ -50,6 +60,16 @@ document.addEventListener('alpine:init', () => {
       return this.chartData.find(item => item.id === this.selectedId);
     },
 
+    get entryDetails() {
+      if (!this.openPosition) return null;
+      const strategyType = this.openPosition.strategyType || this.strategy;
+      const config = StrategyRegistry[strategyType];
+      if (config && config.prepareData) {
+        return config.prepareData(this.openPosition);
+      }
+      return null;
+    },
+
     updateOpenPosition() {
       const url = UrlManager.createUrl();
       if (this.openPosition) {
@@ -98,12 +118,11 @@ document.addEventListener('alpine:init', () => {
       this.updateOpenPosition();
     },
 
-    initOpenPositionFromSelection() {
-      const item = this.selectedItem;
-      if (!item) return;
-      const config = StrategyRegistry[item.strategyType];
+    initOpenPositionFromData(dataObj) {
+      if (!dataObj) return;
+      const config = StrategyRegistry[dataObj.strategyType];
       if (config && config.createOpenPosition) {
-        this.openPosition = config.createOpenPosition(item);
+        this.openPosition = config.createOpenPosition(dataObj);
       }
       this.updateOpenPosition();
     },
@@ -122,7 +141,7 @@ document.addEventListener('alpine:init', () => {
       this.selectedId = UrlManager.get(URL_PARAMS.ID);
 
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
-      if (encodedPos) {
+      if (this.strategy === 'coveredCall' && encodedPos) {
         this.openPosition = UrlManager.decodeState(encodedPos);
       } else {
         this.openPosition = null;
@@ -155,7 +174,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
-      if (encodedPos) {
+      if (this.strategy === 'coveredCall' && encodedPos) {
         this.openPosition = UrlManager.decodeState(encodedPos);
       } else {
         this.openPosition = null;
@@ -192,6 +211,7 @@ document.addEventListener('alpine:init', () => {
       this.selectedId = null;
       this.details = null;
       this.unrealized = null;
+      this.openPosition = null;
 
       this.loadData();
     },
