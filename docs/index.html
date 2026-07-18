@@ -498,18 +498,21 @@
             <div id="unrealizedResultsPanel" x-show="$store.app.unrealized" class="text-white"
               style="font-family: monospace;">
               <div class="outcomes-panel">
-                <template x-if="$store.app.unrealized?.unrealizedMoneyYield !== undefined">
+                <template x-if="$store.app.unrealized?.spotPriceEntry !== undefined">
                   <div class="outcome-row">
-                    <span class="text-label">Unrealized Money Yield</span>
-                    <span :class="$store.app.unrealized?.moneyYieldClass"
-                      x-text="$store.app.unrealized?.unrealizedMoneyYield"></span>
+                    <span class="text-label">Spot Price (Entry)</span>
+                    <span style="color: #00ff00; font-weight: bold;" x-text="$store.app.unrealized?.spotPriceEntry"></span>
                   </div>
                 </template>
-                <template x-if="$store.app.unrealized?.unrealizedUnderlyingYield !== undefined">
+                <template x-if="$store.app.unrealized?.spotPriceCurrent !== undefined">
                   <div class="outcome-row">
-                    <span class="text-label">Unrealized Underlying Yield</span>
-                    <span :class="$store.app.unrealized?.underlyingYieldClass"
-                      x-text="$store.app.unrealized?.unrealizedUnderlyingYield"></span>
+                    <span class="text-label">Spot Price (Current)</span>
+                    <span class="text-neutral-alt">
+                      <span :class="$store.app.unrealized?.spotPriceCurrentClass"
+                        x-text="'(' + $store.app.unrealized?.spotPriceCurrentPct + ')'"></span>
+                      <span class="ms-1" style="color: #00ff00; font-weight: bold;"
+                        x-text="$store.app.unrealized?.spotPriceCurrent"></span>
+                    </span>
                   </div>
                 </template>
                 <template x-if="$store.app.unrealized?.unrealizedMoneyPnLPct !== undefined">
@@ -605,8 +608,14 @@
         <tr>
           <td><span class="text-label">Strike Price</span></td>
           <td class="text-end">
-            <span class="text-neutral" x-text="d?.strikeAbsolute"></span>
             <span class="strike-relative">(<span x-text="d?.strikeRelative"></span>)</span>
+            <span class="text-neutral" x-text="d?.strikeAbsolute"></span>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="text-label">Spot Price</span></td>
+          <td class="text-end">
+            <span style="color: #00ff00; font-weight: bold;" x-text="d?.spotPrice"></span>
           </td>
         </tr>
         <tr>

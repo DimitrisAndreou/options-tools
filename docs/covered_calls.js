@@ -15,6 +15,7 @@ function prepareCCData(value) {
     DTE: value.DTE,
     strikeAbsolute: dollarFmt.format(value.strikeAbsolute),
     strikeRelative: percentFmt.format(value.strikeAbsolute / value.spotPrice - 1.0),
+    spotPrice: dollarFmt.format(value.spotPrice),
     callName: value.call,
     callURL: value.callURL,
     capitalRequired: dollarFmt.format(-value.moneySize),
@@ -120,13 +121,16 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const res = {};
 
-    // Money Yield ratio
-    res.unrealizedMoneyYield = entryPos.moneyYield / currentPos.moneyYield;
-    res.moneyYieldClass = formatYieldAsClass(res.unrealizedMoneyYield);
+    const entrySpot = Number(entryData.spotPrice);
+    const currentSpot = Number(dataObj.spotPrice);
 
-    // Underlying Yield ratio
-    res.unrealizedUnderlyingYield = entryPos.underlyingYield / currentPos.underlyingYield;
-    res.underlyingYieldClass = formatYieldAsClass(res.unrealizedUnderlyingYield);
+    if (!isNaN(entrySpot) && !isNaN(currentSpot) && entrySpot > 0 && currentSpot > 0) {
+      res.spotPriceEntry = dollarFmt.format(entrySpot);
+
+      res.spotPriceCurrent = dollarFmt.format(currentSpot);
+      res.spotPriceCurrentPct = percentFmt.format(currentSpot / entrySpot - 1.0);
+      res.spotPriceCurrentClass = currentSpot >= entrySpot ? 'text-good' : 'text-bad';
+    }
 
     // Time Passed
     res.timePassed = formatDaysDiff(entryPos.DTE, currentPos.DTE);
