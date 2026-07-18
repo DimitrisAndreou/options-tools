@@ -139,5 +139,7 @@ function formatPnL(current, open, formatter, pctSuffix = '', absSuffix = '') {
 function formatDaysDiff(openDTE, currentDTE) {
   const diffDte = openDTE - currentDTE;
   const pctDte = openDTE > 0 ? (diffDte / openDTE) * 100 : 0;
-  return `${diffDte} days (${pctDte.toFixed(2)}%)`;
+  const sign = diffDte >= 0 ? '+' : '';
+  const pctSign = pctDte >= 0 ? '+' : '';
+  return `${sign}${diffDte} days (${pctSign}${pctDte.toFixed(2)}%)`;
 }

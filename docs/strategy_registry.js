@@ -24,22 +24,6 @@ class BaseStrategyConfig {
   }
 
   /**
-   * Optional callback to serialize strategy state into URL query params.
-   * @param {URL} url
-   * @param {object} dataObj
-   */
-  updateUrlParams(url, dataObj) {
-    const openPos = this.createOpenPosition(dataObj);
-    if (!openPos) return;
-    const store = getAppStore();
-    if (store) {
-      store.openPosition = openPos;
-    }
-    const encoded = this.encodeOpenPosition(openPos);
-    UrlManager.set(url, URL_PARAMS.POS, encoded);
-  }
-
-  /**
    * Optional callback preparing data for the unrealized template.
    * @param {object} dataObj
    * @returns {object|null}
@@ -52,7 +36,7 @@ class BaseStrategyConfig {
    * Optional callback called when selection changes on the chart.
    * @param {string|null} idToSelect - The strategy item ID selected, or null to clear selection.
    */
-  updateSelection(idToSelect) {}
+  updateSelection(idToSelect) { }
 
   createOpenPosition(dataObj) {
     return null;
@@ -114,38 +98,48 @@ function selectStrategyById(idToSelect) {
 
     const url = UrlManager.createUrl();
     UrlManager.set(url, URL_PARAMS.ID, null);
+    UrlManager.clearParams(url, [URL_PARAMS.POS]);
+    UrlManager.replaceState(url);
 
     const registryTypes = getRegistryTypesForStrategy(strategy);
     for (const type of registryTypes) {
       const config = StrategyRegistry[type];
-      if (config) {
-        UrlManager.clearParams(url, [URL_PARAMS.POS]);
-        if (config.updateSelection) {
-          config.updateSelection(null);
-        }
+      if (config && config.updateSelection) {
+        config.updateSelection(null);
       }
     }
-    UrlManager.replaceState(url);
     return;
   }
 
   store.selectedId = idToSelect;
-  populateStrategyDetails(targetItem);
-
-  const url = UrlManager.createUrl();
-  const previousUrlId = url.searchParams.get(URL_PARAMS.ID);
-  UrlManager.set(url, URL_PARAMS.ID, idToSelect);
 
   const config = StrategyRegistry[targetItem.strategyType];
   if (config) {
-    const hasParams = url.searchParams.has(URL_PARAMS.POS);
-    if (previousUrlId !== idToSelect || !hasParams) {
-      UrlManager.clearParams(url, [URL_PARAMS.POS]);
-      if (config.updateUrlParams) {
-        config.updateUrlParams(url, targetItem);
+    const url = UrlManager.createUrl();
+    UrlManager.set(url, URL_PARAMS.ID, idToSelect);
+
+    // Only set open position if it does not exist yet!
+    if (!store.openPosition) {
+      const openPos = config.createOpenPosition(targetItem);
+      if (openPos) {
+        store.openPosition = openPos;
+        const encoded = config.encodeOpenPosition(openPos);
+        UrlManager.set(url, URL_PARAMS.POS, encoded);
       }
+    } else {
+      // If it exists, ensure it is still correctly encoded in URL
+      const encoded = config.encodeOpenPosition(store.openPosition);
+      UrlManager.set(url, URL_PARAMS.POS, encoded);
     }
     UrlManager.replaceState(url);
+
+    // Update details and unrealized
+    store.details = config.prepareData(targetItem);
+    if (config.prepareUnrealizedData) {
+      store.unrealized = config.prepareUnrealizedData(targetItem);
+    } else {
+      store.unrealized = null;
+    }
 
     if (config.updateSelection) {
       config.updateSelection(idToSelect);
@@ -158,44 +152,4 @@ function getRegistryTypesForStrategy(strategy) {
     return ['longCall', 'longPut'];
   }
   return [strategy];
-}
-
-function populateStrategyDetails(dataObj) {
-  if (!dataObj || !dataObj.strategyType) {
-    throw new Error('Missing strategyType in data object');
-  }
-
-  const config = StrategyRegistry[dataObj.strategyType];
-  if (!config) {
-    throw new Error(`Unknown strategyType: ${dataObj.strategyType}`);
-  }
-
-  const store = getAppStore();
-
-  if (dataObj.id) {
-    const url = UrlManager.createUrl();
-    const previousUrlId = url.searchParams.get(URL_PARAMS.ID);
-    UrlManager.set(url, URL_PARAMS.ID, dataObj.id);
-
-    const hasParams = url.searchParams.has(URL_PARAMS.POS);
-    if (previousUrlId !== dataObj.id || !hasParams) {
-      UrlManager.clearParams(url, [URL_PARAMS.POS]);
-      if (config.updateUrlParams) {
-        config.updateUrlParams(url, dataObj);
-      }
-    }
-    UrlManager.replaceState(url);
-  }
-
-  if (store) {
-    // 1. Prepare and store unrealized data
-    if (config.prepareUnrealizedData) {
-      store.unrealized = config.prepareUnrealizedData(dataObj);
-    } else {
-      store.unrealized = null;
-    }
-
-    // 2. Prepare and store details data
-    store.details = config.prepareData(dataObj);
-  }
 }

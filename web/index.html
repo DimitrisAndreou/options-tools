@@ -478,110 +478,110 @@
     <!-- TODO: Temporary condition. Remove x-show when open position is supported for other strategies -->
     <div x-show="$store.app.strategy === 'coveredCall'">
       <div class="row justify-content-center mt-4 mb-4">
-      <!-- Unrealized Results Card -->
-      <div class="col-lg-7 col-12 d-flex flex-column">
-        <div class="card w-100 flex-grow-1">
-          <div class="card-header d-flex align-items-center justify-content-between">
-            <h5 class="mb-0 text-white">
-              <i class="fas fa-chart-line me-2 text-primary"></i>Unrealized Results
-            </h5>
-            <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.openPosition"
-              @click="$store.app.clearOpenPosition()">
-              <i class="fas fa-trash-alt me-1"></i>Clear Entry
-            </button>
-          </div>
-          <div class="card-body">
-            <div x-show="!$store.app.unrealized" class="text-muted text-center py-4">
-              Select a point on the chart or initialize an open position to calculate unrealized results.
+        <!-- Unrealized Results Card -->
+        <div class="col-lg-7 col-12 d-flex flex-column">
+          <div class="card w-100 flex-grow-1">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <h5 class="mb-0 text-white">
+                <i class="fas fa-chart-line me-2 text-primary"></i><span x-text="$store.app.unrealized?.isRoll ? 'Roll Impact' : 'Unrealized Results'">Unrealized Results</span>
+              </h5>
+              <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.openPosition"
+                @click="$store.app.clearOpenPosition()">
+                <i class="fas fa-trash-alt me-1"></i>Clear Entry
+              </button>
             </div>
+            <div class="card-body">
+              <div x-show="!$store.app.unrealized" class="text-muted text-center py-4">
+                Select a point on the chart or initialize an open position to calculate unrealized results.
+              </div>
 
-            <div id="unrealizedResultsPanel" x-show="$store.app.unrealized" class="text-white"
-              style="font-family: monospace;">
-              <div class="outcomes-panel">
-                <template x-if="$store.app.unrealized?.spotPriceEntry !== undefined">
-                  <div class="outcome-row">
-                    <span class="text-label">Spot Price (Entry)</span>
-                    <span style="color: #00ff00; font-weight: bold;" x-text="$store.app.unrealized?.spotPriceEntry"></span>
+              <div id="unrealizedResultsPanel" x-show="$store.app.unrealized" class="text-white"
+                style="font-family: monospace;">
+                <div class="outcomes-panel">
+                  <div class="outcome-row" x-show="$store.app.unrealized?.timePassed">
+                    <span class="text-label">Time Difference</span>
+                    <span class="text-neutral-alt" x-text="$store.app.unrealized?.timePassed"></span>
                   </div>
-                </template>
-                <template x-if="$store.app.unrealized?.spotPriceCurrent !== undefined">
-                  <div class="outcome-row">
-                    <span class="text-label">Spot Price (Current)</span>
-                    <span class="text-neutral-alt">
-                      <span :class="$store.app.unrealized?.spotPriceCurrentClass"
-                        x-text="'(' + $store.app.unrealized?.spotPriceCurrentPct + ')'"></span>
-                      <span class="ms-1" style="color: #00ff00; font-weight: bold;"
-                        x-text="$store.app.unrealized?.spotPriceCurrent"></span>
-                    </span>
+                  <template x-if="$store.app.unrealized?.spotPriceEntry !== undefined">
+                    <div class="outcome-row">
+                      <span class="text-label">Spot Price (Entry)</span>
+                      <span style="color: #00ff00; font-weight: bold;"
+                        x-text="$store.app.unrealized?.spotPriceEntry"></span>
+                    </div>
+                  </template>
+                  <template x-if="$store.app.unrealized?.spotPriceCurrent !== undefined">
+                    <div class="outcome-row">
+                      <span class="text-label">Spot Price (Current)</span>
+                      <span class="text-neutral-alt">
+                        <span :class="$store.app.unrealized?.spotPriceCurrentClass"
+                          x-text="'(' + $store.app.unrealized?.spotPriceCurrentPct + ')'"></span>
+                        <span class="ms-1" style="color: #00ff00; font-weight: bold;"
+                          x-text="$store.app.unrealized?.spotPriceCurrent"></span>
+                      </span>
+                    </div>
+                  </template>
+                  <template x-if="$store.app.unrealized?.unrealizedMoneyPnLPct !== undefined">
+                    <div class="outcome-row">
+                      <span class="text-label" x-text="$store.app.unrealized?.isRoll ? 'Capital Difference (Money)' : 'Unrealized Money PnL'">Unrealized Money PnL</span>
+                      <span :class="$store.app.unrealized?.moneyPnLClass" class="fw-bold">
+                        <span x-text="$store.app.unrealized?.unrealizedMoneyPnLPct"></span>
+                        <span class="small font-monospace ms-1" style="opacity: 0.6;"
+                          x-text="'(' + $store.app.unrealized?.unrealizedMoneyPnLAbs + ')'"></span>
+                      </span>
+                    </div>
+                  </template>
+                  <template x-if="$store.app.unrealized?.unrealizedUnderlyingPnLPct !== undefined">
+                    <div class="outcome-row">
+                      <span class="text-label" x-text="$store.app.unrealized?.isRoll ? 'Capital Difference (Underlying)' : 'Unrealized Underlying PnL'">Unrealized Underlying PnL</span>
+                      <span :class="$store.app.unrealized?.underlyingPnLClass" class="fw-bold">
+                        <span x-text="$store.app.unrealized?.unrealizedUnderlyingPnLPct"></span>
+                        <span class="small font-monospace ms-1" style="opacity: 0.6;"
+                          x-text="'(' + $store.app.unrealized?.unrealizedUnderlyingPnLAbs + ')'"></span>
+                      </span>
+                    </div>
+                  </template>
+                  <div class="outcome-row" x-show="$store.app.unrealized?.openMoney">
+                    <span class="text-label">Entry Capital (As Money)</span>
+                    <span class="text-neutral-alt" x-text="$store.app.unrealized?.openMoney"></span>
                   </div>
-                </template>
-                <template x-if="$store.app.unrealized?.unrealizedMoneyPnLPct !== undefined">
-                  <div class="outcome-row">
-                    <span class="text-label">Unrealized Money PnL</span>
-                    <span :class="$store.app.unrealized?.moneyPnLClass" class="fw-bold">
-                      <span x-text="$store.app.unrealized?.unrealizedMoneyPnLPct"></span>
-                      <span class="small font-monospace ms-1" style="opacity: 0.6;"
-                        x-text="'(' + $store.app.unrealized?.unrealizedMoneyPnLAbs + ')'"></span>
-                    </span>
+                  <div class="outcome-row" x-show="$store.app.unrealized?.openUnderlying">
+                    <span class="text-label">Entry Capital (As Underlying)</span>
+                    <span class="text-neutral-alt" x-text="$store.app.unrealized?.openUnderlying"></span>
                   </div>
-                </template>
-                <template x-if="$store.app.unrealized?.unrealizedUnderlyingPnLPct !== undefined">
-                  <div class="outcome-row">
-                    <span class="text-label">Unrealized Underlying PnL</span>
-                    <span :class="$store.app.unrealized?.underlyingPnLClass" class="fw-bold">
-                      <span x-text="$store.app.unrealized?.unrealizedUnderlyingPnLPct"></span>
-                      <span class="small font-monospace ms-1" style="opacity: 0.6;"
-                        x-text="'(' + $store.app.unrealized?.unrealizedUnderlyingPnLAbs + ')'"></span>
-                    </span>
-                  </div>
-                </template>
-                <div class="outcome-row" x-show="$store.app.unrealized?.openMoney">
-                  <span class="text-label">Open Money</span>
-                  <span class="text-neutral-alt" x-text="$store.app.unrealized?.openMoney"></span>
-                </div>
-                <div class="outcome-row" x-show="$store.app.unrealized?.openUnderlying">
-                  <span class="text-label">Open Underlying</span>
-                  <span class="text-neutral-alt" x-text="$store.app.unrealized?.openUnderlying"></span>
-                </div>
-                <div class="outcome-row" x-show="$store.app.unrealized?.timePassed">
-                  <span class="text-label">Time Passed</span>
-                  <span class="text-neutral-alt" x-text="$store.app.unrealized?.timePassed"></span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Entry Strategy Details Card -->
-      <div class="col-lg-5 col-12 d-flex flex-column" style="max-width: 600px;">
-        <div class="card w-100 flex-grow-1">
-          <div class="card-header">
-            <h5 class="mb-0 text-white">
-              <i class="fas fa-info-circle me-2 text-primary"></i>Entry Strategy Details
-            </h5>
-          </div>
-          <div class="card-body">
-            <div x-show="!$store.app.openPosition" class="text-muted text-center py-4">
-              Select a point on the chart with Ctrl+Click to set the Entry position.
+        <!-- Entry Strategy Details Card -->
+        <div class="col-lg-5 col-12 d-flex flex-column" style="max-width: 600px;">
+          <div class="card w-100 flex-grow-1">
+            <div class="card-header">
+              <h5 class="mb-0 text-white">
+                <i class="fas fa-info-circle me-2 text-primary"></i>Entry Strategy Details
+              </h5>
             </div>
+            <div class="card-body">
+              <div x-show="!$store.app.openPosition" class="text-muted text-center py-4">
+                Select a point on the chart with Ctrl+Click to set the Entry position.
+              </div>
 
-            <div x-show="$store.app.openPosition" class="text-white" style="font-family: monospace">
-              <div class="cc-details-placeholder" x-data="{ get d() { return $store.app.entryDetails; } }"></div>
+              <div x-show="$store.app.openPosition" class="text-white" style="font-family: monospace">
+                <div class="cc-details-placeholder" x-data="{ get d() { return $store.app.entryDetails; } }"></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</div>
   <template id="cc-details-tpl">
     <div>
       <div class="strategy-header">
         <i class="fas fa-cube me-2"></i>
         <template x-if="d?.strategyURL">
-          <a :href="d.strategyURL" target="_blank"
-            style="color: inherit; text-decoration: underline;"
+          <a :href="d.strategyURL" target="_blank" style="color: inherit; text-decoration: underline;"
             x-text="d.strategyName"></a>
         </template>
         <template x-if="!d?.strategyURL">
@@ -589,8 +589,8 @@
         </template>
         <span> on </span>
         <template x-if="d?.underlyingURL">
-          <a :href="d.underlyingURL" class="text-neutral" target="_blank"
-            style="text-decoration: underline;" x-text="d.underlyingName"></a>
+          <a :href="d.underlyingURL" class="text-neutral" target="_blank" style="text-decoration: underline;"
+            x-text="d.underlyingName"></a>
         </template>
         <template x-if="!d?.underlyingURL">
           <span class="text-neutral" x-text="d?.underlyingName"></span>
@@ -622,8 +622,8 @@
           <td><span class="text-label">Contract</span></td>
           <td class="text-end contract-name">
             <template x-if="d?.callURL">
-              <a :href="d.callURL" class="text-neutral" target="_blank"
-                style="text-decoration: underline;" x-text="d.callName"></a>
+              <a :href="d.callURL" class="text-neutral" target="_blank" style="text-decoration: underline;"
+                x-text="d.callName"></a>
             </template>
             <template x-if="!d?.callURL">
               <span class="text-neutral" x-text="d?.callName"></span>
@@ -634,8 +634,7 @@
           <td><span class="text-label">Capital Required</span></td>
           <td class="text-end">
             <span class="text-neutral" x-text="d?.capitalRequired"></span>
-            <small class="text-muted-alt">(<span
-                x-text="d?.capitalRequiredUnderlying"></span>)</small>
+            <small class="text-muted-alt">(<span x-text="d?.capitalRequiredUnderlying"></span>)</small>
           </td>
         </tr>
       </table>
@@ -643,18 +642,14 @@
       <div class="outcomes-panel">
         <div class="outcomes-header">Outcomes at Expiration</div>
         <div class="outcome-row">
-          <span>If <span x-text="d?.underlying"></span> &ge; <span
-              x-text="d?.strikeAbsolute"></span></span>
-          <span><span class="text-good" x-text="d?.moneyYield"></span> <span
-              class="text-good" x-text="d?.money"></span> <small
-              class="text-good-alt">(+<span x-text="d?.moneyProfit"></span>)</small></span>
+          <span>If <span x-text="d?.underlying"></span> &ge; <span x-text="d?.strikeAbsolute"></span></span>
+          <span><span class="text-good" x-text="d?.moneyYield"></span> <span class="text-good" x-text="d?.money"></span>
+            <small class="text-good-alt">(+<span x-text="d?.moneyProfit"></span>)</small></span>
         </div>
         <div class="outcome-row mb-0">
-          <span>If <span x-text="d?.underlying"></span> &lt; <span
-              x-text="d?.strikeAbsolute"></span></span>
-          <span><span class="text-good" x-text="d?.underlyingYield"></span> <span
-              class="text-good" x-text="d?.underlying"></span> <small
-              class="text-good-alt">(+<span
+          <span>If <span x-text="d?.underlying"></span> &lt; <span x-text="d?.strikeAbsolute"></span></span>
+          <span><span class="text-good" x-text="d?.underlyingYield"></span> <span class="text-good"
+              x-text="d?.underlying"></span> <small class="text-good-alt">(+<span
                 x-text="d?.underlyingProfit"></span>)</small></span>
         </div>
       </div>
@@ -662,30 +657,27 @@
       <div class="warnings-panel">
         <div class="warning-row">
           <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-          If <span x-text="d?.underlying"></span> falls below <span class="text-bad"
-            x-text="d?.beAbsolute"></span> (<span class="text-bad"
-            x-text="d?.beRelative"></span>),
+          If <span x-text="d?.underlying"></span> falls below <span class="text-bad" x-text="d?.beAbsolute"></span>
+          (<span class="text-bad" x-text="d?.beRelative"></span>),
           you will have <span class="text-bad">less</span> <span x-text="d?.money"></span>
           than starting with a 100% <span x-text="d?.money"></span> allocation.
         </div>
         <div class="warning-row">
           <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-          If <span x-text="d?.underlying"></span> surpasses <span class="text-good"
-            x-text="d?.capAbsolute"></span> (<span class="text-good"
-            x-text="d?.capRelative"></span>),
-          you will have <span class="text-bad">less</span> <span
-            x-text="d?.underlying"></span> than starting with a 100% <span
-            x-text="d?.underlying"></span> allocation.
+          If <span x-text="d?.underlying"></span> surpasses <span class="text-good" x-text="d?.capAbsolute"></span>
+          (<span class="text-good" x-text="d?.capRelative"></span>),
+          you will have <span class="text-bad">less</span> <span x-text="d?.underlying"></span> than starting with a
+          100% <span x-text="d?.underlying"></span> allocation.
         </div>
       </div>
 
       <div class="instructions-panel">
         <div class="instructions-header">Execution Instructions</div>
         <div class="instructions-content">
-          &bull; <b>Buy</b> <span class="text-good" x-text="d?.buyAmount"></span> for <span
-            class="text-bad" x-text="d?.buyCost"></span><br />
-          &bull; <b>Sell</b> <span class="text-bad" x-text="d?.sellAmount"></span> for <span
-            class="text-good" x-text="d?.sellPremium"></span>
+          &bull; <b>Buy</b> <span class="text-good" x-text="d?.buyAmount"></span> for <span class="text-bad"
+            x-text="d?.buyCost"></span><br />
+          &bull; <b>Sell</b> <span class="text-bad" x-text="d?.sellAmount"></span> for <span class="text-good"
+            x-text="d?.sellPremium"></span>
         </div>
       </div>
     </div>
@@ -718,7 +710,8 @@
         <div class="modal-body">
           <p class="text-light-alt small mb-3">Copy this shortened link to share your options strategy setup:</p>
           <div class="input-group mb-3">
-            <input type="text" id="share-url-input" class="form-control bg-secondary text-white border-0 font-monospace" readonly>
+            <input type="text" id="share-url-input" class="form-control bg-secondary text-white border-0 font-monospace"
+              readonly>
             <button class="btn btn-primary" type="button" id="copy-share-url-btn" @click="$store.app.copyShareUrl()">
               <i class="fas fa-copy me-1" id="copy-icon"></i><span id="copy-btn-text">Copy</span>
             </button>

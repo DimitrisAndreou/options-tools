@@ -79,72 +79,63 @@ function renderTooltipCC(d) {
 StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
   prepareData = prepareCCData;
   renderTooltip = renderTooltipCC;
-  createOpenPosition(dataObj) {
-    if (!dataObj || dataObj.id === undefined) {
-      console.log("Not creating an open position from", dataObj);
+  createOpenPosition(pos) {
+    if (!pos || pos.id === undefined) {
+      console.log("Not creating an open position from", pos);
       return null;
     }
-    return dataObj;
+    return pos;
   }
-  prepareUnrealizedData(dataObj) {
+  prepareUnrealizedData(currentPos) {
     const store = getAppStore();
-    const entryData = store ? store.openPosition : null;
-    if (!entryData || !dataObj) return null;
+    const entryPos = store ? store.openPosition : null;
+    if (!entryPos || !currentPos) return null;
 
-    const entryPos = {
-      moneyYield: Number(entryData.moneyYield),
-      underlyingYield: Number(entryData.underlyingYield),
-      money: Number(-entryData.moneySize),
-      underlying: Number(entryData.underlyingToBuy),
-      DTE: Number(entryData.DTE)
+    var entryPosView = {
+      moneyYield: entryPos.moneyYield,
+      underlyingYield: entryPos.underlyingYield,
+      money: -entryPos.moneySize,
+      underlying: entryPos.underlyingToBuy,
+      DTE: entryPos.DTE
     };
-    const currentPos = {
-      moneyYield: Number(dataObj.moneyYield),
-      underlyingYield: Number(dataObj.underlyingYield),
-      money: Number(-dataObj.moneySize),
-      underlying: Number(dataObj.underlyingToBuy),
-      DTE: Number(dataObj.DTE)
+    var currentPosView = {
+      moneyYield: currentPos.moneyYield,
+      underlyingYield: currentPos.underlyingYield,
+      money: -currentPos.moneySize,
+      underlying: currentPos.underlyingToBuy,
+      DTE: currentPos.DTE
     };
 
-    function isValidPosition(pos) {
-      if (!pos) return false;
-      return typeof pos.moneyYield === 'number' && !isNaN(pos.moneyYield) &&
-             typeof pos.underlyingYield === 'number' && !isNaN(pos.underlyingYield) &&
-             typeof pos.money === 'number' && !isNaN(pos.money) &&
-             typeof pos.underlying === 'number' && !isNaN(pos.underlying) &&
-             typeof pos.DTE === 'number' && !isNaN(pos.DTE);
-    }
-
-    if (!isValidPosition(entryPos) || !isValidPosition(currentPos)) {
-      return null;
+    const isRoll = currentPos.id !== entryPos.id;
+    if (isRoll) {
+      [currentPosView, entryPosView] = [entryPosView, currentPosView];
     }
 
     const res = {};
+    res.isRoll = isRoll;
 
-    const entrySpot = Number(entryData.spotPrice);
-    const currentSpot = Number(dataObj.spotPrice);
+    const entrySpot = Number(entryPos.spotPrice);
+    const currentSpot = Number(currentPos.spotPrice);
 
-    if (!isNaN(entrySpot) && !isNaN(currentSpot) && entrySpot > 0 && currentSpot > 0) {
-      res.spotPriceEntry = dollarFmt.format(entrySpot);
+    res.spotPriceEntry = dollarFmt.format(entrySpot);
 
-      res.spotPriceCurrent = dollarFmt.format(currentSpot);
-      res.spotPriceCurrentPct = percentFmt.format(currentSpot / entrySpot - 1.0);
-      res.spotPriceCurrentClass = currentSpot >= entrySpot ? 'text-good' : 'text-bad';
-    }
+    res.spotPriceCurrent = dollarFmt.format(currentSpot);
+    res.spotPriceCurrentPct = percentFmt.format(currentSpot / entrySpot - 1.0);
+    res.spotPriceCurrentClass = currentSpot >= entrySpot ? 'text-good' : 'text-bad';
 
     // Time Passed
-    res.timePassed = formatDaysDiff(entryPos.DTE, currentPos.DTE);
+    res.timePassed = formatDaysDiff(entryPosView.DTE, currentPosView.DTE);
 
     // Money PnL
-    const moneyPnL = formatPnL(currentPos.money, entryPos.money, dollarFmt.format, dataObj.money);
-    res.openMoney = dollarFmt.format(entryPos.money);
+    const moneyPnL = formatPnL(currentPosView.money, entryPosView.money, dollarFmt.format, currentPos.money);
+    res.openMoney = dollarFmt.format(entryPosView.money);
     res.unrealizedMoneyPnLPct = moneyPnL.pct;
     res.unrealizedMoneyPnLAbs = moneyPnL.abs;
     res.moneyPnLClass = moneyPnL.className;
 
     // Underlying PnL
-    const underlyingPnL = formatPnL(currentPos.underlying, entryPos.underlying, underlyingFmt.format, dataObj.underlying, dataObj.underlying);
-    res.openUnderlying = `${underlyingFmt.format(entryPos.underlying)} ${dataObj.underlying}`;
+    const underlyingPnL = formatPnL(currentPosView.underlying, entryPosView.underlying, underlyingFmt.format, currentPos.underlying, currentPos.underlying);
+    res.openUnderlying = `${underlyingFmt.format(entryPosView.underlying)} ${currentPosView.underlying}`;
     res.unrealizedUnderlyingPnLPct = underlyingPnL.pct;
     res.unrealizedUnderlyingPnLAbs = underlyingPnL.abs;
     res.underlyingPnLClass = underlyingPnL.className;
@@ -387,13 +378,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
 
   chart.on('click', function (params) {
     if (params.componentType === 'series' && params.data) {
-      const store = getAppStore();
-      const isCtrl = params.event && params.event.event && (params.event.event.ctrlKey || params.event.event.metaKey || params.event.event.shiftKey);
-      if (isCtrl && store && store.selectedId) {
-        store.initOpenPositionFromData(params.data);
-      } else {
-        selectStrategyById(params.data.id);
-      }
+      selectStrategyById(params.data.id);
     }
   });
   chart.on('datazoom', function () {

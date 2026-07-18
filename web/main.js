@@ -118,14 +118,6 @@ document.addEventListener('alpine:init', () => {
       this.updateOpenPosition();
     },
 
-    initOpenPositionFromData(dataObj) {
-      if (!dataObj) return;
-      const config = StrategyRegistry[dataObj.strategyType];
-      if (config && config.createOpenPosition) {
-        this.openPosition = config.createOpenPosition(dataObj);
-      }
-      this.updateOpenPosition();
-    },
 
     init() {
       // 1. Load initial params from URL
