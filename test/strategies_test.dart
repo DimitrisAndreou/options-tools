@@ -74,6 +74,8 @@ void main() {
           'breakEvenVsFullUnderlyingRelative': 1.0526315789473686,
           'breakEvenVsFullMoneyAbsolute': 950.0,
           'breakEvenVsFullMoneyRelative': 0.95,
+          'moneyProbability': null,
+          'underlyingProbability': null
         }));
   });
 
@@ -478,6 +480,47 @@ void main() {
     // Verify extrapolation throws ArgumentError
     expect(() => probs.getProbability(expiration, 900.0), throwsArgumentError);
     expect(() => probs.getProbability(expiration, 1300.0), throwsArgumentError);
+  });
+
+  test('CoveredCall attaches probabilities test', () {
+    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
+    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
+
+    final spotMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 1000.0,
+      askPrice: 1000.0,
+    );
+
+    // Create leg options and markets
+    final call1000 = Option('BTC-1000-C', underlying: btc, money: usd, strike: 1000.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
+    final callMarket1000 = Market.create(asset: call1000, money: usd, bidPrice: 100.0, askPrice: 100.0);
+
+    final call1100 = Option('BTC-1100-C', underlying: btc, money: usd, strike: 1100.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
+    final callMarket1100 = Market.create(asset: call1100, money: usd, bidPrice: 30.0, askPrice: 30.0);
+
+    final call1200 = Option('BTC-1200-C', underlying: btc, money: usd, strike: 1200.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
+    final callMarket1200 = Market.create(asset: call1200, money: usd, bidPrice: 10.0, askPrice: 10.0);
+
+    final coveredCalls = CoveredCall.generateAll(
+      [spotMarket, callMarket1000, callMarket1100, callMarket1200],
+      underlying: btc,
+      money: usd,
+      slippage: 0.0,
+    ).toList();
+
+    // BTC-1100-C and BTC-1200-C should have computed probabilities because they are within range
+    final cc1100 = coveredCalls.firstWhere((cc) => cc.option.strike == 1100.0);
+    expect(cc1100.moneyProbability, isNotNull);
+    expect(cc1100.underlyingProbability, isNotNull);
+    expect(cc1100.moneyProbability! + cc1100.underlyingProbability!, closeTo(1.0, 1e-9));
+
+    // BTC-1000-C is also within the range [1000, 1200]
+    final cc1000 = coveredCalls.firstWhere((cc) => cc.option.strike == 1000.0);
+    expect(cc1000.moneyProbability, closeTo(0.7, 1e-9));
+    expect(cc1000.underlyingProbability, closeTo(0.3, 1e-9));
   });
 }
 

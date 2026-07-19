@@ -37,11 +37,18 @@ function prepareCCData(value) {
     buyAmount: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
     buyCost: dollarFmt.format(-value.moneySize),
     sellAmount: `${-value.callSize} call(s)`,
-    sellPremium: `${underlyingFmt.format(value.premiumToReceive)} ${underlying}`
+    sellPremium: `${underlyingFmt.format(value.premiumToReceive)} ${underlying}`,
+
+    // Probabilities
+    moneyProbability: value.moneyProbability,
+    underlyingProbability: value.underlyingProbability
   };
 }
 
 function renderTooltipCC(d) {
+  const moneyProbSuffix = d.moneyProbability != null ? ` <span class="probs">(${Math.round(d.moneyProbability * 100)}% prob)</span>` : '';
+  const underlyingProbSuffix = d.underlyingProbability != null ? ` <span class="probs">(${Math.round(d.underlyingProbability * 100)}% prob)</span>` : '';
+
   return `
     <div class="tooltip-container">
       <div class="tooltip-header">
@@ -50,13 +57,13 @@ function renderTooltipCC(d) {
       </div>
       
       <div class="tooltip-body">
-        <div class="tooltip-yield-good">${d.moneyYield} ${d.money} ⬆</div>
+        <div class="tooltip-yield-good">${d.moneyYield} ${d.money} ⬆${moneyProbSuffix}</div>
         <div class="tooltip-divider"></div>
         <div class="tooltip-strike-badge">
           ${d.strikeAbsolute} <span class="strike-relative">(${d.strikeRelative})</span>
         </div>
         <div class="tooltip-divider"></div>
-        <div class="tooltip-yield-good">${d.underlyingYield} ${d.underlying} ⬇</div>
+        <div class="tooltip-yield-good">${d.underlyingYield} ${d.underlying} ⬇${underlyingProbSuffix}</div>
       </div>
 
       <div class="tooltip-breakeven">

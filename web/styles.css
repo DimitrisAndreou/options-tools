@@ -146,6 +146,7 @@ footer {
 .text-muted-alt { color: var(--secondary); }
 .text-light-alt { color: #cbd5e1; }
 .text-warning-icon { color: var(--accent); }
+.text-probs, .probs { color: var(--accent); }
 
 /* Strategy Details */
 .strategy-header {

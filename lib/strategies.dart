@@ -37,6 +37,8 @@ class CoveredCall {
   late final double underlyingYield;
   late final PriceInfo breakEvenVsFullUnderlying;
   late final PriceInfo breakEvenVsFullMoney;
+  final double? moneyProbability;
+  final double? underlyingProbability;
 
   String? get callURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
 
@@ -73,6 +75,8 @@ class CoveredCall {
         // Where does this CC meet with the strategy of 100% money?
         'breakEvenVsFullMoneyAbsolute': breakEvenVsFullMoney.absolute,
         'breakEvenVsFullMoneyRelative': breakEvenVsFullMoney.relative,
+        'moneyProbability': moneyProbability,
+        'underlyingProbability': underlyingProbability,
       };
 
   @override
@@ -85,7 +89,9 @@ class CoveredCall {
       required this.money,
       required this.option,
       required this.expiration,
-      required this.spotPrice})
+      required this.spotPrice,
+      this.moneyProbability,
+      this.underlyingProbability})
       : analyzer =
             PositionAnalyzer(strategy, underlying: underlying, money: money),
         moneyLeg = strategy[money],
@@ -121,6 +127,10 @@ class CoveredCall {
       double slippage = 0.5}) sync* {
     final oracle = Oracle.fromMarkets(allMarkets);
     final spotMarket = oracle.marketFor(asset: underlying, money: money);
+    final spreads = VerticalSpread.generateAll(allMarkets,
+        underlying: underlying, money: money, slippage: slippage);
+    final probs = Probabilities(spreads, underlying: underlying, money: money);
+
     for (final call in allMarkets
         .whereUnderlyingIs(underlying)
         .calls
@@ -128,18 +138,31 @@ class CoveredCall {
         .sortByStrike(Order.asc)
         .sortByExpiration(Order.asc)) {
       try {
+        final option = call.asset.toOption;
+        final expiration = call.asset.toExpirable.expiration;
+        double? moneyProb;
+        double? underlyingProb;
+        try {
+          moneyProb = probs.getProbability(expiration, option.strike);
+          underlyingProb = 1.0 - moneyProb;
+        } catch (_) {
+          // Out of bounds or not found
+        }
+
         yield CoveredCall._(
             (call.short(slippage) +
                     spotMarket.long(slippage) *
-                        call.asset.toOption.contractLot) *
-                call.asset.toOption.minSize,
+                        option.contractLot) *
+                option.minSize,
             spotMarket: spotMarket,
             callMarket: call,
             underlying: underlying,
             money: money,
-            option: call.asset.toOption,
-            expiration: call.asset.toExpirable.expiration,
-            spotPrice: spotMarket.midPrice);
+            option: option,
+            expiration: expiration,
+            spotPrice: spotMarket.midPrice,
+            moneyProbability: moneyProb,
+            underlyingProbability: underlyingProb);
       } catch (e) {
         print("Skipped Covered Call on $call due to error: $e");
       }

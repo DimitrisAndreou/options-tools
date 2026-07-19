@@ -643,12 +643,12 @@
       <div class="outcomes-panel">
         <div class="outcomes-header">Outcomes at Expiration</div>
         <div class="outcome-row">
-          <span>If <span x-text="d?.underlying"></span> &ge; <span x-text="d?.strikeAbsolute"></span></span>
+          <span>If <span x-text="d?.underlying"></span> &ge; <span x-text="d?.strikeAbsolute"></span><template x-if="d?.moneyProbability != null"> <span class="text-probs" x-text="'(' + Math.round(d.moneyProbability * 100) + '% prob)'"></span></template></span>
           <span><span class="text-good" x-text="d?.moneyYield"></span> <span class="text-good" x-text="d?.money"></span>
             <small class="text-good-alt">(+<span x-text="d?.moneyProfit"></span>)</small></span>
         </div>
         <div class="outcome-row mb-0">
-          <span>If <span x-text="d?.underlying"></span> &lt; <span x-text="d?.strikeAbsolute"></span></span>
+          <span>If <span x-text="d?.underlying"></span> &lt; <span x-text="d?.strikeAbsolute"></span><template x-if="d?.underlyingProbability != null"> <span class="text-probs" x-text="'(' + Math.round(d.underlyingProbability * 100) + '% prob)'"></span></template></span>
           <span><span class="text-good" x-text="d?.underlyingYield"></span> <span class="text-good"
               x-text="d?.underlying"></span> <small class="text-good-alt">(+<span
                 x-text="d?.underlyingProfit"></span>)</small></span>
