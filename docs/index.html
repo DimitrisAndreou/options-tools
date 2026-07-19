@@ -485,10 +485,16 @@
               <h5 class="mb-0 text-white">
                 <i class="fas fa-chart-line me-2 text-primary"></i><span x-text="$store.app.unrealized?.isRoll ? 'Roll Impact' : 'Unrealized Results'">Unrealized Results</span>
               </h5>
-              <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.entryPosition"
-                @click="$store.app.clearEntryPosition()">
-                <i class="fas fa-trash-alt me-1"></i>Clear Entry
-              </button>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" x-show="$store.app.selectedId"
+                  @click="$store.app.pinSelected()">
+                  <i class="fas fa-thumbtack me-1"></i>Pin Selected
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.entryPosition"
+                  @click="$store.app.clearEntryPosition()">
+                  <i class="fas fa-trash-alt me-1"></i>Clear Entry
+                </button>
+              </div>
             </div>
             <div class="card-body">
               <div x-show="!$store.app.unrealized" class="text-muted text-center py-4">

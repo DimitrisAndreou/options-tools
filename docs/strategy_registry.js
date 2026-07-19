@@ -118,16 +118,8 @@ function selectStrategyById(idToSelect) {
     const url = UrlManager.createUrl();
     UrlManager.set(url, URL_PARAMS.ID, idToSelect);
 
-    // Only set entry position if it does not exist yet!
-    if (!store.entryPosition) {
-      const entryPos = config.createEntryPosition(targetItem);
-      if (entryPos) {
-        store.entryPosition = entryPos;
-        const encoded = config.encodeEntryPosition(entryPos);
-        UrlManager.set(url, URL_PARAMS.POS, encoded);
-      }
-    } else {
-      // If it exists, ensure it is still correctly encoded in URL
+    // If entry position exists, ensure it is still correctly encoded in URL
+    if (store.entryPosition) {
       const encoded = config.encodeEntryPosition(store.entryPosition);
       UrlManager.set(url, URL_PARAMS.POS, encoded);
     }

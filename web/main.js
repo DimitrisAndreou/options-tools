@@ -118,6 +118,19 @@ document.addEventListener('alpine:init', () => {
       this.updateEntryPosition();
     },
 
+    pinSelected() {
+      const item = this.selectedItem;
+      if (!item) return;
+      const config = StrategyRegistry[item.strategyType];
+      if (config) {
+        const entryPos = config.createEntryPosition(item);
+        if (entryPos) {
+          this.entryPosition = entryPos;
+          this.updateEntryPosition();
+        }
+      }
+    },
+
 
     init() {
       // 1. Load initial params from URL
