@@ -123,9 +123,9 @@ function formatYieldAsClass(theYield) {
   return theYield >= 1.0 ? 'text-good' : 'text-bad';
 }
 
-function formatPnL(current, open, formatter, pctSuffix = '', absSuffix = '') {
-  const diff = current - open;
-  const pct = open > 0 ? (diff / open) * 100 : 0;
+function formatPnL(current, entry, formatter, pctSuffix = '', absSuffix = '') {
+  const diff = current - entry;
+  const pct = entry > 0 ? (diff / entry) * 100 : 0;
   const sign = diff >= 0 ? '+' : '';
   const pctSuffixStr = pctSuffix ? ' ' + pctSuffix : '';
   const absSuffixStr = absSuffix ? ' ' + absSuffix : '';
@@ -136,9 +136,9 @@ function formatPnL(current, open, formatter, pctSuffix = '', absSuffix = '') {
   };
 }
 
-function formatDaysDiff(openDTE, currentDTE) {
-  const diffDte = openDTE - currentDTE;
-  const pctDte = openDTE > 0 ? (diffDte / openDTE) * 100 : 0;
+function formatDaysDiff(entryDTE, currentDTE) {
+  const diffDte = entryDTE - currentDTE;
+  const pctDte = entryDTE > 0 ? (diffDte / entryDTE) * 100 : 0;
   const sign = diffDte >= 0 ? '+' : '';
   const pctSign = pctDte >= 0 ? '+' : '';
   return `${sign}${diffDte} days (${pctSign}${pctDte.toFixed(2)}%)`;

@@ -79,16 +79,16 @@ function renderTooltipCC(d) {
 StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
   prepareData = prepareCCData;
   renderTooltip = renderTooltipCC;
-  createOpenPosition(pos) {
+  createEntryPosition(pos) {
     if (!pos || pos.id === undefined) {
-      console.log("Not creating an open position from", pos);
+      console.log("Not creating an entry position from", pos);
       return null;
     }
     return pos;
   }
-  prepareUnrealizedData(currentPos) {
+  prepareUnrealizedOrRollData(currentPos) {
     const store = getAppStore();
-    const entryPos = store ? store.openPosition : null;
+    const entryPos = store ? store.entryPosition : null;
     if (!entryPos || !currentPos) return null;
 
     var entryPosView = {
@@ -128,14 +128,14 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     // Money PnL
     const moneyPnL = formatPnL(currentPosView.money, entryPosView.money, dollarFmt.format, currentPos.money);
-    res.openMoney = dollarFmt.format(entryPosView.money);
+    res.entryMoney = dollarFmt.format(entryPosView.money);
     res.unrealizedMoneyPnLPct = moneyPnL.pct;
     res.unrealizedMoneyPnLAbs = moneyPnL.abs;
     res.moneyPnLClass = moneyPnL.className;
 
     // Underlying PnL
     const underlyingPnL = formatPnL(currentPosView.underlying, entryPosView.underlying, underlyingFmt.format, currentPos.underlying, currentPos.underlying);
-    res.openUnderlying = `${underlyingFmt.format(entryPosView.underlying)} ${currentPosView.underlying}`;
+    res.entryUnderlying = `${underlyingFmt.format(entryPosView.underlying)} ${currentPosView.underlying}`;
     res.unrealizedUnderlyingPnLPct = underlyingPnL.pct;
     res.unrealizedUnderlyingPnLAbs = underlyingPnL.abs;
     res.underlyingPnLClass = underlyingPnL.className;
@@ -158,12 +158,12 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
         transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
       }],
       series: [{
-        id: 'openOverlay',
+        id: 'entryOverlay',
         markPoint: {
-          data: overlay ? [{ coord: overlay.open }] : []
+          data: overlay ? [{ coord: overlay.entry }] : []
         },
         markLine: {
-          data: overlay ? [[{ coord: overlay.open }, { coord: overlay.current }]] : []
+          data: overlay ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
         }
       }]
     });
@@ -172,10 +172,10 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
 function calculateOverlay(target) {
   const store = getAppStore();
-  const openPosition = store ? store.openPosition : null;
-  if (!openPosition || !target) return null;
+  const entryPosition = store ? store.entryPosition : null;
+  if (!entryPosition || !target) return null;
 
-  const { moneyYield, underlyingYield } = openPosition;
+  const { moneyYield, underlyingYield } = entryPosition;
   const moneyRatio = target.moneyYield ? moneyYield / target.moneyYield : null;
   const underlyingRatio = target.underlyingYield ? underlyingYield / target.underlyingYield : null;
   const moneyDiffers = moneyRatio !== null && Math.abs(moneyRatio - 1.0) > 0.0001;
@@ -183,7 +183,7 @@ function calculateOverlay(target) {
 
   if (moneyDiffers || underlyingDiffers) {
     return {
-      open: [moneyYield, underlyingYield],
+      entry: [moneyYield, underlyingYield],
       current: [target.moneyYield, target.underlyingYield]
     };
   }
@@ -301,7 +301,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
         encode: { x: 'moneyYield', y: 'underlyingYield' }
       },
       {
-        id: 'openOverlay',
+        id: 'entryOverlay',
         type: 'scatter',
         silent: true,
         data: [],
@@ -314,7 +314,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
             borderWidth: 4,
             borderType: 'dashed'
           },
-          data: overlay ? [{ coord: overlay.open }] : []
+          data: overlay ? [{ coord: overlay.entry }] : []
         },
         markLine: {
           symbol: ['none', 'arrow'],
@@ -324,7 +324,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
             width: 3,
             type: 'solid'
           },
-          data: overlay ? [[{ coord: overlay.open }, { coord: overlay.current }]] : []
+          data: overlay ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
         }
       },
       {

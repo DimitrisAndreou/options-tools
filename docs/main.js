@@ -21,7 +21,7 @@ document.addEventListener('alpine:init', () => {
     unrealized: null,
     spotPrice: null,
     chartData: null,
-    openPosition: null,
+    entryPosition: null,
 
     // DTE Formatting helper
     formatDte(days) {
@@ -60,27 +60,27 @@ document.addEventListener('alpine:init', () => {
       return this.chartData.find(item => item.id === this.selectedId);
     },
 
-    get entryDetails() {
-      if (!this.openPosition) return null;
-      const strategyType = this.openPosition.strategyType || this.strategy;
+     get entryDetails() {
+      if (!this.entryPosition) return null;
+      const strategyType = this.entryPosition.strategyType || this.strategy;
       const config = StrategyRegistry[strategyType];
       if (config && config.prepareData) {
-        return config.prepareData(this.openPosition);
+        return config.prepareData(this.entryPosition);
       }
       return null;
     },
 
-    updateOpenPosition() {
+    updateEntryPosition() {
       const url = UrlManager.createUrl();
-      if (this.openPosition) {
+      if (this.entryPosition) {
         const item = this.selectedItem;
         const strategyType = item ? item.strategyType : this.strategy;
         const config = StrategyRegistry[strategyType];
         if (config) {
-          const encoded = config.encodeOpenPosition(this.openPosition);
+          const encoded = config.encodeEntryPosition(this.entryPosition);
           UrlManager.set(url, URL_PARAMS.POS, encoded);
         } else {
-          const encoded = UrlManager.encodeState(this.openPosition);
+          const encoded = UrlManager.encodeState(this.entryPosition);
           UrlManager.set(url, URL_PARAMS.POS, encoded);
         }
       } else {
@@ -106,16 +106,16 @@ document.addEventListener('alpine:init', () => {
         return;
       }
       const config = StrategyRegistry[item.strategyType];
-      if (config && config.prepareUnrealizedData) {
-        this.unrealized = config.prepareUnrealizedData(item);
+      if (config && config.prepareUnrealizedOrRollData) {
+        this.unrealized = config.prepareUnrealizedOrRollData(item);
       } else {
         this.unrealized = null;
       }
     },
 
-    clearOpenPosition() {
-      this.openPosition = null;
-      this.updateOpenPosition();
+    clearEntryPosition() {
+      this.entryPosition = null;
+      this.updateEntryPosition();
     },
 
 
@@ -134,9 +134,9 @@ document.addEventListener('alpine:init', () => {
 
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
       if (this.strategy === 'coveredCall' && encodedPos) {
-        this.openPosition = UrlManager.decodeState(encodedPos);
+        this.entryPosition = UrlManager.decodeState(encodedPos);
       } else {
-        this.openPosition = null;
+        this.entryPosition = null;
       }
 
       // Listen to popstate for back/forward browser navigation
@@ -167,9 +167,9 @@ document.addEventListener('alpine:init', () => {
 
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
       if (this.strategy === 'coveredCall' && encodedPos) {
-        this.openPosition = UrlManager.decodeState(encodedPos);
+        this.entryPosition = UrlManager.decodeState(encodedPos);
       } else {
-        this.openPosition = null;
+        this.entryPosition = null;
       }
       this.updateUnrealized();
 
@@ -203,7 +203,7 @@ document.addEventListener('alpine:init', () => {
       this.selectedId = null;
       this.details = null;
       this.unrealized = null;
-      this.openPosition = null;
+      this.entryPosition = null;
 
       this.loadData();
     },

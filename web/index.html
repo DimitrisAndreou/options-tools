@@ -475,7 +475,7 @@
     </div>
 
     <!-- Second Row: Unrealized Results & Entry Strategy Details -->
-    <!-- TODO: Temporary condition. Remove x-show when open position is supported for other strategies -->
+    <!-- TODO: Temporary condition. Remove x-show when entry position is supported for other strategies -->
     <div x-show="$store.app.strategy === 'coveredCall'">
       <div class="row justify-content-center mt-4 mb-4">
         <!-- Unrealized Results Card -->
@@ -485,14 +485,14 @@
               <h5 class="mb-0 text-white">
                 <i class="fas fa-chart-line me-2 text-primary"></i><span x-text="$store.app.unrealized?.isRoll ? 'Roll Impact' : 'Unrealized Results'">Unrealized Results</span>
               </h5>
-              <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.openPosition"
-                @click="$store.app.clearOpenPosition()">
+              <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.entryPosition"
+                @click="$store.app.clearEntryPosition()">
                 <i class="fas fa-trash-alt me-1"></i>Clear Entry
               </button>
             </div>
             <div class="card-body">
               <div x-show="!$store.app.unrealized" class="text-muted text-center py-4">
-                Select a point on the chart or initialize an open position to calculate unrealized results.
+                Select a point on the chart or initialize an entry position to calculate unrealized results.
               </div>
 
               <div id="unrealizedResultsPanel" x-show="$store.app.unrealized" class="text-white"
@@ -540,13 +540,13 @@
                       </span>
                     </div>
                   </template>
-                  <div class="outcome-row" x-show="$store.app.unrealized?.openMoney">
+                  <div class="outcome-row" x-show="$store.app.unrealized?.entryMoney">
                     <span class="text-label">Entry Capital (As Money)</span>
-                    <span class="text-neutral-alt" x-text="$store.app.unrealized?.openMoney"></span>
+                    <span class="text-neutral-alt" x-text="$store.app.unrealized?.entryMoney"></span>
                   </div>
-                  <div class="outcome-row" x-show="$store.app.unrealized?.openUnderlying">
+                  <div class="outcome-row" x-show="$store.app.unrealized?.entryUnderlying">
                     <span class="text-label">Entry Capital (As Underlying)</span>
-                    <span class="text-neutral-alt" x-text="$store.app.unrealized?.openUnderlying"></span>
+                    <span class="text-neutral-alt" x-text="$store.app.unrealized?.entryUnderlying"></span>
                   </div>
                 </div>
               </div>
@@ -563,11 +563,11 @@
               </h5>
             </div>
             <div class="card-body">
-              <div x-show="!$store.app.openPosition" class="text-muted text-center py-4">
+              <div x-show="!$store.app.entryPosition" class="text-muted text-center py-4">
                 Select a point on the chart with Ctrl+Click to set the Entry position.
               </div>
 
-              <div x-show="$store.app.openPosition" class="text-white" style="font-family: monospace">
+              <div x-show="$store.app.entryPosition" class="text-white" style="font-family: monospace">
                 <div class="cc-details-placeholder" x-data="{ get d() { return $store.app.entryDetails; } }"></div>
               </div>
             </div>

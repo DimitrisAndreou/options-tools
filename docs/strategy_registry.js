@@ -28,7 +28,7 @@ class BaseStrategyConfig {
    * @param {object} dataObj
    * @returns {object|null}
    */
-  prepareUnrealizedData(dataObj) {
+  prepareUnrealizedOrRollData(dataObj) {
     return null;
   }
 
@@ -38,16 +38,16 @@ class BaseStrategyConfig {
    */
   updateSelection(idToSelect) { }
 
-  createOpenPosition(dataObj) {
+  createEntryPosition(dataObj) {
     return null;
   }
 
-  encodeOpenPosition(openPosition) {
-    if (!openPosition) return null;
-    return UrlManager.encodeState(openPosition);
+  encodeEntryPosition(entryPosition) {
+    if (!entryPosition) return null;
+    return UrlManager.encodeState(entryPosition);
   }
 
-  decodeOpenPosition(encoded) {
+  decodeEntryPosition(encoded) {
     if (!encoded) return null;
     return UrlManager.decodeState(encoded);
   }
@@ -94,7 +94,7 @@ function selectStrategyById(idToSelect) {
     store.selectedId = null;
     store.details = null;
     store.unrealized = null;
-    store.openPosition = null;
+    store.entryPosition = null;
 
     const url = UrlManager.createUrl();
     UrlManager.set(url, URL_PARAMS.ID, null);
@@ -118,25 +118,25 @@ function selectStrategyById(idToSelect) {
     const url = UrlManager.createUrl();
     UrlManager.set(url, URL_PARAMS.ID, idToSelect);
 
-    // Only set open position if it does not exist yet!
-    if (!store.openPosition) {
-      const openPos = config.createOpenPosition(targetItem);
-      if (openPos) {
-        store.openPosition = openPos;
-        const encoded = config.encodeOpenPosition(openPos);
+    // Only set entry position if it does not exist yet!
+    if (!store.entryPosition) {
+      const entryPos = config.createEntryPosition(targetItem);
+      if (entryPos) {
+        store.entryPosition = entryPos;
+        const encoded = config.encodeEntryPosition(entryPos);
         UrlManager.set(url, URL_PARAMS.POS, encoded);
       }
     } else {
       // If it exists, ensure it is still correctly encoded in URL
-      const encoded = config.encodeOpenPosition(store.openPosition);
+      const encoded = config.encodeEntryPosition(store.entryPosition);
       UrlManager.set(url, URL_PARAMS.POS, encoded);
     }
     UrlManager.replaceState(url);
 
     // Update details and unrealized
     store.details = config.prepareData(targetItem);
-    if (config.prepareUnrealizedData) {
-      store.unrealized = config.prepareUnrealizedData(targetItem);
+    if (config.prepareUnrealizedOrRollData) {
+      store.unrealized = config.prepareUnrealizedOrRollData(targetItem);
     } else {
       store.unrealized = null;
     }
