@@ -614,6 +614,8 @@ class VerticalSpread {
 
   final Option shortOption;
   final Option longOption;
+  final Market shortMarket;
+  final Market longMarket;
 
   final Position strategy;
   final Line shortLeg;
@@ -630,6 +632,7 @@ class VerticalSpread {
   late final PriceInfo maxYieldAt;
   late final double maxRisk;
   late final PriceInfo maxRiskAt;
+  late final double probability;
 
   String? get shortLegURL => AssetRenderer.tryRenderFirst(shortLeg.asset);
   String? get longLegURL => AssetRenderer.tryRenderFirst(longLeg.asset);
@@ -664,6 +667,7 @@ class VerticalSpread {
         'maxRisk': maxRisk,
         'maxRiskAtAbsolute': maxRiskAt.absolute,
         'maxRiskAtRelative': maxRiskAt.relative,
+        'probability': probability,
       };
 
   VerticalSpread._(this.strategy,
@@ -671,6 +675,8 @@ class VerticalSpread {
       required this.money,
       required this.shortOption,
       required this.longOption,
+      required this.shortMarket,
+      required this.longMarket,
       required this.expiration,
       required this.spotMarket,
       required this.spotPrice})
@@ -679,9 +685,13 @@ class VerticalSpread {
         moneyLeg = strategy[money],
         shortLeg = strategy[shortOption],
         longLeg = strategy[longOption] {
-    type = longLeg.asset.toOption.strike > shortLeg.asset.toOption.strike
+    type = longOption.strike < shortOption.strike
         ? VerticalSpreadType.over
         : VerticalSpreadType.under;
+
+    final width = (shortOption.strike - longOption.strike).abs();
+    final cost = moneyLeg.size < 0 ? -moneyLeg.size : (width - moneyLeg.size);
+    probability = (width > 0.0 ? cost / width : 0.0).clamp(0.0, 1.0);
 
     final double? breakevenDouble =
         pickNearestBoundary(spotPrice, analyzer.breakevens);
@@ -752,12 +762,15 @@ class VerticalSpread {
       final expiration = expirationToStrike.key,
           strikeToOptions = expirationToStrike.value;
       VerticalSpread makeSpread(
-              Position position, Option shortOption, Option longOption) =>
+              Position position, Option shortOption, Option longOption,
+              Market shortMarket, Market longMarket) =>
           VerticalSpread._(position,
               underlying: underlying,
               money: money,
               shortOption: shortOption,
               longOption: longOption,
+              shortMarket: shortMarket,
+              longMarket: longMarket,
               expiration: expiration,
               spotMarket: spotMarket,
               spotPrice: spotPrice);
@@ -770,20 +783,20 @@ class VerticalSpread {
         VerticalSpread? under = keepBestValidSpread([
           if (lowPut != null && highPut != null)
             makeSpread(highPut.long(slippage) + lowPut.short(slippage),
-                lowPut.asset.toOption, highPut.asset.toOption),
+                lowPut.asset.toOption, highPut.asset.toOption, lowPut, highPut),
           if (lowCall != null && highCall != null)
             makeSpread(highCall.long(slippage) + lowCall.short(slippage),
-                lowCall.asset.toOption, highCall.asset.toOption),
+                lowCall.asset.toOption, highCall.asset.toOption, lowCall, highCall),
         ]);
 
         // over @ highStrike
         VerticalSpread? over = keepBestValidSpread([
           if (lowPut != null && highPut != null)
             makeSpread(highPut.short(slippage) + lowPut.long(slippage),
-                highPut.asset.toOption, lowPut.asset.toOption),
+                highPut.asset.toOption, lowPut.asset.toOption, highPut, lowPut),
           if (lowCall != null && highCall != null)
             makeSpread(highCall.short(slippage) + lowCall.long(slippage),
-                highCall.asset.toOption, lowCall.asset.toOption),
+                highCall.asset.toOption, lowCall.asset.toOption, highCall, lowCall),
         ]);
 
         yield* [under, over].nonNulls;
@@ -840,4 +853,128 @@ String _formatDouble(double val) {
     return val.toInt().toString();
   }
   return val.toString();
+}
+
+class Probabilities {
+  final Map<DateTime, Map<double, double>> _probs = {};
+
+  Probabilities(Iterable<VerticalSpread> spreads,
+      {required Commodity underlying, required Commodity money}) {
+    // 1. Group spreads by expiration
+    final Map<DateTime, List<VerticalSpread>> byExpiration = {};
+    for (final vs in spreads) {
+      if (vs.underlying != underlying || vs.money != money) continue;
+
+      // Exclude spreads with missing/non-existent bids or asks
+      if (vs.shortMarket.bidPrice <= 0.0 ||
+          vs.shortMarket.askPrice <= 0.0 ||
+          vs.longMarket.bidPrice <= 0.0 ||
+          vs.longMarket.askPrice <= 0.0) {
+        continue;
+      }
+
+      byExpiration.putIfAbsent(vs.expiration, () => []).add(vs);
+    }
+
+    // 2. Process each expiration
+    for (final entry in byExpiration.entries) {
+      final expiration = entry.key;
+      final expSpreads = entry.value;
+
+      // Group spreads by strike
+      final Map<double, List<VerticalSpread>> byStrike = {};
+      for (final vs in expSpreads) {
+        byStrike.putIfAbsent(vs.shortOption.strike, () => []).add(vs);
+      }
+
+      final Map<double, double> rawProbs = {};
+
+      for (final strikeEntry in byStrike.entries) {
+        final strike = strikeEntry.key;
+        final strikeSpreads = strikeEntry.value;
+
+        VerticalSpread? vsOver;
+        VerticalSpread? vsUnder;
+
+        for (final vs in strikeSpreads) {
+          if (vs.type == VerticalSpreadType.over) {
+            vsOver = vs;
+          } else if (vs.type == VerticalSpreadType.under) {
+            vsUnder = vs;
+          }
+        }
+
+        double prob;
+        if (vsOver != null && vsUnder != null) {
+          final eOver = vsOver.probability;
+          final eUnder = 1.0 - vsUnder.probability;
+
+          final uOver = (vsOver.shortMarket.askPrice - vsOver.shortMarket.bidPrice) +
+              (vsOver.longMarket.askPrice - vsOver.longMarket.bidPrice);
+          final uUnder = (vsUnder.shortMarket.askPrice - vsUnder.shortMarket.bidPrice) +
+              (vsUnder.longMarket.askPrice - vsUnder.longMarket.bidPrice);
+
+          final wOver = uOver <= 0.0 ? 1e9 : 1.0 / uOver;
+          final wUnder = uUnder <= 0.0 ? 1e9 : 1.0 / uUnder;
+
+          prob = (eOver * wOver + eUnder * wUnder) / (wOver + wUnder);
+        } else if (vsOver != null) {
+          prob = vsOver.probability;
+        } else if (vsUnder != null) {
+          prob = 1.0 - vsUnder.probability;
+        } else {
+          continue;
+        }
+
+        rawProbs[strike] = prob;
+      }
+
+      // Enforce monotonicity by traversing descending (highest to lowest strike)
+      final sortedStrikes = rawProbs.keys.toList()..sort((a, b) => b.compareTo(a));
+      final Map<double, double> monotonicProbs = {};
+      double? previousProb;
+      for (final strike in sortedStrikes) {
+        final prob = rawProbs[strike]!;
+        if (previousProb == null) {
+          monotonicProbs[strike] = prob;
+          previousProb = prob;
+        } else {
+          if (prob >= previousProb) {
+            monotonicProbs[strike] = prob;
+            previousProb = prob;
+          }
+        }
+      }
+
+      _probs[expiration] = monotonicProbs;
+    }
+  }
+
+  double getProbability(DateTime expiration, double strike) {
+    final expProbs = _probs[expiration];
+    if (expProbs == null || expProbs.isEmpty) {
+      throw ArgumentError("No probability distribution found for expiration $expiration");
+    }
+
+    final strikes = expProbs.keys.toList()..sort();
+    if (strike < strikes.first || strike > strikes.last) {
+      throw ArgumentError("Extrapolation is not allowed. Strike $strike is outside the known range [${strikes.first}, ${strikes.last}]");
+    }
+
+    if (expProbs.containsKey(strike)) {
+      return expProbs[strike]!;
+    }
+
+    int i = 0;
+    while (i < strikes.length && strikes[i] < strike) {
+      i++;
+    }
+    final kLower = strikes[i - 1];
+    final kUpper = strikes[i];
+    final pLower = expProbs[kLower]!;
+    final pUpper = expProbs[kUpper]!;
+
+    final t = (strike - kLower) / (kUpper - kLower);
+    return pLower + t * (pUpper - pLower);
+  }
 }

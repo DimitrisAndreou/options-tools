@@ -123,7 +123,7 @@ void main() {
     expect(
         json,
         equals({
-          'id': '2026-12-31~1000',
+          'id': '2026-12-31~1000~C',
           'strategyType': 'longCall',
           'strategyURL': null,
           'maxLeverage': 20.0,
@@ -193,7 +193,7 @@ void main() {
     expect(
         json,
         equals({
-          'id': '2026-12-31~1000',
+          'id': '2026-12-31~1000~P',
           'strategyType': 'longPut',
           'strategyURL': null,
           'maxLeverage': 20.0,
@@ -284,39 +284,6 @@ void main() {
     expect(
         overJson,
         equals({
-          'id': '2026-12-31~1000~1100~call',
-          'strategyType': 'verticalSpread',
-          'strategyURL': null,
-          'underlying': 'BTC',
-          'underlyingURL': 'https://www.deribit.com/spot/BTC_USDT',
-          'money': 'USD',
-          'moneySize': 30.0,
-          'spotPrice': 1000.0,
-          'shortLeg': 'BTC-1000-C',
-          'shortLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
-          'longLeg': 'BTC-1100-C',
-          'longLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1100-C',
-          'type': 'over',
-          'formattedDate': '31 December 2026',
-          'breakEvenVsFullMoneyAbsolute': 1030.0,
-          'breakEvenVsFullMoneyRelative': 1.03,
-          'breakEvenVsFullUnderlyingAbsolute': 1030.9278350515465,
-          'breakEvenVsFullUnderlyingRelative': 1.0309278350515465,
-          'maxYield': 1.4285714285714286,
-          'maxYieldAtAbsolute': 1000.0,
-          'maxYieldAtRelative': 1.0,
-          'maxRisk': 70.0,
-          'maxRiskAtAbsolute': 1100.0,
-          'maxRiskAtRelative': 1.1
-        }));
-
-    final underJson = underVs.toJson();
-    final underDte = underJson.remove('DTE');
-    expect(underDte, isNotNull);
-
-    expect(
-        underJson,
-        equals({
           'id': '2026-12-31~1100~1000~call',
           'strategyType': 'verticalSpread',
           'strategyURL': null,
@@ -329,7 +296,7 @@ void main() {
           'shortLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1100-C',
           'longLeg': 'BTC-1000-C',
           'longLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
-          'type': 'under',
+          'type': 'over',
           'formattedDate': '31 December 2026',
           'breakEvenVsFullMoneyAbsolute': 1030.0,
           'breakEvenVsFullMoneyRelative': 1.03,
@@ -340,7 +307,42 @@ void main() {
           'maxYieldAtRelative': 1.1,
           'maxRisk': 30.0,
           'maxRiskAtAbsolute': 1000.0,
-          'maxRiskAtRelative': 1.0
+          'maxRiskAtRelative': 1.0,
+          'probability': 0.3
+        }));
+
+    final underJson = underVs.toJson();
+    final underDte = underJson.remove('DTE');
+    expect(underDte, isNotNull);
+
+    expect(
+        underJson,
+        equals({
+          'id': '2026-12-31~1000~1100~call',
+          'strategyType': 'verticalSpread',
+          'strategyURL': null,
+          'underlying': 'BTC',
+          'underlyingURL': 'https://www.deribit.com/spot/BTC_USDT',
+          'money': 'USD',
+          'moneySize': 30.0,
+          'spotPrice': 1000.0,
+          'shortLeg': 'BTC-1000-C',
+          'shortLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
+          'longLeg': 'BTC-1100-C',
+          'longLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1100-C',
+          'type': 'under',
+          'formattedDate': '31 December 2026',
+          'breakEvenVsFullMoneyAbsolute': 1030.0,
+          'breakEvenVsFullMoneyRelative': 1.03,
+          'breakEvenVsFullUnderlyingAbsolute': 1030.9278350515465,
+          'breakEvenVsFullUnderlyingRelative': 1.0309278350515465,
+          'maxYield': 1.4285714285714286,
+          'maxYieldAtAbsolute': 1000.0,
+          'maxYieldAtRelative': 1.0,
+          'maxRisk': 70.0,
+          'maxRiskAtAbsolute': 1100.0,
+          'maxRiskAtRelative': 1.1,
+          'probability': 0.7
         }));
   });
 
@@ -431,6 +433,51 @@ void main() {
           'breakEvenVsFullUnderlyingUpAbsolute': 1162.7906976744186,
           'breakEvenVsFullUnderlyingUpRelative': 1.1627906976744186,
         }));
+  });
+
+  test('Probabilities class test', () {
+    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
+    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
+
+    final spotMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 1000.0,
+      askPrice: 1000.0,
+    );
+
+    // Create leg options and markets
+    final call1000 = Option('BTC-1000-C', underlying: btc, money: usd, strike: 1000.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
+    final callMarket1000 = Market.create(asset: call1000, money: usd, bidPrice: 100.0, askPrice: 100.0);
+
+    final call1100 = Option('BTC-1100-C', underlying: btc, money: usd, strike: 1100.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
+    final callMarket1100 = Market.create(asset: call1100, money: usd, bidPrice: 30.0, askPrice: 30.0);
+
+    final call1200 = Option('BTC-1200-C', underlying: btc, money: usd, strike: 1200.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
+    final callMarket1200 = Market.create(asset: call1200, money: usd, bidPrice: 10.0, askPrice: 10.0);
+
+    // Let's generate vertical spreads from these
+    final spreads = VerticalSpread.generateAll(
+      [spotMarket, callMarket1000, callMarket1100, callMarket1200],
+      underlying: btc,
+      money: usd,
+      slippage: 0.0,
+    ).toList();
+
+    // Now construct Probabilities
+    final probs = Probabilities(spreads, underlying: btc, money: usd);
+
+    // The strikes generated will be 1100 (from 1000-1100 pair) and 1200 (from 1100-1200 pair)
+    // Let's check interpolation
+    final p1150 = probs.getProbability(expiration, 1150.0);
+    expect(p1150, isNotNull);
+    expect(p1150, greaterThan(0.0));
+    expect(p1150, lessThan(1.0));
+
+    // Verify extrapolation throws ArgumentError
+    expect(() => probs.getProbability(expiration, 900.0), throwsArgumentError);
+    expect(() => probs.getProbability(expiration, 1300.0), throwsArgumentError);
   });
 }
 

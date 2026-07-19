@@ -31,11 +31,12 @@ void main() async {
   // testMarketNavigator(oracle);
 
   // browseLinearContracts();
-  // browseVerticalSpreads(markets);
+  browseVerticalSpreads(markets);
   // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
   // browseLongCalls(markets);
-  browseStraddles(markets);
+  // browseStraddles(markets);
+  // coveredCallProbabilities(markets);
 
   // printOptionChain(markets);
 
@@ -125,16 +126,69 @@ void browseVerticalSpreads(List<Market> markets) {
   final underlying = Commodity("BTC");
 
   print(" ============== Vertical Spreads ==============");
-  for (VerticalSpread vs in VerticalSpread.generateAll(markets,
-          underlying: underlying, money: money)
-      .take(20)) {
-    print(" ## ${vs.toJson()}\n");
+
+  final spreads = VerticalSpread.generateAll(markets,
+      underlying: underlying, money: money).toList();
+  final probs = Probabilities(spreads, underlying: underlying, money: money);
+
+  final Map<int, Map<double, double>> overProbsPerDte = {};
+  final Map<int, Map<double, double>> underProbsPerDte = {};
+  final Map<int, DateTime> dteToExpiration = {};
+
+  for (VerticalSpread vs in spreads) {
+    if (vs.shortMarket.bidPrice <= 0.0 ||
+        vs.shortMarket.askPrice <= 0.0 ||
+        vs.longMarket.bidPrice <= 0.0 ||
+        vs.longMarket.askPrice <= 0.0) {
+      continue;
+    }
+    final dte = vs.expiration.daysLeft;
+    dteToExpiration[dte] = vs.expiration;
+    if (vs.type == VerticalSpreadType.over) {
+      final strike = vs.shortOption.strike;
+      overProbsPerDte.putIfAbsent(dte, () => {})[strike] = vs.probability;
+    } else {
+      final strike = vs.shortOption.strike;
+      underProbsPerDte.putIfAbsent(dte, () => {})[strike] = vs.probability;
+    }
+  }
+
+  final dtes = {...overProbsPerDte.keys, ...underProbsPerDte.keys}.toList()..sort();
+
+  for (final dte in dtes) {
+    print("\nDTE: $dte");
+    final overMap = overProbsPerDte[dte] ?? {};
+    final underMap = underProbsPerDte[dte] ?? {};
+    final expiration = dteToExpiration[dte]!;
+
+    final strikes = {...overMap.keys, ...underMap.keys}.toList()..sort();
+
+    print("  Strike | P(>= Strike) Raw | P(<= Strike) Raw | Sum Raw | P(>= Strike) Smoothed");
+    print("  -------|------------------|------------------|---------|----------------------");
+    for (final strike in strikes) {
+      final overProb = overMap[strike];
+      final underProb = underMap[strike];
+      final overStr = overProb != null ? "${(overProb * 100).toStringAsFixed(1)}%" : "-";
+      final underStr = underProb != null ? "${(underProb * 100).toStringAsFixed(1)}%" : "-";
+      final sumStr = (overProb != null && underProb != null)
+          ? "${((overProb + underProb) * 100).toStringAsFixed(1)}%"
+          : "-";
+      
+      String smoothStr = "-";
+      try {
+        final smoothProb = probs.getProbability(expiration, strike);
+        smoothStr = "${(smoothProb * 100).toStringAsFixed(1)}%";
+      } catch (e) {
+        // Extrapolation or not found in monotonic distribution
+      }
+      print("  ${strike.toStringAsFixed(0).padLeft(6)} | ${overStr.padLeft(16)} | ${underStr.padLeft(16)} | ${sumStr.padLeft(7)} | ${smoothStr.padLeft(21)}");
+    }
   }
 }
 
 void browseCoveredCalls(List<Market> markets) {
   final money = Commodity("USD");
-  final underlying = Commodity("TRX");
+  final underlying = Commodity("BTC");
 
   print(" ============== CC ==============");
   for (CoveredCall cc in CoveredCall.generateAll(markets,
@@ -149,6 +203,82 @@ void browseCoveredCalls(List<Market> markets) {
         "\n    breakevenVsHolder: $pricesWithSameMaxGain"
         "\n");
     print(cc.callMarket);
+  }
+}
+
+void coveredCallProbabilities(List<Market> markets) {
+  final money = Commodity("USD");
+  final underlying = Commodity("BTC");
+
+  print(" ============== CC ==============");
+  final Map<int, List<CoveredCall>> byDte = {};
+  for (CoveredCall cc in CoveredCall.generateAll(markets,
+      underlying: underlying, money: money)) {
+    final dte = cc.expiration.daysLeft;
+    byDte.putIfAbsent(dte, () => []).add(cc);
+  }
+  
+  if (byDte.isEmpty) return;
+  final sortedDtes = byDte.keys.toList()..sort();
+
+  for (final dte in sortedDtes) {
+    final List<CoveredCall> calls = byDte[dte]!
+      ..sort((a, b) => a.strikePrice.absolute.compareTo(b.strikePrice.absolute));
+
+    CoveredCall? lower;
+    CoveredCall? upper;
+    for (int i = 0; i < calls.length - 1; i++) {
+      final cc1 = calls[i];
+      final cc2 = calls[i + 1];
+      final diff1 = cc1.moneyYield - cc1.underlyingYield;
+      final diff2 = cc2.moneyYield - cc2.underlyingYield;
+      if (diff1 <= 0 && diff2 >= 0) {
+        lower = cc1;
+        upper = cc2;
+        break;
+      }
+    }
+
+    if (lower != null && upper != null) {
+      final k1 = lower.strikePrice.absolute;
+      final k2 = upper.strikePrice.absolute;
+      final d1 = lower.underlyingYield - lower.moneyYield;
+      final d2 = upper.moneyYield - upper.underlyingYield;
+      final forwardPrice = k1 + (k2 - k1) * d1 / (d1 + d2);
+      
+      // Interpolate Y_U at the ATM forward price
+      final yUnderATM = lower.underlyingYield + 
+          (upper.underlyingYield - lower.underlyingYield) * (forwardPrice - k1) / (k2 - k1);
+
+      print("\nDTE: $dte");
+      print("Interpolated ATM (forward) price: ${forwardPrice.toStringAsFixed(2)}");
+      print("Interpolated ATM underlyingYield: ${yUnderATM.toStringAsFixed(6)}");
+
+      for (final cc in calls) {
+        final json = cc.toJson();
+        final k = cc.strikePrice.absolute;
+        final yUnder = cc.underlyingYield;
+
+        double pAbove;
+        if (k >= forwardPrice) {
+          if (yUnderATM > 1.0) {
+            pAbove = 0.5 * (yUnder - 1.0) / (yUnderATM - 1.0);
+          } else {
+            pAbove = 0.0;
+          }
+        } else {
+          pAbove = 1.0 - 0.5 * (yUnderATM / yUnder);
+        }
+        pAbove = pAbove.clamp(0.0, 1.0);
+
+        print("  ${json['id']} -- K: ${k.toStringAsFixed(0).padLeft(6)} "
+            "| \$: ${json['moneyYield'].toStringAsFixed(4)} "
+            "| U: ${json['underlyingYield'].toStringAsFixed(4)} "
+            "| Prob(Above): ${(pAbove * 100).toStringAsFixed(1)}%");
+      }
+    } else {
+      print("\nDTE: $dte - Crossover strikes not found.");
+    }
   }
 }
 
