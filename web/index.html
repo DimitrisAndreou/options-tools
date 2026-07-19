@@ -483,7 +483,9 @@
           <div class="card w-100 flex-grow-1">
             <div class="card-header d-flex align-items-center justify-content-between">
               <h5 class="mb-0 text-white">
-                <i class="fas fa-chart-line me-2 text-primary"></i><span x-text="$store.app.unrealized?.isRoll ? 'Roll Impact' : 'Unrealized Results'">Unrealized Results</span>
+                <i class="fas fa-chart-line me-2 text-primary"></i><span
+                  x-text="$store.app.unrealized?.isRoll ? 'Roll Impact' : 'Unrealized Results'">Unrealized
+                  Results</span>
               </h5>
               <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-outline-primary" x-show="$store.app.selectedId"
@@ -526,34 +528,27 @@
                       </span>
                     </div>
                   </template>
+                  <div class="outcome-row" x-show="$store.app.unrealized?.entryMoney">
+                    <span class="text-label">Entry Capital</span>
+                    <span class="text-neutral-alt"
+                      x-text="`${$store.app.unrealized?.entryMoney} (${$store.app.unrealized?.entryUnderlying})`"></span>
+                  </div>
+                  <div class="outcome-row" x-show="$store.app.unrealized?.currentMoney">
+                    <span class="text-label"
+                      x-text="$store.app.unrealized?.isRoll ? 'New Capital' : 'Current Capital'">Current Capital</span>
+                    <span class="text-neutral-alt"
+                      x-text="`${$store.app.unrealized?.currentMoney} (${$store.app.unrealized?.currentUnderlying})`"></span>
+                  </div>
                   <template x-if="$store.app.unrealized?.unrealizedMoneyPnLPct !== undefined">
                     <div class="outcome-row">
-                      <span class="text-label" x-text="$store.app.unrealized?.isRoll ? 'Capital Difference (Money)' : 'Unrealized Money PnL'">Unrealized Money PnL</span>
-                      <span :class="$store.app.unrealized?.moneyPnLClass" class="fw-bold">
-                        <span x-text="$store.app.unrealized?.unrealizedMoneyPnLPct"></span>
-                        <span class="small font-monospace ms-1" style="opacity: 0.6;"
-                          x-text="'(' + $store.app.unrealized?.unrealizedMoneyPnLAbs + ')'"></span>
+                      <span class="text-label">Capital Size Change</span>
+                      <span class="fw-bold">
+                        <span :class="$store.app.unrealized?.moneyPnLClass"
+                          x-text="`${$store.app.unrealized?.unrealizedMoneyPnLPct} (${$store.app.unrealized?.unrealizedMoneyPnLAbs})`"></span><span class="text-muted">, </span><span :class="$store.app.unrealized?.underlyingPnLClass"
+                          x-text="`${$store.app.unrealized?.unrealizedUnderlyingPnLPct} (${$store.app.unrealized?.unrealizedUnderlyingPnLAbs})`"></span>
                       </span>
                     </div>
                   </template>
-                  <template x-if="$store.app.unrealized?.unrealizedUnderlyingPnLPct !== undefined">
-                    <div class="outcome-row">
-                      <span class="text-label" x-text="$store.app.unrealized?.isRoll ? 'Capital Difference (Underlying)' : 'Unrealized Underlying PnL'">Unrealized Underlying PnL</span>
-                      <span :class="$store.app.unrealized?.underlyingPnLClass" class="fw-bold">
-                        <span x-text="$store.app.unrealized?.unrealizedUnderlyingPnLPct"></span>
-                        <span class="small font-monospace ms-1" style="opacity: 0.6;"
-                          x-text="'(' + $store.app.unrealized?.unrealizedUnderlyingPnLAbs + ')'"></span>
-                      </span>
-                    </div>
-                  </template>
-                  <div class="outcome-row" x-show="$store.app.unrealized?.entryMoney">
-                    <span class="text-label">Entry Capital (As Money)</span>
-                    <span class="text-neutral-alt" x-text="$store.app.unrealized?.entryMoney"></span>
-                  </div>
-                  <div class="outcome-row" x-show="$store.app.unrealized?.entryUnderlying">
-                    <span class="text-label">Entry Capital (As Underlying)</span>
-                    <span class="text-neutral-alt" x-text="$store.app.unrealized?.entryUnderlying"></span>
-                  </div>
                 </div>
               </div>
             </div>

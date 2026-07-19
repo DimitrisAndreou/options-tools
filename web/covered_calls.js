@@ -108,7 +108,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const isRoll = currentPos.id !== entryPos.id;
     if (isRoll) {
-      [currentPosView, entryPosView] = [entryPosView, currentPosView];
+      // [currentPosView, entryPosView] = [entryPosView, currentPosView];
     }
 
     const res = {};
@@ -129,16 +129,22 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     // Money PnL
     const moneyPnL = formatPnL(currentPosView.money, entryPosView.money, dollarFmt.format, currentPos.money);
     res.entryMoney = dollarFmt.format(entryPosView.money);
+    res.currentMoney = dollarFmt.format(currentPosView.money);
     res.unrealizedMoneyPnLPct = moneyPnL.pct;
     res.unrealizedMoneyPnLAbs = moneyPnL.abs;
-    res.moneyPnLClass = moneyPnL.className;
+    res.moneyPnLClass = isRoll
+      ? (currentPosView.money >= entryPosView.money ? 'text-bad' : 'text-good')
+      : moneyPnL.className;
 
     // Underlying PnL
     const underlyingPnL = formatPnL(currentPosView.underlying, entryPosView.underlying, underlyingFmt.format, currentPos.underlying, currentPos.underlying);
-    res.entryUnderlying = `${underlyingFmt.format(entryPosView.underlying)} ${currentPosView.underlying}`;
+    res.entryUnderlying = `${underlyingFmt.format(entryPosView.underlying)} ${currentPos.underlying}`;
+    res.currentUnderlying = `${underlyingFmt.format(currentPosView.underlying)} ${currentPos.underlying}`;
     res.unrealizedUnderlyingPnLPct = underlyingPnL.pct;
     res.unrealizedUnderlyingPnLAbs = underlyingPnL.abs;
-    res.underlyingPnLClass = underlyingPnL.className;
+    res.underlyingPnLClass = isRoll
+      ? (currentPosView.underlying >= entryPosView.underlying ? 'text-bad' : 'text-good')
+      : underlyingPnL.className;
 
     return res;
   }
