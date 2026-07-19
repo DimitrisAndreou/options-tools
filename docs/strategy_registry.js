@@ -96,10 +96,7 @@ function selectStrategyById(idToSelect) {
     store.unrealized = null;
     store.entryPosition = null;
 
-    const url = UrlManager.createUrl();
-    UrlManager.set(url, URL_PARAMS.ID, null);
-    UrlManager.clearParams(url, [URL_PARAMS.POS]);
-    UrlManager.replaceState(url);
+
 
     const registryTypes = getRegistryTypesForStrategy(strategy);
     for (const type of registryTypes) {
@@ -115,15 +112,7 @@ function selectStrategyById(idToSelect) {
 
   const config = StrategyRegistry[targetItem.strategyType];
   if (config) {
-    const url = UrlManager.createUrl();
-    UrlManager.set(url, URL_PARAMS.ID, idToSelect);
 
-    // If entry position exists, ensure it is still correctly encoded in URL
-    if (store.entryPosition) {
-      const encoded = config.encodeEntryPosition(store.entryPosition);
-      UrlManager.set(url, URL_PARAMS.POS, encoded);
-    }
-    UrlManager.replaceState(url);
 
     // Update details and unrealized
     store.details = config.prepareData(targetItem);

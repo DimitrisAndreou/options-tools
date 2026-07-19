@@ -71,23 +71,6 @@ document.addEventListener('alpine:init', () => {
     },
 
     updateEntryPosition() {
-      const url = UrlManager.createUrl();
-      if (this.entryPosition) {
-        const item = this.selectedItem;
-        const strategyType = item ? item.strategyType : this.strategy;
-        const config = StrategyRegistry[strategyType];
-        if (config) {
-          const encoded = config.encodeEntryPosition(this.entryPosition);
-          UrlManager.set(url, URL_PARAMS.POS, encoded);
-        } else {
-          const encoded = UrlManager.encodeState(this.entryPosition);
-          UrlManager.set(url, URL_PARAMS.POS, encoded);
-        }
-      } else {
-        UrlManager.set(url, URL_PARAMS.POS, null);
-      }
-      UrlManager.replaceState(url);
-      
       this.updateUnrealized();
 
       const item = this.selectedItem;
@@ -156,6 +139,41 @@ document.addEventListener('alpine:init', () => {
       window.addEventListener('popstate', () => {
         this.syncFromUrl();
       });
+
+      // 2. Start reactive synchronization from Store to URL
+      Alpine.effect(() => {
+        const ticker = this.ticker;
+        const strategy = this.strategy;
+        const slippage = this.slippage;
+        const minDte = this.minDte;
+        const maxDte = this.maxDte;
+        const selectedId = this.selectedId;
+        const entryPosition = this.entryPosition;
+
+        const url = UrlManager.createUrl();
+        UrlManager.set(url, URL_PARAMS.TICKER, ticker || null);
+        UrlManager.set(url, URL_PARAMS.STRATEGY, strategy || null);
+        UrlManager.setWithDefault(url, URL_PARAMS.SLIPPAGE, slippage, 0.5);
+        UrlManager.setWithDefault(url, URL_PARAMS.MIN_DTE, minDte, 7);
+        UrlManager.setWithDefault(url, URL_PARAMS.MAX_DTE, maxDte, 1092);
+        UrlManager.set(url, URL_PARAMS.ID, selectedId || null);
+
+        if (entryPosition) {
+          const strategyType = entryPosition.strategyType || strategy;
+          const config = StrategyRegistry[strategyType];
+          if (config) {
+            const encoded = config.encodeEntryPosition(entryPosition);
+            UrlManager.set(url, URL_PARAMS.POS, encoded);
+          } else {
+            const encoded = UrlManager.encodeState(entryPosition);
+            UrlManager.set(url, URL_PARAMS.POS, encoded);
+          }
+        } else {
+          UrlManager.set(url, URL_PARAMS.POS, null);
+        }
+
+        UrlManager.replaceState(url);
+      });
     },
 
     syncFromUrl() {
@@ -187,7 +205,7 @@ document.addEventListener('alpine:init', () => {
       this.updateUnrealized();
 
       if (this.ticker) {
-        this.loadData(true); // pass skipUrlUpdate = true
+        this.loadData();
       }
     },
 
@@ -207,11 +225,6 @@ document.addEventListener('alpine:init', () => {
     },
 
     changeStrategy() {
-      const url = UrlManager.createUrl();
-      this.clearAllStrategyParams(url);
-      UrlManager.set(url, URL_PARAMS.STRATEGY, this.strategy);
-      UrlManager.replaceState(url);
-      
       // Clear selection & details when switching strategy types
       this.selectedId = null;
       this.details = null;
@@ -226,17 +239,9 @@ document.addEventListener('alpine:init', () => {
       this.loadData();
     },
 
-    async loadData(skipUrlUpdate = false) {
+    async loadData() {
       if (!this.ticker) return;
       try {
-        if (!skipUrlUpdate) {
-          const url = UrlManager.createUrl();
-          UrlManager.setWithDefault(url, URL_PARAMS.SLIPPAGE, this.slippage, 0.5);
-          UrlManager.setWithDefault(url, URL_PARAMS.MIN_DTE, this.minDte, 7);
-          UrlManager.setWithDefault(url, URL_PARAMS.MAX_DTE, this.maxDte, 1092);
-          UrlManager.setWithDefault(url, URL_PARAMS.STRATEGY, this.strategy, 'coveredCall');
-          UrlManager.replaceState(url);
-        }
 
         const chartDom = document.getElementById("strategyChartContainer");
         let existingChart = echarts.getInstanceByDom(chartDom);
