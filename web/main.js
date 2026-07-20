@@ -241,6 +241,14 @@ document.addEventListener('alpine:init', () => {
 
     async loadData() {
       if (!this.ticker) return;
+
+      const loadingEl = document.getElementById('loadingModal');
+      let loadingModal = null;
+      if (loadingEl) {
+        loadingModal = bootstrap.Modal.getOrCreateInstance(loadingEl);
+        loadingModal.show();
+      }
+
       try {
 
         const chartDom = document.getElementById("strategyChartContainer");
@@ -305,6 +313,10 @@ document.addEventListener('alpine:init', () => {
         document.getElementById('error-message').textContent = errorMsg;
         const myModal = new bootstrap.Modal(document.getElementById('errorModal'));
         myModal.show();
+      } finally {
+        if (loadingModal) {
+          loadingModal.hide();
+        }
       }
     },
 

@@ -310,7 +310,8 @@ void main() {
           'maxRisk': 30.0,
           'maxRiskAtAbsolute': 1000.0,
           'maxRiskAtRelative': 1.0,
-          'probability': 0.3
+          'maxProbBelow': 1.0,
+          'maxProbAbove': closeTo(0.3, 1e-9)
         }));
 
     final underJson = underVs.toJson();
@@ -344,7 +345,8 @@ void main() {
           'maxRisk': 70.0,
           'maxRiskAtAbsolute': 1100.0,
           'maxRiskAtRelative': 1.1,
-          'probability': 0.7
+          'maxProbBelow': closeTo(0.7, 1e-9),
+          'maxProbAbove': 1.0
         }));
   });
 

@@ -544,7 +544,8 @@
                       <span class="text-label">Capital Size Change</span>
                       <span class="fw-bold">
                         <span :class="$store.app.unrealized?.moneyPnLClass"
-                          x-text="`${$store.app.unrealized?.unrealizedMoneyPnLPct} (${$store.app.unrealized?.unrealizedMoneyPnLAbs})`"></span><span class="text-muted">, </span><span :class="$store.app.unrealized?.underlyingPnLClass"
+                          x-text="`${$store.app.unrealized?.unrealizedMoneyPnLPct} (${$store.app.unrealized?.unrealizedMoneyPnLAbs})`"></span><span
+                          class="text-muted">, </span><span :class="$store.app.unrealized?.underlyingPnLClass"
                           x-text="`${$store.app.unrealized?.unrealizedUnderlyingPnLPct} (${$store.app.unrealized?.unrealizedUnderlyingPnLAbs})`"></span>
                       </span>
                     </div>
@@ -643,12 +644,16 @@
       <div class="outcomes-panel">
         <div class="outcomes-header">Outcomes at Expiration</div>
         <div class="outcome-row">
-          <span>If <span x-text="d?.underlying"></span> &ge; <span x-text="d?.strikeAbsolute"></span><template x-if="d?.moneyProbability != null"> <span class="text-probs" x-text="'(' + Math.round(d.moneyProbability * 100) + '% prob)'"></span></template></span>
+          <span>If <span x-text="d?.underlying"></span> &ge; <span x-text="d?.strikeAbsolute"></span><template
+              x-if="d?.moneyProbability != null"> <span class="text-probs"
+                x-text="'(' + Math.round(d.moneyProbability * 100) + '% prob)'"></span></template></span>
           <span><span class="text-good" x-text="d?.moneyYield"></span> <span class="text-good" x-text="d?.money"></span>
             <small class="text-good-alt">(+<span x-text="d?.moneyProfit"></span>)</small></span>
         </div>
         <div class="outcome-row mb-0">
-          <span>If <span x-text="d?.underlying"></span> &lt; <span x-text="d?.strikeAbsolute"></span><template x-if="d?.underlyingProbability != null"> <span class="text-probs" x-text="'(' + Math.round(d.underlyingProbability * 100) + '% prob)'"></span></template></span>
+          <span>If <span x-text="d?.underlying"></span> &lt; <span x-text="d?.strikeAbsolute"></span><template
+              x-if="d?.underlyingProbability != null"> <span class="text-probs"
+                x-text="'(' + Math.round(d.underlyingProbability * 100) + '% prob)'"></span></template></span>
           <span><span class="text-good" x-text="d?.underlyingYield"></span> <span class="text-good"
               x-text="d?.underlying"></span> <small class="text-good-alt">(+<span
                 x-text="d?.underlyingProfit"></span>)</small></span>
@@ -724,6 +729,20 @@
           <div id="share-error" class="text-danger small mt-2" style="display: none;">
             Failed to shorten URL. Displaying full link instead.
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Modal -->
+  <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
+    data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 300px;">
+      <div class="modal-content bg-dark text-white border-primary shadow-lg">
+        <div class="modal-body text-center py-4">
+          <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+          <h5 class="mb-1 text-white">Please Wait</h5>
+          <p class="text-muted small mb-0">Might take few seconds for popular symbols...</p>
         </div>
       </div>
     </div>

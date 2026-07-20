@@ -655,7 +655,8 @@ class VerticalSpread {
   late final PriceInfo maxYieldAt;
   late final double maxRisk;
   late final PriceInfo maxRiskAt;
-  late final double probability;
+  late final double maxProbBelow;
+  late final double maxProbAbove;
 
   String? get shortLegURL => AssetRenderer.tryRenderFirst(shortLeg.asset);
   String? get longLegURL => AssetRenderer.tryRenderFirst(longLeg.asset);
@@ -690,7 +691,8 @@ class VerticalSpread {
         'maxRisk': maxRisk,
         'maxRiskAtAbsolute': maxRiskAt.absolute,
         'maxRiskAtRelative': maxRiskAt.relative,
-        'probability': probability,
+        'maxProbBelow': maxProbBelow,
+        'maxProbAbove': maxProbAbove,
       };
 
   VerticalSpread._(this.strategy,
@@ -712,11 +714,15 @@ class VerticalSpread {
         ? VerticalSpreadType.over
         : VerticalSpreadType.under;
 
-    final width = (shortOption.strike - longOption.strike).abs();
-    final cost = (moneyLeg.size < 0
-        ? -moneyLeg.size
-        : (width * shortOption.contractLot - moneyLeg.size)) / shortOption.contractLot;
-    probability = (width > 0.0 ? cost / width : 0.0).clamp(0.0, 1.0);
+    final denom = analyzer.maxValue - analyzer.minValue;
+    final r = (denom > 0.0 ? -analyzer.minValue / denom : 0.0).clamp(0.0, 1.0);
+    if (type == VerticalSpreadType.over) {
+      maxProbAbove = r;
+      maxProbBelow = 1.0;
+    } else {
+      maxProbBelow = r;
+      maxProbAbove = 1.0;
+    }
 
     final double? breakevenDouble =
         pickNearestBoundary(spotPrice, analyzer.breakevens);
@@ -883,8 +889,10 @@ String _formatDouble(double val) {
 class Probabilities {
   final Map<DateTime, Map<double, double>> _probs = {};
   final Map<DateTime, Map<double, List<VerticalSpread>>> _contributingSpreads = {};
+  final Map<DateTime, double> _atmStrikes = {};
 
   Map<DateTime, Map<double, double>> get distributions => _probs;
+  Map<DateTime, double> get atmStrikes => _atmStrikes;
 
   Probabilities(Iterable<VerticalSpread> spreads,
       {required Commodity underlying, required Commodity money}) {
@@ -915,73 +923,161 @@ class Probabilities {
         byStrike.putIfAbsent(vs.shortOption.strike, () => []).add(vs);
       }
 
+      // Find all call and put options for this expiration to locate the ATM flip point
+      final Map<double, Market> callMarkets = {};
+      final Map<double, Market> putMarkets = {};
+      for (final vs in expSpreads) {
+        for (final option in [vs.shortOption, vs.longOption]) {
+          final market = (option == vs.shortOption) ? vs.shortMarket : vs.longMarket;
+          if (option.isCall) {
+            callMarkets[option.strike] = market;
+          } else {
+            putMarkets[option.strike] = market;
+          }
+        }
+      }
+
+      final commonStrikes = callMarkets.keys.where((s) => putMarkets.containsKey(s)).toList()..sort();
+      double? atmStrike;
+
+      for (final strike in commonStrikes) {
+        final mCall = callMarkets[strike]!;
+        final mPut = putMarkets[strike]!;
+        final diff = (mCall.bidPrice + mCall.askPrice) / 2.0 -
+            (mPut.bidPrice + mPut.askPrice) / 2.0;
+        if (diff == 0.0) {
+          atmStrike = strike;
+          break;
+        }
+      }
+
+      if (atmStrike == null) {
+        for (int i = 0; i < commonStrikes.length - 1; i++) {
+          final k1 = commonStrikes[i];
+          final k2 = commonStrikes[i + 1];
+
+          final mCall1 = callMarkets[k1]!;
+          final mPut1 = putMarkets[k1]!;
+          final mCall2 = callMarkets[k2]!;
+          final mPut2 = putMarkets[k2]!;
+
+          final diff1 = (mCall1.bidPrice + mCall1.askPrice) / 2.0 -
+              (mPut1.bidPrice + mPut1.askPrice) / 2.0;
+          final diff2 = (mCall2.bidPrice + mCall2.askPrice) / 2.0 -
+              (mPut2.bidPrice + mPut2.askPrice) / 2.0;
+
+          if (diff1 > 0.0 && diff2 < 0.0) {
+            final t = -diff1 / (diff2 - diff1);
+            atmStrike = k1 + t * (k2 - k1);
+            break;
+          }
+        }
+      }
+
       final Map<double, double> rawProbs = {};
       final Map<double, List<VerticalSpread>> strikeToSpreads = {};
+      final Map<double, double> strikeWeights = {};
 
       for (final strikeEntry in byStrike.entries) {
         final strike = strikeEntry.key;
         final strikeSpreads = strikeEntry.value;
 
-        VerticalSpread? vsOver;
-        VerticalSpread? vsUnder;
+        VerticalSpread? overSpread;
+        VerticalSpread? underSpread;
 
         for (final vs in strikeSpreads) {
           if (vs.type == VerticalSpreadType.over) {
-            vsOver = vs;
+            overSpread = vs;
           } else if (vs.type == VerticalSpreadType.under) {
-            vsUnder = vs;
+            underSpread = vs;
           }
         }
 
         double prob;
-        if (vsOver != null && vsUnder != null) {
-          final eOver = vsOver.probability;
-          final eUnder = 1.0 - vsUnder.probability;
+        // Represents the market quality (reliability) of the probability estimate at this strike.
+        // It is computed as the sum of the inverse relative spreads of the contributing vertical spreads.
+        // Higher weight indicates tighter bid-ask spreads (higher liquidity and accuracy).
+        double weight;
+        if (overSpread != null && underSpread != null) {
+          final maxProbAbove = overSpread.maxProbAbove;
+          final minProbAbove = 1.0 - underSpread.maxProbBelow;
 
-          final uOver = (vsOver.shortMarket.askPrice - vsOver.shortMarket.bidPrice) +
-              (vsOver.longMarket.askPrice - vsOver.longMarket.bidPrice);
-          final uUnder = (vsUnder.shortMarket.askPrice - vsUnder.shortMarket.bidPrice) +
-              (vsUnder.longMarket.askPrice - vsUnder.longMarket.bidPrice);
+          final spreadOver = overSpread.shortMarket.relativeSpread +
+              overSpread.longMarket.relativeSpread;
+          final spreadUnder = underSpread.shortMarket.relativeSpread +
+              underSpread.longMarket.relativeSpread;
 
-          final wOver = uOver <= 0.0 ? 1e9 : 1.0 / uOver;
-          final wUnder = uUnder <= 0.0 ? 1e9 : 1.0 / uUnder;
+          final weightOver = spreadOver <= 0.0 ? 1e9 : 1.0 / spreadOver;
+          final weightUnder = spreadUnder <= 0.0 ? 1e9 : 1.0 / spreadUnder;
 
-          prob = (eOver * wOver + eUnder * wUnder) / (wOver + wUnder);
-        } else if (vsOver != null) {
-          prob = vsOver.probability;
-        } else if (vsUnder != null) {
-          prob = 1.0 - vsUnder.probability;
+          prob = (maxProbAbove * weightOver + minProbAbove * weightUnder) / (weightOver + weightUnder);
+          weight = weightOver + weightUnder;
+        } else if (overSpread != null) {
+          prob = overSpread.maxProbAbove;
+          final spreadOver = overSpread.shortMarket.relativeSpread +
+              overSpread.longMarket.relativeSpread;
+          weight = spreadOver <= 0.0 ? 1e9 : 1.0 / spreadOver;
+        } else if (underSpread != null) {
+          prob = 1.0 - underSpread.maxProbBelow;
+          final spreadUnder = underSpread.shortMarket.relativeSpread +
+              underSpread.longMarket.relativeSpread;
+          weight = spreadUnder <= 0.0 ? 1e9 : 1.0 / spreadUnder;
         } else {
           continue;
         }
 
         rawProbs[strike] = prob;
-        if (vsOver != null || vsUnder != null) {
+        strikeWeights[strike] = weight;
+        if (overSpread != null || underSpread != null) {
           strikeToSpreads[strike] = [
-            if (vsOver != null) vsOver,
-            if (vsUnder != null) vsUnder,
+            if (overSpread != null) overSpread,
+            if (underSpread != null) underSpread,
           ];
         }
       }
 
-      // Enforce monotonicity by traversing descending (highest to lowest strike)
-      final sortedStrikes = rawProbs.keys.toList()..sort((a, b) => b.compareTo(a));
+      if (atmStrike != null) {
+        _atmStrikes[expiration] = atmStrike;
+        rawProbs[atmStrike] = 0.5;
+        strikeWeights[atmStrike] = 1e12; // Top priority anchor
+      }
+
+      // Enforce monotonicity by prioritizing strikes with higher market quality (larger weights)
+      final sortedByWeight = rawProbs.keys.toList()
+        ..sort((a, b) {
+          final cmp = strikeWeights[b]!.compareTo(strikeWeights[a]!);
+          if (cmp == 0) return a.compareTo(b);
+          return cmp;
+        });
+
       final Map<double, double> monotonicProbs = {};
-      double? previousProb;
-      for (final strike in sortedStrikes) {
+
+      for (final strike in sortedByWeight) {
         final prob = rawProbs[strike]!;
-        if (previousProb == null) {
-          monotonicProbs[strike] = prob;
-          previousProb = prob;
-        } else {
-          if (prob >= previousProb) {
-            monotonicProbs[strike] = prob;
-            previousProb = prob;
+        bool isCompatible = true;
+        for (final acceptedStrike in monotonicProbs.keys) {
+          final acceptedProb = monotonicProbs[acceptedStrike]!;
+          if (strike < acceptedStrike && prob < acceptedProb) {
+            isCompatible = false;
+            break;
           }
+          if (strike > acceptedStrike && prob > acceptedProb) {
+            isCompatible = false;
+            break;
+          }
+        }
+        if (isCompatible) {
+          monotonicProbs[strike] = prob;
         }
       }
 
-      _probs[expiration] = monotonicProbs;
+      // Sort the final map by strike price ascending
+      final sortedStrikes = monotonicProbs.keys.toList()..sort();
+      final Map<double, double> sortedMonotonicProbs = {
+        for (final s in sortedStrikes) s: monotonicProbs[s]!
+      };
+
+      _probs[expiration] = sortedMonotonicProbs;
       _contributingSpreads[expiration] = strikeToSpreads;
     }
   }
@@ -990,7 +1086,6 @@ class Probabilities {
     return _contributingSpreads[expiration]?[strike] ?? const [];
   }
 
-  // Probability that price is >= strike.
   double getProbabilityExpiringAbove(DateTime expiration, double strike) {
     final expProbs = _probs[expiration];
     if (expProbs == null || expProbs.isEmpty) {
