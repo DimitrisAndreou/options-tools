@@ -713,7 +713,9 @@ class VerticalSpread {
         : VerticalSpreadType.under;
 
     final width = (shortOption.strike - longOption.strike).abs();
-    final cost = moneyLeg.size < 0 ? -moneyLeg.size : (width - moneyLeg.size);
+    final cost = (moneyLeg.size < 0
+        ? -moneyLeg.size
+        : (width * shortOption.contractLot - moneyLeg.size)) / shortOption.contractLot;
     probability = (width > 0.0 ? cost / width : 0.0).clamp(0.0, 1.0);
 
     final double? breakevenDouble =
@@ -880,6 +882,8 @@ String _formatDouble(double val) {
 
 class Probabilities {
   final Map<DateTime, Map<double, double>> _probs = {};
+
+  Map<DateTime, Map<double, double>> get distributions => _probs;
 
   Probabilities(Iterable<VerticalSpread> spreads,
       {required Commodity underlying, required Commodity money}) {

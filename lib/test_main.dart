@@ -31,7 +31,8 @@ void main() async {
   // testMarketNavigator(oracle);
 
   // browseLinearContracts();
-  browseVerticalSpreads(markets);
+  // browseVerticalSpreads(markets);
+  await browseProbabilities();
   // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
   // browseLongCalls(markets);
@@ -118,6 +119,36 @@ void browseLinearContracts() async {
       UrlFetcher(Duration(minutes: 15)));
   for (final m in usdcMarkets) {
     print(m);
+  }
+}
+
+Future<void> browseProbabilities() async {
+  final urlFetcher = UrlFetcher(Duration(minutes: 15));
+  YFinance yfinance = await YFinance.openConnection(urlFetcher);
+  final List<Market> markets = await yfinance.fetchMarkets("MU", urlFetcher);
+
+  final money = Commodity("USD");
+  final underlying = Commodity("MU");
+
+  print(" ============== Probabilities for MU ==============");
+
+  final spreads = VerticalSpread.generateAll(markets,
+      underlying: underlying, money: money).toList();
+  final probs = Probabilities(spreads, underlying: underlying, money: money);
+
+  for (final MapEntry<DateTime, Map<double, double>> entry in probs.distributions.entries) {
+    final DateTime expiration = entry.key;
+    final Map<double, double> strikeProbs = entry.value;
+
+    print("\nExpiration: ${expiration.toIso8601String()} (DTE: ${expiration.daysLeft})");
+    print("  Strike | Probability");
+    print("  -------|------------");
+
+    final sortedStrikes = strikeProbs.keys.toList()..sort();
+    for (final strike in sortedStrikes) {
+      final prob = strikeProbs[strike]!;
+      print("  ${strike.toStringAsFixed(2).padLeft(6)} | ${(prob * 100).toStringAsFixed(1)}%");
+    }
   }
 }
 

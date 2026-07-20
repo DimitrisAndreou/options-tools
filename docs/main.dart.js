@@ -9408,34 +9408,34 @@ s=t.T
 return new A.en(A.f9(A.iJ(a),s),A.f9(A.lY(a),s))},
 $S:62}
 A.jN.prototype={
-$5(a,b,c,d,a0){var s,r,q,p,o,n,m,l=this,k=l.a,j=l.b,i=l.d,h=l.e,g=A.bt(a,j,k),f=a.a,e=f.j(0,j)
-e.toString
-s=new A.m(j,e)
-r=f.j(0,b)
-r.toString
-f=f.j(0,c)
+$5(a,b,c,d,e){var s,r,q,p,o,n,m=this,l=m.a,k=m.b,j=m.d,i=m.e,h=A.bt(a,k,l),g=a.a,f=g.j(0,k)
 f.toString
-f=new A.a4(k,j,l.c,g,b,c,d,a0,a,new A.m(b,r),new A.m(c,f),s,i,h)
+s=new A.m(k,f)
+r=g.j(0,b)
+r.toString
+g=g.j(0,c)
+g.toString
+g=new A.a4(l,k,m.c,h,b,c,d,e,a,new A.m(b,r),new A.m(c,g),s,j,i)
 r=c.y
 q=b.y
-f.as=r<q?B.F:B.G
+g.as=r<q?B.F:B.G
 p=Math.abs(q-r)
-o=e<0?-e:p-e
-f.dx=B.k.fw(p>0?o/p:0,0,1)
-n=A.jR(h,g.a0(0))
-f.ay=n!=null?new A.ab(n,n/h):null
+r=f<0?-f:p*b.d-f
+g.dx=B.k.fw(p>0?r/b.d/p:0,0,1)
+o=A.jR(i,h.a0(0))
+g.ay=o!=null?new A.ab(o,o/i):null
 r=t.u
-m=A.jR(h,A.bt(A.J(A.i([a,A.J(A.i([s,i.aC(new A.m(j,e*-1))],r)).S(0)],r)),j,k).a0(0))
-f.ch=m!=null?new A.ab(m,m/h):null
-f.CW=1+Math.max(g.gaQ(),0)/Math.max(-g.gb0(),0)
-k=A.jR(h,g.a0(g.gaQ()))
-k.toString
-f.cx=new A.ab(k,k/h)
-f.cy=Math.max(-g.gb0(),0)
-g=A.jR(h,g.a0(g.gb0()))
-g.toString
-f.db=new A.ab(g,g/h)
-return f},
+n=A.jR(i,A.bt(A.J(A.i([a,A.J(A.i([s,j.aC(new A.m(k,f*-1))],r)).S(0)],r)),k,l).a0(0))
+g.ch=n!=null?new A.ab(n,n/i):null
+g.CW=1+Math.max(h.gaQ(),0)/Math.max(-h.gb0(),0)
+l=A.jR(i,h.a0(h.gaQ()))
+l.toString
+g.cx=new A.ab(l,l/i)
+g.cy=Math.max(-h.gb0(),0)
+h=A.jR(i,h.a0(h.gb0()))
+h.toString
+g.db=new A.ab(h,h/i)
+return g},
 $S:63}
 A.jO.prototype={
 $1(a){var s=t.bw.a(a).cy
