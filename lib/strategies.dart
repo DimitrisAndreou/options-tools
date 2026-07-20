@@ -143,7 +143,7 @@ class CoveredCall {
         double? moneyProb;
         double? underlyingProb;
         try {
-          moneyProb = probs.getProbability(expiration, option.strike);
+          moneyProb = probs.getProbabilityExpiringAbove(expiration, option.strike);
           underlyingProb = 1.0 - moneyProb;
         } catch (_) {
           // Out of bounds or not found
@@ -882,6 +882,7 @@ String _formatDouble(double val) {
 
 class Probabilities {
   final Map<DateTime, Map<double, double>> _probs = {};
+  final Map<DateTime, Map<double, List<VerticalSpread>>> _contributingSpreads = {};
 
   Map<DateTime, Map<double, double>> get distributions => _probs;
 
@@ -915,6 +916,7 @@ class Probabilities {
       }
 
       final Map<double, double> rawProbs = {};
+      final Map<double, List<VerticalSpread>> strikeToSpreads = {};
 
       for (final strikeEntry in byStrike.entries) {
         final strike = strikeEntry.key;
@@ -954,6 +956,12 @@ class Probabilities {
         }
 
         rawProbs[strike] = prob;
+        if (vsOver != null || vsUnder != null) {
+          strikeToSpreads[strike] = [
+            if (vsOver != null) vsOver,
+            if (vsUnder != null) vsUnder,
+          ];
+        }
       }
 
       // Enforce monotonicity by traversing descending (highest to lowest strike)
@@ -974,10 +982,16 @@ class Probabilities {
       }
 
       _probs[expiration] = monotonicProbs;
+      _contributingSpreads[expiration] = strikeToSpreads;
     }
   }
 
-  double getProbability(DateTime expiration, double strike) {
+  List<VerticalSpread> getContributingSpreads(DateTime expiration, double strike) {
+    return _contributingSpreads[expiration]?[strike] ?? const [];
+  }
+
+  // Probability that price is >= strike.
+  double getProbabilityExpiringAbove(DateTime expiration, double strike) {
     final expProbs = _probs[expiration];
     if (expProbs == null || expProbs.isEmpty) {
       throw ArgumentError("No probability distribution found for expiration $expiration");

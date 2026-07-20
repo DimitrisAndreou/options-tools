@@ -472,14 +472,14 @@ void main() {
 
     // The strikes generated will be 1100 (from 1000-1100 pair) and 1200 (from 1100-1200 pair)
     // Let's check interpolation
-    final p1150 = probs.getProbability(expiration, 1150.0);
+    final p1150 = probs.getProbabilityExpiringAbove(expiration, 1150.0);
     expect(p1150, isNotNull);
     expect(p1150, greaterThan(0.0));
     expect(p1150, lessThan(1.0));
 
     // Verify extrapolation throws ArgumentError
-    expect(() => probs.getProbability(expiration, 900.0), throwsArgumentError);
-    expect(() => probs.getProbability(expiration, 1300.0), throwsArgumentError);
+    expect(() => probs.getProbabilityExpiringAbove(expiration, 900.0), throwsArgumentError);
+    expect(() => probs.getProbabilityExpiringAbove(expiration, 1300.0), throwsArgumentError);
   });
 
   test('CoveredCall attaches probabilities test', () {

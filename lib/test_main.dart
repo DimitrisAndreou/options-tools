@@ -32,7 +32,7 @@ void main() async {
 
   // browseLinearContracts();
   // browseVerticalSpreads(markets);
-  await browseProbabilities();
+  browseProbabilities(markets);
   // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
   // browseLongCalls(markets);
@@ -122,15 +122,16 @@ void browseLinearContracts() async {
   }
 }
 
-Future<void> browseProbabilities() async {
-  final urlFetcher = UrlFetcher(Duration(minutes: 15));
-  YFinance yfinance = await YFinance.openConnection(urlFetcher);
-  final List<Market> markets = await yfinance.fetchMarkets("MU", urlFetcher);
+void browseProbabilities(List<Market> markets) async {
+  // final urlFetcher = UrlFetcher(Duration(minutes: 15));
+  // YFinance yfinance = await YFinance.openConnection(urlFetcher);
+  // final List<Market> markets = await yfinance.fetchMarkets("MU", urlFetcher);
 
   final money = Commodity("USD");
-  final underlying = Commodity("MU");
+  // final underlying = Commodity("MU");
+  final underlying = Commodity("BTC");
 
-  print(" ============== Probabilities for MU ==============");
+  print(" ============== Probabilities ==============");
 
   final spreads = VerticalSpread.generateAll(markets,
       underlying: underlying, money: money).toList();
@@ -147,7 +148,9 @@ Future<void> browseProbabilities() async {
     final sortedStrikes = strikeProbs.keys.toList()..sort();
     for (final strike in sortedStrikes) {
       final prob = strikeProbs[strike]!;
-      print("  ${strike.toStringAsFixed(2).padLeft(6)} | ${(prob * 100).toStringAsFixed(1)}%");
+      final contributing = probs.getContributingSpreads(expiration, strike);
+      final spreadsStr = contributing.map((vs) => vs.strategy).join("\n      ");
+      print("  ${strike.toStringAsFixed(2).padLeft(6)} | ${(prob * 100).toStringAsFixed(1)}% (Spreads:\n      $spreadsStr)");
     }
   }
 }
@@ -207,7 +210,7 @@ void browseVerticalSpreads(List<Market> markets) {
       
       String smoothStr = "-";
       try {
-        final smoothProb = probs.getProbability(expiration, strike);
+        final smoothProb = probs.getProbabilityExpiringAbove(expiration, strike);
         smoothStr = "${(smoothProb * 100).toStringAsFixed(1)}%";
       } catch (e) {
         // Extrapolation or not found in monotonic distribution
