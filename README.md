@@ -41,6 +41,11 @@ npx wrangler login
 ```
 This will open a browser window asking you to authorize Wrangler with your Cloudflare account.
 
+You'd need to install nodejs and npm first: 
+```bash
+sudo apt update && sudo apt install -y nodejs npm
+```
+
 ### 2. Deploying/Updating the Worker
 To deploy or update the worker service (`yahoo-proxy-v2`), run:
 ```bash

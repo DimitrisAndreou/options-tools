@@ -8,6 +8,10 @@ import 'url_fetcher.dart';
 class YFinance {
   static const String _baseUrl = 'https://query2.finance.yahoo.com';
 
+  static YFinance? _cachedConnection;
+  static DateTime? _cacheTime;
+  static const Duration _cacheDuration = Duration(minutes: 30);
+
   final Map<String, String> _headers;
   final String _crumb;
 
@@ -23,7 +27,18 @@ class YFinance {
     while (urlsToFetch.isNotEmpty) {
       final url = urlsToFetch.removeLast();
       print("About to fetch an option chain... $url, Headers: $_headers");
-      final rawJson = await urlFetcher.fetch(url, headers: _headers);
+      String rawJson;
+      try {
+        rawJson = await urlFetcher.fetch(url, headers: _headers);
+      } catch (e) {
+        final errStr = e.toString();
+        if (errStr.contains('400') || errStr.contains('401') || errStr.contains('403')) {
+          print("Option fetch failed with auth/crumb error. Invalidating cached connection: $e");
+          _cachedConnection = null;
+          _cacheTime = null;
+        }
+        rethrow;
+      }
 
       final data = json.decode(rawJson) as Map<String, dynamic>;
       final results = (data["optionChain"]?["result"] as List?)?.firstOrNull;
@@ -128,6 +143,13 @@ class YFinance {
   }
 
   static Future<YFinance> openConnection(UrlFetcher urlFetcher) async {
+    if (_cachedConnection != null &&
+        _cacheTime != null &&
+        DateTime.now().difference(_cacheTime!) < _cacheDuration) {
+      print("Reusing cached YFinance connection (age: ${DateTime.now().difference(_cacheTime!)})");
+      return _cachedConnection!;
+    }
+
     final Map<String, String> headers = {
       'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
@@ -143,12 +165,14 @@ class YFinance {
         'https://query2.finance.yahoo.com/v1/test/getcrumb',
         headers: headers);
 
-    // If crumb looks like HTML, the session failed
-    if (crumb.contains('<html')) {
-      throw Exception("Crumb request returned HTML (Session Rejected)");
+    // If crumb looks like HTML, contains rate-limiting keyword, or is invalid, the session failed
+    if (crumb.contains('<html') || crumb.toLowerCase().contains('too many requests') || crumb.length > 30) {
+      throw Exception("Crumb request failed or returned invalid crumb: $crumb");
     }
 
     // Success! Got crumb (cookie).
-    return YFinance(headers, crumb);
+    _cachedConnection = YFinance(headers, crumb);
+    _cacheTime = DateTime.now();
+    return _cachedConnection!;
   }
 }

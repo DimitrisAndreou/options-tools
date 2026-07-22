@@ -355,10 +355,17 @@
           }
         });
 
+        if (!res2.ok) {
+          log('Test 2', `Phase 2 failed: Crumb request returned status ${res2.status} (${res2.statusText || 'Error'}).`, 'error');
+          const bodyText = await res2.text();
+          log('Test 2', `Response body: ${bodyText}`, 'error');
+          throw new Error(`Crumb fetch failed with status ${res2.status}`);
+        }
+
         const crumb = await res2.text();
-        if (crumb.includes('<html')) {
-          log('Test 2', 'Phase 2 failed: Crumb request returned HTML (Session Rejected).', 'error');
-          throw new Error('Session rejected');
+        if (crumb.includes('<html') || crumb.toLowerCase().includes('too many requests') || crumb.trim().length > 30) {
+          log('Test 2', `Phase 2 failed: Crumb request returned invalid response: ${crumb}`, 'error');
+          throw new Error('Invalid crumb response');
         }
 
         log('Test 2', `Success! Crumb captured: ${crumb}`, 'success');
