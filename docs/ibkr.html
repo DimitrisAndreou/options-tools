@@ -46,6 +46,15 @@
       transform: rotate(90deg);
       color: #ffc107 !important;
     }
+    code {
+      color: #00e5ff !important;
+      background-color: rgba(0, 229, 255, 0.1) !important;
+      border: 1px solid rgba(0, 229, 255, 0.25);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.875em;
+    }
   </style>
 </head>
 
@@ -129,13 +138,15 @@
                     <ol class="ps-3 mb-0">
                       <li>On the same <strong>Flex Queries</strong> page, locate the <strong>Activity Flex Query</strong> card and click the <strong>+ (Create icon)</strong>.</li>
                       <li>Enter a <strong>Query Name</strong> (e.g. <code>Trade History</code>).</li>
-                      <li>Under <strong>Sections</strong>, select these 5 recommended items:
+                      <li>Under <strong>Sections</strong>, select these recommended items:
                         <ul class="ps-3 my-1">
                           <li><strong>Trades</strong> (executing trades during period)</li>
                           <li><strong>Open Positions</strong> (current holdings &amp; unrealized PnL at end of period)</li>
-                          <li><strong>Prior Period Position</strong> (starting position holdings at start of period)</li>
-                          <li><strong>Change in NAV</strong> (starting &amp; ending account values, net asset changes, dividends)</li>
-                          <li><strong>Mark-to-Market Performance Summary in Base</strong> (or Realized &amp; Unrealized Performance Summary)</li>
+                          <li><strong>Prior Period Positions</strong> (starting position holdings at start of period)</li>
+                          <li><strong>Change in NAV</strong> (starting &amp; ending account values, net asset changes, deposits/withdrawals, dividends)</li>
+                          <li><strong>Net Asset Value (NAV) in Base</strong> (starting &amp; ending account total NAV)</li>
+                          <li><strong>Mark-to-Market Performance Summary in Base</strong> (period MTM P&amp;L breakdown)</li>
+                          <li><strong>Realized and Unrealized Performance Summary in Base</strong> (realized &amp; unrealized P&amp;L breakdown)</li>
                         </ul>
                       </li>
                       <li>Scroll down to <strong>Delivery Configuration</strong>:
@@ -264,6 +275,7 @@
                     <th>Underlying Symbol</th>
                     <th class="text-center">Trades</th>
                     <th class="text-center">Open Positions</th>
+                    <th class="text-end">Prior Unrealized</th>
                     <th class="text-end">Realized P&amp;L</th>
                     <th class="text-end">Unrealized P&amp;L</th>
                     <th class="text-end">TOTAL P&amp;L</th>
@@ -591,10 +603,48 @@
       return str;
     }
 
+    function normalizeDateStr(str) {
+      if (!str) return '';
+      return str.replace(/-/g, '').trim();
+    }
+
+    function getStartingPriorPositions(xmlDoc) {
+      const allPrior = Array.from(xmlDoc.querySelectorAll('PriorPeriodPosition'));
+      if (allPrior.length === 0) return [];
+
+      let minDate = null;
+      const flexStatement = xmlDoc.querySelector('FlexStatement');
+      if (flexStatement && flexStatement.getAttribute('fromDate')) {
+        minDate = normalizeDateStr(flexStatement.getAttribute('fromDate'));
+      }
+
+      if (!minDate) {
+        const dates = allPrior
+          .map(node => normalizeDateStr(node.getAttribute('date') || node.getAttribute('reportDate')))
+          .filter(Boolean);
+        if (dates.length > 0) {
+          dates.sort();
+          minDate = dates[0];
+        }
+      }
+
+      if (!minDate) return allPrior;
+
+      const minDateNum = parseInt(minDate, 10);
+      const cutoffDateNum = minDateNum + 5;
+
+      return allPrior.filter(node => {
+        const nodeDate = normalizeDateStr(node.getAttribute('date') || node.getAttribute('reportDate'));
+        if (!nodeDate) return true;
+        const nodeDateNum = parseInt(nodeDate, 10);
+        return nodeDateNum <= cutoffDateNum;
+      });
+    }
+
     function parseAccountNavSummary(xmlDoc) {
       const navNode = xmlDoc.querySelector('ChangeInNAV, ChangeInNAVByPeriod, ChangeInNAVStatement');
       const mtmNodes = Array.from(xmlDoc.querySelectorAll('MTMPerformanceSummaryInBase, MTMPerformanceSummaryUnderlying, MTMPerformanceSummary, RealizedUnrealizedPerformanceSummaryAtNAV, RealizedUnrealizedPerformanceSummary'));
-      const equityNodes = Array.from(xmlDoc.querySelectorAll('EquitySummaryByReportDateInBase, EquitySummaryInBase, EquitySummary'));
+      const equityNodes = Array.from(xmlDoc.querySelectorAll('EquitySummaryByReportDateInBase, EquitySummaryInBase, EquitySummary, NavSummaryInBase, NavSummary, EquitySummaryByReportDate'));
       
       let startingNAV = null;
       let endingNAV = null;
@@ -658,6 +708,25 @@
         mtmPNL = mtmFromTrades + unrealizedPNL;
       }
 
+      // Calculate Prior Period Unrealized PnL from PriorPeriodPosition nodes (only starting positions)
+      let priorUnrealizedPNL = 0;
+      const priorPosNodes = getStartingPriorPositions(xmlDoc);
+      if (priorPosNodes.length > 0) {
+        priorUnrealizedPNL = priorPosNodes.reduce((acc, node) => {
+          let pnl = parseFloat(node.getAttribute('priorMtmPnl') || node.getAttribute('priorMtmPNL') || node.getAttribute('fifoPnlUnrealized') || node.getAttribute('unrealizedPNL') || node.getAttribute('unrealizedPnl') || '0') || 0;
+          if (pnl === 0) {
+            const pos = parseFloat(node.getAttribute('position') || '0') || 0;
+            const mark = parseFloat(node.getAttribute('markPrice') || node.getAttribute('price') || node.getAttribute('priorPrice') || '0') || 0;
+            const open = parseFloat(node.getAttribute('openPrice') || '0') || 0;
+            const mult = parseFloat(node.getAttribute('multiplier') || '1') || 1;
+            if (pos !== 0 && mark !== 0 && open !== 0) {
+              pnl = (mark - open) * pos * mult;
+            }
+          }
+          return acc + pnl;
+        }, 0);
+      }
+
       if (startingNAV === null && endingNAV === null) {
         return null;
       }
@@ -670,6 +739,7 @@
         netChange,
         realizedPNL,
         unrealizedPNL,
+        priorUnrealizedPNL,
         mtmPNL,
         depositsWithdrawals,
         dividends,
@@ -730,12 +800,12 @@
               <hr class="border-secondary my-3">
               <div class="row text-center g-2 small">
                 <div class="col-md-3 col-6">
-                  <span class="text-white-50">Unrealized P&amp;L:</span>
-                  <span class="${getPnlBadgeClass(navSummary.unrealizedPNL)} ms-1">${formatCurrency(navSummary.unrealizedPNL)}</span>
+                  <span class="text-white-50">Prior Unrealized:</span>
+                  <span class="${getPnlBadgeClass(navSummary.priorUnrealizedPNL)} ms-1">${formatCurrency(navSummary.priorUnrealizedPNL)}</span>
                 </div>
                 <div class="col-md-3 col-6">
-                  <span class="text-white-50">Mark-to-Market:</span>
-                  <span class="${getPnlBadgeClass(navSummary.mtmPNL)} ms-1">${formatCurrency(navSummary.mtmPNL)}</span>
+                  <span class="text-white-50">Ending Unrealized:</span>
+                  <span class="${getPnlBadgeClass(navSummary.unrealizedPNL)} ms-1">${formatCurrency(navSummary.unrealizedPNL)}</span>
                 </div>
                 <div class="col-md-3 col-6">
                   <span class="text-white-50">Deposits / Withdrawals:</span>
@@ -779,6 +849,7 @@
         if (!symbolMap.has(sym)) {
           symbolMap.set(sym, {
             symbol: sym,
+            priorUnrealized: 0,
             realized: 0,
             unrealized: 0,
             total: 0,
@@ -801,6 +872,7 @@
             assetCategory: assetCategory || '',
             tradesCount: 0,
             openPositionsCount: 0,
+            priorUnrealized: 0,
             realized: 0,
             unrealized: 0,
             total: 0
@@ -843,15 +915,28 @@
         inst.unrealized += fifoUnrealized;
       });
 
-      // 3. Process Prior Period Positions (Starting State)
-      const priorPosNodes = Array.from(xmlDoc.querySelectorAll('PriorPeriodPosition'));
+      // 3. Process Prior Period Positions (Starting State Unrealized PnL)
+      const priorPosNodes = getStartingPriorPositions(xmlDoc);
       priorPosNodes.forEach(node => {
         const sym = extractSymbolRoot(node);
         const aggr = getOrInitSymbol(sym);
         aggr.priorPositions.push(nodeToObj(node));
 
         const rawInstSymbol = node.getAttribute('symbol') || sym;
-        getOrInitInstrument(aggr, rawInstSymbol, node.getAttribute('assetCategory'));
+        const inst = getOrInitInstrument(aggr, rawInstSymbol, node.getAttribute('assetCategory'));
+
+        let fifoPriorUnrealized = parseFloat(node.getAttribute('priorMtmPnl') || node.getAttribute('priorMtmPNL') || node.getAttribute('fifoPnlUnrealized') || node.getAttribute('unrealizedPNL') || node.getAttribute('unrealizedPnl') || '0') || 0;
+        if (fifoPriorUnrealized === 0) {
+          const pos = parseFloat(node.getAttribute('position') || '0') || 0;
+          const mark = parseFloat(node.getAttribute('markPrice') || node.getAttribute('price') || node.getAttribute('priorPrice') || '0') || 0;
+          const open = parseFloat(node.getAttribute('openPrice') || '0') || 0;
+          const mult = parseFloat(node.getAttribute('multiplier') || '1') || 1;
+          if (pos !== 0 && mark !== 0 && open !== 0) {
+            fifoPriorUnrealized = (mark - open) * pos * mult;
+          }
+        }
+        aggr.priorUnrealized += fifoPriorUnrealized;
+        inst.priorUnrealized += fifoPriorUnrealized;
       });
 
       // 4. Process Performance Summary Items if detailed trades/positions are omitted
@@ -912,15 +997,17 @@
       tableFoot.innerHTML = '';
 
       if (symbolSummaries.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No underlying symbol data found in statement.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">No underlying symbol data found in statement.</td></tr>`;
         return;
       }
 
+      let totalPriorUnrealized = 0;
       let totalRealized = 0;
       let totalUnrealized = 0;
       let grandTotal = 0;
 
       symbolSummaries.forEach((s, idx) => {
+        totalPriorUnrealized += s.priorUnrealized || 0;
         totalRealized += s.realized;
         totalUnrealized += s.unrealized;
         grandTotal += s.total;
@@ -940,6 +1027,7 @@
           <td class="fw-bold text-warning fs-6">${chevronHtml}${s.symbol} <span class="badge bg-dark border border-secondary text-info ms-2 fw-normal small">${s.instruments.length} contract(s)</span></td>
           <td class="text-center">${s.tradesCount}</td>
           <td class="text-center">${s.openPositionsCount}</td>
+          <td class="text-end ${getPnlBadgeClass(s.priorUnrealized)}">${formatCurrency(s.priorUnrealized)}</td>
           <td class="text-end ${getPnlBadgeClass(s.realized)}">${formatCurrency(s.realized)}</td>
           <td class="text-end ${getPnlBadgeClass(s.unrealized)}">${formatCurrency(s.unrealized)}</td>
           <td class="text-end fs-6 ${getPnlBadgeClass(s.total)}">${formatCurrency(s.total)}</td>
@@ -952,7 +1040,7 @@
           subTr.id = `subrows-${idx}`;
           subTr.style.display = 'none';
 
-          let subRowsHtml = `<td colspan="6" class="p-0 border-0">
+          let subRowsHtml = `<td colspan="7" class="p-0 border-0">
             <div class="subrow-table p-2">
               <table class="table table-dark table-sm mb-0 align-middle small">
                 <tbody>`;
@@ -963,7 +1051,8 @@
               <tr>
                 <td class="ps-4 font-monospace text-light fw-bold">${inst.symbol}${assetBadge}</td>
                 <td class="text-center text-white-50">${inst.tradesCount}</td>
-                <td class="text-center text-white-50">${inst.openPositionsCount}</td>
+                <td class="text-center text-white-50">${inst.openPositionsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2">Open</span>' : '-'}</td>
+                <td class="text-end ${getPnlBadgeClass(inst.priorUnrealized)}">${formatCurrency(inst.priorUnrealized)}</td>
                 <td class="text-end ${getPnlBadgeClass(inst.realized)}">${formatCurrency(inst.realized)}</td>
                 <td class="text-end ${getPnlBadgeClass(inst.unrealized)}">${formatCurrency(inst.unrealized)}</td>
                 <td class="text-end ${getPnlBadgeClass(inst.total)}">${formatCurrency(inst.total)}</td>
@@ -981,6 +1070,7 @@
       tableFoot.innerHTML = `
         <tr class="table-dark">
           <td colspan="3" class="text-uppercase text-white-50">Total Portfolio P&amp;L Summary:</td>
+          <td class="text-end ${getPnlBadgeClass(totalPriorUnrealized)}">${formatCurrency(totalPriorUnrealized)}</td>
           <td class="text-end ${getPnlBadgeClass(totalRealized)}">${formatCurrency(totalRealized)}</td>
           <td class="text-end ${getPnlBadgeClass(totalUnrealized)}">${formatCurrency(totalUnrealized)}</td>
           <td class="text-end fs-6 ${getPnlBadgeClass(grandTotal)}">${formatCurrency(grandTotal)}</td>
