@@ -46,12 +46,18 @@ You'd need to install nodejs and npm first:
 sudo apt update && sudo apt install -y nodejs npm
 ```
 
-### 2. Deploying/Updating the Worker
-To deploy or update the worker service (`yahoo-proxy-v2`), run:
-```bash
-npx wrangler deploy
-```
-Wrangler will compile, upload, and deploy the worker to your Cloudflare account, returning the public endpoint URL (e.g., `https://yahoo-proxy-v2.YOUR_SUBDOMAIN.workers.dev`).
+### 2. Deploying/Updating Workers
+
+- **Yahoo Proxy Worker** (`yahoo-proxy-v2`):
+  ```bash
+  npx wrangler deploy
+  ```
+- **IBKR Proxy Worker** (`ibkr-proxy`):
+  ```bash
+  npx wrangler deploy -c wrangler.ibkr.toml
+  ```
+
+Wrangler will compile, upload, and deploy the worker to your Cloudflare account (e.g., `https://ibkr-proxy.jim-andreou.workers.dev`).
 
 ### 3. Configuring the Web App to Use Your New Worker
 Once deployed:
@@ -62,5 +68,6 @@ Once deployed:
        'https://yahoo-proxy.jim-andreou.workers.dev';
    ```
 3. Replace the URL with your new worker's endpoint.
-4. Rebuild the application for production using `webdev build --output web:docs`.
+4. For IBKR Flex queries (`web/ibkr.html`), the default worker URL (`https://ibkr-proxy.jim-andreou.workers.dev/`) can also be customized directly in the input field on the page.
+5. Rebuild the application for production using `webdev build --output web:docs`.
 

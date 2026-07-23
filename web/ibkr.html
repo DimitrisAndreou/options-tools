@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IBKR Flex Web Service - Options Tools</title>
+  <meta name="description" content="Instruct users how to create an IBKR Flex Web Service Token & Query ID and fetch trade reports.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono&display=swap"
+    rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .pnl-positive {
+      color: #00ff87 !important;
+      font-weight: 700;
+    }
+    .pnl-negative {
+      color: #ff4d4d !important;
+      font-weight: 700;
+    }
+    .pnl-zero {
+      color: #8a9ba8 !important;
+    }
+    .symbol-row {
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.15s ease-in-out;
+    }
+    .symbol-row:hover {
+      background-color: rgba(255, 193, 7, 0.1) !important;
+    }
+    .subrow-table {
+      background-color: rgba(15, 23, 42, 0.6) !important;
+      border-left: 3px solid #ffc107;
+    }
+    .chevron-icon {
+      transition: transform 0.2s ease-in-out;
+      display: inline-block;
+    }
+    .chevron-expanded {
+      transform: rotate(90deg);
+      color: #ffc107 !important;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">
+          <a href="index.html" class="text-white text-decoration-none">
+            <img src="favicon.jpg" alt="icon" style="height: 1.5em; margin-right: 0.5em; vertical-align: middle;">
+            Options Lab
+          </a>
+          <span class="badge bg-primary ms-2 fs-6">IBKR Flex</span>
+        </h2>
+        <div class="d-flex gap-2">
+          <a href="index.html" class="btn btn-outline-light btn-sm px-3">
+            <i class="fas fa-chart-line me-1"></i>Options Tools
+          </a>
+          <a href="./help/" class="btn btn-outline-secondary btn-sm px-3">
+            <i class="fas fa-book me-1"></i>Docs
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container py-4">
+    <!-- Page Title -->
+    <div class="row mb-4">
+      <div class="col-12 text-center text-md-start">
+        <h3 class="text-white fw-bold mb-2">
+          <i class="fas fa-file-invoice-dollar text-primary me-2"></i>IBKR Flex Web Service Setup & Trade Fetcher
+        </h3>
+        <p class="text-muted">
+          Connect your Interactive Brokers account using IBKR Flex Queries to import and analyze trade history.
+        </p>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Step-by-Step Instructions -->
+      <div class="col-lg-7 col-12">
+        <div class="card h-100 border-0 bg-dark shadow-sm">
+          <div class="card-header bg-dark border-secondary">
+            <h5 class="mb-0 text-accent fw-bold">
+              <i class="fas fa-list-check me-2 text-primary"></i>How to get your IBKR Token & Query ID
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="accordion accordion-flush" id="ibkrInstructionsAccordion">
+              <!-- Step 1: Flex Queries Page & Token -->
+              <div class="accordion-item bg-transparent text-white border-secondary mb-3">
+                <h2 class="accordion-header" id="headingOne">
+                  <button class="accordion-button bg-dark text-white fw-bold collapsed border-bottom border-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                    <span class="badge bg-primary me-2">Step 1</span> Enable Flex Web Service &amp; Generate Token
+                  </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#ibkrInstructionsAccordion">
+                  <div class="accordion-body text-light-alt" style="font-size: 0.95rem; line-height: 1.7;">
+                    <ol class="ps-3 mb-0">
+                      <li>Log in to your <strong>IBKR Client Portal</strong> at <a href="https://www.interactivebrokers.com" target="_blank" class="text-primary text-decoration-underline">interactivebrokers.com</a>.</li>
+                      <li>In the top main menu, click <strong>Performance &amp; Reports</strong> &rarr; <strong>Flex Queries</strong>.</li>
+                      <li>On the right panel under <strong>Flex Web Service Configuration</strong>, click the <strong>Gear icon ⚙</strong>.</li>
+                      <li>On the <em>Configure Flex Web Service</em> page, check <strong>Flex Web Service Status</strong> and click <strong>Save</strong>.</li>
+                      <li>IBKR will display your generated <strong>Token</strong> (a long numeric string, valid for 1 year). Copy this Token.</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 2: Query ID -->
+              <div class="accordion-item bg-transparent text-white border-secondary mb-3">
+                <h2 class="accordion-header" id="headingTwo">
+                  <button class="accordion-button bg-dark text-white fw-bold collapsed border-bottom border-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                    <span class="badge bg-primary me-2">Step 2</span> Create an Activity Flex Query for Trades
+                  </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse show" data-bs-parent="#ibkrInstructionsAccordion">
+                  <div class="accordion-body text-light-alt" style="font-size: 0.95rem; line-height: 1.7;">
+                    <ol class="ps-3 mb-0">
+                      <li>On the same <strong>Flex Queries</strong> page, locate the <strong>Activity Flex Query</strong> card and click the <strong>+ (Create icon)</strong>.</li>
+                      <li>Enter a <strong>Query Name</strong> (e.g. <code>Trade History</code>).</li>
+                      <li>Under <strong>Sections</strong>, select:
+                        <ul class="ps-3 my-1">
+                          <li><strong>Trades</strong> (executing trades during period)</li>
+                          <li><strong>Open Positions</strong> (current holdings &amp; unrealized PnL at end of period)</li>
+                          <li><strong>Prior Period Position</strong> (starting position state at start of period)</li>
+                        </ul>
+                      </li>
+                      <li>Scroll down to <strong>Delivery Configuration</strong>:
+                        <ul class="ps-3 my-1">
+                          <li>Ensure <strong>Format</strong> is set to <code>XML</code> (default).</li>
+                          <li>Set <strong>Period</strong> to <code>Last 365 Calendar Days</code> (or your preferred range).</li>
+                        </ul>
+                      </li>
+                      <li>Click <strong>Continue</strong>, review the query setup, and click <strong>Create</strong>.</li>
+                      <li>On the <em>Complete</em> confirmation screen, click <strong>Ok</strong>.</li>
+                      <li>Back on the <strong>Flex Queries</strong> page, locate <code>Trade History</code> under <strong>Activity Flex Query</strong> and click the blue <strong>i (info icon)</strong> next to it to view and copy your numeric <strong>Query ID</strong>.</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Security Note -->
+              <div class="alert bg-secondary text-white border-0 mt-3 mb-0 small">
+                <i class="fas fa-shield-halved me-2 text-warning"></i>
+                <strong>Privacy Note:</strong> Your IBKR Token and Query ID are strictly used client-side to request reports. The Cloudflare Worker only proxies requests to IBKR endpoints to prevent browser CORS restrictions.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Credentials Form & Fetcher -->
+      <div class="col-lg-5 col-12">
+        <div class="card h-100 border-0 bg-dark shadow-sm">
+          <div class="card-header bg-dark border-secondary">
+            <h5 class="mb-0 text-accent fw-bold">
+              <i class="fas fa-key me-2 text-primary"></i>Fetch Trade Report
+            </h5>
+          </div>
+          <div class="card-body">
+            <form id="ibkr-form" onsubmit="handleFetchTrades(event)">
+              <!-- Token Input -->
+              <div class="mb-3">
+                <label for="ibkr-token" class="form-label text-white fw-bold">
+                  Flex Web Service Token
+                </label>
+                <input type="text" id="ibkr-token" class="form-control bg-secondary text-white border-0 font-monospace" placeholder="Enter IBKR Token" required>
+              </div>
+
+              <!-- Query ID Input -->
+              <div class="mb-3">
+                <label for="ibkr-query-id" class="form-label text-white fw-bold">
+                  Flex Query ID
+                </label>
+                <input type="text" id="ibkr-query-id" class="form-control bg-secondary text-white border-0 font-monospace" placeholder="e.g., 654321" required>
+              </div>
+
+              <!-- Worker Proxy URL -->
+              <div class="mb-3">
+                <label for="ibkr-worker-url" class="form-label text-white fw-bold small">
+                  Cloudflare Proxy Worker URL
+                </label>
+                <input type="url" id="ibkr-worker-url" class="form-control bg-secondary text-white border-0 font-monospace small" value="https://ibkr-proxy.jim-andreou.workers.dev/" required>
+              </div>
+
+              <!-- Save Credentials Checkbox -->
+              <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="save-credentials-check" checked>
+                <label class="form-check-label text-muted small" for="save-credentials-check">
+                  Remember Token &amp; Query ID in local browser storage
+                </label>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="d-grid gap-2">
+                <button type="submit" id="fetch-btn" class="btn btn-primary fw-bold py-2">
+                  <i class="fas fa-cloud-arrow-down me-2"></i>Fetch Trades
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearStoredCredentials()">
+                  <i class="fas fa-trash-can me-1"></i>Clear Stored Credentials
+                </button>
+              </div>
+
+              <!-- Divider -->
+              <div class="d-flex align-items-center my-3">
+                <hr class="flex-grow-1 border-secondary">
+                <span class="px-2 text-white-50 small fw-bold">OR LOAD FROM FILE</span>
+                <hr class="flex-grow-1 border-secondary">
+              </div>
+
+              <!-- XML File Upload Input -->
+              <div>
+                <label for="xml-file-input" class="form-label text-white fw-bold small">
+                  <i class="fas fa-file-code me-1 text-warning"></i>Upload Saved IBKR Flex XML File
+                </label>
+                <input type="file" id="xml-file-input" accept=".xml" class="form-control bg-secondary text-white border-0 small" onchange="handleFileUpload(event)">
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status & Results Section -->
+    <div class="row mt-4" id="results-row" style="display: none;">
+      <div class="col-12">
+        <div class="card border-0 bg-dark shadow-sm">
+          <div class="card-header bg-dark border-secondary d-flex align-items-center justify-content-between">
+            <h5 class="mb-0 text-white fw-bold">
+              <i class="fas fa-terminal me-2 text-primary"></i>Fetch Output &amp; Results
+            </h5>
+            <span id="trade-count-badge" class="badge bg-success" style="display: none;">0 Trades</span>
+          </div>
+          <div class="card-body">
+            <!-- Alert Box for Messages -->
+            <div id="status-alert" class="alert alert-info border-0 mb-3" style="display: none;" role="alert">
+              <div class="d-flex align-items-center">
+                <div id="status-spinner" class="spinner-border spinner-border-sm me-2" role="status" style="display: none;"></div>
+                <span id="status-message"></span>
+              </div>
+            </div>
+
+            <!-- Per-Symbol PnL Summary Table -->
+            <div id="pnl-table-container" style="display: none;" class="table-responsive mt-3">
+              <table class="table table-dark table-hover table-striped align-middle small">
+                <thead>
+                  <tr class="table-secondary">
+                    <th>Underlying Symbol</th>
+                    <th class="text-center">Trades</th>
+                    <th class="text-center">Open Positions</th>
+                    <th class="text-end">Realized P&amp;L</th>
+                    <th class="text-end">Unrealized P&amp;L</th>
+                    <th class="text-end">TOTAL P&amp;L</th>
+                  </tr>
+                </thead>
+                <tbody id="pnl-table-body">
+                </tbody>
+                <tfoot id="pnl-table-foot" class="fw-bold border-top border-secondary">
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-auto">
+    <div class="container text-center">
+      <p class="mb-0 text-muted small">&copy; Options Tools - Interactive Brokers Flex Web Service Integration</p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Page Logic -->
+  <script>
+    const STORAGE_KEY_TOKEN = 'ibkr_flex_token';
+    const STORAGE_KEY_QUERY_ID = 'ibkr_flex_query_id';
+    const STORAGE_KEY_WORKER_URL = 'ibkr_flex_worker_url';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Read URL query parameters first (e.g. ?token=...&queryId=...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get('token') || urlParams.get('t');
+      const urlQueryId = urlParams.get('queryId') || urlParams.get('q');
+
+      // 2. Read saved values from localStorage
+      const savedToken = localStorage.getItem(STORAGE_KEY_TOKEN);
+      const savedQueryId = localStorage.getItem(STORAGE_KEY_QUERY_ID);
+      const savedWorkerUrl = localStorage.getItem(STORAGE_KEY_WORKER_URL);
+
+      if (urlToken) {
+        document.getElementById('ibkr-token').value = urlToken;
+      } else if (savedToken) {
+        document.getElementById('ibkr-token').value = savedToken;
+      }
+
+      if (urlQueryId) {
+        document.getElementById('ibkr-query-id').value = urlQueryId;
+      } else if (savedQueryId) {
+        document.getElementById('ibkr-query-id').value = savedQueryId;
+      }
+
+      if (savedWorkerUrl) document.getElementById('ibkr-worker-url').value = savedWorkerUrl;
+
+      // Update URL to ensure current parameters are reflected
+      updateUrlParams();
+
+      // Listen for input changes to continuously update bookmarkable URL
+      document.getElementById('ibkr-token').addEventListener('input', updateUrlParams);
+      document.getElementById('ibkr-query-id').addEventListener('input', updateUrlParams);
+
+      // Listen for local XML file upload
+      const fileInput = document.getElementById('xml-file-input');
+      if (fileInput) {
+        fileInput.addEventListener('change', handleFileUpload);
+      }
+    });
+
+    function updateUrlParams() {
+      const token = document.getElementById('ibkr-token').value.trim();
+      const queryId = document.getElementById('ibkr-query-id').value.trim();
+      const url = new URL(window.location.href);
+
+      if (token) {
+        url.searchParams.set('token', token);
+      } else {
+        url.searchParams.delete('token');
+      }
+
+      if (queryId) {
+        url.searchParams.set('queryId', queryId);
+      } else {
+        url.searchParams.delete('queryId');
+      }
+
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    function toggleTokenVisibility() {
+      const tokenInput = document.getElementById('ibkr-token');
+      const toggleIcon = document.getElementById('toggle-token-icon');
+      if (tokenInput.type === 'password') {
+        tokenInput.type = 'text';
+        toggleIcon.className = 'fas fa-eye-slash';
+      } else {
+        tokenInput.type = 'password';
+        toggleIcon.className = 'fas fa-eye';
+      }
+    }
+
+    function clearStoredCredentials() {
+      localStorage.removeItem(STORAGE_KEY_TOKEN);
+      localStorage.removeItem(STORAGE_KEY_QUERY_ID);
+      localStorage.removeItem(STORAGE_KEY_WORKER_URL);
+      document.getElementById('ibkr-token').value = '';
+      document.getElementById('ibkr-query-id').value = '';
+      updateUrlParams();
+      showStatus('Stored credentials cleared.', 'info');
+    }
+
+    function showStatus(message, type = 'info', loading = false) {
+      const resultsRow = document.getElementById('results-row');
+      const statusAlert = document.getElementById('status-alert');
+      const statusMessage = document.getElementById('status-message');
+      const statusSpinner = document.getElementById('status-spinner');
+
+      resultsRow.style.display = 'block';
+      statusAlert.style.display = 'block';
+      statusAlert.className = `alert alert-${type} border-0 mb-3`;
+      statusMessage.textContent = message;
+      statusSpinner.style.display = loading ? 'inline-block' : 'none';
+
+      resultsRow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function handleFetchTrades(event) {
+      event.preventDefault();
+
+      const token = document.getElementById('ibkr-token').value.trim();
+      const queryId = document.getElementById('ibkr-query-id').value.trim();
+      const workerUrl = document.getElementById('ibkr-worker-url').value.trim().replace(/\/$/, '');
+      const saveCreds = document.getElementById('save-credentials-check').checked;
+
+      if (!token || !queryId || !workerUrl) {
+        showStatus('Please fill in Token, Query ID, and Worker URL.', 'danger');
+        return;
+      }
+
+      updateUrlParams();
+
+      if (saveCreds) {
+        localStorage.setItem(STORAGE_KEY_TOKEN, token);
+        localStorage.setItem(STORAGE_KEY_QUERY_ID, queryId);
+        localStorage.setItem(STORAGE_KEY_WORKER_URL, workerUrl);
+      }
+
+      const fetchBtn = document.getElementById('fetch-btn');
+      fetchBtn.disabled = true;
+
+      showStatus('Fetching Flex Statement from IBKR via proxy worker...', 'info', true);
+
+      const pnlContainer = document.getElementById('pnl-table-container');
+      if (pnlContainer) pnlContainer.style.display = 'none';
+      document.getElementById('trade-count-badge').style.display = 'none';
+
+      try {
+        let attempts = 0;
+        let xmlText = '';
+        let xmlDoc = null;
+        const maxAttempts = 6;
+
+        while (attempts < maxAttempts) {
+          attempts++;
+          const targetRequestUrl = `${workerUrl}/?token=${encodeURIComponent(token)}&queryId=${encodeURIComponent(queryId)}`;
+          console.log(`[IBKR Page] Fetch attempt ${attempts}/${maxAttempts}:`, targetRequestUrl);
+
+          if (attempts > 1) {
+            showStatus(`IBKR report generation in progress (Code 1019). Waiting for IBKR... (Attempt ${attempts}/${maxAttempts})`, 'warning', true);
+          } else {
+            showStatus('Fetching Flex Statement from IBKR via proxy worker...', 'info', true);
+          }
+
+          const response = await fetch(targetRequestUrl);
+          xmlText = await response.text();
+          console.log(`[IBKR Page] Attempt ${attempts} Raw XML Response:`, xmlText);
+
+          if (!response.ok) {
+            throw new Error(`Proxy error (${response.status}): ${xmlText.slice(0, 300)}`);
+          }
+
+          // Parse XML response
+          const parser = new DOMParser();
+          xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+
+          // Check if IBKR returned an error in the XML payload
+          const flexResponse = xmlDoc.querySelector('FlexStatementResponse');
+          const errorCode = flexResponse?.getAttribute('errorCode') || flexResponse?.querySelector('ErrorCode')?.textContent;
+
+          if (errorCode === '1019' || xmlText.includes('generation in progress')) {
+            if (attempts < maxAttempts) {
+              console.warn(`[IBKR Page] Statement generation in progress (1019). Retrying in 4s (Attempt ${attempts}/${maxAttempts})...`);
+              await new Promise(res => setTimeout(res, 4000));
+              continue;
+            }
+          }
+
+          break;
+        }
+
+        processAndRenderXml(xmlDoc, xmlText, 'API Web Service');
+
+      } catch (err) {
+        console.error('[IBKR Page] Fetch Error:', err);
+        showStatus(`Error fetching statement: ${err.message}`, 'danger');
+      } finally {
+        fetchBtn.disabled = false;
+      }
+    }
+
+    async function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      showStatus(`Reading local XML file "${file.name}"...`, 'info', true);
+
+      try {
+        const xmlText = await file.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+
+        const parserError = xmlDoc.querySelector('parsererror');
+        if (parserError) {
+          throw new Error('Invalid XML file formatting.');
+        }
+
+        processAndRenderXml(xmlDoc, xmlText, `File: ${file.name}`);
+      } catch (err) {
+        console.error('[IBKR Page] File Upload Error:', err);
+        showStatus(`Error reading XML file: ${err.message}`, 'danger');
+      }
+    }
+    window.handleFileUpload = handleFileUpload;
+
+    function processAndRenderXml(xmlDoc, xmlText, sourceLabel) {
+      // Check if IBKR returned an error in the XML payload
+      const flexResponse = xmlDoc.querySelector('FlexStatementResponse');
+      if (flexResponse) {
+        const status = flexResponse.getAttribute('Status') || flexResponse.querySelector('Status')?.textContent;
+        const errorCode = flexResponse.getAttribute('errorCode') || flexResponse.querySelector('ErrorCode')?.textContent;
+        const errorMsg = flexResponse.getAttribute('errorMessage') || flexResponse.querySelector('ErrorMessage')?.textContent;
+
+        if (status === 'Fail' || (errorCode && errorCode !== '0')) {
+          if (errorCode === '1001') {
+            throw new Error(`IBKR Error (Code 1001): Newly created Flex Queries take 2–5 minutes to initialize across IBKR servers. Please wait a couple minutes and try fetching again.`);
+          }
+          throw new Error(`IBKR Error (Code ${errorCode}): ${errorMsg || 'Unknown error'}`);
+        }
+      }
+
+      // Parse statement elements
+      const flexStmt = xmlDoc.querySelector('FlexStatement');
+      const queryName = xmlDoc.querySelector('FlexQueryResponse')?.getAttribute('queryName') || sourceLabel || 'Flex Report';
+
+      const rawFromDate = flexStmt?.getAttribute('fromDate') || flexStmt?.getAttribute('startDateTime');
+      const rawToDate = flexStmt?.getAttribute('toDate') || flexStmt?.getAttribute('endDateTime');
+      const flexPeriod = flexStmt?.getAttribute('period');
+
+      const fromDate = formatFlexDate(rawFromDate);
+      const toDate = formatFlexDate(rawToDate);
+      let periodText = '';
+
+      if (fromDate && toDate) {
+        periodText = ` (Covered Period: ${fromDate} to ${toDate})`;
+      } else if (flexPeriod) {
+        periodText = ` (Covered Period: ${flexPeriod})`;
+      }
+
+      const tradeNodes = Array.from(xmlDoc.querySelectorAll('Trade'));
+      const openPosNodes = Array.from(xmlDoc.querySelectorAll('OpenPosition'));
+      const priorPosNodes = Array.from(xmlDoc.querySelectorAll('PriorPeriodPosition'));
+
+      const parsedTrades = tradeNodes.map(node => nodeToObj(node));
+      const parsedOpenPositions = openPosNodes.map(node => nodeToObj(node));
+      const parsedPriorPositions = priorPosNodes.map(node => nodeToObj(node));
+
+      // Aggregate PnL per underlying symbol
+      const symbolSummaries = aggregateBySymbol(xmlDoc);
+
+      // Assemble result payload object
+      const resultObject = {
+        timestamp: new Date().toISOString(),
+        source: sourceLabel,
+        queryName: queryName,
+        fromDate: fromDate,
+        toDate: toDate,
+        period: flexPeriod,
+        symbolsCount: symbolSummaries.length,
+        tradesCount: parsedTrades.length,
+        openPositionsCount: parsedOpenPositions.length,
+        priorPositionsCount: parsedPriorPositions.length,
+        perSymbolPnL: symbolSummaries,
+        trades: parsedTrades,
+        openPositions: parsedOpenPositions,
+        priorPositions: parsedPriorPositions,
+        xmlPayload: xmlText
+      };
+
+      // Log complete aggregated data object to browser console
+      console.log('[IBKR Flex Statement Result]', resultObject);
+
+      showStatus(`Success! Processed report "${queryName}"${periodText}. Aggregated P&L for ${symbolSummaries.length} underlying symbol(s) across ${parsedTrades.length} trade(s) and ${parsedOpenPositions.length} position(s).`, 'success');
+
+      document.getElementById('trade-count-badge').textContent = `${symbolSummaries.length} Symbol(s)`;
+      document.getElementById('trade-count-badge').style.display = 'inline-block';
+
+      document.getElementById('pnl-table-container').style.display = 'block';
+
+      renderSymbolPnlTable(symbolSummaries);
+    }
+
+    function formatFlexDate(str) {
+      if (!str) return '';
+      if (/^\d{8}$/.exec(str)) {
+        return `${str.slice(0, 4)}-${str.slice(4, 6)}-${str.slice(6, 8)}`;
+      }
+      return str;
+    }
+
+    function nodeToObj(node) {
+      const obj = {};
+      for (const attr of node.attributes) {
+        obj[attr.name] = attr.value;
+      }
+      return obj;
+    }
+
+    function extractSymbolRoot(node) {
+      const underlying = node.getAttribute('underlyingSymbol') || node.getAttribute('underlyingCategory');
+      if (underlying && underlying.trim().length > 0) {
+        return underlying.trim().toUpperCase();
+      }
+      const rawSymbol = node.getAttribute('symbol') || '';
+      if (rawSymbol.trim().length > 0) {
+        return rawSymbol.trim().split(/\s+/)[0].toUpperCase();
+      }
+      return 'UNKNOWN';
+    }
+
+    function aggregateBySymbol(xmlDoc) {
+      const symbolMap = new Map();
+
+      function getOrInitSymbol(sym) {
+        if (!symbolMap.has(sym)) {
+          symbolMap.set(sym, {
+            symbol: sym,
+            realized: 0,
+            unrealized: 0,
+            total: 0,
+            tradesCount: 0,
+            openPositionsCount: 0,
+            instrumentsMap: new Map(),
+            trades: [],
+            openPositions: [],
+            priorPositions: []
+          });
+        }
+        return symbolMap.get(sym);
+      }
+
+      function getOrInitInstrument(parentAggr, rawInstSymbol, assetCategory) {
+        const key = rawInstSymbol || parentAggr.symbol;
+        if (!parentAggr.instrumentsMap.has(key)) {
+          parentAggr.instrumentsMap.set(key, {
+            symbol: key,
+            assetCategory: assetCategory || '',
+            tradesCount: 0,
+            openPositionsCount: 0,
+            realized: 0,
+            unrealized: 0,
+            total: 0
+          });
+        }
+        return parentAggr.instrumentsMap.get(key);
+      }
+
+      // 1. Process Executed Trades
+      const tradeNodes = Array.from(xmlDoc.querySelectorAll('Trade'));
+      tradeNodes.forEach(node => {
+        const sym = extractSymbolRoot(node);
+        const aggr = getOrInitSymbol(sym);
+        aggr.trades.push(nodeToObj(node));
+        aggr.tradesCount++;
+
+        const rawInstSymbol = node.getAttribute('symbol') || sym;
+        const inst = getOrInitInstrument(aggr, rawInstSymbol, node.getAttribute('assetCategory'));
+        inst.tradesCount++;
+
+        const fifoRealized = parseFloat(node.getAttribute('fifoPnlRealized') || node.getAttribute('realizedPNL') || '0') || 0;
+        aggr.realized += fifoRealized;
+        inst.realized += fifoRealized;
+      });
+
+      // 2. Process Current Open Positions (Unrealized PnL)
+      const openPosNodes = Array.from(xmlDoc.querySelectorAll('OpenPosition'));
+      openPosNodes.forEach(node => {
+        const sym = extractSymbolRoot(node);
+        const aggr = getOrInitSymbol(sym);
+        aggr.openPositions.push(nodeToObj(node));
+        aggr.openPositionsCount++;
+
+        const rawInstSymbol = node.getAttribute('symbol') || sym;
+        const inst = getOrInitInstrument(aggr, rawInstSymbol, node.getAttribute('assetCategory'));
+        inst.openPositionsCount++;
+
+        const fifoUnrealized = parseFloat(node.getAttribute('fifoPnlUnrealized') || node.getAttribute('unrealizedPNL') || '0') || 0;
+        aggr.unrealized += fifoUnrealized;
+        inst.unrealized += fifoUnrealized;
+      });
+
+      // 3. Process Prior Period Positions (Starting State)
+      const priorPosNodes = Array.from(xmlDoc.querySelectorAll('PriorPeriodPosition'));
+      priorPosNodes.forEach(node => {
+        const sym = extractSymbolRoot(node);
+        const aggr = getOrInitSymbol(sym);
+        aggr.priorPositions.push(nodeToObj(node));
+
+        const rawInstSymbol = node.getAttribute('symbol') || sym;
+        getOrInitInstrument(aggr, rawInstSymbol, node.getAttribute('assetCategory'));
+      });
+
+      // 4. Process Performance Summary Items if detailed trades/positions are omitted
+      const perfNodes = Array.from(xmlDoc.querySelectorAll('RealizedUnrealizedPerformanceSummaryItem'));
+      perfNodes.forEach(node => {
+        const sym = extractSymbolRoot(node);
+        const aggr = getOrInitSymbol(sym);
+        const realizedTotal = parseFloat(node.getAttribute('realizedTotal') || node.getAttribute('realizedPnl') || '0') || 0;
+        const unrealizedTotal = parseFloat(node.getAttribute('unrealizedTotal') || node.getAttribute('unrealizedPnl') || '0') || 0;
+
+        if (aggr.trades.length === 0 && aggr.openPositions.length === 0) {
+          aggr.realized = realizedTotal;
+          aggr.unrealized = unrealizedTotal;
+
+          const rawInstSymbol = node.getAttribute('symbol') || sym;
+          const inst = getOrInitInstrument(aggr, rawInstSymbol, node.getAttribute('assetCategory'));
+          inst.realized = realizedTotal;
+          inst.unrealized = unrealizedTotal;
+        }
+      });
+
+      // Calculate totals & convert to array
+      const results = [];
+      for (const aggr of symbolMap.values()) {
+        aggr.total = aggr.realized + aggr.unrealized;
+
+        aggr.instruments = Array.from(aggr.instrumentsMap.values()).map(inst => {
+          inst.total = inst.realized + inst.unrealized;
+          return inst;
+        });
+
+        // Sort sub-instruments by absolute total PnL descending
+        aggr.instruments.sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
+
+        results.push(aggr);
+      }
+
+      // Sort top-level symbols by absolute total PnL descending
+      results.sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
+      return results;
+    }
+
+    function formatCurrency(num) {
+      const formatted = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return (num < 0 ? '-$' : '$') + formatted;
+    }
+
+    function getPnlBadgeClass(val) {
+      if (val > 0) return 'pnl-positive';
+      if (val < 0) return 'pnl-negative';
+      return 'pnl-zero';
+    }
+
+    function renderSymbolPnlTable(symbolSummaries) {
+      const tableBody = document.getElementById('pnl-table-body');
+      const tableFoot = document.getElementById('pnl-table-foot');
+      tableBody.innerHTML = '';
+      tableFoot.innerHTML = '';
+
+      if (symbolSummaries.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No underlying symbol data found in statement.</td></tr>`;
+        return;
+      }
+
+      let totalRealized = 0;
+      let totalUnrealized = 0;
+      let grandTotal = 0;
+
+      symbolSummaries.forEach((s, idx) => {
+        totalRealized += s.realized;
+        totalUnrealized += s.unrealized;
+        grandTotal += s.total;
+
+        const hasSubRows = s.instruments && s.instruments.length > 0;
+
+        // Parent Roll-up Row
+        const tr = document.createElement('tr');
+        tr.className = `symbol-row ${hasSubRows ? 'has-subrows' : ''}`;
+        tr.onclick = () => toggleSubRows(idx);
+
+        const chevronHtml = hasSubRows
+          ? `<i id="chevron-${idx}" class="fas fa-chevron-right me-2 text-warning chevron-icon"></i>`
+          : `<span class="me-3"></span>`;
+
+        tr.innerHTML = `
+          <td class="fw-bold text-warning fs-6">${chevronHtml}${s.symbol} <span class="badge bg-dark border border-secondary text-info ms-2 fw-normal small">${s.instruments.length} contract(s)</span></td>
+          <td class="text-center">${s.tradesCount}</td>
+          <td class="text-center">${s.openPositionsCount}</td>
+          <td class="text-end ${getPnlBadgeClass(s.realized)}">${formatCurrency(s.realized)}</td>
+          <td class="text-end ${getPnlBadgeClass(s.unrealized)}">${formatCurrency(s.unrealized)}</td>
+          <td class="text-end fs-6 ${getPnlBadgeClass(s.total)}">${formatCurrency(s.total)}</td>
+        `;
+        tableBody.appendChild(tr);
+
+        // Sub-rows Container (hidden by default)
+        if (hasSubRows) {
+          const subTr = document.createElement('tr');
+          subTr.id = `subrows-${idx}`;
+          subTr.style.display = 'none';
+
+          let subRowsHtml = `<td colspan="6" class="p-0 border-0">
+            <div class="subrow-table p-2">
+              <table class="table table-dark table-sm mb-0 align-middle small">
+                <tbody>`;
+
+          s.instruments.forEach(inst => {
+            const assetBadge = inst.assetCategory ? `<span class="badge bg-dark border border-secondary text-white-50 ms-2">${inst.assetCategory}</span>` : '';
+            subRowsHtml += `
+              <tr>
+                <td class="ps-4 font-monospace text-light fw-bold">${inst.symbol}${assetBadge}</td>
+                <td class="text-center text-white-50">${inst.tradesCount}</td>
+                <td class="text-center text-white-50">${inst.openPositionsCount}</td>
+                <td class="text-end ${getPnlBadgeClass(inst.realized)}">${formatCurrency(inst.realized)}</td>
+                <td class="text-end ${getPnlBadgeClass(inst.unrealized)}">${formatCurrency(inst.unrealized)}</td>
+                <td class="text-end ${getPnlBadgeClass(inst.total)}">${formatCurrency(inst.total)}</td>
+              </tr>
+            `;
+          });
+
+          subRowsHtml += `</tbody></table></div></td>`;
+          subTr.innerHTML = subRowsHtml;
+          tableBody.appendChild(subTr);
+        }
+      });
+
+      // Render Footer Totals Row
+      tableFoot.innerHTML = `
+        <tr class="table-dark">
+          <td colspan="3" class="text-uppercase text-white-50">Total Portfolio P&amp;L Summary:</td>
+          <td class="text-end ${getPnlBadgeClass(totalRealized)}">${formatCurrency(totalRealized)}</td>
+          <td class="text-end ${getPnlBadgeClass(totalUnrealized)}">${formatCurrency(totalUnrealized)}</td>
+          <td class="text-end fs-6 ${getPnlBadgeClass(grandTotal)}">${formatCurrency(grandTotal)}</td>
+        </tr>
+      `;
+    }
+
+    function toggleSubRows(idx) {
+      const subRow = document.getElementById(`subrows-${idx}`);
+      const chevron = document.getElementById(`chevron-${idx}`);
+      if (!subRow) return;
+
+      if (subRow.style.display === 'none' || subRow.style.display === '') {
+        subRow.style.display = 'table-row';
+        if (chevron) chevron.classList.add('chevron-expanded');
+      } else {
+        subRow.style.display = 'none';
+        if (chevron) chevron.classList.remove('chevron-expanded');
+      }
+    }
+    window.toggleSubRows = toggleSubRows;
+  </script>
+</body>
+
+</html>
