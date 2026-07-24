@@ -3,12 +3,14 @@ covered_calls.js
 favicon.jpg
 formatters.js
 help/index.md
+ibkr.dart.js
 ibkr.html
 index.html
 long_options.js
 main.dart.js
 main.dart.js.deps
 main.js
+main_ibkr.js
 packages/$sdk/dev_compiler/amd/require.js
 packages/$sdk/dev_compiler/ddc/ddc_module_loader.js
 packages/$sdk/dev_compiler/web/dart_stack_trace_mapper.js
