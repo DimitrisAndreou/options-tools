@@ -99,7 +99,7 @@ function clearStoredCredentials() {
   showStatus('Stored credentials cleared.', 'info');
 }
 
-function showStatus(message, type = 'info', loading = false) {
+function showStatus(message, type = 'info', loading = false, shouldScroll = false) {
   const resultsRow = document.getElementById('results-row');
   const statusAlert = document.getElementById('status-alert');
   const statusMessage = document.getElementById('status-message');
@@ -111,7 +111,9 @@ function showStatus(message, type = 'info', loading = false) {
   statusMessage.textContent = message;
   statusSpinner.style.display = loading ? 'inline-block' : 'none';
 
-  resultsRow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (shouldScroll) {
+    resultsRow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 async function handleFetchTrades(event) {
@@ -138,7 +140,7 @@ async function handleFetchTrades(event) {
   const fetchBtn = document.getElementById('fetch-btn');
   fetchBtn.disabled = true;
 
-  showStatus('Fetching Flex Statement from IBKR via proxy worker...', 'info', true);
+  showStatus('Fetching Flex Statement from IBKR via proxy worker...', 'info', true, true);
 
   const pnlContainer = document.getElementById('pnl-table-container');
   if (pnlContainer) pnlContainer.style.display = 'none';
@@ -193,7 +195,7 @@ async function handleFileUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  showStatus(`Reading local XML file "${file.name}"...`, 'info', true);
+  showStatus(`Reading local XML file "${file.name}"...`, 'info', true, true);
 
   try {
     const xmlText = await file.text();
