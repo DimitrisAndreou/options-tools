@@ -96,5 +96,40 @@ void main() {
       expect(rno['unrealized'], equals(0.0));
       expect(rno['total'], closeTo(200.0, 0.001));
     });
+
+    test('Sort prefers symbols with open positions over closed ones, then absolute total PnL', () {
+      const sortingXml = '''
+<FlexQueryResponse queryName="Sorting Test">
+  <FlexStatements>
+    <FlexStatement fromDate="20260301" toDate="20260315" period="Custom">
+      <Trades>
+        <Trade symbol="CLOSED_LARGE_PNL" underlyingSymbol="CLOSED_LARGE_PNL" assetCategory="STK" fifoPnlRealized="10000.0" fxRateToBase="1.0"/>
+        <Trade symbol="OPEN_SMALL_PNL" underlyingSymbol="OPEN_SMALL_PNL" assetCategory="STK" fifoPnlRealized="100.0" fxRateToBase="1.0"/>
+        <Trade symbol="CLOSED_SMALL_PNL" underlyingSymbol="CLOSED_SMALL_PNL" assetCategory="STK" fifoPnlRealized="50.0" fxRateToBase="1.0"/>
+      </Trades>
+      <OpenPositions>
+        <OpenPosition symbol="OPEN_SMALL_PNL" underlyingSymbol="OPEN_SMALL_PNL" assetCategory="STK" fifoPnlUnrealized="100.0" fxRateToBase="1.0"/>
+        <OpenPosition symbol="OPEN_LARGE_PNL" underlyingSymbol="OPEN_LARGE_PNL" assetCategory="STK" fifoPnlUnrealized="1000.0" fxRateToBase="1.0"/>
+      </OpenPositions>
+    </FlexStatement>
+  </FlexStatements>
+</FlexQueryResponse>
+''';
+
+      final jsonText = parseIbkrXml(sortingXml);
+      final result = jsonDecode(jsonText);
+      final symbolList = result['perSymbolPnL'] as List;
+
+      // Symbols expected:
+      // 1. OPEN_LARGE_PNL (openPositionsCount = 1, total = 1000)
+      // 2. OPEN_SMALL_PNL (openPositionsCount = 1, total = 200)
+      // 3. CLOSED_LARGE_PNL (openPositionsCount = 0, total = 10000)
+      // 4. CLOSED_SMALL_PNL (openPositionsCount = 0, total = 50)
+      expect(symbolList.length, equals(4));
+      expect(symbolList[0]['symbol'], equals('OPEN_LARGE_PNL'));
+      expect(symbolList[1]['symbol'], equals('OPEN_SMALL_PNL'));
+      expect(symbolList[2]['symbol'], equals('CLOSED_LARGE_PNL'));
+      expect(symbolList[3]['symbol'], equals('CLOSED_SMALL_PNL'));
+    });
   });
 }

@@ -3874,9 +3874,12 @@ if(r==null)r=s.a(r)
 p.I(0,r.a.gbf(),r.b)}return p},
 $S:45}
 A.hf.prototype={
-$2(a,b){var s=t.a
-s.a(a)
-return B.r.ai(Math.abs(s.a(b).e),Math.abs(a.e))},
+$2(a,b){var s,r=t.a
+r.a(a)
+r.a(b)
+s=a.r>0
+if(s!==b.r>0)return s?-1:1
+return B.r.ai(Math.abs(b.e),Math.abs(a.e))},
 $S:50}
 A.hg.prototype={
 $1(a){return t.a.a(a).ao()},

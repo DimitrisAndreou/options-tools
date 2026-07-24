@@ -331,8 +331,17 @@ List<Map<String, dynamic>> aggregateBySymbol(XmlDocument document) {
     results.add(aggr);
   }
 
-  // Sort top-level symbols by absolute total PnL descending
-  results.sort((a, b) => b.total.abs().compareTo(a.total.abs()));
+  // Sort top-level symbols:
+  // 1) Prefer symbols with open positions, to symbols that only have closed positions
+  // 2) Then compare with absolute total PnL descending
+  results.sort((a, b) {
+    final aHasOpen = a.openPositionsCount > 0;
+    final bHasOpen = b.openPositionsCount > 0;
+    if (aHasOpen != bHasOpen) {
+      return aHasOpen ? -1 : 1;
+    }
+    return b.total.abs().compareTo(a.total.abs());
+  });
 
   return results.map((r) => r.toJson()).toList();
 }
