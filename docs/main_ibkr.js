@@ -122,8 +122,6 @@ async function handleFetchTrades(event) {
   const token = document.getElementById('ibkr-token').value.trim();
   const queryId = document.getElementById('ibkr-query-id').value.trim();
   const workerUrl = document.getElementById('ibkr-worker-url').value.trim().replace(/\/$/, '');
-  const saveCreds = document.getElementById('save-credentials-check').checked;
-
   if (!token || !queryId || !workerUrl) {
     showStatus('Please fill in Token, Query ID, and Worker URL.', 'danger');
     return;
@@ -131,11 +129,9 @@ async function handleFetchTrades(event) {
 
   updateUrlParams();
 
-  if (saveCreds) {
-    localStorage.setItem(STORAGE_KEY_TOKEN, token);
-    localStorage.setItem(STORAGE_KEY_QUERY_ID, queryId);
-    localStorage.setItem(STORAGE_KEY_WORKER_URL, workerUrl);
-  }
+  localStorage.setItem(STORAGE_KEY_TOKEN, token);
+  localStorage.setItem(STORAGE_KEY_QUERY_ID, queryId);
+  localStorage.setItem(STORAGE_KEY_WORKER_URL, workerUrl);
 
   const fetchBtn = document.getElementById('fetch-btn');
   fetchBtn.disabled = true;

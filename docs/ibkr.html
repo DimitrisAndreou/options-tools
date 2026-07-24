@@ -95,20 +95,11 @@
     <div class="container">
       <div class="d-flex justify-content-between align-items-center">
         <h2 class="mb-0">
-          <a href="index.html" class="text-white text-decoration-none">
+          <a href="./" class="text-white text-decoration-none">
             <img src="favicon.jpg" alt="icon" style="height: 1.5em; margin-right: 0.5em; vertical-align: middle;">
             Options Lab
           </a>
-          <span class="badge bg-primary ms-2 fs-6">IBKR Flex</span>
         </h2>
-        <div class="d-flex gap-2">
-          <a href="index.html" class="btn btn-outline-light btn-sm px-3">
-            <i class="fas fa-chart-line me-1"></i>Options Tools
-          </a>
-          <a href="./help/" class="btn btn-outline-secondary btn-sm px-3">
-            <i class="fas fa-book me-1"></i>Docs
-          </a>
-        </div>
       </div>
     </div>
   </header>
@@ -259,21 +250,13 @@
               </div>
 
               <!-- Worker Proxy URL -->
-              <div class="mb-3">
+              <div class="mb-4">
                 <label for="ibkr-worker-url" class="form-label text-white fw-bold small">
                   Cloudflare Proxy Worker URL
                 </label>
                 <input type="url" id="ibkr-worker-url"
                   class="form-control bg-secondary text-white border-0 font-monospace small"
                   value="https://ibkr-proxy.jim-andreou.workers.dev/" required>
-              </div>
-
-              <!-- Save Credentials Checkbox -->
-              <div class="form-check mb-4">
-                <input class="form-check-input" type="checkbox" id="save-credentials-check" checked>
-                <label class="form-check-label text-muted small" for="save-credentials-check">
-                  Remember Token &amp; Query ID in local browser storage
-                </label>
               </div>
 
               <!-- Action Buttons -->
@@ -356,9 +339,15 @@
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="mt-auto">
-    <div class="container text-center">
+  <!-- Footer with Cross-References -->
+  <footer class="footer mt-5 py-3 bg-dark border-top border-secondary text-center text-white-50 small">
+    <div class="container">
+      <div class="mb-2">
+        <span class="me-3 fw-bold text-light"><i class="fas fa-tools me-1 text-primary"></i>Other Tools:</span>
+        <a href="./" class="text-warning text-decoration-none me-3">
+          <i class="fas fa-chart-line me-1"></i>Options Tools
+        </a>
+      </div>
       <p class="mb-0 text-muted small">&copy; Options Tools - Interactive Brokers Flex Web Service Integration</p>
     </div>
   </footer>
