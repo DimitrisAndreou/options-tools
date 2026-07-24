@@ -287,7 +287,7 @@ function renderAccountNavSummary(navSummary) {
           </div>
           <div class="col-md-3 col-6">
             <div class="text-white-50 small text-uppercase fw-semibold mb-1">Ending Account NAV</div>
-            <div class="fs-5 fw-bold text-white">${formatCurrency(navSummary.startingNAV)}</div>
+            <div class="fs-5 fw-bold text-white">${formatCurrency(navSummary.endingNAV)}</div>
           </div>
           <div class="col-md-3 col-6">
             <div class="text-white-50 small text-uppercase fw-semibold mb-1">Total Period NAV Change</div>
