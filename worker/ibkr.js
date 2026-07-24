@@ -28,7 +28,7 @@ export default {
     if (token && queryId) {
       try {
         console.log(`[IBKR Proxy] Step 1: Requesting Flex Statement for Query ID: ${queryId}`);
-        const sendReqUrl = `https://ndcdyn.interactivebrokers.com/Universal/servlet/FlexStatementService.SendRequest?t=${encodeURIComponent(token)}&q=${encodeURIComponent(queryId)}&v=3`;
+        const sendReqUrl = `https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService/SendRequest?t=${encodeURIComponent(token)}&q=${encodeURIComponent(queryId)}&v=3`;
         
         let sendResponse = await fetch(sendReqUrl, {
           method: 'GET',
@@ -66,7 +66,7 @@ export default {
 
         if ((status === 'Success' || refCode) && refCode) {
           console.log(`[IBKR Proxy] Step 2: Fetching statement with Reference Code: ${refCode}`);
-          const getStmtUrl = `https://ndcdyn.interactivebrokers.com/Universal/servlet/FlexStatementService.GetStatement?q=${encodeURIComponent(refCode)}&t=${encodeURIComponent(token)}&v=3`;
+          const getStmtUrl = `https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService/GetStatement?q=${encodeURIComponent(refCode)}&t=${encodeURIComponent(token)}&v=3`;
 
           let stmtResponse = await fetch(getStmtUrl, {
             method: 'GET',
