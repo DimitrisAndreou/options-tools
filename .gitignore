@@ -3,3 +3,8 @@ pubspec.lock
 build/
 .wrangler/
 example.xml
+
+# Ignore compiled JS assets in web/ (production build output goes to docs/)
+web/*.dart.js
+web/*.dart.js.deps
+web/*.dart.js.map
