@@ -6,7 +6,8 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IBKR Flex Web Service - Options Tools</title>
-  <meta name="description" content="Instruct users how to create an IBKR Flex Web Service Token & Query ID and fetch trade reports.">
+  <meta name="description"
+    content="Instruct users how to create an IBKR Flex Web Service Token & Query ID and fetch trade reports.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono&display=swap"
@@ -19,33 +20,41 @@
       color: #00ff87 !important;
       font-weight: 700;
     }
+
     .pnl-negative {
       color: #ff4d4d !important;
       font-weight: 700;
     }
+
     .pnl-zero {
       color: #8a9ba8 !important;
     }
+
     .symbol-row {
       cursor: pointer;
       user-select: none;
       transition: background-color 0.15s ease-in-out;
     }
+
     .symbol-row:hover {
       background-color: rgba(255, 193, 7, 0.1) !important;
     }
+
     .subrow-table {
       background-color: rgba(15, 23, 42, 0.6) !important;
       border-left: 3px solid #ffc107;
     }
+
     .chevron-icon {
       transition: transform 0.2s ease-in-out;
       display: inline-block;
     }
+
     .chevron-expanded {
       transform: rotate(90deg);
       color: #ffc107 !important;
     }
+
     code {
       color: #00e5ff !important;
       background-color: rgba(0, 229, 255, 0.1) !important;
@@ -54,6 +63,19 @@
       border-radius: 4px;
       font-family: 'Roboto Mono', monospace;
       font-size: 0.875em;
+    }
+
+    #pnl-table-container {
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    #pnl-table-container th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background-color: white !important;
+      box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.15);
     }
   </style>
 </head>
@@ -109,18 +131,27 @@
               <!-- Step 1: Flex Queries Page & Token -->
               <div class="accordion-item bg-transparent text-white border-secondary mb-3">
                 <h2 class="accordion-header" id="headingOne">
-                  <button class="accordion-button bg-dark text-white fw-bold collapsed border-bottom border-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                  <button class="accordion-button bg-dark text-white fw-bold collapsed border-bottom border-secondary"
+                    type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
                     <span class="badge bg-primary me-2">Step 1</span> Enable Flex Web Service &amp; Generate Token
                   </button>
                 </h2>
-                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#ibkrInstructionsAccordion">
+                <div id="collapseOne" class="accordion-collapse collapse show"
+                  data-bs-parent="#ibkrInstructionsAccordion">
                   <div class="accordion-body text-light-alt" style="font-size: 0.95rem; line-height: 1.7;">
                     <ol class="ps-3 mb-0">
-                      <li>Log in to your <strong>IBKR Client Portal</strong> at <a href="https://www.interactivebrokers.com" target="_blank" class="text-primary text-decoration-underline">interactivebrokers.com</a>.</li>
-                      <li>In the top main menu, click <strong>Performance &amp; Reports</strong> &rarr; <strong>Flex Queries</strong>.</li>
-                      <li>On the right panel under <strong>Flex Web Service Configuration</strong>, click the <strong>Gear icon ⚙</strong>.</li>
-                      <li>On the <em>Configure Flex Web Service</em> page, check <strong>Flex Web Service Status</strong> and click <strong>Save</strong>.</li>
-                      <li>IBKR will display your generated <strong>Token</strong> (a long numeric string, valid for 1 year). Copy this Token.</li>
+                      <li>Log in to your <strong>IBKR Client Portal</strong> at <a
+                          href="https://www.interactivebrokers.com" target="_blank"
+                          class="text-primary text-decoration-underline">interactivebrokers.com</a>.</li>
+                      <li>In the top main menu, click <strong>Performance &amp; Reports</strong> &rarr; <strong>Flex
+                          Queries</strong>.</li>
+                      <li>On the right panel under <strong>Flex Web Service Configuration</strong>, click the
+                        <strong>Gear icon ⚙</strong>.
+                      </li>
+                      <li>On the <em>Configure Flex Web Service</em> page, check <strong>Flex Web Service
+                          Status</strong> and click <strong>Save</strong>.</li>
+                      <li>IBKR will display your generated <strong>Token</strong> (a long numeric string, valid for 1
+                        year). Copy this Token.</li>
                     </ol>
                   </div>
                 </div>
@@ -129,35 +160,49 @@
               <!-- Step 2: Query ID -->
               <div class="accordion-item bg-transparent text-white border-secondary mb-3">
                 <h2 class="accordion-header" id="headingTwo">
-                  <button class="accordion-button bg-dark text-white fw-bold collapsed border-bottom border-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                  <button class="accordion-button bg-dark text-white fw-bold collapsed border-bottom border-secondary"
+                    type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
                     <span class="badge bg-primary me-2">Step 2</span> Create an Activity Flex Query for Trades
                   </button>
                 </h2>
-                <div id="collapseTwo" class="accordion-collapse collapse show" data-bs-parent="#ibkrInstructionsAccordion">
+                <div id="collapseTwo" class="accordion-collapse collapse show"
+                  data-bs-parent="#ibkrInstructionsAccordion">
                   <div class="accordion-body text-light-alt" style="font-size: 0.95rem; line-height: 1.7;">
                     <ol class="ps-3 mb-0">
-                      <li>On the same <strong>Flex Queries</strong> page, locate the <strong>Activity Flex Query</strong> card and click the <strong>+ (Create icon)</strong>.</li>
+                      <li>On the same <strong>Flex Queries</strong> page, locate the <strong>Activity Flex
+                          Query</strong> card and click the <strong>+ (Create icon)</strong>.</li>
                       <li>Enter a <strong>Query Name</strong> (e.g. <code>Trade History</code>).</li>
                       <li>Under <strong>Sections</strong>, select these recommended items:
                         <ul class="ps-3 my-1">
                           <li><strong>Trades</strong> (executing trades during period)</li>
-                          <li><strong>Open Positions</strong> (current holdings &amp; unrealized PnL at end of period)</li>
-                          <li><strong>Prior Period Positions</strong> (starting position holdings at start of period)</li>
-                          <li><strong>Change in NAV</strong> (starting &amp; ending account values, net asset changes, deposits/withdrawals, dividends)</li>
-                          <li><strong>Net Asset Value (NAV) in Base</strong> (starting &amp; ending account total NAV)</li>
-                          <li><strong>Mark-to-Market Performance Summary in Base</strong> (period MTM P&amp;L breakdown)</li>
-                          <li><strong>Realized and Unrealized Performance Summary in Base</strong> (realized &amp; unrealized P&amp;L breakdown)</li>
+                          <li><strong>Open Positions</strong> (current holdings &amp; unrealized PnL at end of period)
+                          </li>
+                          <li><strong>Prior Period Positions</strong> (starting position holdings at start of period)
+                          </li>
+                          <li><strong>Change in NAV</strong> (starting &amp; ending account values, net asset changes,
+                            deposits/withdrawals, dividends)</li>
+                          <li><strong>Net Asset Value (NAV) in Base</strong> (starting &amp; ending account total NAV)
+                          </li>
+                          <li><strong>Mark-to-Market Performance Summary in Base</strong> (period MTM P&amp;L breakdown)
+                          </li>
+                          <li><strong>Realized and Unrealized Performance Summary in Base</strong> (realized &amp;
+                            unrealized P&amp;L breakdown)</li>
                         </ul>
                       </li>
                       <li>Scroll down to <strong>Delivery Configuration</strong>:
                         <ul class="ps-3 my-1">
                           <li>Ensure <strong>Format</strong> is set to <code>XML</code> (default).</li>
-                          <li>Set <strong>Period</strong> to <code>Last 365 Calendar Days</code> (or your preferred range).</li>
+                          <li>Set <strong>Period</strong> to <code>Last 365 Calendar Days</code> (or your preferred
+                            range).</li>
                         </ul>
                       </li>
-                      <li>Click <strong>Continue</strong>, review the query setup, and click <strong>Create</strong>.</li>
+                      <li>Click <strong>Continue</strong>, review the query setup, and click <strong>Create</strong>.
+                      </li>
                       <li>On the <em>Complete</em> confirmation screen, click <strong>Ok</strong>.</li>
-                      <li>Back on the <strong>Flex Queries</strong> page, locate <code>Trade History</code> under <strong>Activity Flex Query</strong> and click the blue <strong>i (info icon)</strong> next to it to view and copy your numeric <strong>Query ID</strong>.</li>
+                      <li>Back on the <strong>Flex Queries</strong> page, locate <code>Trade History</code> under
+                        <strong>Activity Flex Query</strong> and click the blue <strong>i (info icon)</strong> next to
+                        it to view and copy your numeric <strong>Query ID</strong>.
+                      </li>
                     </ol>
                   </div>
                 </div>
@@ -166,7 +211,9 @@
               <!-- Security Note -->
               <div class="alert bg-secondary text-white border-0 mt-3 mb-0 small">
                 <i class="fas fa-shield-halved me-2 text-warning"></i>
-                <strong>Privacy Note:</strong> Your IBKR Token and Query ID are strictly used client-side to request reports. The Cloudflare Worker only proxies requests to IBKR endpoints to prevent browser CORS restrictions.
+                <strong>Privacy Note:</strong> Your IBKR Token and Query ID are strictly used client-side to request
+                reports. The Cloudflare Worker only proxies requests to IBKR endpoints to prevent browser CORS
+                restrictions.
               </div>
             </div>
           </div>
@@ -188,7 +235,8 @@
                 <label for="ibkr-token" class="form-label text-white fw-bold">
                   Flex Web Service Token
                 </label>
-                <input type="text" id="ibkr-token" class="form-control bg-secondary text-white border-0 font-monospace" placeholder="Enter IBKR Token" required>
+                <input type="text" id="ibkr-token" class="form-control bg-secondary text-white border-0 font-monospace"
+                  placeholder="Enter IBKR Token" required>
               </div>
 
               <!-- Query ID Input -->
@@ -196,7 +244,9 @@
                 <label for="ibkr-query-id" class="form-label text-white fw-bold">
                   Flex Query ID
                 </label>
-                <input type="text" id="ibkr-query-id" class="form-control bg-secondary text-white border-0 font-monospace" placeholder="e.g., 654321" required>
+                <input type="text" id="ibkr-query-id"
+                  class="form-control bg-secondary text-white border-0 font-monospace" placeholder="e.g., 654321"
+                  required>
               </div>
 
               <!-- Worker Proxy URL -->
@@ -204,7 +254,9 @@
                 <label for="ibkr-worker-url" class="form-label text-white fw-bold small">
                   Cloudflare Proxy Worker URL
                 </label>
-                <input type="url" id="ibkr-worker-url" class="form-control bg-secondary text-white border-0 font-monospace small" value="https://ibkr-proxy.jim-andreou.workers.dev/" required>
+                <input type="url" id="ibkr-worker-url"
+                  class="form-control bg-secondary text-white border-0 font-monospace small"
+                  value="https://ibkr-proxy.jim-andreou.workers.dev/" required>
               </div>
 
               <!-- Save Credentials Checkbox -->
@@ -237,7 +289,8 @@
                 <label for="xml-file-input" class="form-label text-white fw-bold small">
                   <i class="fas fa-file-code me-1 text-warning"></i>Upload Saved IBKR Flex XML File
                 </label>
-                <input type="file" id="xml-file-input" accept=".xml" class="form-control bg-secondary text-white border-0 small" onchange="handleFileUpload(event)">
+                <input type="file" id="xml-file-input" accept=".xml"
+                  class="form-control bg-secondary text-white border-0 small" onchange="handleFileUpload(event)">
               </div>
             </form>
           </div>
@@ -259,7 +312,8 @@
             <!-- Alert Box for Messages -->
             <div id="status-alert" class="alert alert-info border-0 mb-3" style="display: none;" role="alert">
               <div class="d-flex align-items-center">
-                <div id="status-spinner" class="spinner-border spinner-border-sm me-2" role="status" style="display: none;"></div>
+                <div id="status-spinner" class="spinner-border spinner-border-sm me-2" role="status"
+                  style="display: none;"></div>
                 <span id="status-message"></span>
               </div>
             </div>
@@ -275,8 +329,8 @@
                     <th>Underlying Symbol</th>
                     <th class="text-center">Trades</th>
                     <th class="text-center">Open Positions</th>
-                    <th class="text-end">Prior Unrealized</th>
                     <th class="text-end">Realized P&amp;L</th>
+                    <th class="text-end">Dividends</th>
                     <th class="text-end">Unrealized P&amp;L</th>
                     <th class="text-end">TOTAL P&amp;L</th>
                   </tr>
@@ -308,6 +362,22 @@
     const STORAGE_KEY_TOKEN = 'ibkr_flex_token';
     const STORAGE_KEY_QUERY_ID = 'ibkr_flex_query_id';
     const STORAGE_KEY_WORKER_URL = 'ibkr_flex_worker_url';
+
+    let reportBaseCurrency = 'USD';
+
+    const CURRENCY_SYMBOLS = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'CAD': 'CA$',
+      'AUD': 'A$',
+      'CHF': 'CHF'
+    };
+
+    function getCurrencySymbol(cc) {
+      return CURRENCY_SYMBOLS[cc] || cc || '$';
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       // 1. Read URL query parameters first (e.g. ?token=...&queryId=...)
@@ -514,6 +584,18 @@
     window.handleFileUpload = handleFileUpload;
 
     function processAndRenderXml(xmlDoc, xmlText, sourceLabel) {
+      // Detect base currency by checking potential nodes for a 'currency' attribute
+      let detectedCurrency = 'USD';
+      const possibleCurrencyNodes = xmlDoc.querySelectorAll('ChangeInNAV, EquitySummaryByReportDateInBase, EquitySummaryInBase, EquitySummary, FlexStatement');
+      for (const node of possibleCurrencyNodes) {
+        const curr = node.getAttribute('currency');
+        if (curr && curr.trim().length > 0) {
+          detectedCurrency = curr.trim().toUpperCase();
+          break;
+        }
+      }
+      reportBaseCurrency = detectedCurrency;
+
       // Check if IBKR returned an error in the XML payload
       const flexResponse = xmlDoc.querySelector('FlexStatementResponse');
       if (flexResponse) {
@@ -603,49 +685,11 @@
       return str;
     }
 
-    function normalizeDateStr(str) {
-      if (!str) return '';
-      return str.replace(/-/g, '').trim();
-    }
-
-    function getStartingPriorPositions(xmlDoc) {
-      const allPrior = Array.from(xmlDoc.querySelectorAll('PriorPeriodPosition'));
-      if (allPrior.length === 0) return [];
-
-      let minDate = null;
-      const flexStatement = xmlDoc.querySelector('FlexStatement');
-      if (flexStatement && flexStatement.getAttribute('fromDate')) {
-        minDate = normalizeDateStr(flexStatement.getAttribute('fromDate'));
-      }
-
-      if (!minDate) {
-        const dates = allPrior
-          .map(node => normalizeDateStr(node.getAttribute('date') || node.getAttribute('reportDate')))
-          .filter(Boolean);
-        if (dates.length > 0) {
-          dates.sort();
-          minDate = dates[0];
-        }
-      }
-
-      if (!minDate) return allPrior;
-
-      const minDateNum = parseInt(minDate, 10);
-      const cutoffDateNum = minDateNum + 5;
-
-      return allPrior.filter(node => {
-        const nodeDate = normalizeDateStr(node.getAttribute('date') || node.getAttribute('reportDate'));
-        if (!nodeDate) return true;
-        const nodeDateNum = parseInt(nodeDate, 10);
-        return nodeDateNum <= cutoffDateNum;
-      });
-    }
-
     function parseAccountNavSummary(xmlDoc) {
       const navNode = xmlDoc.querySelector('ChangeInNAV, ChangeInNAVByPeriod, ChangeInNAVStatement');
       const mtmNodes = Array.from(xmlDoc.querySelectorAll('MTMPerformanceSummaryInBase, MTMPerformanceSummaryUnderlying, MTMPerformanceSummary, RealizedUnrealizedPerformanceSummaryAtNAV, RealizedUnrealizedPerformanceSummary'));
       const equityNodes = Array.from(xmlDoc.querySelectorAll('EquitySummaryByReportDateInBase, EquitySummaryInBase, EquitySummary, NavSummaryInBase, NavSummary, EquitySummaryByReportDate'));
-      
+
       let startingNAV = null;
       let endingNAV = null;
       let realizedPNL = 0;
@@ -670,6 +714,8 @@
         const last = equityNodes[equityNodes.length - 1];
         startingNAV = parseFloat(first.getAttribute('total') || first.getAttribute('startingAccountValue') || '0');
         endingNAV = parseFloat(last.getAttribute('total') || last.getAttribute('endingAccountValue') || '0');
+        dividends = parseFloat(last.getAttribute('dividendAccruals') || '0');
+        interest = parseFloat(last.getAttribute('interestAccruals') || '0');
       }
 
       if (mtmNodes.length > 0 && realizedPNL === 0 && unrealizedPNL === 0) {
@@ -684,7 +730,8 @@
         const openPosNodes = Array.from(xmlDoc.querySelectorAll('OpenPosition'));
         if (openPosNodes.length > 0) {
           unrealizedPNL = openPosNodes.reduce((acc, node) => {
-            return acc + (parseFloat(node.getAttribute('fifoPnlUnrealized') || node.getAttribute('unrealizedPNL') || '0') || 0);
+            const fxRate = parseFloat(node.getAttribute('fxRateToBase') || '1') || 1;
+            return acc + (parseFloat(node.getAttribute('fifoPnlUnrealized') || node.getAttribute('unrealizedPNL') || '0') || 0) * fxRate;
           }, 0);
         }
       }
@@ -694,7 +741,8 @@
         const tradeNodes = Array.from(xmlDoc.querySelectorAll('Trade'));
         if (tradeNodes.length > 0) {
           realizedPNL = tradeNodes.reduce((acc, node) => {
-            return acc + (parseFloat(node.getAttribute('fifoPnlRealized') || node.getAttribute('realizedPNL') || '0') || 0);
+            const fxRate = parseFloat(node.getAttribute('fxRateToBase') || '1') || 1;
+            return acc + (parseFloat(node.getAttribute('fifoPnlRealized') || node.getAttribute('realizedPNL') || '0') || 0) * fxRate;
           }, 0);
         }
       }
@@ -703,29 +751,14 @@
       if (mtmPNL === 0) {
         const tradeNodes = Array.from(xmlDoc.querySelectorAll('Trade'));
         const mtmFromTrades = tradeNodes.reduce((acc, node) => {
-          return acc + (parseFloat(node.getAttribute('mtmPnl') || '0') || 0);
+          const fxRate = parseFloat(node.getAttribute('fxRateToBase') || '1') || 1;
+          return acc + (parseFloat(node.getAttribute('mtmPnl') || '0') || 0) * fxRate;
         }, 0);
         mtmPNL = mtmFromTrades + unrealizedPNL;
       }
 
-      // Calculate Prior Period Unrealized PnL from PriorPeriodPosition nodes (only starting positions)
-      let priorUnrealizedPNL = 0;
-      const priorPosNodes = getStartingPriorPositions(xmlDoc);
-      if (priorPosNodes.length > 0) {
-        priorUnrealizedPNL = priorPosNodes.reduce((acc, node) => {
-          let pnl = parseFloat(node.getAttribute('priorMtmPnl') || node.getAttribute('priorMtmPNL') || node.getAttribute('fifoPnlUnrealized') || node.getAttribute('unrealizedPNL') || node.getAttribute('unrealizedPnl') || '0') || 0;
-          if (pnl === 0) {
-            const pos = parseFloat(node.getAttribute('position') || '0') || 0;
-            const mark = parseFloat(node.getAttribute('markPrice') || node.getAttribute('price') || node.getAttribute('priorPrice') || '0') || 0;
-            const open = parseFloat(node.getAttribute('openPrice') || '0') || 0;
-            const mult = parseFloat(node.getAttribute('multiplier') || '1') || 1;
-            if (pos !== 0 && mark !== 0 && open !== 0) {
-              pnl = (mark - open) * pos * mult;
-            }
-          }
-          return acc + pnl;
-        }, 0);
-      }
+      // Roll dividends into realized PNL
+      realizedPNL += dividends;
 
       if (startingNAV === null && endingNAV === null) {
         return null;
@@ -739,7 +772,6 @@
         netChange,
         realizedPNL,
         unrealizedPNL,
-        priorUnrealizedPNL,
         mtmPNL,
         depositsWithdrawals,
         dividends,
@@ -800,11 +832,7 @@
               <hr class="border-secondary my-3">
               <div class="row text-center g-2 small">
                 <div class="col-md-3 col-6">
-                  <span class="text-white-50">Prior Unrealized:</span>
-                  <span class="${getPnlBadgeClass(navSummary.priorUnrealizedPNL)} ms-1">${formatCurrency(navSummary.priorUnrealizedPNL)}</span>
-                </div>
-                <div class="col-md-3 col-6">
-                  <span class="text-white-50">Ending Unrealized:</span>
+                  <span class="text-white-50">Unrealized P&amp;L:</span>
                   <span class="${getPnlBadgeClass(navSummary.unrealizedPNL)} ms-1">${formatCurrency(navSummary.unrealizedPNL)}</span>
                 </div>
                 <div class="col-md-3 col-6">
@@ -812,8 +840,12 @@
                   <span class="text-light ms-1">${formatCurrency(navSummary.depositsWithdrawals)}</span>
                 </div>
                 <div class="col-md-3 col-6">
-                  <span class="text-white-50">Dividends / Interest:</span>
-                  <span class="text-light ms-1">${formatCurrency(navSummary.dividends + navSummary.interest)}</span>
+                  <span class="text-white-50">Dividends (in Realized):</span>
+                  <span class="text-light ms-1">${formatCurrency(navSummary.dividends)}</span>
+                </div>
+                <div class="col-md-3 col-6">
+                  <span class="text-white-50">Interest:</span>
+                  <span class="text-light ms-1">${formatCurrency(navSummary.interest)}</span>
                 </div>
               </div>
             ` : ''}
@@ -851,6 +883,7 @@
             symbol: sym,
             priorUnrealized: 0,
             realized: 0,
+            dividends: 0,
             unrealized: 0,
             total: 0,
             tradesCount: 0,
@@ -872,8 +905,8 @@
             assetCategory: assetCategory || '',
             tradesCount: 0,
             openPositionsCount: 0,
-            priorUnrealized: 0,
             realized: 0,
+            dividends: 0,
             unrealized: 0,
             total: 0
           });
@@ -893,7 +926,8 @@
         const inst = getOrInitInstrument(aggr, rawInstSymbol, node.getAttribute('assetCategory'));
         inst.tradesCount++;
 
-        const fifoRealized = parseFloat(node.getAttribute('fifoPnlRealized') || node.getAttribute('realizedPNL') || '0') || 0;
+        const fxRate = parseFloat(node.getAttribute('fxRateToBase') || '1') || 1;
+        const fifoRealized = (parseFloat(node.getAttribute('fifoPnlRealized') || node.getAttribute('realizedPNL') || '0') || 0) * fxRate;
         aggr.realized += fifoRealized;
         inst.realized += fifoRealized;
       });
@@ -910,33 +944,21 @@
         const inst = getOrInitInstrument(aggr, rawInstSymbol, node.getAttribute('assetCategory'));
         inst.openPositionsCount++;
 
-        const fifoUnrealized = parseFloat(node.getAttribute('fifoPnlUnrealized') || node.getAttribute('unrealizedPNL') || '0') || 0;
+        const fxRate = parseFloat(node.getAttribute('fxRateToBase') || '1') || 1;
+        const fifoUnrealized = (parseFloat(node.getAttribute('fifoPnlUnrealized') || node.getAttribute('unrealizedPNL') || '0') || 0) * fxRate;
         aggr.unrealized += fifoUnrealized;
         inst.unrealized += fifoUnrealized;
       });
 
-      // 3. Process Prior Period Positions (Starting State Unrealized PnL)
-      const priorPosNodes = getStartingPriorPositions(xmlDoc);
+      // 3. Process Prior Period Positions (Starting State)
+      const priorPosNodes = Array.from(xmlDoc.querySelectorAll('PriorPeriodPosition'));
       priorPosNodes.forEach(node => {
         const sym = extractSymbolRoot(node);
         const aggr = getOrInitSymbol(sym);
         aggr.priorPositions.push(nodeToObj(node));
 
         const rawInstSymbol = node.getAttribute('symbol') || sym;
-        const inst = getOrInitInstrument(aggr, rawInstSymbol, node.getAttribute('assetCategory'));
-
-        let fifoPriorUnrealized = parseFloat(node.getAttribute('priorMtmPnl') || node.getAttribute('priorMtmPNL') || node.getAttribute('fifoPnlUnrealized') || node.getAttribute('unrealizedPNL') || node.getAttribute('unrealizedPnl') || '0') || 0;
-        if (fifoPriorUnrealized === 0) {
-          const pos = parseFloat(node.getAttribute('position') || '0') || 0;
-          const mark = parseFloat(node.getAttribute('markPrice') || node.getAttribute('price') || node.getAttribute('priorPrice') || '0') || 0;
-          const open = parseFloat(node.getAttribute('openPrice') || '0') || 0;
-          const mult = parseFloat(node.getAttribute('multiplier') || '1') || 1;
-          if (pos !== 0 && mark !== 0 && open !== 0) {
-            fifoPriorUnrealized = (mark - open) * pos * mult;
-          }
-        }
-        aggr.priorUnrealized += fifoPriorUnrealized;
-        inst.priorUnrealized += fifoPriorUnrealized;
+        getOrInitInstrument(aggr, rawInstSymbol, node.getAttribute('assetCategory'));
       });
 
       // 4. Process Performance Summary Items if detailed trades/positions are omitted
@@ -958,13 +980,30 @@
         }
       });
 
+      // 5. Parse dividends from MTMPerformanceSummaryUnderlying 'other' attribute
+      const mtmSummaryNodes = Array.from(xmlDoc.querySelectorAll('MTMPerformanceSummaryUnderlying'));
+      mtmSummaryNodes.forEach(node => {
+        const sym = extractSymbolRoot(node);
+        const assetCategory = node.getAttribute('assetCategory') || '';
+        const otherVal = parseFloat(node.getAttribute('other') || '0') || 0;
+
+        if (assetCategory && assetCategory !== 'CASH' && otherVal !== 0) {
+          const aggr = getOrInitSymbol(sym);
+          aggr.dividends += otherVal;
+
+          const rawInstSymbol = node.getAttribute('symbol') || sym;
+          const inst = getOrInitInstrument(aggr, rawInstSymbol, assetCategory);
+          inst.dividends += otherVal;
+        }
+      });
+
       // Calculate totals & convert to array
       const results = [];
       for (const aggr of symbolMap.values()) {
-        aggr.total = aggr.realized + aggr.unrealized;
+        aggr.total = aggr.realized + aggr.unrealized + (aggr.dividends || 0);
 
         aggr.instruments = Array.from(aggr.instrumentsMap.values()).map(inst => {
-          inst.total = inst.realized + inst.unrealized;
+          inst.total = inst.realized + inst.unrealized + (inst.dividends || 0);
           return inst;
         });
 
@@ -980,8 +1019,12 @@
     }
 
     function formatCurrency(num) {
+      const symbol = getCurrencySymbol(reportBaseCurrency);
       const formatted = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return (num < 0 ? '-$' : '$') + formatted;
+      if (symbol === 'CHF') {
+        return (num < 0 ? '-' : '') + formatted + ' ' + symbol;
+      }
+      return (num < 0 ? '-' + symbol : symbol) + formatted;
     }
 
     function getPnlBadgeClass(val) {
@@ -1001,14 +1044,14 @@
         return;
       }
 
-      let totalPriorUnrealized = 0;
       let totalRealized = 0;
+      let totalDividends = 0;
       let totalUnrealized = 0;
       let grandTotal = 0;
 
       symbolSummaries.forEach((s, idx) => {
-        totalPriorUnrealized += s.priorUnrealized || 0;
         totalRealized += s.realized;
+        totalDividends += (s.dividends || 0);
         totalUnrealized += s.unrealized;
         grandTotal += s.total;
 
@@ -1027,8 +1070,8 @@
           <td class="fw-bold text-warning fs-6">${chevronHtml}${s.symbol} <span class="badge bg-dark border border-secondary text-info ms-2 fw-normal small">${s.instruments.length} contract(s)</span></td>
           <td class="text-center">${s.tradesCount}</td>
           <td class="text-center">${s.openPositionsCount}</td>
-          <td class="text-end ${getPnlBadgeClass(s.priorUnrealized)}">${formatCurrency(s.priorUnrealized)}</td>
           <td class="text-end ${getPnlBadgeClass(s.realized)}">${formatCurrency(s.realized)}</td>
+          <td class="text-end ${getPnlBadgeClass(s.dividends)}">${formatCurrency(s.dividends)}</td>
           <td class="text-end ${getPnlBadgeClass(s.unrealized)}">${formatCurrency(s.unrealized)}</td>
           <td class="text-end fs-6 ${getPnlBadgeClass(s.total)}">${formatCurrency(s.total)}</td>
         `;
@@ -1052,8 +1095,8 @@
                 <td class="ps-4 font-monospace text-light fw-bold">${inst.symbol}${assetBadge}</td>
                 <td class="text-center text-white-50">${inst.tradesCount}</td>
                 <td class="text-center text-white-50">${inst.openPositionsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2">Open</span>' : '-'}</td>
-                <td class="text-end ${getPnlBadgeClass(inst.priorUnrealized)}">${formatCurrency(inst.priorUnrealized)}</td>
                 <td class="text-end ${getPnlBadgeClass(inst.realized)}">${formatCurrency(inst.realized)}</td>
+                <td class="text-end ${getPnlBadgeClass(inst.dividends)}">${formatCurrency(inst.dividends)}</td>
                 <td class="text-end ${getPnlBadgeClass(inst.unrealized)}">${formatCurrency(inst.unrealized)}</td>
                 <td class="text-end ${getPnlBadgeClass(inst.total)}">${formatCurrency(inst.total)}</td>
               </tr>
@@ -1070,8 +1113,8 @@
       tableFoot.innerHTML = `
         <tr class="table-dark">
           <td colspan="3" class="text-uppercase text-white-50">Total Portfolio P&amp;L Summary:</td>
-          <td class="text-end ${getPnlBadgeClass(totalPriorUnrealized)}">${formatCurrency(totalPriorUnrealized)}</td>
           <td class="text-end ${getPnlBadgeClass(totalRealized)}">${formatCurrency(totalRealized)}</td>
+          <td class="text-end ${getPnlBadgeClass(totalDividends)}">${formatCurrency(totalDividends)}</td>
           <td class="text-end ${getPnlBadgeClass(totalUnrealized)}">${formatCurrency(totalUnrealized)}</td>
           <td class="text-end fs-6 ${getPnlBadgeClass(grandTotal)}">${formatCurrency(grandTotal)}</td>
         </tr>
