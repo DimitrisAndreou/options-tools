@@ -190,7 +190,7 @@ async function handleFetchTrades(event) {
 
   } catch (err) {
     console.error('[IBKR Page] Fetch Error:', err);
-    showStatus(`Error fetching statement: ${err.message}. Alternatively, you can download the XML results of the Flex Query directly from the IBKR Client Portal and upload the file manually below.`, 'danger');
+    showStatus(`Error fetching statement: ${err.message}. Alternatively, you can download the XML results of the Flex Query directly from the IBKR Client Portal and upload the file manually.`, 'danger');
   } finally {
     fetchBtn.disabled = false;
   }
@@ -450,6 +450,6 @@ function toggleSubRows(idx) {
 }
 window.toggleSubRows = toggleSubRows;
 
-window.jsMainIbkr = function() {
+window.jsMainIbkr = function () {
   console.log("Dart JS-Interop for IBKR loaded successfully.");
 };
