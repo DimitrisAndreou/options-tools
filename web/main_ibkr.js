@@ -145,7 +145,7 @@ async function handleFetchTrades(event) {
   try {
     let attempts = 0;
     let xmlText = '';
-    const maxAttempts = 6;
+    const maxAttempts = 10;
     let lastReason = '';
 
     while (attempts < maxAttempts) {
@@ -161,7 +161,7 @@ async function handleFetchTrades(event) {
 
       const response = await fetch(targetRequestUrl);
       xmlText = await response.text();
-      console.log(`[IBKR Page] Attempt ${attempts} Raw XML Response:`, xmlText);
+      console.log(`[IBKR Page] Attempt ${attempts} Raw XML Response received, length: ${xmlText.length} characters.`);
 
       if (!response.ok) {
         throw new Error(`Proxy error (${response.status}): ${xmlText.slice(0, 300)}`);
@@ -240,7 +240,7 @@ function processAndRenderXml(xmlDoc, xmlText, sourceLabel) {
   document.getElementById('trade-count-badge').textContent = `${resultObject.symbolsCount} Symbol(s)`;
   document.getElementById('trade-count-badge').style.display = 'inline-block';
 
-  renderAccountNavSummary(resultObject.accountNavSummary);
+  renderAccountNavSummary(resultObject.accountNavSummary, fromDate, toDate);
   document.getElementById('pnl-table-container').style.display = 'block';
 
   renderSymbolPnlTable(resultObject.perSymbolPnL);
@@ -254,7 +254,7 @@ function formatFlexDate(str) {
   return str;
 }
 
-function renderAccountNavSummary(navSummary) {
+function renderAccountNavSummary(navSummary, fromDate, toDate) {
   const container = document.getElementById('account-nav-container');
   if (!container) return;
 
@@ -274,13 +274,15 @@ function renderAccountNavSummary(navSummary) {
   container.style.display = 'block';
   const netChangeClass = navSummary.netChange > 0 ? 'pnl-positive' : (navSummary.netChange < 0 ? 'pnl-negative' : 'pnl-zero');
 
+  const dateRangeText = fromDate && toDate ? ` (${fromDate} to ${toDate})` : '';
+
   container.innerHTML = `
     <div class="card bg-dark border border-secondary shadow-sm">
       <div class="card-header bg-transparent border-secondary d-flex align-items-center justify-content-between py-2">
         <h6 class="mb-0 text-white fw-bold">
-          <i class="fas fa-vault me-2 text-warning"></i>Account Starting &amp; Ending State
+          <i class="fas fa-vault me-2 text-warning"></i>Account Starting &amp; Ending State${dateRangeText}
         </h6>
-        <span class="badge bg-dark border border-secondary text-info fw-normal">Base Currency</span>
+        <span class="badge bg-dark border border-secondary text-info fw-normal">Base Currency: ${reportBaseCurrency}</span>
       </div>
       <div class="card-body py-3">
         <div class="row text-center g-3">
