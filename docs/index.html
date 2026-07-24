@@ -550,6 +550,46 @@
                       </span>
                     </div>
                   </template>
+                  <template x-if="$store.app.unrealized?.entryMoneyYieldVal !== undefined">
+                    <div class="outcome-row">
+                      <span class="text-label" x-text="`${$store.app.unrealized?.money} Yield`"></span>
+                      <span class="text-neutral-alt">
+                        <span class="text-good" x-text="$store.app.unrealized?.entryMoneyYieldVal"></span><span class="text-probs" x-text="$store.app.unrealized?.entryMoneyYieldProb"></span>
+                        <span class="text-light-alt mx-1">➔</span>
+                        <span class="text-good" x-text="$store.app.unrealized?.currentMoneyYieldVal"></span><span class="text-probs" x-text="$store.app.unrealized?.currentMoneyYieldProb"></span>
+                      </span>
+                    </div>
+                  </template>
+                  <template x-if="$store.app.unrealized?.entryUnderlyingYieldVal !== undefined">
+                    <div class="outcome-row">
+                      <span class="text-label" x-text="`${$store.app.unrealized?.underlying} Yield`"></span>
+                      <span class="text-neutral-alt">
+                        <span class="text-good" x-text="$store.app.unrealized?.entryUnderlyingYieldVal"></span><span class="text-probs" x-text="$store.app.unrealized?.entryUnderlyingYieldProb"></span>
+                        <span class="text-light-alt mx-1">➔</span>
+                        <span class="text-good" x-text="$store.app.unrealized?.currentUnderlyingYieldVal"></span><span class="text-probs" x-text="$store.app.unrealized?.currentUnderlyingYieldProb"></span>
+                      </span>
+                    </div>
+                  </template>
+                  <template x-if="$store.app.unrealized?.entryBeMoneyAbs !== undefined">
+                    <div class="outcome-row">
+                      <span class="text-label" x-text="`Breakeven (vs full ${$store.app.unrealized?.money})`"></span>
+                      <span class="text-neutral-alt">
+                        <span class="text-neutral" x-text="$store.app.unrealized?.entryBeMoneyAbs"></span> <span class="text-bad" x-text="`(${$store.app.unrealized?.entryBeMoneyRel})`"></span>
+                        <span class="text-light-alt mx-1">➔</span>
+                        <span class="text-neutral" x-text="$store.app.unrealized?.currentBeMoneyAbs"></span> <span class="text-bad" x-text="`(${$store.app.unrealized?.currentBeMoneyRel})`"></span>
+                      </span>
+                    </div>
+                  </template>
+                  <template x-if="$store.app.unrealized?.entryBeUnderlyingAbs !== undefined">
+                    <div class="outcome-row">
+                      <span class="text-label" x-text="`Breakeven (vs full ${$store.app.unrealized?.underlying})`"></span>
+                      <span class="text-neutral-alt">
+                        <span class="text-neutral" x-text="$store.app.unrealized?.entryBeUnderlyingAbs"></span> <span class="text-good" x-text="`(${$store.app.unrealized?.entryBeUnderlyingRel})`"></span>
+                        <span class="text-light-alt mx-1">➔</span>
+                        <span class="text-neutral" x-text="$store.app.unrealized?.currentBeUnderlyingAbs"></span> <span class="text-good" x-text="`(${$store.app.unrealized?.currentBeUnderlyingRel})`"></span>
+                      </span>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>

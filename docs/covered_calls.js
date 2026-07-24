@@ -153,6 +153,30 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       ? (currentPosView.underlying >= entryPosView.underlying ? 'text-bad' : 'text-good')
       : underlyingPnL.className;
 
+    // Yields & Breakeven comparisons
+    res.money = entryPos.money;
+    res.underlying = entryPos.underlying;
+
+    res.entryMoneyYieldVal = percentFmt.format(entryPos.moneyYield - 1.0);
+    res.entryMoneyYieldProb = entryPos.moneyProbability != null ? ` (${Math.round(entryPos.moneyProbability * 100)}% prob)` : '';
+    res.currentMoneyYieldVal = percentFmt.format(currentPos.moneyYield - 1.0);
+    res.currentMoneyYieldProb = currentPos.moneyProbability != null ? ` (${Math.round(currentPos.moneyProbability * 100)}% prob)` : '';
+
+    res.entryUnderlyingYieldVal = percentFmt.format(entryPos.underlyingYield - 1.0);
+    res.entryUnderlyingYieldProb = entryPos.underlyingProbability != null ? ` (${Math.round(entryPos.underlyingProbability * 100)}% prob)` : '';
+    res.currentUnderlyingYieldVal = percentFmt.format(currentPos.underlyingYield - 1.0);
+    res.currentUnderlyingYieldProb = currentPos.underlyingProbability != null ? ` (${Math.round(currentPos.underlyingProbability * 100)}% prob)` : '';
+
+    res.entryBeMoneyAbs = dollarFmt.format(entryPos.breakEvenVsFullMoneyAbsolute);
+    res.entryBeMoneyRel = percentFmt.format(entryPos.breakEvenVsFullMoneyRelative - 1.0);
+    res.currentBeMoneyAbs = dollarFmt.format(currentPos.breakEvenVsFullMoneyAbsolute);
+    res.currentBeMoneyRel = percentFmt.format(currentPos.breakEvenVsFullMoneyRelative - 1.0);
+
+    res.entryBeUnderlyingAbs = dollarFmt.format(entryPos.breakEvenVsFullUnderlyingAbsolute);
+    res.entryBeUnderlyingRel = percentFmt.format(entryPos.breakEvenVsFullUnderlyingRelative - 1.0);
+    res.currentBeUnderlyingAbs = dollarFmt.format(currentPos.breakEvenVsFullUnderlyingAbsolute);
+    res.currentBeUnderlyingRel = percentFmt.format(currentPos.breakEvenVsFullUnderlyingRelative - 1.0);
+
     return res;
   }
 
