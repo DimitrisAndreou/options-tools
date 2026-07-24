@@ -150,6 +150,7 @@ async function handleFetchTrades(event) {
     let attempts = 0;
     let xmlText = '';
     const maxAttempts = 6;
+    let lastReason = '';
 
     while (attempts < maxAttempts) {
       attempts++;
@@ -157,7 +158,7 @@ async function handleFetchTrades(event) {
       console.log(`[IBKR Page] Fetch attempt ${attempts}/${maxAttempts}:`, targetRequestUrl);
 
       if (attempts > 1) {
-        showStatus(`IBKR report generation in progress (Code 1019). Waiting for IBKR... (Attempt ${attempts}/${maxAttempts})`, 'warning', true);
+        showStatus(`IBKR report ${lastReason || 'generating/initializing'}. Waiting for IBKR... (Attempt ${attempts}/${maxAttempts})`, 'warning', true);
       } else {
         showStatus('Fetching Flex Statement from IBKR via proxy worker...', 'info', true);
       }
@@ -170,9 +171,13 @@ async function handleFetchTrades(event) {
         throw new Error(`Proxy error (${response.status}): ${xmlText.slice(0, 300)}`);
       }
 
-      if (xmlText.includes('1019') || xmlText.includes('generation in progress')) {
+      const isProgress = xmlText.includes('1019') || xmlText.includes('generation in progress');
+      const isInitError = xmlText.includes('1001') || xmlText.includes('Statement could not be generated');
+
+      if (isProgress || isInitError) {
         if (attempts < maxAttempts) {
-          console.warn(`[IBKR Page] Statement generation in progress (1019). Retrying in 4s (Attempt ${attempts}/${maxAttempts})...`);
+          lastReason = isProgress ? 'in progress (Code 1019)' : 'initializing (Code 1001)';
+          console.warn(`[IBKR Page] Statement ${lastReason}. Retrying in 4s (Attempt ${attempts}/${maxAttempts})...`);
           await new Promise(res => setTimeout(res, 4000));
           continue;
         }
@@ -185,7 +190,7 @@ async function handleFetchTrades(event) {
 
   } catch (err) {
     console.error('[IBKR Page] Fetch Error:', err);
-    showStatus(`Error fetching statement: ${err.message}`, 'danger');
+    showStatus(`Error fetching statement: ${err.message}. Alternatively, you can download the XML results of the Flex Query directly from the IBKR Client Portal and upload the file manually below.`, 'danger');
   } finally {
     fetchBtn.disabled = false;
   }
