@@ -1,6 +1,6 @@
 const STORAGE_KEY_TOKEN = 'ibkr_flex_token';
 const STORAGE_KEY_QUERY_ID = 'ibkr_flex_query_id';
-const STORAGE_KEY_WORKER_URL = 'ibkr_flex_worker_url';
+const WORKER_URL = 'https://ibkr-proxy.jim-andreou.workers.dev';
 
 let reportBaseCurrency = 'USD';
 
@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Read saved values from localStorage
   const savedToken = localStorage.getItem(STORAGE_KEY_TOKEN);
   const savedQueryId = localStorage.getItem(STORAGE_KEY_QUERY_ID);
-  const savedWorkerUrl = localStorage.getItem(STORAGE_KEY_WORKER_URL);
 
   if (urlToken) {
     document.getElementById('ibkr-token').value = urlToken;
@@ -40,8 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
   } else if (savedQueryId) {
     document.getElementById('ibkr-query-id').value = savedQueryId;
   }
-
-  if (savedWorkerUrl) document.getElementById('ibkr-worker-url').value = savedWorkerUrl;
 
   // Update URL to ensure current parameters are reflected
   updateUrlParams();
@@ -92,7 +89,6 @@ function toggleTokenVisibility() {
 function clearStoredCredentials() {
   localStorage.removeItem(STORAGE_KEY_TOKEN);
   localStorage.removeItem(STORAGE_KEY_QUERY_ID);
-  localStorage.removeItem(STORAGE_KEY_WORKER_URL);
   document.getElementById('ibkr-token').value = '';
   document.getElementById('ibkr-query-id').value = '';
   updateUrlParams();
@@ -121,9 +117,8 @@ async function handleFetchTrades(event) {
 
   const token = document.getElementById('ibkr-token').value.trim();
   const queryId = document.getElementById('ibkr-query-id').value.trim();
-  const workerUrl = document.getElementById('ibkr-worker-url').value.trim().replace(/\/$/, '');
-  if (!token || !queryId || !workerUrl) {
-    showStatus('Please fill in Token, Query ID, and Worker URL.', 'danger');
+  if (!token || !queryId) {
+    showStatus('Please fill in Token and Query ID.', 'danger');
     return;
   }
 
@@ -131,7 +126,6 @@ async function handleFetchTrades(event) {
 
   localStorage.setItem(STORAGE_KEY_TOKEN, token);
   localStorage.setItem(STORAGE_KEY_QUERY_ID, queryId);
-  localStorage.setItem(STORAGE_KEY_WORKER_URL, workerUrl);
 
   const fetchBtn = document.getElementById('fetch-btn');
   fetchBtn.disabled = true;
@@ -150,7 +144,7 @@ async function handleFetchTrades(event) {
 
     while (attempts < maxAttempts) {
       attempts++;
-      const targetRequestUrl = `${workerUrl}/?token=${encodeURIComponent(token)}&queryId=${encodeURIComponent(queryId)}`;
+      const targetRequestUrl = `${WORKER_URL}/?token=${encodeURIComponent(token)}&queryId=${encodeURIComponent(queryId)}`;
       console.log(`[IBKR Page] Fetch attempt ${attempts}/${maxAttempts}:`, targetRequestUrl);
 
       if (attempts > 1) {

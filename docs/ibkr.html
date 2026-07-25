@@ -86,6 +86,28 @@
       background-color: #212529 !important;
       box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.15);
     }
+
+    .instructions-toggle-header {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .instructions-toggle-header .header-chevron {
+      transition: transform 0.2s ease-in-out;
+    }
+
+    .instructions-toggle-header:not(.collapsed) .header-chevron {
+      transform: rotate(180deg);
+    }
+
+    @media (min-width: 768px) {
+      .border-md-start {
+        border-left: 1px solid #334155 !important;
+      }
+      .border-md-top-0 {
+        border-top: 0 !important;
+      }
+    }
   </style>
 </head>
 
@@ -119,14 +141,18 @@
 
     <div class="row g-4">
       <!-- Step-by-Step Instructions -->
-      <div class="col-lg-7 col-12">
-        <div class="card h-100 border-0 bg-dark shadow-sm">
-          <div class="card-header bg-dark border-secondary">
+      <div class="col-12">
+        <div class="card border-0 bg-dark shadow-sm">
+          <div class="card-header bg-dark border-secondary d-flex justify-content-between align-items-center instructions-toggle-header collapsed"
+               data-bs-toggle="collapse" data-bs-target="#ibkrInstructionsCollapse"
+               aria-expanded="false" aria-controls="ibkrInstructionsCollapse">
             <h5 class="mb-0 text-accent fw-bold">
               <i class="fas fa-list-check me-2 text-primary"></i>How to get your IBKR Token & Query ID
             </h5>
+            <i class="fas fa-chevron-down text-white-50 header-chevron"></i>
           </div>
-          <div class="card-body">
+          <div id="ibkrInstructionsCollapse" class="collapse">
+            <div class="card-body">
             <div class="accordion accordion-flush" id="ibkrInstructionsAccordion">
               <!-- Step 1: Flex Queries Page & Token -->
               <div class="accordion-item bg-transparent text-white border-secondary mb-3">
@@ -217,12 +243,13 @@
               </div>
             </div>
           </div>
+          </div>
         </div>
       </div>
 
       <!-- Credentials Form & Fetcher -->
-      <div class="col-lg-5 col-12">
-        <div class="card h-100 border-0 bg-dark shadow-sm">
+      <div class="col-12">
+        <div class="card border-0 bg-dark shadow-sm">
           <div class="card-header bg-dark border-secondary">
             <h5 class="mb-0 text-accent fw-bold">
               <i class="fas fa-key me-2 text-primary"></i>Fetch Trade Report
@@ -230,59 +257,58 @@
           </div>
           <div class="card-body">
             <form id="ibkr-form" onsubmit="handleFetchTrades(event)">
-              <!-- Token Input -->
-              <div class="mb-3">
-                <label for="ibkr-token" class="form-label text-white fw-bold">
-                  Flex Web Service Token
-                </label>
-                <input type="text" id="ibkr-token" class="form-control bg-secondary text-white border-0 font-monospace"
-                  placeholder="Enter IBKR Token" required>
-              </div>
+              <div class="row g-4">
+                <!-- API Fetch Section -->
+                <div class="col-md-7 col-12 d-flex flex-column justify-content-between">
+                  <div>
+                    <h6 class="text-white-50 fw-bold small mb-3">API CONNECTION</h6>
+                    <div class="row g-3">
+                      <!-- Token Input -->
+                      <div class="col-sm-8 col-12">
+                        <label for="ibkr-token" class="form-label text-white fw-bold small">
+                          Flex Web Service Token
+                        </label>
+                        <input type="text" id="ibkr-token" class="form-control bg-secondary text-white border-0 font-monospace"
+                          placeholder="Enter IBKR Token" required>
+                      </div>
 
-              <!-- Query ID Input -->
-              <div class="mb-3">
-                <label for="ibkr-query-id" class="form-label text-white fw-bold">
-                  Flex Query ID
-                </label>
-                <input type="text" id="ibkr-query-id"
-                  class="form-control bg-secondary text-white border-0 font-monospace" placeholder="e.g., 654321"
-                  required>
-              </div>
+                      <!-- Query ID Input -->
+                      <div class="col-sm-4 col-12">
+                        <label for="ibkr-query-id" class="form-label text-white fw-bold small">
+                          Flex Query ID
+                        </label>
+                        <input type="text" id="ibkr-query-id"
+                          class="form-control bg-secondary text-white border-0 font-monospace" placeholder="e.g., 654321"
+                          required>
+                      </div>
+                    </div>
+                  </div>
 
-              <!-- Worker Proxy URL -->
-              <div class="mb-4">
-                <label for="ibkr-worker-url" class="form-label text-white fw-bold small">
-                  Cloudflare Proxy Worker URL
-                </label>
-                <input type="url" id="ibkr-worker-url"
-                  class="form-control bg-secondary text-white border-0 font-monospace small"
-                  value="https://ibkr-proxy.jim-andreou.workers.dev/" required>
-              </div>
+                  <!-- Action Buttons -->
+                  <div class="d-flex flex-wrap gap-2 mt-4">
+                    <button type="submit" id="fetch-btn" class="btn btn-primary fw-bold px-4 py-2">
+                      <i class="fas fa-cloud-arrow-down me-2"></i>Fetch Trades
+                    </button>
+                    <button type="button" class="btn btn-outline-danger px-3 py-2" onclick="clearStoredCredentials()">
+                      <i class="fas fa-trash-can me-1"></i>Clear Stored Credentials
+                    </button>
+                  </div>
+                </div>
 
-              <!-- Action Buttons -->
-              <div class="d-grid gap-2">
-                <button type="submit" id="fetch-btn" class="btn btn-primary fw-bold py-2">
-                  <i class="fas fa-cloud-arrow-down me-2"></i>Fetch Trades
-                </button>
-                <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearStoredCredentials()">
-                  <i class="fas fa-trash-can me-1"></i>Clear Stored Credentials
-                </button>
-              </div>
-
-              <!-- Divider -->
-              <div class="d-flex align-items-center my-3">
-                <hr class="flex-grow-1 border-secondary">
-                <span class="px-2 text-white-50 small fw-bold">OR LOAD FROM FILE</span>
-                <hr class="flex-grow-1 border-secondary">
-              </div>
-
-              <!-- XML File Upload Input -->
-              <div>
-                <label for="xml-file-input" class="form-label text-white fw-bold small">
-                  <i class="fas fa-file-code me-1 text-warning"></i>Upload Saved IBKR Flex XML File
-                </label>
-                <input type="file" id="xml-file-input" accept=".xml"
-                  class="form-control bg-secondary text-white border-0 small" onchange="handleFileUpload(event)">
+                <!-- Local File Section -->
+                <div class="col-md-5 col-12 border-top border-md-top-0 border-md-start border-secondary pt-4 pt-md-0 ps-md-4 d-flex flex-column justify-content-between">
+                  <div>
+                    <h6 class="text-white-50 fw-bold small mb-3">LOCAL FILE</h6>
+                    <label for="xml-file-input" class="form-label text-white fw-bold small">
+                      <i class="fas fa-file-code me-1 text-warning"></i>Upload Saved IBKR Flex XML File
+                    </label>
+                    <input type="file" id="xml-file-input" accept=".xml"
+                      class="form-control bg-secondary text-white border-0 small" onchange="handleFileUpload(event)">
+                  </div>
+                  <div class="text-muted small mt-3">
+                    Alternatively, select and upload a previously downloaded XML report file directly from your computer.
+                  </div>
+                </div>
               </div>
             </form>
           </div>
