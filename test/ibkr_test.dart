@@ -131,5 +131,40 @@ void main() {
       expect(symbolList[2]['symbol'], equals('CLOSED_LARGE_PNL'));
       expect(symbolList[3]['symbol'], equals('CLOSED_SMALL_PNL'));
     });
+
+    test('Sort sorts instruments within a symbol: open positions first, then absolute total PnL', () {
+      const nestedSortingXml = '''
+<FlexQueryResponse queryName="Nested Sorting Test">
+  <FlexStatements>
+    <FlexStatement fromDate="20260301" toDate="20260315" period="Custom">
+      <Trades>
+        <Trade symbol="TSLA 260619C00200000" underlyingSymbol="TSLA" assetCategory="OPT" fifoPnlRealized="50.0" fxRateToBase="1.0"/>
+        <Trade symbol="TSLA 260619P00200000" underlyingSymbol="TSLA" assetCategory="OPT" fifoPnlRealized="5000.0" fxRateToBase="1.0"/>
+      </Trades>
+      <OpenPositions>
+        <OpenPosition symbol="TSLA" underlyingSymbol="TSLA" assetCategory="STK" fifoPnlUnrealized="10.0" fxRateToBase="1.0"/>
+      </OpenPositions>
+    </FlexStatement>
+  </FlexStatements>
+</FlexQueryResponse>
+''';
+
+      final jsonText = parseIbkrXml(nestedSortingXml);
+      final result = jsonDecode(jsonText);
+      final symbolList = result['perSymbolPnL'] as List;
+
+      expect(symbolList.length, equals(1));
+      final tsla = symbolList[0];
+      expect(tsla['symbol'], equals('TSLA'));
+
+      final instruments = tsla['instruments'] as List;
+      expect(instruments.length, equals(3));
+      // 1. TSLA (has open position)
+      expect(instruments[0]['symbol'], equals('TSLA'));
+      // 2. TSLA 260619P00200000 (closed, but total.abs() = 5000)
+      expect(instruments[1]['symbol'], equals('TSLA 260619P00200000'));
+      // 3. TSLA 260619C00200000 (closed, total.abs() = 50)
+      expect(instruments[2]['symbol'], equals('TSLA 260619C00200000'));
+    });
   });
 }

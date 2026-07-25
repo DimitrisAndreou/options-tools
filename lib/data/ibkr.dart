@@ -161,6 +161,15 @@ String extractSymbolRoot(XmlElement node) {
   return 'UNKNOWN';
 }
 
+int _comparePnl(int openPositionsCountA, double totalA, int openPositionsCountB, double totalB) {
+  final aHasOpen = openPositionsCountA > 0;
+  final bHasOpen = openPositionsCountB > 0;
+  if (aHasOpen != bHasOpen) {
+    return aHasOpen ? -1 : 1;
+  }
+  return totalB.abs().compareTo(totalA.abs());
+}
+
 class InstrumentSummary {
   final String symbol;
   final String assetCategory;
@@ -203,6 +212,9 @@ class SymbolSummary {
   SymbolSummary(this.symbol);
 
   Map<String, dynamic> toJson() {
+    final sortedInstruments = instrumentsMap.values.toList()
+      ..sort((a, b) => _comparePnl(a.openPositionsCount, a.total, b.openPositionsCount, b.total));
+
     return {
       'symbol': symbol,
       'realized': realized,
@@ -211,7 +223,7 @@ class SymbolSummary {
       'total': total,
       'tradesCount': tradesCount,
       'openPositionsCount': openPositionsCount,
-      'instruments': instrumentsMap.values.map((i) => i.toJson()).toList(),
+      'instruments': sortedInstruments.map((i) => i.toJson()).toList(),
       'trades': trades,
       'openPositions': openPositions,
       'priorPositions': priorPositions,
@@ -334,14 +346,7 @@ List<Map<String, dynamic>> aggregateBySymbol(XmlDocument document) {
   // Sort top-level symbols:
   // 1) Prefer symbols with open positions, to symbols that only have closed positions
   // 2) Then compare with absolute total PnL descending
-  results.sort((a, b) {
-    final aHasOpen = a.openPositionsCount > 0;
-    final bHasOpen = b.openPositionsCount > 0;
-    if (aHasOpen != bHasOpen) {
-      return aHasOpen ? -1 : 1;
-    }
-    return b.total.abs().compareTo(a.total.abs());
-  });
+  results.sort((a, b) => _comparePnl(a.openPositionsCount, a.total, b.openPositionsCount, b.total));
 
   return results.map((r) => r.toJson()).toList();
 }
