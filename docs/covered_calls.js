@@ -113,71 +113,152 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       DTE: currentPos.DTE
     };
 
+    // Rolls mean replacing the old position with a new one.
+    // Their difference does not represent a loss or a gain.
+    // If it's not a roll, i.e. we are comparing the same position in two different moments,
+    // then the difference is the unrealized loss or gain.
+    // In both cases we are showing the diff of the various important aspects,
+    // but only the direction of the good/bad changes.
+    // E.g. for an unrealized result, going to less capital means a capital loss.
+    // But for a roll, it means that we get more premium, thus capital return,
+    // thus we retain less risk, which is "good".
     const isRoll = currentPos.id !== entryPos.id;
-    if (isRoll) {
-      // [currentPosView, entryPosView] = [entryPosView, currentPosView];
-    }
-
-    const res = {};
-    res.isRoll = isRoll;
 
     const entrySpot = Number(entryPos.spotPrice);
     const currentSpot = Number(currentPos.spotPrice);
 
-    res.spotPriceEntry = dollarFmt.format(entrySpot);
+    const rows = [];
 
-    res.spotPriceCurrent = dollarFmt.format(currentSpot);
-    res.spotPriceCurrentPct = percentFmt.format(currentSpot / entrySpot - 1.0);
-    res.spotPriceCurrentClass = currentSpot >= entrySpot ? 'text-good' : 'text-bad';
+    // 1. Spot Price
+    const spotDiff = currentSpot - entrySpot;
+    const spotPct = entrySpot > 0 ? (spotDiff / entrySpot) * 100 : 0;
+    const spotDiffText = `${spotDiff >= 0 ? '+' : ''}${dollarFmt.format(spotDiff)}<br/>(${spotDiff >= 0 ? '+' : ''}${spotPct.toFixed(1)}%)`;
+    rows.push({
+      label: 'Spot Price',
+      before: dollarFmt.format(entrySpot),
+      after: dollarFmt.format(currentSpot),
+      diff: spotDiffText,
+      diffClass: spotDiff >= 0 ? 'text-good' : 'text-bad'
+    });
 
-    // Time Passed
-    res.timePassed = formatDaysDiff(entryPosView.DTE, currentPosView.DTE);
+    // 2. Days to expiration
+    const dteDiff = currentPosView.DTE - entryPosView.DTE;
+    const dtePct = entryPosView.DTE > 0 ? (dteDiff / entryPosView.DTE) * 100 : 0;
+    const dteDiffText = `${dteDiff >= 0 ? '+' : ''}${dteDiff} days<br/>(${dteDiff >= 0 ? '+' : ''}${dtePct.toFixed(2)}%)`;
+    rows.push({
+      label: 'Days to expiration',
+      before: `${entryPosView.DTE}`,
+      after: `${currentPosView.DTE}`,
+      diff: dteDiffText,
+      diffClass: 'text-neutral-alt'
+    });
 
-    // Money PnL
-    const moneyPnL = formatPnL(currentPosView.money, entryPosView.money, dollarFmt.format, currentPos.money);
-    res.entryMoney = dollarFmt.format(entryPosView.money);
-    res.currentMoney = dollarFmt.format(currentPosView.money);
-    res.unrealizedMoneyPnLPct = moneyPnL.pct;
-    res.unrealizedMoneyPnLAbs = moneyPnL.abs;
-    res.moneyPnLClass = isRoll
-      ? (currentPosView.money >= entryPosView.money ? 'text-bad' : 'text-good')
-      : moneyPnL.className;
+    // 3. Strike
+    const entryStrike = Number(entryPos.strikeAbsolute);
+    const currentStrike = Number(currentPos.strikeAbsolute);
+    const strikeDiff = currentStrike - entryStrike;
+    const strikeDiffPct = entryStrike > 0 ? (strikeDiff / entryStrike) * 100 : 0;
+    const strikeDiffText = `${strikeDiff >= 0 ? '+' : ''}${dollarFmt.format(strikeDiff)}<br/>(${strikeDiff >= 0 ? '+' : ''}${strikeDiffPct.toFixed(1)}%)`;
+    const entryStrikeRelText = percentFmt.format(entryStrike / entrySpot - 1.0);
+    const currentStrikeRelText = percentFmt.format(currentStrike / currentSpot - 1.0);
+    rows.push({
+      label: 'Strike',
+      before: `${dollarFmt.format(entryStrike)}<br/><span class="text-neutral-alt">(${entryStrikeRelText})</span>`,
+      after: `${dollarFmt.format(currentStrike)}<br/><span class="text-neutral-alt">(${currentStrikeRelText})</span>`,
+      diff: strikeDiffText,
+      diffClass: strikeDiff >= 0 ? 'text-good' : 'text-bad',
+      separator: true
+    });
 
-    // Underlying PnL
-    const underlyingPnL = formatPnL(currentPosView.underlying, entryPosView.underlying, underlyingFmt.format, currentPos.underlying, currentPos.underlying);
-    res.entryUnderlying = `${underlyingFmt.format(entryPosView.underlying)} ${currentPos.underlying}`;
-    res.currentUnderlying = `${underlyingFmt.format(currentPosView.underlying)} ${currentPos.underlying}`;
-    res.unrealizedUnderlyingPnLPct = underlyingPnL.pct;
-    res.unrealizedUnderlyingPnLAbs = underlyingPnL.abs;
-    res.underlyingPnLClass = isRoll
-      ? (currentPosView.underlying >= entryPosView.underlying ? 'text-bad' : 'text-good')
-      : underlyingPnL.className;
+    // 4. Capital (USD)
+    const moneyDiff = currentPosView.money - entryPosView.money;
+    const moneyPct = entryPosView.money > 0 ? (moneyDiff / entryPosView.money) * 100 : 0;
+    const moneyDiffText = `${moneyDiff >= 0 ? '+' : ''}${dollarFmt.format(moneyDiff)}<br/>(${moneyDiff >= 0 ? '+' : ''}${moneyPct.toFixed(1)}%)`;
+    rows.push({
+      label: `Capital (${entryPos.money})`,
+      before: dollarFmt.format(entryPosView.money),
+      after: dollarFmt.format(currentPosView.money),
+      diff: moneyDiffText,
+      diffClass: isRoll
+        ? (moneyDiff <= 0 ? 'text-good' : 'text-bad')
+        : (moneyDiff >= 0 ? 'text-good' : 'text-bad')
+    });
 
-    // Yields & Breakeven comparisons
-    res.money = entryPos.money;
-    res.underlying = entryPos.underlying;
+    // 5. Capital (BTC)
+    const undDiff = currentPosView.underlying - entryPosView.underlying;
+    const undPct = entryPosView.underlying > 0 ? (undDiff / entryPosView.underlying) * 100 : 0;
+    const undDiffText = `${undDiff >= 0 ? '+' : ''}${underlyingFmt.format(undDiff)}<br/>(${undDiff >= 0 ? '+' : ''}${undPct.toFixed(1)}%)`;
+    rows.push({
+      label: `Capital (${entryPos.underlying})`,
+      before: underlyingFmt.format(entryPosView.underlying),
+      after: underlyingFmt.format(currentPosView.underlying),
+      diff: undDiffText,
+      diffClass: isRoll
+        ? (undDiff <= 0 ? 'text-good' : 'text-bad')
+        : (undDiff >= 0 ? 'text-good' : 'text-bad'),
+      separator: true
+    });
 
-    res.entryMoneyYieldVal = percentFmt.format(entryPos.moneyYield - 1.0);
-    res.entryMoneyYieldProb = entryPos.moneyProbability != null ? ` (${Math.round(entryPos.moneyProbability * 100)}% prob)` : '';
-    res.currentMoneyYieldVal = percentFmt.format(currentPos.moneyYield - 1.0);
-    res.currentMoneyYieldProb = currentPos.moneyProbability != null ? ` (${Math.round(currentPos.moneyProbability * 100)}% prob)` : '';
+    // 6. USD Yield
+    const entryMoneyYieldValNum = entryPos.moneyYield - 1.0;
+    const currentMoneyYieldValNum = currentPos.moneyYield - 1.0;
+    const moneyYieldRatioChange = currentPos.moneyYield / entryPos.moneyYield - 1.0;
+    const moneyYieldDiffText = percentFmt.format(moneyYieldRatioChange);
+    const entryMoneyYieldProbText = entryPos.moneyProbability != null ? `<br/><span class="text-probs">(${Math.round(entryPos.moneyProbability * 100)}% prob)</span>` : '';
+    const currentMoneyYieldProbText = currentPos.moneyProbability != null ? `<br/><span class="text-probs">(${Math.round(currentPos.moneyProbability * 100)}% prob)</span>` : '';
+    rows.push({
+      label: `${entryPos.money} Yield`,
+      before: `${percentFmt.format(entryMoneyYieldValNum)}${entryMoneyYieldProbText}`,
+      after: `${percentFmt.format(currentMoneyYieldValNum)}${currentMoneyYieldProbText}`,
+      diff: moneyYieldDiffText,
+      diffClass: moneyYieldRatioChange >= 0 ? 'text-good' : 'text-bad'
+    });
 
-    res.entryUnderlyingYieldVal = percentFmt.format(entryPos.underlyingYield - 1.0);
-    res.entryUnderlyingYieldProb = entryPos.underlyingProbability != null ? ` (${Math.round(entryPos.underlyingProbability * 100)}% prob)` : '';
-    res.currentUnderlyingYieldVal = percentFmt.format(currentPos.underlyingYield - 1.0);
-    res.currentUnderlyingYieldProb = currentPos.underlyingProbability != null ? ` (${Math.round(currentPos.underlyingProbability * 100)}% prob)` : '';
+    // 7. BTC Yield
+    const entryUndYieldValNum = entryPos.underlyingYield - 1.0;
+    const currentUndYieldValNum = currentPos.underlyingYield - 1.0;
+    const undYieldRatioChange = currentPos.underlyingYield / entryPos.underlyingYield - 1.0;
+    const undYieldDiffText = percentFmt.format(undYieldRatioChange);
+    const entryUndYieldProbText = entryPos.underlyingProbability != null ? `<br/><span class="text-probs">(${Math.round(entryPos.underlyingProbability * 100)}% prob)</span>` : '';
+    const currentUndYieldProbText = currentPos.underlyingProbability != null ? `<br/><span class="text-probs">(${Math.round(currentPos.underlyingProbability * 100)}% prob)</span>` : '';
+    rows.push({
+      label: `${entryPos.underlying} Yield`,
+      before: `${percentFmt.format(entryUndYieldValNum)}${entryUndYieldProbText}`,
+      after: `${percentFmt.format(currentUndYieldValNum)}${currentUndYieldProbText}`,
+      diff: undYieldDiffText,
+      diffClass: undYieldRatioChange >= 0 ? 'text-good' : 'text-bad',
+      separator: true
+    });
 
-    res.entryBeMoneyAbs = dollarFmt.format(entryPos.breakEvenVsFullMoneyAbsolute);
-    res.entryBeMoneyRel = percentFmt.format(entryPos.breakEvenVsFullMoneyRelative - 1.0);
-    res.currentBeMoneyAbs = dollarFmt.format(currentPos.breakEvenVsFullMoneyAbsolute);
-    res.currentBeMoneyRel = percentFmt.format(currentPos.breakEvenVsFullMoneyRelative - 1.0);
+    // 8. Breakeven (vs full USD)
+    const entryBeMoneyRelText = percentFmt.format(entryPos.breakEvenVsFullMoneyRelative - 1.0);
+    const currentBeMoneyRelText = percentFmt.format(currentPos.breakEvenVsFullMoneyRelative - 1.0);
+    const beMoneyDiff = currentPos.breakEvenVsFullMoneyAbsolute - entryPos.breakEvenVsFullMoneyAbsolute;
+    const beMoneyDiffPct = entryPos.breakEvenVsFullMoneyAbsolute > 0 ? (beMoneyDiff / entryPos.breakEvenVsFullMoneyAbsolute) * 100 : 0;
+    const beMoneyDiffText = `${beMoneyDiff >= 0 ? '+' : ''}${dollarFmt.format(beMoneyDiff)}<br/>(${beMoneyDiff >= 0 ? '+' : ''}${beMoneyDiffPct.toFixed(1)}%)`;
+    rows.push({
+      label: `Breakeven (vs full ${entryPos.money})`,
+      before: `${dollarFmt.format(entryPos.breakEvenVsFullMoneyAbsolute)}<br/><span class="text-bad">(${entryBeMoneyRelText})</span>`,
+      after: `${dollarFmt.format(currentPos.breakEvenVsFullMoneyAbsolute)}<br/><span class="text-bad">(${currentBeMoneyRelText})</span>`,
+      diff: beMoneyDiffText,
+      diffClass: beMoneyDiff <= 0 ? 'text-good' : 'text-bad'
+    });
 
-    res.entryBeUnderlyingAbs = dollarFmt.format(entryPos.breakEvenVsFullUnderlyingAbsolute);
-    res.entryBeUnderlyingRel = percentFmt.format(entryPos.breakEvenVsFullUnderlyingRelative - 1.0);
-    res.currentBeUnderlyingAbs = dollarFmt.format(currentPos.breakEvenVsFullUnderlyingAbsolute);
-    res.currentBeUnderlyingRel = percentFmt.format(currentPos.breakEvenVsFullUnderlyingRelative - 1.0);
+    // 9. Breakeven (vs full BTC)
+    const entryBeUndRelText = percentFmt.format(entryPos.breakEvenVsFullUnderlyingRelative - 1.0);
+    const currentBeUndRelText = percentFmt.format(currentPos.breakEvenVsFullUnderlyingRelative - 1.0);
+    const beUndDiff = currentPos.breakEvenVsFullUnderlyingAbsolute - entryPos.breakEvenVsFullUnderlyingAbsolute;
+    const beUndDiffPct = entryPos.breakEvenVsFullUnderlyingAbsolute > 0 ? (beUndDiff / entryPos.breakEvenVsFullUnderlyingAbsolute) * 100 : 0;
+    const beUndDiffText = `${beUndDiff >= 0 ? '+' : ''}${dollarFmt.format(beUndDiff)}<br/>(${beUndDiff >= 0 ? '+' : ''}${beUndDiffPct.toFixed(1)}%)`;
+    rows.push({
+      label: `Breakeven (vs full ${entryPos.underlying})`,
+      before: `${dollarFmt.format(entryPos.breakEvenVsFullUnderlyingAbsolute)}<br/><span class="text-good">(${entryBeUndRelText})</span>`,
+      after: `${dollarFmt.format(currentPos.breakEvenVsFullUnderlyingAbsolute)}<br/><span class="text-good">(${currentBeUndRelText})</span>`,
+      diff: beUndDiffText,
+      diffClass: beUndDiff >= 0 ? 'text-good' : 'text-bad'
+    });
 
-    return res;
+    return { isRoll, rows };
   }
 
   updateSelection(idToSelect) {
