@@ -139,6 +139,7 @@ footer {
 /* Options Tools UI Specific Styles */
 .text-good { color: var(--success); font-weight: bold; }
 .text-bad { color: var(--danger); font-weight: bold; }
+.text-spot { color: #00ff00; font-weight: bold; }
 .text-neutral { color: var(--primary); font-weight: bold; }
 .text-label { color: var(--text-muted); font-weight: bold; }
 .text-good-alt { color: var(--success); }

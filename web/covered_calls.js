@@ -129,31 +129,31 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const rows = [];
 
-    // 1. Spot Price
+    // 1. Expiration
+    const dteDiff = currentPosView.DTE - entryPosView.DTE;
+    const dtePct = entryPosView.DTE > 0 ? (dteDiff / entryPosView.DTE) * 100 : 0;
+    const dteDiffText = `${dteDiff >= 0 ? '+' : ''}${dteDiff} days<br/>(${dteDiff >= 0 ? '+' : ''}${dtePct.toFixed(2)}%)`;
+    rows.push({
+      label: 'Expiration',
+      before: `<span class="text-neutral">${entryPos.formattedDate} <small>(${entryPos.DTE}d)</small></span>`,
+      after: `<span class="text-neutral">${currentPos.formattedDate} <small>(${currentPos.DTE}d)</small></span>`,
+      diff: dteDiffText,
+      diffClass: dteDiff > 0 ? 'text-bad' : (dteDiff < 0 ? 'text-good' : 'text-neutral-alt')
+    });
+
+    // 2. Spot Price
     const spotDiff = currentSpot - entrySpot;
     const spotPct = entrySpot > 0 ? (spotDiff / entrySpot) * 100 : 0;
     const spotDiffText = `${spotDiff >= 0 ? '+' : ''}${dollarFmt.format(spotDiff)}<br/>(${spotDiff >= 0 ? '+' : ''}${spotPct.toFixed(1)}%)`;
     rows.push({
       label: 'Spot Price',
-      before: dollarFmt.format(entrySpot),
-      after: dollarFmt.format(currentSpot),
+      before: `<span class="text-spot">${dollarFmt.format(entrySpot)}</span>`,
+      after: `<span class="text-spot">${dollarFmt.format(currentSpot)}</span>`,
       diff: spotDiffText,
       diffClass: spotDiff >= 0 ? 'text-good' : 'text-bad'
     });
 
-    // 2. Days to expiration
-    const dteDiff = currentPosView.DTE - entryPosView.DTE;
-    const dtePct = entryPosView.DTE > 0 ? (dteDiff / entryPosView.DTE) * 100 : 0;
-    const dteDiffText = `${dteDiff >= 0 ? '+' : ''}${dteDiff} days<br/>(${dteDiff >= 0 ? '+' : ''}${dtePct.toFixed(2)}%)`;
-    rows.push({
-      label: 'Days to expiration',
-      before: `${entryPosView.DTE}`,
-      after: `${currentPosView.DTE}`,
-      diff: dteDiffText,
-      diffClass: 'text-neutral-alt'
-    });
-
-    // 3. Strike
+    // 3. Strike Price
     const entryStrike = Number(entryPos.strikeAbsolute);
     const currentStrike = Number(currentPos.strikeAbsolute);
     const strikeDiff = currentStrike - entryStrike;
@@ -162,7 +162,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     const entryStrikeRelText = percentFmt.format(entryStrike / entrySpot - 1.0);
     const currentStrikeRelText = percentFmt.format(currentStrike / currentSpot - 1.0);
     rows.push({
-      label: 'Strike',
+      label: 'Strike Price',
       before: `${dollarFmt.format(entryStrike)}<br/><span class="text-neutral-alt">(${entryStrikeRelText})</span>`,
       after: `${dollarFmt.format(currentStrike)}<br/><span class="text-neutral-alt">(${currentStrikeRelText})</span>`,
       diff: strikeDiffText,
@@ -170,7 +170,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       separator: true
     });
 
-    // 4. Capital (USD)
+    // 4. Capital (Money)
     const moneyDiff = currentPosView.money - entryPosView.money;
     const moneyPct = entryPosView.money > 0 ? (moneyDiff / entryPosView.money) * 100 : 0;
     const moneyDiffText = `${moneyDiff >= 0 ? '+' : ''}${dollarFmt.format(moneyDiff)}<br/>(${moneyDiff >= 0 ? '+' : ''}${moneyPct.toFixed(1)}%)`;
@@ -184,7 +184,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
         : (moneyDiff >= 0 ? 'text-good' : 'text-bad')
     });
 
-    // 5. Capital (BTC)
+    // 5. Capital (Underlying)
     const undDiff = currentPosView.underlying - entryPosView.underlying;
     const undPct = entryPosView.underlying > 0 ? (undDiff / entryPosView.underlying) * 100 : 0;
     const undDiffText = `${undDiff >= 0 ? '+' : ''}${underlyingFmt.format(undDiff)}<br/>(${undDiff >= 0 ? '+' : ''}${undPct.toFixed(1)}%)`;
@@ -199,7 +199,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       separator: true
     });
 
-    // 6. USD Yield
+    // 6. Money Yield
     const entryMoneyYieldValNum = entryPos.moneyYield - 1.0;
     const currentMoneyYieldValNum = currentPos.moneyYield - 1.0;
     const moneyYieldRatioChange = currentPos.moneyYield / entryPos.moneyYield - 1.0;
@@ -214,7 +214,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       diffClass: moneyYieldRatioChange >= 0 ? 'text-good' : 'text-bad'
     });
 
-    // 7. BTC Yield
+    // 7. Underlying Yield
     const entryUndYieldValNum = entryPos.underlyingYield - 1.0;
     const currentUndYieldValNum = currentPos.underlyingYield - 1.0;
     const undYieldRatioChange = currentPos.underlyingYield / entryPos.underlyingYield - 1.0;
@@ -230,7 +230,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       separator: true
     });
 
-    // 8. Breakeven (vs full USD)
+    // 8. Breakeven (vs full money)
     const entryBeMoneyRelText = percentFmt.format(entryPos.breakEvenVsFullMoneyRelative - 1.0);
     const currentBeMoneyRelText = percentFmt.format(currentPos.breakEvenVsFullMoneyRelative - 1.0);
     const beMoneyDiff = currentPos.breakEvenVsFullMoneyAbsolute - entryPos.breakEvenVsFullMoneyAbsolute;
@@ -244,7 +244,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       diffClass: beMoneyDiff <= 0 ? 'text-good' : 'text-bad'
     });
 
-    // 9. Breakeven (vs full BTC)
+    // 9. Breakeven (vs full underlying)
     const entryBeUndRelText = percentFmt.format(entryPos.breakEvenVsFullUnderlyingRelative - 1.0);
     const currentBeUndRelText = percentFmt.format(currentPos.breakEvenVsFullUnderlyingRelative - 1.0);
     const beUndDiff = currentPos.breakEvenVsFullUnderlyingAbsolute - entryPos.breakEvenVsFullUnderlyingAbsolute;

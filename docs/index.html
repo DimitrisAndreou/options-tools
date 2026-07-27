@@ -106,7 +106,7 @@
           <div class="card-header d-flex align-items-center">
             <h4 class="mb-0 text-white" x-show="$store.app.spotPrice !== null"
               style="font-size: 1.35rem; font-weight: 600;">
-              <span x-text="$store.app.ticker || 'Spot'"></span> Price: <span class="fw-bold" style="color: #00ff00;"
+              <span x-text="$store.app.ticker || 'Spot'"></span> Price: <span class="text-spot"
                 x-text="$store.app.spotPriceDisplay"></span>
             </h4>
             <div class="d-flex align-items-center gap-2 ms-auto">
@@ -584,16 +584,16 @@
           </td>
         </tr>
         <tr>
+          <td><span class="text-label">Spot Price</span></td>
+          <td class="text-end">
+            <span class="text-spot" x-text="d?.spotPrice"></span>
+          </td>
+        </tr>
+        <tr>
           <td><span class="text-label">Strike Price</span></td>
           <td class="text-end">
             <span class="strike-relative">(<span x-text="d?.strikeRelative"></span>)</span>
             <span class="text-neutral" x-text="d?.strikeAbsolute"></span>
-          </td>
-        </tr>
-        <tr>
-          <td><span class="text-label">Spot Price</span></td>
-          <td class="text-end">
-            <span style="color: #00ff00; font-weight: bold;" x-text="d?.spotPrice"></span>
           </td>
         </tr>
         <tr>
