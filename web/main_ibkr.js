@@ -333,6 +333,11 @@ function formatCurrency(num) {
   return (num < 0 ? '-' + symbol : symbol) + formatted;
 }
 
+function formatPosition(val) {
+  if (val === undefined || val === null || val === 0) return 'Open';
+  return Number(val).toLocaleString('en-US', { maximumFractionDigits: 4 });
+}
+
 function getPnlBadgeClass(val) {
   if (val > 0) return 'pnl-positive';
   if (val < 0) return 'pnl-negative';
@@ -398,9 +403,9 @@ function renderSymbolPnlTable(symbolSummaries) {
         const assetBadge = inst.assetCategory ? `<span class="badge bg-dark border border-secondary text-white-50 ms-2">${inst.assetCategory}</span>` : '';
         subRowsHtml += `
           <tr>
-            <td class="ps-4 font-monospace text-light fw-bold">${inst.symbol}${assetBadge}</td>
+            <td class="ps-4 font-monospace text-light fw-bold">${inst.description || inst.symbol}${assetBadge}</td>
             <td class="text-center text-white-50">${inst.tradesCount}</td>
-            <td class="text-center text-white-50">${inst.openPositionsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2">Open</span>' : '-'}</td>
+            <td class="text-center text-white-50">${inst.openPositionsCount > 0 ? `<span class="badge bg-success-subtle text-success border border-success-subtle px-2">${formatPosition(inst.position)}</span>` : '-'}</td>
             <td class="text-end ${getPnlBadgeClass(inst.realized)}">${formatCurrency(inst.realized)}</td>
             <td class="text-end ${getPnlBadgeClass(inst.dividends)}">${formatCurrency(inst.dividends)}</td>
             <td class="text-end ${getPnlBadgeClass(inst.unrealized)}">${formatCurrency(inst.unrealized)}</td>

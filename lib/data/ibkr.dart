@@ -173,21 +173,25 @@ int _comparePnl(int openPositionsCountA, double totalA, int openPositionsCountB,
 class InstrumentSummary {
   final String symbol;
   final String assetCategory;
+  String description;
   int tradesCount = 0;
   int openPositionsCount = 0;
+  double position = 0.0;
   double realized = 0.0;
   double dividends = 0.0;
   double unrealized = 0.0;
   double total = 0.0;
 
-  InstrumentSummary(this.symbol, this.assetCategory);
+  InstrumentSummary(this.symbol, this.assetCategory, this.description);
 
   Map<String, dynamic> toJson() {
     return {
       'symbol': symbol,
       'assetCategory': assetCategory,
+      'description': description.isNotEmpty ? description : symbol,
       'tradesCount': tradesCount,
       'openPositionsCount': openPositionsCount,
+      'position': position,
       'realized': realized,
       'dividends': dividends,
       'unrealized': unrealized,
@@ -233,14 +237,19 @@ class SymbolSummary {
 
 List<Map<String, dynamic>> aggregateBySymbol(XmlDocument document) {
   final symbolMap = <String, SymbolSummary>{};
+  final hasOpenPositions = document.findAllElements('OpenPosition').isNotEmpty;
 
   SymbolSummary getOrInitSymbol(String sym) {
     return symbolMap.putIfAbsent(sym, () => SymbolSummary(sym));
   }
 
-  InstrumentSummary getOrInitInstrument(SymbolSummary parentAggr, String rawInstSymbol, String assetCategory) {
+  InstrumentSummary getOrInitInstrument(SymbolSummary parentAggr, String rawInstSymbol, String assetCategory, String description) {
     final key = rawInstSymbol.isNotEmpty ? rawInstSymbol : parentAggr.symbol;
-    return parentAggr.instrumentsMap.putIfAbsent(key, () => InstrumentSummary(key, assetCategory));
+    final inst = parentAggr.instrumentsMap.putIfAbsent(key, () => InstrumentSummary(key, assetCategory, description));
+    if (inst.description.isEmpty && description.isNotEmpty) {
+      inst.description = description;
+    }
+    return inst;
   }
 
   Map<String, String> nodeToMap(XmlElement node) {
@@ -260,7 +269,8 @@ List<Map<String, dynamic>> aggregateBySymbol(XmlDocument document) {
 
     final rawInstSymbol = node.getAttribute('symbol') ?? sym;
     final assetCategory = node.getAttribute('assetCategory') ?? '';
-    final inst = getOrInitInstrument(aggr, rawInstSymbol, assetCategory);
+    final description = node.getAttribute('description') ?? '';
+    final inst = getOrInitInstrument(aggr, rawInstSymbol, assetCategory, description);
     inst.tradesCount++;
 
     final fx = getAttrDouble(node, 'fxRateToBase', 1.0);
@@ -278,8 +288,10 @@ List<Map<String, dynamic>> aggregateBySymbol(XmlDocument document) {
 
     final rawInstSymbol = node.getAttribute('symbol') ?? sym;
     final assetCategory = node.getAttribute('assetCategory') ?? '';
-    final inst = getOrInitInstrument(aggr, rawInstSymbol, assetCategory);
+    final description = node.getAttribute('description') ?? '';
+    final inst = getOrInitInstrument(aggr, rawInstSymbol, assetCategory, description);
     inst.openPositionsCount++;
+    inst.position += getAttrDouble(node, 'position');
 
     final fx = getAttrDouble(node, 'fxRateToBase', 1.0);
     final fifoUnrealized = getAttrDouble(node, 'fifoPnlUnrealized', getAttrDouble(node, 'unrealizedPNL')) * fx;
@@ -295,7 +307,8 @@ List<Map<String, dynamic>> aggregateBySymbol(XmlDocument document) {
 
     final rawInstSymbol = node.getAttribute('symbol') ?? sym;
     final assetCategory = node.getAttribute('assetCategory') ?? '';
-    getOrInitInstrument(aggr, rawInstSymbol, assetCategory);
+    final description = node.getAttribute('description') ?? '';
+    getOrInitInstrument(aggr, rawInstSymbol, assetCategory, description);
   }
 
   // 4. Process Performance Summary Items if detailed trades/positions are omitted
@@ -311,25 +324,39 @@ List<Map<String, dynamic>> aggregateBySymbol(XmlDocument document) {
 
       final rawInstSymbol = node.getAttribute('symbol') ?? sym;
       final assetCategory = node.getAttribute('assetCategory') ?? '';
-      final inst = getOrInitInstrument(aggr, rawInstSymbol, assetCategory);
+      final description = node.getAttribute('description') ?? '';
+      final inst = getOrInitInstrument(aggr, rawInstSymbol, assetCategory, description);
       inst.realized = realizedTotal;
       inst.unrealized = unrealizedTotal;
     }
   }
 
-  // 5. Parse dividends from MTMPerformanceSummaryUnderlying 'other' attribute
+  // 5. Parse dividends and closeQuantity from MTMPerformanceSummaryUnderlying
   for (final node in document.findAllElements('MTMPerformanceSummaryUnderlying')) {
     final sym = extractSymbolRoot(node);
     final assetCategory = node.getAttribute('assetCategory') ?? '';
+    if (assetCategory.isEmpty || assetCategory == 'CASH') continue;
+
+    final aggr = getOrInitSymbol(sym);
+    final rawInstSymbol = node.getAttribute('symbol') ?? sym;
+    final description = node.getAttribute('description') ?? '';
+    final inst = getOrInitInstrument(aggr, rawInstSymbol, assetCategory, description);
+
     final otherVal = getAttrDouble(node, 'other');
-
-    if (assetCategory.isNotEmpty && assetCategory != 'CASH' && otherVal != 0.0) {
-      final aggr = getOrInitSymbol(sym);
+    if (otherVal != 0.0) {
       aggr.dividends += otherVal;
-
-      final rawInstSymbol = node.getAttribute('symbol') ?? sym;
-      final inst = getOrInitInstrument(aggr, rawInstSymbol, assetCategory);
       inst.dividends += otherVal;
+    }
+
+    final closeQty = getAttrDouble(node, 'closeQuantity');
+    if (closeQty != 0.0) {
+      if (!hasOpenPositions) {
+        inst.position += closeQty;
+        if (inst.openPositionsCount == 0) {
+          inst.openPositionsCount = 1;
+          aggr.openPositionsCount++;
+        }
+      }
     }
   }
 

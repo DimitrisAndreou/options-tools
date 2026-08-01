@@ -166,5 +166,51 @@ void main() {
       // 3. TSLA 260619C00200000 (closed, total.abs() = 50)
       expect(instruments[2]['symbol'], equals('TSLA 260619C00200000'));
     });
+
+    test('Position quantity parsing, accumulation, and fallback logic', () {
+      const xmlWithOpenPos = '''
+<FlexQueryResponse queryName="Position Test">
+  <FlexStatements>
+    <FlexStatement fromDate="20260301" toDate="20260315" period="Custom">
+      <OpenPositions>
+        <OpenPosition symbol="IBIT" underlyingSymbol="IBIT" assetCategory="STK" position="1000" fxRateToBase="1.0"/>
+        <OpenPosition symbol="IBIT" underlyingSymbol="IBIT" assetCategory="STK" position="300" fxRateToBase="1.0"/>
+        <OpenPosition symbol="IBIT  270115C00035000" underlyingSymbol="IBIT" assetCategory="OPT" position="-3" fxRateToBase="1.0"/>
+      </OpenPositions>
+      <MTMPerformanceSummaryUnderlying symbol="IBIT" assetCategory="STK" closeQuantity="1300"/>
+    </FlexStatement>
+  </FlexStatements>
+</FlexQueryResponse>
+''';
+
+      final jsonText1 = parseIbkrXml(xmlWithOpenPos);
+      final result1 = jsonDecode(jsonText1);
+      final tslaInstruments1 = (result1['perSymbolPnL'] as List)[0]['instruments'] as List;
+
+      final ibitStk1 = tslaInstruments1.firstWhere((i) => i['symbol'] == 'IBIT');
+      final ibitOpt1 = tslaInstruments1.firstWhere((i) => i['symbol'] == 'IBIT  270115C00035000');
+
+      expect(ibitStk1['position'], equals(1300.0));
+      expect(ibitOpt1['position'], equals(-3.0));
+
+      const xmlWithMtmFallback = '''
+<FlexQueryResponse queryName="Position Test Fallback">
+  <FlexStatements>
+    <FlexStatement fromDate="20260301" toDate="20260315" period="Custom">
+      <MTMPerformanceSummaryUnderlying symbol="IBIT" assetCategory="STK" closeQuantity="1000"/>
+      <MTMPerformanceSummaryUnderlying symbol="IBIT" assetCategory="STK" closeQuantity="300"/>
+    </FlexStatement>
+  </FlexStatements>
+</FlexQueryResponse>
+''';
+
+      final jsonText2 = parseIbkrXml(xmlWithMtmFallback);
+      final result2 = jsonDecode(jsonText2);
+      final tslaInstruments2 = (result2['perSymbolPnL'] as List)[0]['instruments'] as List;
+
+      final ibitStk2 = tslaInstruments2.firstWhere((i) => i['symbol'] == 'IBIT');
+      expect(ibitStk2['position'], equals(1300.0));
+      expect(ibitStk2['openPositionsCount'], equals(1));
+    });
   });
 }
