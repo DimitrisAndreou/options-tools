@@ -351,7 +351,7 @@ function renderSymbolPnlTable(symbolSummaries) {
   tableFoot.innerHTML = '';
 
   if (symbolSummaries.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">No underlying symbol data found in statement.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">No underlying symbol data found in statement.</td></tr>`;
     return;
   }
 
@@ -359,12 +359,14 @@ function renderSymbolPnlTable(symbolSummaries) {
   let totalDividends = 0;
   let totalUnrealized = 0;
   let grandTotal = 0;
+  let totalMarketValue = 0;
 
   symbolSummaries.forEach((s, idx) => {
     totalRealized += s.realized;
     totalDividends += (s.dividends || 0);
     totalUnrealized += s.unrealized;
     grandTotal += s.total;
+    totalMarketValue += (s.marketValue || 0);
 
     const hasSubRows = s.instruments && s.instruments.length > 0;
 
@@ -381,6 +383,7 @@ function renderSymbolPnlTable(symbolSummaries) {
       <td class="fw-bold text-warning fs-6">${chevronHtml}${s.symbol} <span class="badge bg-dark border border-secondary text-info ms-2 fw-normal small">${s.instruments.length} contract(s)</span></td>
       <td class="text-center">${s.tradesCount}</td>
       <td class="text-center">${s.openPositionsCount}</td>
+      <td class="text-end text-light">${s.openPositionsCount > 0 ? formatCurrency(s.marketValue) : '-'}</td>
       <td class="text-end ${getPnlBadgeClass(s.realized)}">${formatCurrency(s.realized)}</td>
       <td class="text-end ${getPnlBadgeClass(s.dividends)}">${formatCurrency(s.dividends)}</td>
       <td class="text-end ${getPnlBadgeClass(s.unrealized)}">${formatCurrency(s.unrealized)}</td>
@@ -394,7 +397,7 @@ function renderSymbolPnlTable(symbolSummaries) {
       subTr.id = `subrows-${idx}`;
       subTr.style.display = 'none';
 
-      let subRowsHtml = `<td colspan="7" class="p-0 border-0">
+      let subRowsHtml = `<td colspan="8" class="p-0 border-0">
         <div class="subrow-table p-2">
           <table class="table table-dark table-sm mb-0 align-middle small">
             <tbody>`;
@@ -406,6 +409,7 @@ function renderSymbolPnlTable(symbolSummaries) {
             <td class="ps-4 font-monospace text-light fw-bold">${inst.description || inst.symbol}${assetBadge}</td>
             <td class="text-center text-white-50">${inst.tradesCount}</td>
             <td class="text-center text-white-50">${inst.openPositionsCount > 0 ? `<span class="badge bg-success-subtle text-success border border-success-subtle px-2">${formatPosition(inst.position)}</span>` : '-'}</td>
+            <td class="text-end text-light">${inst.openPositionsCount > 0 ? formatCurrency(inst.marketValue) : '-'}</td>
             <td class="text-end ${getPnlBadgeClass(inst.realized)}">${formatCurrency(inst.realized)}</td>
             <td class="text-end ${getPnlBadgeClass(inst.dividends)}">${formatCurrency(inst.dividends)}</td>
             <td class="text-end ${getPnlBadgeClass(inst.unrealized)}">${formatCurrency(inst.unrealized)}</td>
@@ -424,6 +428,7 @@ function renderSymbolPnlTable(symbolSummaries) {
   tableFoot.innerHTML = `
     <tr class="table-dark">
       <td colspan="3" class="text-uppercase text-white-50">Total Portfolio P&amp;L Summary:</td>
+      <td class="text-end text-light">${formatCurrency(totalMarketValue)}</td>
       <td class="text-end ${getPnlBadgeClass(totalRealized)}">${formatCurrency(totalRealized)}</td>
       <td class="text-end ${getPnlBadgeClass(totalDividends)}">${formatCurrency(totalDividends)}</td>
       <td class="text-end ${getPnlBadgeClass(totalUnrealized)}">${formatCurrency(totalUnrealized)}</td>

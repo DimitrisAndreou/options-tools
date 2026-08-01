@@ -177,6 +177,7 @@ class InstrumentSummary {
   int tradesCount = 0;
   int openPositionsCount = 0;
   double position = 0.0;
+  double marketValue = 0.0;
   double realized = 0.0;
   double dividends = 0.0;
   double unrealized = 0.0;
@@ -192,6 +193,7 @@ class InstrumentSummary {
       'tradesCount': tradesCount,
       'openPositionsCount': openPositionsCount,
       'position': position,
+      'marketValue': marketValue,
       'realized': realized,
       'dividends': dividends,
       'unrealized': unrealized,
@@ -206,6 +208,7 @@ class SymbolSummary {
   double dividends = 0.0;
   double unrealized = 0.0;
   double total = 0.0;
+  double marketValue = 0.0;
   int tradesCount = 0;
   int openPositionsCount = 0;
   final Map<String, InstrumentSummary> instrumentsMap = {};
@@ -225,6 +228,7 @@ class SymbolSummary {
       'dividends': dividends,
       'unrealized': unrealized,
       'total': total,
+      'marketValue': marketValue,
       'tradesCount': tradesCount,
       'openPositionsCount': openPositionsCount,
       'instruments': sortedInstruments.map((i) => i.toJson()).toList(),
@@ -294,6 +298,10 @@ List<Map<String, dynamic>> aggregateBySymbol(XmlDocument document) {
     inst.position += getAttrDouble(node, 'position');
 
     final fx = getAttrDouble(node, 'fxRateToBase', 1.0);
+    final posVal = getAttrDouble(node, 'positionValue') * fx;
+    inst.marketValue += posVal;
+    aggr.marketValue += posVal;
+
     final fifoUnrealized = getAttrDouble(node, 'fifoPnlUnrealized', getAttrDouble(node, 'unrealizedPNL')) * fx;
     aggr.unrealized += fifoUnrealized;
     inst.unrealized += fifoUnrealized;
@@ -352,6 +360,11 @@ List<Map<String, dynamic>> aggregateBySymbol(XmlDocument document) {
     if (closeQty != 0.0) {
       if (!hasOpenPositions) {
         inst.position += closeQty;
+        final closePrice = getAttrDouble(node, 'closePrice');
+        final multiplier = getAttrDouble(node, 'multiplier', 1.0);
+        final posVal = closeQty * closePrice * multiplier;
+        inst.marketValue += posVal;
+        aggr.marketValue += posVal;
         if (inst.openPositionsCount == 0) {
           inst.openPositionsCount = 1;
           aggr.openPositionsCount++;

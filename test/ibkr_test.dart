@@ -173,9 +173,9 @@ void main() {
   <FlexStatements>
     <FlexStatement fromDate="20260301" toDate="20260315" period="Custom">
       <OpenPositions>
-        <OpenPosition symbol="IBIT" underlyingSymbol="IBIT" assetCategory="STK" position="1000" fxRateToBase="1.0"/>
-        <OpenPosition symbol="IBIT" underlyingSymbol="IBIT" assetCategory="STK" position="300" fxRateToBase="1.0"/>
-        <OpenPosition symbol="IBIT  270115C00035000" underlyingSymbol="IBIT" assetCategory="OPT" position="-3" fxRateToBase="1.0"/>
+        <OpenPosition symbol="IBIT" underlyingSymbol="IBIT" assetCategory="STK" position="1000" positionValue="50000" fxRateToBase="1.1"/>
+        <OpenPosition symbol="IBIT" underlyingSymbol="IBIT" assetCategory="STK" position="300" positionValue="15000" fxRateToBase="1.1"/>
+        <OpenPosition symbol="IBIT  270115C00035000" underlyingSymbol="IBIT" assetCategory="OPT" position="-3" positionValue="-1200" fxRateToBase="1.1"/>
       </OpenPositions>
       <MTMPerformanceSummaryUnderlying symbol="IBIT" assetCategory="STK" closeQuantity="1300"/>
     </FlexStatement>
@@ -185,20 +185,24 @@ void main() {
 
       final jsonText1 = parseIbkrXml(xmlWithOpenPos);
       final result1 = jsonDecode(jsonText1);
-      final tslaInstruments1 = (result1['perSymbolPnL'] as List)[0]['instruments'] as List;
+      final perSymbolPnL1 = result1['perSymbolPnL'] as List;
+      final tslaInstruments1 = perSymbolPnL1[0]['instruments'] as List;
 
       final ibitStk1 = tslaInstruments1.firstWhere((i) => i['symbol'] == 'IBIT');
       final ibitOpt1 = tslaInstruments1.firstWhere((i) => i['symbol'] == 'IBIT  270115C00035000');
 
       expect(ibitStk1['position'], equals(1300.0));
+      expect(ibitStk1['marketValue'], closeTo(71500.0, 0.001)); // (50000 + 15000) * 1.1
       expect(ibitOpt1['position'], equals(-3.0));
+      expect(ibitOpt1['marketValue'], closeTo(-1320.0, 0.001)); // -1200 * 1.1
+      expect(perSymbolPnL1[0]['marketValue'], closeTo(70180.0, 0.001)); // 71500 + (-1320)
 
       const xmlWithMtmFallback = '''
 <FlexQueryResponse queryName="Position Test Fallback">
   <FlexStatements>
     <FlexStatement fromDate="20260301" toDate="20260315" period="Custom">
-      <MTMPerformanceSummaryUnderlying symbol="IBIT" assetCategory="STK" closeQuantity="1000"/>
-      <MTMPerformanceSummaryUnderlying symbol="IBIT" assetCategory="STK" closeQuantity="300"/>
+      <MTMPerformanceSummaryUnderlying symbol="IBIT" assetCategory="STK" closeQuantity="1000" closePrice="40" multiplier="1"/>
+      <MTMPerformanceSummaryUnderlying symbol="IBIT" assetCategory="STK" closeQuantity="300" closePrice="40" multiplier="1"/>
     </FlexStatement>
   </FlexStatements>
 </FlexQueryResponse>
@@ -206,11 +210,14 @@ void main() {
 
       final jsonText2 = parseIbkrXml(xmlWithMtmFallback);
       final result2 = jsonDecode(jsonText2);
-      final tslaInstruments2 = (result2['perSymbolPnL'] as List)[0]['instruments'] as List;
+      final perSymbolPnL2 = result2['perSymbolPnL'] as List;
+      final tslaInstruments2 = perSymbolPnL2[0]['instruments'] as List;
 
       final ibitStk2 = tslaInstruments2.firstWhere((i) => i['symbol'] == 'IBIT');
       expect(ibitStk2['position'], equals(1300.0));
+      expect(ibitStk2['marketValue'], closeTo(52000.0, 0.001)); // (1000 * 40 * 1) + (300 * 40 * 1)
       expect(ibitStk2['openPositionsCount'], equals(1));
+      expect(perSymbolPnL2[0]['marketValue'], closeTo(52000.0, 0.001));
     });
   });
 }
