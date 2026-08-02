@@ -96,6 +96,10 @@ That compiles web/* and copies the static files in docs/. This directory is
 then served by GitHub pages, at this location:
 https://dimitrisandreou.github.io/options-tools
 
+## Testing
+
+Run `dart test` to run all tests. Agents should not be trying to debug or verify the UI
+on their own; leave it to the human.
 
 ## Cloudflare Worker Proxy Deployment
 
