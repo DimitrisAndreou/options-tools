@@ -6,6 +6,15 @@ help/index.md
 ibkr.dart.js
 ibkr.html
 index.html
+kantartzis/app.css
+kantartzis/app.js
+kantartzis/data.js
+kantartzis/favicon.ico
+kantartzis/favicon.png
+kantartzis/i18n/en.json
+kantartzis/i18n/es.json
+kantartzis/index.html
+kantartzis/kantartzis.png
 long_options.js
 main.dart.js
 main.js

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trade Commissions Analyzer</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="app.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="app-title">
+      <h1 data-i18n="app_title">⚡ Ανάλυση Συναλλαγών και Προμηθειών</h1>
+      <div class="app-subtitle" data-i18n="app_subtitle">
+        <p>Αυτό το εργαλείο συγκεντρώνει αναφορές συναλλαγών πελατών του <a href='https://ikantartzis.com/' target='_blank' rel='noopener noreferrer'>Ιωάννη Κανταρτζή</a>. Εάν είστε πελάτης του Κανταρτζή και επιθυμείτε να υποβάλετε τη δική σας αναφορά συναλλαγών (IBKR activity statement), στείλτε τη στο <a href='https://x.com/optionakias' target='_blank' rel='noopener noreferrer'>@optionakias</a>.</p>
+        <p>Ο Ιωάννης Κανταρτζής <strong>δεν</strong> διαθέτει άδεια για υπηρεσίες συμβουλευτικής, και υπάρχει σε ισχύ προειδοποίηση της Επιτροπής Κεφαλαιαγοράς (ΕΚ) εναντίον του, την οποία μπορείτε να διαβάσετε <a href='http://www.hcmc.gr/aweb/files/warnings/files/WARNING_KANTARTZIS%20IOANNIS_20260224_GR.pdf' target='_blank' rel='noopener noreferrer'>εδώ</a>.</p>
+        <div class='hcmc-warning-box'>
+          <div class='warning-title'>Η ανακοίνωση αναφέρει:</div>
+          <p><strong>Αθήνα, 24 Φεβρουαρίου 2026</strong><br><strong>ΑΝΑΚΟΙΝΩΣΗ</strong><br>Η Επιτροπή Κεφαλαιαγοράς ενημερώνει το επενδυτικό κοινό ότι ο κ. Ιωάννης Κανταρτζής του Νικολάου, δε δύναται να παρέχει επενδυτικές υπηρεσίες, όπως αναφέρονται στα Τμήματα Α΄ και Β΄ του Παραρτήματος Ι΄ του ν. 4514/2018, σε χρηματοπιστωτικά μέσα, όπως απεικονίζονται στο Τμήμα Γ΄ του Παραρτήματος Ι΄ του ίδιου νόμου ή/και να κατέχει χρήματα πελατών. Επισημαίνεται επίσης ότι σύμφωνα με το ν. 4514/2018, η παροχή επενδυτικών υπηρεσιών και η άσκηση επενδυτικών δραστηριοτήτων χωρίς άδεια από την Επιτροπή Κεφαλαιαγοράς ή την αντίστοιχη εποπτική αρχή άλλου κράτους μέλους της Ευρωπαϊκής Ένωσης συνιστά αδίκημα, το οποίο επισύρει σοβαρές ποινικές και διοικητικές κυρώσεις. Η Επιτροπή Κεφαλαιαγοράς εφιστά την προσοχή των επενδυτών στην αξιολόγηση των εταιριών (με τις οποίες προτίθενται να συνεργαστούν ή συνεργάζονται) σχετικά με το καθεστώς αδειοδότησης και εποπτείας τους. Ειδικότερα θα πρέπει να διαπιστώνουν την ύπαρξη άδειας λειτουργίας των εν λόγω εταιριών από την ιστοσελίδα της Επιτροπής Κεφαλαιαγοράς ή των αντίστοιχων εποπτικών αρχών άλλων κρατών μελών της Ευρωπαϊκής Ένωσης. Σε κάθε περίπτωση επισημαίνεται ότι η παροχή συμβουλών για επένδυση σε χρηματοπιστωτικά μέσα ή η διαχείριση χαρτοφυλακίου επενδύσεων, ή η λήψη-διαβίβαση και εκτέλεση εντολών για πραγματοποίηση συναλλαγών επί χρηματοπιστωτικών μέσων, αποτελούν ενδεικτικά κάποιες από τις επενδυτικές υπηρεσίες για τις οποίες απαιτείται άδεια της Επιτροπής Κεφαλαιαγοράς ή άλλης αρμόδιας αρχής.</p>
+        </div>
+        <p style='margin-top: 10px;'>Αυτό το εργαλείο επιτρέπει στα δυνητικά θύματα του Κανταρτζή να <em>δουν</em> τι πρόκειται να αντιμετωπίσουν εάν επιλέξουν να γίνουν πελάτες του. Παρόλο που κανείς δεν μπορεί να προβλέψει τις αγορές —και οι προηγούμενες αποδόσεις δεν είναι ενδεικτικές των μελλοντικών— αυτό που παραμένει σταθερό και βέβαιο σε όλες αυτές τις εμπειρίες είναι οι υψηλές προμήθειες και η υψηλή συχνότητα συναλλαγών, που οδηγούν σε τεράστια αφαιματική επιβάρυνση των επηρεαζόμενων λογαριασμών. Παρακαλούμε να είστε υπεύθυνοι με το σε ποιους εμπιστεύεστε τα κεφάλαιά σας.</p>
+      </div>
+    </div>
+    <div class="lang-picker">
+      <button class="lang-btn active" data-lang="el" title="Ελληνικά">🇬🇷 EL</button>
+      <button class="lang-btn" data-lang="en" title="English">🇬🇧 EN</button>
+      <button class="lang-btn" data-lang="es" title="Español">🇪🇸 ES</button>
+    </div>
+  </header>
+
+  <!-- Filter Toolbar -->
+  <div class="toolbar">
+    <div class="filter-group">
+      <label for="select-account" data-i18n="label_client_account">Λογαριασμός Πελάτη</label>
+      <select id="select-account" class="filter-select">
+        <option value="ALL" data-i18n="option_all_accounts">Όλοι οι Λογαριασμοί Πελατών</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="select-asset" data-i18n="label_asset_class">Κατηγορία Επένδυσης</label>
+      <select id="select-asset" class="filter-select">
+        <option value="ALL" data-i18n="option_all_assets">Όλες οι Κατηγορίες</option>
+        <option value="Options" data-i18n="option_asset_options">Δικαιώματα (Options)</option>
+        <option value="Stocks" data-i18n="option_asset_stocks">Μετοχές (Stocks)</option>
+        <option value="Futures" data-i18n="option_asset_futures">Συμβόλαια Μελλοντικής Εκπλήρωσης (Futures)</option>
+        <option value="Options on Futures" data-i18n="option_asset_options_futures">Options επί Futures</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="select-underlying" data-i18n="label_underlying">Υποκείμενο Περιουσιακό Στοιχείο</label>
+      <select id="select-underlying" class="filter-select">
+        <option value="ALL" data-i18n="option_all_underlyings">Όλα τα Υποκείμενα</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="select-flag" data-i18n="label_special_flag">Ειδική Σήμανση</label>
+      <select id="select-flag" class="filter-select">
+        <option value="ALL" data-i18n="option_all_positions">Όλες οι Θέσεις</option>
+        <option value="LIQUIDATION" data-i18n="option_flag_liquidation">🚨 Μόνο Αναγκαστικές Ρευστοποιήσεις Margin</option>
+        <option value="EXERCISE" data-i18n="option_flag_exercise">Ασκήσεις / Εκτελέσεις Δικαιωμάτων</option>
+      </select>
+    </div>
+
+    <div class="filter-group" style="flex:1; min-width: 200px;">
+      <label for="search-input" data-i18n="label_search">Αναζήτηση Συναλλαγών / Συμβόλων</label>
+      <input type="text" id="search-input" class="filter-input" placeholder="Αναζήτηση σύμβολου, τιμής άσκησης, ημερομηνίας ή κωδικού (π.χ. L, Ex, A)..." data-i18n-attr="placeholder:placeholder_search">
+    </div>
+  </div>
+
+  <!-- Level 1: Executive KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-title" data-i18n="kpi_comm_title">Συνολικές Προμήθειες που Αφαιρέθηκαν</div>
+      <div id="kpi-comm" class="kpi-value danger">$0.00</div>
+      <div class="kpi-sub" data-i18n="kpi_comm_sub">Συνολικά έξοδα συναλλαγών που καταβλήθηκαν στον σύμβουλο</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title" data-i18n="kpi_gross_pnl_title">Τελικό PnL (Πριν αφαιρεθούν οι προμήθειες)</div>
+      <div id="kpi-gross-pnl" class="kpi-value">$0.00</div>
+      <div class="kpi-sub" data-i18n="kpi_gross_pnl_sub">Κέρδη/Ζημίες χαρτοφυλακίου προ προμηθειών</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title" data-i18n="kpi_net_pnl_title">Τελικό PnL (μετά από προμήθειες)</div>
+      <div id="kpi-net-pnl" class="kpi-value">$0.00</div>
+      <div class="kpi-sub" data-i18n="kpi_net_pnl_sub">Καθαρή απόδοση πελάτη μετά την επιβάρυνση αμοιβών</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title" data-i18n="kpi_expectancy_title">Μέσο PnL Συναλλαγής</div>
+      <div id="kpi-expectancy" class="kpi-value danger">-$0.00</div>
+      <div class="kpi-sub" data-i18n="kpi_expectancy_sub">Μέση καθαρή απόδοση ανά θέση μετά από προμήθειες</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title" data-i18n="kpi_payoff_title">Μέσο Κέρδος, Μέση Ζημιά</div>
+      <div id="kpi-payoff" class="kpi-value brand">Avg Win vs Avg Loss</div>
+      <div class="kpi-sub" data-i18n="kpi_payoff_sub">Μέση κερδοφόρα θέση έναντι μέσης ζημιογόνας θέσης (μετά αμοιβών)</div>
+    </div>
+  </div>
+
+  <!-- Cumulative Chart & Advisor Photo Card -->
+  <div class="chart-card combined-chart-card">
+    <div class="combined-chart-body">
+      <div class="image-wrapper">
+        <img src="kantartzis.png" alt="Advisor" class="advisor-img" />
+      </div>
+      <div class="chart-container" style="display:flex; flex-direction:column;">
+        <div class="section-title" style="margin-bottom:12px;" data-i18n="chart_cumulative_title">📈 PnL & Προμήθειες</div>
+        <div style="flex:1; position:relative;">
+          <canvas id="chart-cumulative"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Side-by-Side Section: 5-Quantile Distribution & Asset Class Pie Chart -->
+  <div class="split-grid">
+    <div class="quantile-card">
+      <div class="section-header">
+        <div class="section-title" data-i18n="quantile_title">📊 Κατανομή Καθαρού PnL σε 5-Ποσοστημόρια (Quantiles)</div>
+        <div id="quantile-subtitle" class="app-subtitle" data-i18n="quantile_subtitle">Q0 = Μεγαλύτερη Ζημία ➜ Q2 = Διάμεσος ➜ Q4 = Μέγιστο Κέρδος</div>
+      </div>
+      <div id="quantile-list-container" class="quantile-list">
+        <!-- Dynamically populated 5 quantile rows -->
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="section-title" data-i18n="chart_asset_class_title">📊 Επιβάρυνση Προμηθειών ανά Κατηγορία Επένδυσης</div>
+      <div class="chart-container">
+        <canvas id="chart-asset-class"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level 2: Account Fee Performance & PnL Summary -->
+  <div class="table-card">
+    <div class="section-header">
+      <div class="section-title" data-i18n="table_accounts_title">👥 Απόδοση Αμοιβών & Σύνοψη PnL Λογαριασμών Πελατών</div>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th data-i18n="th_account_id">ID Λογαριασμού</th>
+          <th data-i18n="th_trades">Συναλλαγές</th>
+          <th data-i18n="th_total_commissions">Συνολικές Προμήθειες</th>
+          <th data-i18n="th_gross_realized_pnl">Μικτό Πραγματοποιηθέν PnL</th>
+          <th data-i18n="th_net_realized_pnl">Καθαρό Πραγματοποιηθέν PnL</th>
+          <th data-i18n="th_avg_hold_duration">Μέση Διάρκεια Διακράτησης</th>
+        </tr>
+      </thead>
+      <tbody id="table-accounts-body">
+        <!-- Dynamically populated -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Level 4: FIFO Position Lifecycles & Verifier -->
+  <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+    <div class="section-title" data-i18n="campaigns_title">🔄 Θέσεις</div>
+    <div class="filter-group" style="margin:0; min-width:240px;">
+      <label for="select-sort" data-i18n="label_sort">Ταξινόμηση Εκστρατειών Κατά</label>
+      <select id="select-sort" class="filter-select">
+        <option value="COMM_DAY_DESC" selected data-i18n="sort_comm_day_desc">Υψηλότερη Μέση Προμήθεια / Ημέρα</option>
+        <option value="AVG_COMM_DESC" data-i18n="sort_avg_comm_desc">Υψηλότερη Μέση Προμήθεια / Συναλλαγή</option>
+        <option value="COMM_DESC" data-i18n="sort_comm_desc">Υψηλότερες Συνολικές Προμήθειες</option>
+        <option value="LOSS_DESC" data-i18n="sort_loss_desc">Μεγαλύτερη Καθαρή Ζημία</option>
+        <option value="GAIN_DESC" data-i18n="sort_gain_desc">Μεγαλύτερο Καθαρό Κέρδος</option>
+        <option value="QTY_DESC" data-i18n="sort_qty_desc">Υψηλότερος Όγκος Συμβολαίων</option>
+        <option value="FAST_ASC" data-i18n="sort_fast_asc">Μικρότερη Διάρκεια Διακράτησης (Υψηλή Ταχύτητα)</option>
+        <option value="DATE_DESC" data-i18n="sort_date_desc">Πιο Πρόσφατη Ημερομηνία Ανοίγματος</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="positions-container" class="position-grid">
+    <!-- Dynamically populated -->
+  </div>
+
+  <!-- Data Payload & App Logic -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
