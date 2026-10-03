@@ -309,8 +309,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("kpi-net-pnl").textContent = `$${netPnL.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     document.getElementById("kpi-net-pnl").className = `kpi-value ${netPnL >= 0 ? 'success' : 'danger'}`;
 
-    document.getElementById("kpi-expectancy").textContent = formattedAvgTradePnL;
-    document.getElementById("kpi-expectancy").className = `kpi-value ${avgTradePnL >= 0 ? 'success' : 'danger'}`;
+    const expectancyEl = document.getElementById("kpi-expectancy");
+    if (expectancyEl) {
+      expectancyEl.textContent = formattedAvgTradePnL;
+      expectancyEl.className = `kpi-value ${avgTradePnL >= 0 ? 'success' : 'danger'}`;
+    }
 
     const dailyTradesEl = document.getElementById("kpi-daily-trades");
     if (dailyTradesEl) {
