@@ -86,10 +86,10 @@ source ~/.bashrc
 
 
 To build a production version ready for deployment,
-use the `webdev build` command:
+use `build_runner`:
 
 ```
-webdev build --output web:docs
+dart run build_runner build --release -o web:docs
 ```
 
 That compiles web/* and copies the static files in docs/. This directory is
@@ -140,5 +140,5 @@ Once deployed:
    ```
 3. Replace the URL with your new worker's endpoint.
 4. For IBKR Flex queries (`web/ibkr.html`), the default worker URL (`https://ibkr-proxy.jim-andreou.workers.dev/`) can also be customized directly in the input field on the page.
-5. Rebuild the application for production using `webdev build --output web:docs`.
+5. Rebuild the application for production using `dart run build_runner build --release -o web:docs`.
 
