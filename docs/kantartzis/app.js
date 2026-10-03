@@ -20,7 +20,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const GREEK_DEFAULTS = {
     "trades_suffix": "συναλλαγές",
-    "payoff_format": "+${win} κέρδος vs -${loss} ζημία",
+    "kpi_daily_trades_title": "Μέσο Πλήθος Συναλλαγών Ανά Μέρα",
+    "kpi_daily_trades_sub": "Μέσος αριθμός εκτελεσμένων συναλλαγών ανά εργάσιμη ημέρα ανά πελάτη",
+    "kpi_monthly_comm_title": "Μέσες Προμήθειες Ανά Μήνα / Πελάτη",
+    "kpi_monthly_comm_sub": "Μέσες μηνιαίες προμήθειες ανά πελάτη",
     "per_trade_day_format": "(${avgComm}/συν · ${dailyComm}/ημ)",
     "quantile_empty": "Δεν βρέθηκαν θέσεις με τα τρέχοντα κριτήρια φίλτρου.",
     "quantile_q0": "Q0 (Μεγαλύτερη Ζημία / Ελάχιστο)",
@@ -224,33 +227,79 @@ document.addEventListener("DOMContentLoaded", async () => {
     let grossPnL = 0;
     let netPnL = 0;
 
-    let winSum = 0;
-    let winCnt = 0;
-    let lossSum = 0;
-    let lossCnt = 0;
     let totalHoldHours = 0;
+    const seenTradeIds = new Set();
+    const acctStats = {}; // accountName -> { comm, trades, weekdayDates: Set, months: Set }
 
     filteredPositions.forEach(p => {
       totComm += p.total_comm_fee;
       grossPnL += p.gross_realized_pl;
       netPnL += p.net_realized_pl;
-      
-      if (p.net_realized_pl > 0) {
-        winSum += p.net_realized_pl;
-        winCnt++;
-      } else if (p.net_realized_pl < 0) {
-        lossSum += p.net_realized_pl;
-        lossCnt++;
-      }
-
       totalHoldHours += p.hold_duration_hours;
+
+      const acctName = p.account || "UNKNOWN";
+      if (!acctStats[acctName]) {
+        acctStats[acctName] = { comm: 0, trades: 0, weekdayDates: new Set(), months: new Set() };
+      }
+      acctStats[acctName].comm += p.total_comm_fee;
+
+      if (p.raw_trades) {
+        p.raw_trades.forEach(t => {
+          const tAcct = t.account || acctName;
+          if (!acctStats[tAcct]) {
+            acctStats[tAcct] = { comm: 0, trades: 0, weekdayDates: new Set(), months: new Set() };
+          }
+
+          if (t.id && seenTradeIds.has(t.id)) return;
+          if (t.id) seenTradeIds.add(t.id);
+
+          if (t.date_time) {
+            const datePart = t.date_time.split(" ")[0];
+            const parts = datePart.split("-");
+            if (parts.length === 3) {
+              const monthStr = parts[0] + "-" + parts[1];
+              acctStats[tAcct].months.add(monthStr);
+
+              const year = parseInt(parts[0], 10);
+              const month = parseInt(parts[1], 10) - 1;
+              const day = parseInt(parts[2], 10);
+              const dt = new Date(Date.UTC(year, month, day));
+              const dayOfWeek = dt.getUTCDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri, 6 = Sat
+              if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                acctStats[tAcct].trades++;
+                acctStats[tAcct].weekdayDates.add(datePart);
+              }
+            }
+          }
+        });
+      }
     });
 
     const posCount = filteredPositions.length;
-    const avgWin = winCnt > 0 ? (winSum / winCnt) : 0;
-    const avgLoss = lossCnt > 0 ? (lossSum / lossCnt) : 0;
     const avgTradePnL = posCount > 0 ? (netPnL / posCount) : 0;
     const formattedAvgTradePnL = (avgTradePnL >= 0 ? '+' : '') + '$' + avgTradePnL.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    const activeAccounts = Object.keys(acctStats);
+    const numCustomers = activeAccounts.length > 0 ? activeAccounts.length : 1;
+
+    let sumMonthlyCommRate = 0;
+    let sumDailyTradeRate = 0;
+
+    activeAccounts.forEach(acct => {
+      const st = acctStats[acct];
+      const mCount = st.months.size > 0 ? st.months.size : 1;
+      const dCount = st.weekdayDates.size > 0 ? st.weekdayDates.size : 1;
+
+      sumMonthlyCommRate += (st.comm / mCount);
+      sumDailyTradeRate += (st.trades / dCount);
+    });
+
+    const avgDailyTradesPerCustomer = activeAccounts.length > 0 ? (sumDailyTradeRate / numCustomers) : 0;
+    const formattedAvgDailyTrades = avgDailyTradesPerCustomer.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 2});
+
+    const avgMonthlyCommPerCustomer = activeAccounts.length > 0 ? (sumMonthlyCommRate / numCustomers) : 0;
+    const formattedAvgMonthlyComm = `$${avgMonthlyCommPerCustomer.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
     // Update KPI Elements
     document.getElementById("kpi-comm").textContent = `$${totComm.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     
@@ -263,11 +312,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("kpi-expectancy").textContent = formattedAvgTradePnL;
     document.getElementById("kpi-expectancy").className = `kpi-value ${avgTradePnL >= 0 ? 'success' : 'danger'}`;
 
-    document.getElementById("kpi-payoff").textContent = t("payoff_format", "+${win} win vs -${loss} loss", {
-      win: avgWin.toFixed(0),
-      loss: Math.abs(avgLoss).toFixed(0)
-    });
-    document.getElementById("kpi-payoff").className = "kpi-value brand";
+    const dailyTradesEl = document.getElementById("kpi-daily-trades");
+    if (dailyTradesEl) {
+      dailyTradesEl.textContent = formattedAvgDailyTrades;
+      dailyTradesEl.className = "kpi-value brand";
+    }
+
+    const monthlyCommEl = document.getElementById("kpi-monthly-comm");
+    if (monthlyCommEl) {
+      monthlyCommEl.textContent = formattedAvgMonthlyComm;
+      monthlyCommEl.className = "kpi-value danger";
+    }
 
     // Render 5-Quantile Distribution
     renderQuantiles(filteredPositions);
