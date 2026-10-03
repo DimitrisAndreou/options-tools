@@ -19,7 +19,7 @@
   "label_search": "Buscar Operaciones / Símbolos",
   "placeholder_search": "Buscar símbolo, precio de ejercicio, fecha o código (ej. L, Ex, A)...",
   "kpi_comm_title": "Total Comisiones Drenadas",
-  "kpi_comm_sub": "Total de tarifas de transacción pagadas al asesor",
+  "kpi_comm_sub": "(De un total de {count} clientes)",
   "kpi_gross_pnl_title": "PnL Final (Antes de Comisiones)",
   "kpi_gross_pnl_sub": "Ganancia/Pérdida del portafolio antes de comisiones",
   "kpi_net_pnl_title": "PnL Final (Después de Comisiones)",

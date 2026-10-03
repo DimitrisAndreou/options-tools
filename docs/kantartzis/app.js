@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "kpi_daily_trades_sub": "Μέσος αριθμός εκτελεσμένων συναλλαγών ανά εργάσιμη ημέρα ανά πελάτη",
     "kpi_monthly_comm_title": "Μέσες Προμήθειες Ανά Μήνα / Πελάτη",
     "kpi_monthly_comm_sub": "Μέσες μηνιαίες προμήθειες ανά πελάτη",
+    "kpi_comm_sub": "(Από αριθμό πελάτων: {count})",
     "per_trade_day_format": "(${avgComm}/συν · ${dailyComm}/ημ)",
     "quantile_empty": "Δεν βρέθηκαν θέσεις με τα τρέχοντα κριτήρια φίλτρου.",
     "quantile_q0": "Q0 (Μεγαλύτερη Ζημία / Ελάχιστο)",
@@ -302,6 +303,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Update KPI Elements
     document.getElementById("kpi-comm").textContent = `$${totComm.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    const commSubEl = document.getElementById("kpi-comm-sub");
+    if (commSubEl) {
+      commSubEl.textContent = t("kpi_comm_sub", `(Από αριθμό πελάτων: ${activeAccounts.length})`, { count: activeAccounts.length });
+    }
     
     document.getElementById("kpi-gross-pnl").textContent = `$${grossPnL.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     document.getElementById("kpi-gross-pnl").className = `kpi-value ${grossPnL >= 0 ? 'success' : 'danger'}`;

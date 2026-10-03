@@ -19,7 +19,7 @@
   "label_search": "Search Trades / Symbols",
   "placeholder_search": "Search symbol, strike, date, or code (e.g. L, Ex, A)...",
   "kpi_comm_title": "Total Commissions Drained",
-  "kpi_comm_sub": "Total transaction fees paid to advisor",
+  "kpi_comm_sub": "(From number of customers: {count})",
   "kpi_gross_pnl_title": "Final PnL (Before Commissions)",
   "kpi_gross_pnl_sub": "Portfolio trading profit/loss before commissions",
   "kpi_net_pnl_title": "Final PnL (After Commissions)",
