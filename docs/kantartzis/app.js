@@ -597,7 +597,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       card.innerHTML = `
         <div class="position-header">
           <div class="position-sym">
-            <span style="font-size:18px; font-weight:800; color:#fff;">${p.underlying}${t("strategy_campaign", "") ? ' ' + t("strategy_campaign", "") : ''}</span>
+            <span style="font-size:18px; font-weight:800; color:#fff;">${p.underlying}</span>
             <span class="badge ${badgeClass}">${p.asset_class}</span>
             ${statusBadgeHtml}
             ${liqBadgeHtml}
