@@ -1,0 +1,13 @@
+[build]
+build-dir = "../docs/book"
+
+[book]
+authors = ["Dimitris Andreou"]
+language = "en"
+src = "."
+title = "Options Tools Book"
+
+[output.html]
+mathjax-support = true
+default-theme = "navy"
+preferred-dark-theme = "navy"

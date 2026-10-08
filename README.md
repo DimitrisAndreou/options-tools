@@ -85,12 +85,13 @@ source ~/.bashrc
 ```
 
 
-To build a production version ready for deployment,
-use `build_runner`:
+To build a production version ready for deployment:
 
+```bash
+./bin/publish.sh
 ```
-dart run build_runner build --release -o web:docs
-```
+
+*(Under the hood, this runs `dart run build_runner build --release -o web:docs --delete-conflicting-outputs`)*.
 
 That compiles web/* and copies the static files in docs/. This directory is
 then served by GitHub pages, at this location:
@@ -119,6 +120,13 @@ sudo apt update && sudo apt install -y nodejs npm
 
 ### 2. Deploying/Updating Workers
 
+Run the deployment script to update both workers:
+
+```bash
+./bin/deploy_wranglers.sh
+```
+
+Or deploy them individually:
 - **Yahoo Proxy Worker** (`yahoo-proxy-v2`):
   ```bash
   npx wrangler deploy
