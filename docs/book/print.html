@@ -1,0 +1,935 @@
+<!DOCTYPE HTML>
+<html lang="en" class="navy sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Options Tools Book</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-e96d0476.css">
+        <link rel="stylesheet" href="css/chrome-d279d366.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "navy";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-72e51024.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-274a903b.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('navy')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Options Tools Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<h2 id="visualizing-position-payoffs"><a class="header" href="#visualizing-position-payoffs">Visualizing Position Payoffs</a></h2>
+<p>Understanding options requires clear visual models of PnL (Profit and Loss) at expiration point across any underlying asset price.</p>
+<p>Below is an example payoff diagram of a <strong>Bull Call Spread</strong> generated directly from our position analyzer engine:</p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="assets/figures/sample_payoff.svg" alt="Bull Call Spread Payoff"><span class="img-wrapper"><img src="assets/figures/sample_payoff.svg" alt="Bull Call Spread Payoff"></span></label></p>
+<h3 id="position-key-metrics"><a class="header" href="#position-key-metrics">Position Key Metrics</a></h3>
+<ul>
+<li><strong>Long Leg</strong>: Buy $100 Call @ $5.00</li>
+<li><strong>Short Leg</strong>: Sell $110 Call @ $2.00</li>
+<li><strong>Net Cost / Max Risk</strong>: $3.00 ($300 total)</li>
+<li><strong>Max Profit</strong>: $7.00 ($700 total)</li>
+<li><strong>Breakeven Point</strong>: $103.00</li>
+</ul>
+<h3 id="intrinsic-value-functions-at-expiration"><a class="header" href="#intrinsic-value-functions-at-expiration">Intrinsic Value Functions at Expiration</a></h3>
+<p>For an underlying asset price $S$ at expiration:</p>
+<ul>
+<li>
+<p><strong>Call Option Intrinsic Value</strong>:
+$$V_{\text{call}}(S) = \max(S - K, 0)$$</p>
+</li>
+<li>
+<p><strong>Put Option Intrinsic Value</strong>:
+$$V_{\text{put}}(S) = \max(K - S, 0)$$</p>
+</li>
+</ul>
+<p>When combined with position sizing and entry premiums $P$, the Net Payoff $\Pi(S)$ for a single long call position becomes:</p>
+<p>$$\Pi_{\text{long call}}(S) = \max(S - K, 0) - P$$</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="value"><a class="header" href="#value">Value</a></h1>
+<p>How do you prefer A to B? Subjective.
+But if there’s a market, you can tell whether some quantity of A is more or less valuable than a quantity of B. The ratio is the price.
+If your available choice implies a price that is better than the market, you just take it, and go back to the market. You end up with more of what you actually wanted.</p>
+<p>Notes:</p>
+<ul>
+<li>Why anything has value?</li>
+<li>Future vs present.</li>
+<li>Carry trade.</li>
+<li>Value of future events (including stocks, bonds, futures, options) (weighted average of probable events ). What if the income is uncertain, what is the present value?</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="capital"><a class="header" href="#capital">Capital</a></h1>
+<p>Ownership, Risk, Profit
+Base Currency
+Speculation And Hedging
+More on PNL charts</p>
+<p>Understanding Capital</p>
+<p>The introduction is meant to “whet the appetite” for the reader, and build motivation to explore the rather complex topic of options in detail. Nevertheless, we should take things from the beginning, and gradually build the concepts we rely upon. Trading options involves…trading, and trading implies ownership. Trading means swapping titles of ownership between their respective owners.</p>
+<p>Further, trading typically implies a market economy, i.e. the existence of a general medium of exchange, i.e. money. Money facilicates exchanges, and we find money on one side of nearly every exchange that takes place. We don’t need to discuss how money has evolved and why people accept it in exchange for other assets/goods.</p>
+<p>The market economy implies that assets can be traded in the market for a price, thus they can be compared to an “equivalent” amount of money. I.e., for your house, car, or shares of $ACME, you can estimate an amount of money that they could fetch, if you were to sell them. This is the basis of accounting, and also of entrepreneurial activity. For example, one can estimate the expected inputs/costs of an enterprise, reduce them all into money, then estimate the expected outputs/revenue of the enterprise, reduce them into money as well, and then assess the relation between the expected revenue and the expected cost. They are both expressed in money so they can be compared; apples to apples.</p>
+<!-- Note for Options chapter:
+Prices are ratios between two goods. Every trader naturally prefers an improved price: either giving away less to obtain the same quantity of the other good, or giving away the same amount to obtain more. Economic calculation lets us compare any exchangeable good to a quantity of money (its liquidation value).
+-->
+<p>This is what allows you to see the progress, or the profit or loss, of your trading account. Your “net worth” is the sum of all your assets, minus all your liabilities. Both your assets and your liabilities come with a size, the quantity you own/owe of each asset. A liability is basically an asset owned by someone else, it is as if you have a negative quantity of an asset. When we associate an asset with a size (positive or negative, but not zero), e.g. “20 shares of $ACME”, we speak of a position. Your portfolio is a collection of positions.</p>
+<p>Capital has myriad definitions. For our needs, capital is merely a quantity of money. When we speak of “your capital”, we refer to the particular amount of currency which is equivalent to your portfolio; your entire positions, all your assets and liabilities. It doesn’t matter if your capital is literally a given amount of cash or it is a basket of other positions; all that is needed is that every asset in your portfolio can be exchanged for money. To calculate your capital, we “mark to market” the asset in each of your positions (i.e. take the best known price for the asset), multiply it the position’s size (which could be negative), then add all positions together. You are (or should be) particularly sensitive to whether your capital goes “up” or “down”. That is, whether your portfolio grows in value or diminishes.</p>
+<p>For example, say you own $10,000 cash, 200 shares of $ACME (its current price is $100), and 0.1 Bitcoin (its current price is $58,000), and you owe 5,000€ (the EUR.USD rate is $1.10).</p>
+<p>Then, your capital, in terms of dollars, would be:
+$10,000 cash
+200 ACME shares * 100($/ACME) = $20,000
+0.1 BTC * 58000($/BTC) = $5,800
+-5000€ * ($1.1/€) = ($5500)
+For a grand total of 10000 + 20000 + 5800 - 5500 = $30300.</p>
+<p>Or, your capital in euros would be:
+$10,000 cash / ($1.1/€) = 9090.9€
+200 ACME shares * $100 / ($1.1/€) = 18181.8€
+0.1 BTC * 58000 (BTC/$) / ($1.1/€) = 5272.7€
+-5000€
+For a grand total of 9090.9 + 18181.8 + 5272.7 - 5000 = 27545.4€</p>
+<p>Ownership, Risk, Profit</p>
+<p>Risk is the potential of capital loss. Any ownership inherently involves risk: you may see today’s prices, but you can’t know what price your assets would fetch in the future. It is worth it to take a moment and ponder on just how unavoidable the uncertainty is: these prices depend on the preferences of people in the future. You don’t even know what will your own preferences be in the future. They may depend on what else is going on in your life in the future, or even at your unpredictable whims. You may attempt to forecast, but you really can’t know the future.</p>
+<p>Maybe you own a house, and something bad happens in the neighborhood and people are less willing to live there. Or maybe you own shares of your favorite company, and it turns out its latest product is a dud. Or you own gold, but the people of India decide they need less of it for jewelry. Or you own bitcoin, but the people of the future decide that something like monero is a better bitcoin.</p>
+<p>Unless something is horribly wrong with your chosen base currency, these misfortunes would be reflected in your accounting. The market price of the impacted assets would fall, thus by marking your assets to “market”, you would notice a corresponding loss of capital due to them.</p>
+<p>When we speak of the risk, instead of a risk, we typically mean the worst case scenario for the involved capital. E.g. if you invest $1000 to $ACME, the risk is $1000, since the worst case scenario for your capital is that $ACME goes to zero, and in that case, you indeed lose $1000 of your capital. On the other hand, one may speak like this: “there is a risk that $ACME falls by 10% if such and such conditions occur”. In that sense, “a risk” is merely the potential of some bad (not necessarily the worst) outcome materializing.</p>
+<p>If you stand to lose capital due to a particular change of some market price, it implies you stand to profit if the price moves the other way.</p>
+<p>Base Currency</p>
+<p>As we saw earlier, your capital, at any point in time, depends on the choice of a money - the base currency. Some people reduce their holdings to a quantity of dollars, others euros, yet others choose swiss francs. On the fringe there are even people who do their accounting in ounces of gold or in bitcoin. Unfortunately, there’s no universal right answer, and the choice of base currency may affect your outlook and decisions. E.g. Americans may think they are growing richer in terms of dollars, when simultaneously they grow poorer in terms of francs or gold.</p>
+<p>It is paramount to understand the implications of choosing a base currency. Intuitively, you want your accounting to reveal whether market changes affect you positively or negatively; when you profit and when you lose. But Economics is not Physics, one can have a constant “measure of distance”, called a “meter”, a “yard” or whatever, but there is no constant “measure of value”. The best we have is “unit of money”, but the value of that “unit” itself is constantly shifting. We may assume that for short amounts of time, widely used money are somewhat stable in value. Beware though: for a short amount of time, Germans in 1923 thought that they became very wealthy<sup class="footnote-reference" id="fr-10-1"><a href="#footnote-10">1</a></sup>; millionaires even. Yet, soon they discovered that it was a mirage. The german mark, the base currency of their accounting, was collapsing due to the post-war printing press and the policy of inflationism.</p>
+<p>One might think that having multiple base currencies might provide a better estimate of the “real” value of your capital (i.e. whether you can buy more or fewer goods with it). This is true to some extent. Those Germans who were quick to start accounting in terms of gold, or dollars, or any other currency in 1923, could quickly realize that they are not getting richer. But multiple base currencies may fool people in an even more insidious way. For example, let’s say someone is calculating his capital in both american dollars and euros. He might even see that dollars and euros exchange at around the same ratio for months. He might draw the conclusion that both currencies are “stable” in value. The correct conclusion is that the currencies are stable compared to each other. They might be losing purchasing power at the same pace<sup class="footnote-reference" id="fr-11-1"><a href="#footnote-11">2</a></sup>, while having the appearance of stable value to the casual viewer of exchange rates!</p>
+<p>You may have heard that governments and central banks, employing an army of PhD holders, supposedly have “solved” this problem, via index numbers (e.g. CPI, PPI, etc), which are basically the money value of a particular “basket of goods”. Supposedly, all you need to do is create a basket of goods, calculate how much money it is worth at time \(T_0\), then repeat the exercise at time \(T_1\), thus measure the change of purchasing power of the currency. If the basket was worth $90 and now it is worth $100, then the dollar depreciated by 10% from \(T_0\) to \(T_1\).</p>
+<p>This is only a mirage of a solution though; the problem is truly unsolvable. The choice of said goods is arbitrary; their relative importance in the basket is also arbitrary, and even the goods themselves are changing<sup class="footnote-reference" id="fr-12-1"><a href="#footnote-12">3</a></sup>. Given that prices are not rigid, it should be obvious that different choices of what constitutes the “basket of goods” would paint a different picture of the “purchasing power” of money. Let alone comparing “basket of goods” of one century ago, with goods available today! How many cubicles of ice equal one refrigerator?</p>
+<p>Even when people try to compare things that sound common between different eras, such as homes (after all, homes existed both today and a hundred years ago), remember that not only the quality of housing was vastly different, but also the location, and the amenities available in that location, are also vastly, intractably different. A car of today is not a car of a hundred years ago - not solely because of technological changes in the car itself, but because today there are a lot more roads and places to visit, a lot more gas stations, a lot more repair shops. On the negatives, today there’s a lot more traffic, sure, but I doubt you would swap your car for this:</p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="assets/images/buggy.png" alt="Old buggy car"><span class="img-wrapper"><img src="assets/images/buggy.png" alt="Old buggy car"></span></label></p>
+<p>To recap: It is critical that you keep track of your entire capital (also known as “net worth”). This capital depends to the semi-arbitrary choice of base currency. Unless that currency is highly volatile, it should offer a good enough understanding, at least in short periods of time, of whether your capital increases or diminishes, whether your income or your expenses rise faster, and so on. No matter what the choice of base currency is, capital calculations will always be deformed by changes coming from the side of the base currency itself. To stress this point: even assets of perfectly known and never changing quantity (like bitcoin) experience value flunctuations. That is true for anything else, including gold.</p>
+<p>This doesn’t mean we should do away with money based accounting, because we have no better tool to substitute for it. We should though be aware of the limitations of this tool.</p>
+<p>You may consider this section as a long disclaimer: for the rest of the book, we will be assuming away the limitations of money accounting. We will use the base currency as constant in value (which it isn’t), and will be speaking with terms like “risk-free” to indicate that your capital (in terms of the base currency) cannot diminish in certain conditions, or that you “break even” if you get back the money you gave at an earlier date (even if one could point out that the actual purchasing power of the same money diminished in that period), for the sake of simple presentation. Do keep all the aforementioned caveats in your head.</p>
+<p>If I were to offer an advice in the otherwise arbitrary choice of base currency, it would be this: choose the currency which you mostly spend for your living expenses. This helps you compare in your mind the purchasing power of your capital, with the purchasing power of the currency which you spend; your liabilities. For example, if you notice the prices of what you need going up, while your capital lagging behind, you know there is a problem to solve - a problem worth knowing earlier than later.</p>
+<h2 id="currency-exposure-vs-transaction-currency"><a class="header" href="#currency-exposure-vs-transaction-currency">Currency Exposure vs. Transaction Currency</a></h2>
+<p>A very common point of confusion arises when an investor holds assets or funds denominated in a currency different from their chosen base currency. The typical reaction is to assume that buying an asset listed in a foreign currency automatically incurs “currency risk,” prompting many to pay fees for “currency-hedged” products.</p>
+<p>To see why this is a mirage, we must look through the transaction to the underlying asset itself.</p>
+<h3 id="the-law-of-one-price-arbitrage"><a class="header" href="#the-law-of-one-price-arbitrage">The Law of One Price (Arbitrage)</a></h3>
+<p>Suppose you are in Europe and want to buy gold. You could buy an ounce of physical gold with euros. Alternatively, you could convert euros to US dollars and buy the $GLD ETF in New York. Or you could buy it through a European ETF that transacts in dollars behind the scenes, or even pay in bitcoin.</p>
+<p>Modulo minor transaction friction, every single path yields the exact same quantity of gold. If any path yielded more gold for the same outlay, arbitrageurs would immediately exploit the discrepancy until prices aligned. There is only one objective price of gold in euros at any given moment.</p>
+<p>The same holds for equities. Consider a company like ASML, dual-listed in Amsterdam (trading in EUR) and New York (trading in USD). A European buying ASML in New York in dollars does not suddenly take on dollar risk; an American buying ASML in Amsterdam in euros does not suddenly take on euro risk. Both investors hold the exact same fractional ownership of the identical operating enterprise. The share has no memory of the currency used to purchase it.</p>
+<h3 id="look-through-balance-sheet-exposure"><a class="header" href="#look-through-balance-sheet-exposure">Look-Through Balance Sheet Exposure</a></h3>
+<p>What, then, determines the true currency exposure of an asset? Not the ticker’s quote currency, but the asset’s underlying cash flows, balance sheet, and economic reality:</p>
+<ol>
+<li><strong>Pure Cash Equivalence:</strong> If a fund holds only physical US dollar bills and dollar-denominated short-term treasury bills, its sole underlying asset is US dollars. Even if that fund is listed on a European exchange and quoted exclusively in euros, an investor buying it holds pure USD exposure.</li>
+<li><strong>Net Corporate Balances:</strong> An operating business is a collection of productive capital, revenues, and debt. Its currency exposure is the net sum of those balances:
+<ul>
+<li>If a company’s cash flows and assets are primarily in US dollars, holding its shares provides dollar exposure.</li>
+<li>However, if a US-domiciled company holds substantial debt denominated in US dollars, but generates revenues in euros or other currencies, the company is structurally <strong>short the dollar</strong>. If the dollar devalues, the real burden of its debt decreases, directly benefiting the company’s equity value.</li>
+</ul>
+</li>
+</ol>
+<p>In other words, going long that company’s equity is economically equivalent to being short the dollar. Your true currency exposure is the look-through net currency balance of the business, not whether the stock was bought with dollars, euros, or peanuts.</p>
+<h3 id="the-fiction-of-commercial-currency-hedging"><a class="header" href="#the-fiction-of-commercial-currency-hedging">The Fiction of Commercial “Currency Hedging”</a></h3>
+<p>Understanding this reveals the bizarre nature of many commercial “currency-hedged” ETFs. When an institution offers a European investor a “currency-hedged” S&amp;P 500 ETF, they promise that if the index gains $+10%$ nominally in USD, the investor will see $+10%$ in EUR.</p>
+<p>To see the flaw, imagine applying this to a country experiencing hyperinflation, such as Argentina. The Argentine MERVAL index may appreciate by $5,000%$ in Argentine pesos over five years simply because the peso collapsed. A “currency-hedged” ETF promising the local index return would have to deliver $+5,000%$ <em>in euros</em>.</p>
+<p>That return is not an investment in Argentine business productivity; it is an aggressive, leveraged short position against the foreign currency. True currency exposure comes from holding foreign currency or owning claims on entities that hold foreign currency—never from the arbitrary medium used at the point of sale.</p>
+<p>Speculation And Hedging</p>
+<p>Now we are able to define a couple of commonly used terms: speculation, and hedging.</p>
+<p>By speculation, we mean any trade that increases your risk. Say, you buy 1000 barrels of oil. You stand to lose if oil price goes down. On the flip side, you stand to gain if the price goes up. Risk and profit are the two sides of the same coin.</p>
+<p>Speculation can also be understood in a broader sense, not merely associated with trading. Any production that requires time is inherently speculation, so long the future conditions are not certain. Maybe the product to be sold will fetch profit, or it will incur losses. Even more generally, all human action that increases uncertainty is speculation. Consider a student that decides to spend years studying Computer Science. So long the study is not the end in itself (one might study merely for the direct enjoyment of doing that), then the student is effectively speculating that the market will have good demand for people with such skills, 4-5 years down the road. But what if programmers are so abundant in that time frame thus our student can’t find the salary and lifestyle he was hoping in the beginning? That would be a loss.</p>
+<p>Hedging is merely the “opposite” of speculation, similar to how subtraction is the “opposite” of addition. As speculation increases the potential of profit &amp; loss, hedging is the act of reducing it. The trader who bought 1000 barrels of oil, might then decide to sell half of that, and that would be an act of hedging. The entrepreneur might decide to sell unfinished goods right now and get today’s price for such goods, instead of finishing them in a year and selling them to the unknown future price, and that would also be hedging. The student might decide to get a job today, instead of spending years hoping for a better job tomorrow; that would also be hedging.</p>
+<p>Sometimes we speak of speculation &amp; hedging in a more conditional way. Let’s say we own 10 shares of $ACME, each worth $100. Under the worst possible scenario (for this position, the worst case would be, $ACME going to zero), this position may result in a capital loss of $1000. Yet we may swap (trade) this position for another one, where we hold 20 shares of $ACME (still worth $100 each), but we promised to sell them at $50 each in the future, if asked to. Nominally, under the worst possible scenario (which again happens to be “$ACME goes to zero”), we have the exact same risk, $1000<sup class="footnote-reference" id="fr-13-1"><a href="#footnote-13">4</a></sup>, yet this trade would be also considered “hedging”.</p>
+<p>Turns out, the “worst case” does not capture the full range of possibilities. Having 10 shares of $ACME, bought at $100, means that if the price goes to $80, we are down $200 already. But if we had exchanged this position for the position of “20 shares, but can only sell them up to $50 each”, then it would take a much larger price drop to lose as much capital, namely the price would have to drop all the way to $40. It is as if we “hedged” / removed the risk which was attached to a price range, i.e. from $100 to $50, while doubling the risk in the range of $50 to $0. Since the range of $50…$0 is less probable<sup class="footnote-reference" id="fr-14-1"><a href="#footnote-14">5</a></sup> than the range $100…$50 given that the spot price is $100, we made loss “less probable”, thus we “hedged”.</p>
+<p>The astute reader might have noticed that 20 shares with a maximum sale price of $50, is worth up to $1000, so that position has no upside at all. Indeed, the example was contrived, merely to demonstrate the equivalent max loss of the two positions. More realistically, the second position (which one could have obtained by swapping his current position of 10 shares of $ACME) would include more than 20 shares of ACME and a maximum sale price of $50. Don’t worry about the details, the rest of the book tackles this.</p>
+<p>Summarizing, we can speak of “speculation” and “hedging” (which is negative speculation) trying to communicate how we increase the potential of profit &amp; loss depending on some (uncertain) future price. Language can go far, and suffices for simple positions, like holding a spot position. For more complex positions (involving derivatives and especially options), we need charts.</p>
+<p>Here is a trivial PNL chart, showing the profit-or-loss outcomes if someone buys some shares of $ACME:</p>
+<p>insert chart</p>
+<p>And here would be another PNL chart.</p>
+<p>insert chart of same max risk</p>
+<p>The charts do away with “speculation” or “hedging”, and simply plot the change of our capital depending on one of the prices it depends on.</p>
+<p>Again: While we consider a cash balance (of the base currency) “risk-free” or “fully hedged” (in the sense that it can never lose value in terms of the base currency itself), never forget that owning money also involves speculation and uncertainty, as we saw in the previous section. Practically though, we will assume that the base currency has lower volatility than any other asset, thus if you swap your other assets to money, you do reduce your risk in both an accounting and in a “real goods” sense.</p>
+<p>More on PNL Charts</p>
+<p>Explain that any trade that has any potential for profit, means the counter party has a potential for loss. This comes from the zero-sum nature of the game, link the earlier discussion. It follows that to get a PNL chart with profit, that potential profit means there will be potential loss too, in the same PNL chart.</p>
+<p>This also explains why ANY trade has a PNL, including trades that take place in the future!!!
+Great pivot to understanding futures
+.</p>
+<hr>
+<ol class="footnote-definition">
+<li id="footnote-10">
+<p>Adding insult to injury, even the taxman thought the same. <a href="#fr-10-1">↩</a></p>
+</li>
+<li id="footnote-11">
+<p>For completeness sake, a stable ratio between two currencies could also imply they both gain in value at the same pace. This is almost inconceivable to happen, not under the watch of the Central Bank. <a href="#fr-11-1">↩</a></p>
+</li>
+<li id="footnote-12">
+<p>From time to time, the central bank’s economists substitute older goods for newer ones, but the exercise is a long sequence of arbitrary choices. It is important that lay men don’t dispute the scientificness of this process. <a href="#fr-12-1">↩</a></p>
+</li>
+<li id="footnote-13">
+<p>Why $1000? Because we have 20 shares which, while they are priced $100 each in the market, we promised to sell them at $50, hence that’s the highest possible price for which we can sell them, and 20 * $50 = $1000. <a href="#fr-13-1">↩</a></p>
+</li>
+<li id="footnote-14">
+<p>We have a lot more to say about probabilities later on. <a href="#fr-14-1">↩</a></p>
+</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="exchange"><a class="header" href="#exchange">Exchange</a></h1>
+<p>The spot market: Exchange Now<br>The futures market: Exchange Later<br>The options market: Exchange Later, conditionally</p>
+<h2 id="exchanges-now--the-spot-market"><a class="header" href="#exchanges-now--the-spot-market">Exchanges Now — The Spot Market</a></h2>
+<p>The “Spot” Market, or simply the “market”, is where people gather, physically or virtually, to perform exchanges of present, readily available assets (for example: shares, bonds, commodities, forex, cryptocurrency), for other present assets.</p>
+<p>The asset on one side of the exchange is always a general medium of exchange, i.e. money<sup class="footnote-reference" id="fr-15-1"><a href="#footnote-15">1</a></sup>. People who desire to exchange money for another asset are called buyers. People who desire to exchange an asset for money are called sellers. Given that money is always one side of the exchanged assets, having two distinct words, “buy” and “sell”, helps us remember which way the money is transferred, and which (opposite) way the other asset is transferred, but it is also the source of much confusion, especially when it comes to derivatives<sup class="footnote-reference" id="fr-16-1"><a href="#footnote-16">2</a></sup>. Hence, we should not forget that the role of a “buyer” and a “seller” is entirely symmetric and equivalent when we consider the transaction as simply an “exchange”, rather than an act of “buying” or “selling”.</p>
+<p>The ratio of money exchanged, for a specific quantity of another asset, is called the price. For example, if 5 ounces of gold are exchanged for $10,000, then we say that the price of gold, as manifested in that exchange, is $2,000/ounce.</p>
+<p>Exchanges are voluntary. Someone only enters an exchange when, and if, the terms of it appear favorable. Since this applies to everyone, we can say that an exchange takes place only when both parties view it (simultaneously!) as favorable to them, at least at the time when the exchange is agreed to. This is very much similar to every day transactions, like buying bread. The bread maker has too much of it, and prefers to exchange it for money. The consumer has too little of it, and prefers giving up a little quantity of his available money, in exchange for bread.</p>
+<p>The exchanged assets can be later exchanged again in reverse direction (don’t try this at your local bakery), possibly at a different price, i.e. at a different ratio of one against the other. This will reveal that, at least in that moment in time, one of the parties lost money by the previous transaction, while the other gained from it. For example, assume someone buys one bitcoin for $50,000, and later sells it (not necessarily to the same person) for $55,000. Then, basic accounting reveals that he made a profit of $5,000, i.e. through exchanges he now possesses more money than he started with. Someone else started with one bitcoin, sold it for $50,000, then bought it back for $55,000. That person possesses $5,000 less than before made a loss of $5,000.</p>
+<p>Notice that it’s not necessary that the $5,000 loss falls on the initial seller. It could very well be the case that he bought back one Bitcoin for $50,100 (incurring a loss of only $100), and whoever sold for $50,100 later bought back for $50,200 (again incurring a loss of only $100), and so on. Whether though it was a single person losing $5,000, or 50 people losing $100 each, the basic accounting fact remains that the money profit made by one, is born out of an equivalent money loss from the rest of the market participants.</p>
+<p>One of the magnificent features of the market economy is the prices established between any money-exchanged asset. To calculate one’s money profit or loss, it is not necessary to first sell all the assets back to money, and then count the money. One can at any time mark to market his available assets, and tally them up their money equivalents (i.e. the amount of money he could, at will, exchange them for). For example, an owner of one bitcoin who simply holds it, can rightfully claim that he made a money profit of $5,000, by the mere fact that the price of it was $50,000 and now is<sup class="footnote-reference" id="fr-17-1"><a href="#footnote-17">3</a></sup> $55,000.</p>
+<p>It should be noticed that profit/loss calculations depends on the selection of what the “money” asset is. If the bitcoin holder considered bitcoin to be the money, and dollars to be the “other asset”, then he would have made zero profit in terms of bitcoin. It is similar to how an American does not consider it a “profit” if now dollars are exchanged for larger quantities of euros, neither a European would consider it a “loss”. But if for some reason the American used euros for money calculations, then the profit (in euros) would be apparent: he would mark-to-market his dollars in euros, and he would discover that he now owns the equivalent of more euros. Symmetrically, the European who would do money calculations in terms of dollars, would discover that he now owns assets that are worth a smaller quantity of dollars than before, hence a loss.</p>
+<p>Incidentally, this mark-to-price accounting is what allows for entrepreneurs to estimate the success or failure of their investments: they simply refer their assets back to market prices, and see if their investment grew or diminished in value; whether value was created or destroyed, which is essential in the act of economizing<sup class="footnote-reference" id="fr-18-1"><a href="#footnote-18">4</a></sup>.</p>
+<h2 id="price-negotiation"><a class="header" href="#price-negotiation">Price Negotiation</a></h2>
+<p>This section is rather basic for whoever is already familiar with bids &amp; asks and trading in the spot market; feel free to skip if already familiar with these concepts.</p>
+<p>For a spot exchange to happen, all that is needed is that a seller and a buyer find each other and discover that there is a exchange ratio, or a price, to which both agree to exchange a particular quantity of their goods with each other. Then, they exchange immediately the largest quantity they are both willing to exchange in that price, and no future obligation to each other remains.</p>
+<p>You don’t only want to find anybody that offers a price that you find agreeable - you want the best price. The best price maximizes the quantity of the asset you receive in exchange for what you offer. E.g. in the market of gold and dollars, people who offer dollars seek the maximum quantity of gold for their dollars, while people who offer gold seek the maximum quantity of dollars for their gold.</p>
+<p>Since, as we mentioned before, prices are quoted in money, the price could be something like $2000 per ounce of gold. In a typical stock exchange, “XAU” would be the symbol for Gold, and “USD” would be the symbol for dollars. Then, traditionally the quote is named “XAUUSD”, i.e. first the non-money asset, with the money asset following. If XAUUSD = $2000, it means “$2000 for a unit of the other asset” (= ounce of gold in this example). In this market, “the price” would refer to the quote of XAUUSD, in dollars.</p>
+<p>So, the “best price” for whoever wants to exchange dollars for gold, i.e. buy gold, is the minimum price. Because the price, i.e. “dollars per unit of gold” becomes smaller when the reverse ratio “gold to 1 dollar” is larger, and that maximizes the amount of gold fetched by each dollar.</p>
+<p>Similarly, the “best price” for whoever wants to exchange gold for dollars, i.e. sell gold, is the maximum price. Because the price means “dollars per unit of gold”, and when it is larger, it maximizes the amount of dollars fetched per unit of gold.</p>
+<h3 id="how-do-you-find-the-best-price"><a class="header" href="#how-do-you-find-the-best-price">How do you find the best price?</a></h3>
+<p>Imagine your local farmers market. You are a buyer of farmer goods, the farmers are the sellers. The sellers signal their prices via written tags. That is their “ask”, i.e. how much money they seek in exchange of a unit of product they offer. They also implicitly signal the size of their offers: the amount of produce in front of them. The price is non-binding if they run out of product! Buyers are expected to walk by, and if they observe an acceptable price for something they want to buy, they go ahead and an mutually acceptable exchange takes place.</p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="assets/images/farmer_market.png" alt="Farmer’s Market"><span class="img-wrapper"><img src="assets/images/farmer_market.png" alt="Farmer’s Market"></span></label></p>
+<p>This is about the best one can do with physical price tags and with the co-located physical presence of buyers, sellers, and goods. Technology and virtualization though affords us much more efficient markets. Here’s how it works:</p>
+<p>Unlike the farmer’s market, both buyers and sellers can signal the prices that they find agreeable. The price that any particular seller signals as acceptable is called the ask, as we saw above. The price that any particular buyer signals is called the bid. Further, you don’t have to walk the entire market to find the best price, or shout to each other, like in the photo below:</p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="assets/images/open_outcry_pit.png" alt="Open Outcry Trading Pit"><span class="img-wrapper"><img src="assets/images/open_outcry_pit.png" alt="Open Outcry Trading Pit"></span></label></p>
+<p>A simple computer algorithm maintains these price tags in sorted order tailored for both audiences:</p>
+<ul>
+<li>All asks, in ascending order. The first ask is the cheapest; buyers look at this.</li>
+<li>All bids, in descending order. The first bid is the richest; sellers look at this.</li>
+</ul>
+<p>What we think of as the “price” of an asset, is fully characterized by these two prices, the range of the cheapest ask and the richest bid. This is what means by saying “the price is controlled on the margin”. It doesn’t matter whether millions investors think that their $AAPL shares are worth $300 and don’t sell them cheaper than that, and it doesn’t matter that other millions investors think that they will buy $AAPL when it “dips” to $100 per share and don’t pay a dime more. At the moment of writing, there is someone who tries to buy $AAPL for $169.98 per share (and there is nobody offering more than that), and there is someone who tries to sell $AAPL for $170.00 (and there is nobody seeking less than that). Hence the “price” is somewhere between $169.98 and $170.00.</p>
+<p>Unlike the farmers’ market, you have to be a bit more explicit with the size. Each bid/ask comes with a precise quantity of assets that the participant is willing to exchange. That means that one can also see at a glance what quantities of what asset are immediately available at what price.</p>
+<p>A buyer and a seller signal their willingness to exchange a quantity of an asset at a given price (or better) via what is known as a limit order. They are called “limit” because they only limit the price in one direction (you won’t complain if someone offers to you even more versus what you were seeking!).</p>
+<ul>
+<li><strong>Bid</strong> = limit buy order = “I’m buying quantity $\le$ SIZE at price $\le$ LIMIT”</li>
+<li><strong>Ask</strong> = limit sell order = “I’m selling quantity $\le$ SIZE at price $\ge$ LIMIT”</li>
+</ul>
+<p>Examples of limit orders:</p>
+<ul>
+<li>“I’m willing to buy 0.5 bitcoin at a price of at most $50,000 each”</li>
+<li>“I’m willing to sell 2 bitcoins at a price of at least $60,000 each”</li>
+</ul>
+<p>In these examples, $50,000 and $60,000 are called the “limit” of each respective limit order. Hence, one can see that limit orders come in the varieties of limit buy orders, and limit sell orders, indicating as usual the direction of money in the intended exchange.</p>
+<p>There’s a common order type, called <strong>market order</strong>. This is simply a limit order, where the limit is effectively $+\infty$ for a limit buy order (meaning: you buy at the best available price, whatever that price happens to be, without any limit), or it is zero for a limit sell order (meaning: you sell at the best available price, whatever that happens to be, without any limit).</p>
+<p>At any given time, a modern spot market offers these two sorted sets of orders, the bids and the asks. Collectively they are known as the <strong>order book</strong>. The order book only contains <em>unsatisfied</em>, or “unfilled” orders (orders that find a counterparty are respectively said to be “filled”). Why is that? Because orders that become satisfiable execute (thus disappear) instantly.</p>
+<p>For example, if I make a bid at $60,000 for 0.5 bitcoin, and you make an ask at $50,000 for 0.1 bitcoin, it means I’m already willing to buy your 0.1 bitcoin at a better price that your minimum selling price. Thus 0.1 bitcoin changes hands, for a price between $50,000 and $60,000 (let’s assume this is the mid price, $55,000), thus what now remains in the order book from the previous orders, are:</p>
+<ul>
+<li>A bid at $60,000 for 0.4 bitcoin (initially wanted 0.5 but already bought 0.1 bitcoin…)</li>
+<li>No ask (the previous ask was fully exhausted; 0.1 bitcoin sold)</li>
+</ul>
+<p>An equivalent way to say that the order book always contains “unsatisfied” orders is to say that the “ask” price is always higher than the “bid” price. The two prices where the asset can instantly be sold and bought, respectively.</p>
+<p>It is common to describe a market situation with a single price instead of two: the middle point, or mid point for short, which is the average of the best bid and best ask:</p>
+<p>$$\text{MidPoint} = \frac{\text{Bid} + \text{Ask}}{2}$$</p>
+<p>This price is not immediately marketable (contrast to “market orders” mentioned above!), i.e. you cannot instantly perform an exchange at that price. You can post a limit order and wait.</p>
+<p>If one attempts to immediately exchange a quantity of an asset, he will either use the bid or the ask. The difference between the mid point and either the bid or the ask (it’s the same distance to either) is also called <strong>slippage</strong>: it represents something similar to a “transaction cost”: you are actually getting a worse price that what the mid point was telling you, as if you are paying extra fees. Furthermore, if your order is large enough, exhausting the size of the best bid or ask, you would then exchange with the second best bid or ask, and so on, meaning progressively worse and worse exchange price. The availability of many competing buyers and sellers in a market manifests as small spreads, and slippage.</p>
+<p>Another number sometimes mentioned is the spread (the <strong>“bid-ask spread”</strong> more specifically, because “spreads” also mean something else in options trading). It is simply the difference:</p>
+<p>$$\text{Spread} = \text{Ask} - \text{Bid}$$</p>
+<p>The absolute value of this number is not important; what is more important is the spread as a ratio (or a percent) against the mid point:</p>
+<p>$$\text{Spread}(%) = \frac{\text{Spread}}{\text{MidPoint}}$$</p>
+<p>E.g. if the spread(%) is 1%, it means that you pay 0.5% cost per transaction, so to complete a hypothetical exchange roundtrip (you buy something and immediately sell it back), you would pay 1%, thus retain only 99% of your initial capital.</p>
+<hr>
+<h2 id="exchanges-in-the-future--the-futures-market"><a class="header" href="#exchanges-in-the-future--the-futures-market">Exchanges In The Future — The Futures Market</a></h2>
+<p>Settlement<br>Time Value<br>“Pure” Futures<br>Interest Rates<br>“Perpetuals Futures”</p>
+<p>Futures could have strikes, but don’t, due to daily settlement (which resets/equalizes the strike price of all futures)</p>
+<p>Interest rate should be explained using Fetter’s theory:
+Frank Fetter’s <em>Pure Time Preference Theory</em> explains interest not as a monetary phenomenon or a return on capital goods, but as an inescapable category of human action. Present goods are systematically valued more highly than otherwise identical future goods (time preference). The market interest rate is simply the price ratio resulting from the exchange of present goods for future goods — the discount that future goods suffer relative to present ones. In futures markets, this discount/premium directly shapes the spread between spot and delivery prices.</p>
+<h2 id="optional-exchanges-in-the-future--the-options-market"><a class="header" href="#optional-exchanges-in-the-future--the-options-market">Optional Exchanges In The Future — The Options Market</a></h2>
+<p>The Oldest Record Of An Option</p>
+<hr>
+<ol class="footnote-definition">
+<li id="footnote-15">
+<p>This is the characteristic feature of the market economy compared to the primitive and highly inefficient barter economy. See Menger’s <em>On The Origins Of Money</em> for more information. <a href="#fr-15-1">↩</a></p>
+</li>
+<li id="footnote-16">
+<p>One can trade derivatives of negative value as we will see. So one can “buy X” for -$50, but that’s equivalent to “sell X for $50”, and must not be confused with “buy $X for $50” or “sell X for -$50). When in doubt, focus on what is being exchanged, for what. <a href="#fr-16-1">↩</a></p>
+</li>
+<li id="footnote-17">
+<p>Note that the price of each completed exchange is actually historical; it refers to the past. Nothing guarantees that the next price will be identical. We will soon clarify what it means to talk about the “current price”. <a href="#fr-17-1">↩</a></p>
+</li>
+<li id="footnote-18">
+<p>It is also the reason why the phrase “Socialist economy” is necessarily a contradiction in terms. If capital goods are publicly owned, there are no prices for them (reflecting their competing employments by entrepreneurs, as driven by consumer demand), hence they can’t be “marked-to-market”, thus it is not possible to estimate even after the fact whether any particular venture succeeded or failed, let alone calculate beforehand a successful venture. <a href="#fr-18-1">↩</a></p>
+</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="options"><a class="header" href="#options">Options</a></h1>
+<p>An <strong>option</strong> is a choice between two outcomes at a specified moment in the future (the <strong>expiration date</strong>).</p>
+<p>One outcome is to do nothing and walk away. The other outcome is to execute a predetermined exchange of two baskets of goods.</p>
+<h2 id="economic-calculation-at-expiration"><a class="header" href="#economic-calculation-at-expiration">Economic Calculation at Expiration</a></h2>
+<p>As established earlier, economic calculation allows us to mark to market any basket of goods into a single quantity of our base currency: its immediate liquidation value.</p>
+<p>At expiration, the decision maker simply evaluates the market cash value of both outcomes. They will pick whichever leaves them with more money.</p>
+<p>In financial markets, one of the two baskets is always money itself: an agreed cash amount called the <strong>strike price</strong>. The other basket is a specific quantity of an underlying asset.</p>
+<h2 id="symmetries-calls-and-puts"><a class="header" href="#symmetries-calls-and-puts">Symmetries: Calls and Puts</a></h2>
+<p>Because money sits on one side of the exchange, human language uses two distinct terms depending on the direction of money:</p>
+<ul>
+<li><strong>Call (Right to Buy):</strong> The holder has the right to exchange cash (the strike) to receive the asset. If the asset’s spot price exceeds the strike price, they “call” the asset in at a discount.</li>
+<li><strong>Put (Right to Sell):</strong> The holder has the right to exchange the asset to receive cash (the strike). If the asset’s spot price is below the strike price, they “put” (deliver) the asset onto the counterparty at a premium.</li>
+</ul>
+<p>A call and a put are the exact same fundamental contract—an asymmetric future exchange of an asset for money—viewed from opposite sides of the transaction.</p>
+<h2 id="the-anatomy-of-an-option-contract"><a class="header" href="#the-anatomy-of-an-option-contract">The Anatomy of an Option Contract</a></h2>
+<p>Every standardized option contract specifies four core parameters:</p>
+<ol>
+<li><strong>Underlying Asset:</strong> The specific asset to be exchanged (e.g. shares of $ACME).</li>
+<li><strong>Strike Price ($K$):</strong> The fixed exchange price in money.</li>
+<li><strong>Expiration Date ($T$):</strong> The exact date and time at which the choice must be made.</li>
+<li><strong>Lot Size (Multiplier):</strong> The quantity of the underlying governed by a single contract (conventionally 100 shares for US equity options).</li>
+</ol>
+<p>The buyer acquires the <strong>right</strong> to choose and pays an upfront cash <strong>premium</strong> to the seller (the <strong>writer</strong>), who takes on the binding <strong>obligation</strong> to fulfill the terms if requested.</p>
+<h2 id="real-world-complexities"><a class="header" href="#real-world-complexities">Real-World Complexities</a></h2>
+<p>To understand options conceptually, settlement details and exercise windows can be abstracted away, though in practice they introduce structural differences:</p>
+<ul>
+<li>
+<p><strong>Exercise Style:</strong></p>
+<ul>
+<li><em>American-style:</em> Can be exercised at any point up to and including the expiration date.</li>
+<li><em>European-style:</em> Can only be exercised precisely on the expiration date.<br><em>(See <a href="#miscellaneous">Miscellaneous</a> for early exercise boundaries and implications).</em></li>
+</ul>
+</li>
+<li>
+<p><strong>Settlement Method:</strong></p>
+<ul>
+<li><em>Physical Settlement:</em> The underlying asset changes hands directly in exchange for cash.</li>
+<li><em>Cash Settlement:</em> No assets are delivered; the net difference between the spot price and the strike price is settled directly in cash.<br><em>(See <a href="#miscellaneous">Miscellaneous</a> and <a href="#taxation">Taxation</a> for settlement mechanics and tax differences).</em></li>
+</ul>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="option-chain"><a class="header" href="#option-chain">Option Chain</a></h1>
+<p>Understanding Options
+The Option Chain
+Underlying
+Expiration Date
+Strikes
+Calls
+Puts
+Bids And Asks (Premiums)
+Other Ornaments</p>
+<p>Intrinsic, time value.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="chain-arithmetic"><a class="header" href="#chain-arithmetic">Chain Arithmetic</a></h1>
+<p>So now you understand what the numbers on an option chain page say, but they still look pretty random to you. In the following sections, we will unlock the secrets. You will only need basic arithmetic to follow along, but you will also need attention.</p>
+<p>Ideally, you will want to check what you learn with live option chains. Seeing is believing. Here are some places to get live option chains:</p>
+<ul>
+<li><strong>Yahoo Finance</strong>, example: https://finance.yahoo.com/quote/AAPL/options?p=AAPL<br>Ugly, but free. It has all American stocks/ETFs. Not “live” data except during market hours.</li>
+<li><strong>Deribit</strong>, https://www.deribit.com/options/BTC<br>Bitcoin options (the underlying doesn’t matter for learning purposes), always live prices.</li>
+</ul>
+<p>Instead of showing option chains in all their glory, in this section we will study option chains in a simplified manner, to help you focus on the numbers that matter. We will replace each bid / ask pair by a single price (e.g. the mid point), because now we are not looking to place trades, but to understand how these prices work.</p>
+<p>The underlying we will study is <strong>NIO</strong>, which is a Chinese electric car maker. The reason is that the price of the NIO stock is low and the numbers are easy to work with, plus it is a very popular stock to trade via options, hence great liquidity in the order books of the option chains, hence the numbers we will look make much sense.</p>
+<p>Another benefit of this particular stock is that it doesn’t distribute dividends, which would otherwise complicate our calculations.</p>
+<p>Caveat: we will ignore that each option contract typically refers to a “lot” (or packet) of 100 shares each. For simplicity, we will assume that each option refers to a single share of the underlying. This doesn’t change anything, it only means that a real option contract would be equivalent to 100s of this section.</p>
+<h2 id="initial-example"><a class="header" href="#initial-example">Initial Example</a></h2>
+<p>Let’s familiarize ourselves with the simplified option chain that we are going to dive into:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Asset</th><th style="text-align: left">Spot Price</th><th style="text-align: left">Expiration</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">NIO</td><td style="text-align: left">$5.27</td><td style="text-align: left">106 days</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: center">Calls ($)</th><th style="text-align: center">Strike ($)</th><th style="text-align: center">Puts ($)</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: center">4.29</td><td style="text-align: center">1</td><td style="text-align: center">0.01</td></tr>
+<tr><td style="text-align: center">3.33</td><td style="text-align: center">2</td><td style="text-align: center">0.03</td></tr>
+<tr><td style="text-align: center">2.44</td><td style="text-align: center">3</td><td style="text-align: center">0.12</td></tr>
+<tr><td style="text-align: center">1.65</td><td style="text-align: center">4</td><td style="text-align: center">0.31</td></tr>
+<tr><td style="text-align: center">1.03</td><td style="text-align: center">5</td><td style="text-align: center">0.69</td></tr>
+<tr><td style="text-align: center"><strong>0.63</strong></td><td style="text-align: center"><strong>6</strong></td><td style="text-align: center"><strong>1.28</strong></td></tr>
+<tr><td style="text-align: center">0.38</td><td style="text-align: center">7</td><td style="text-align: center">2.03</td></tr>
+<tr><td style="text-align: center">0.25</td><td style="text-align: center">8</td><td style="text-align: center">2.89</td></tr>
+<tr><td style="text-align: center">0.17</td><td style="text-align: center">9</td><td style="text-align: center">3.81</td></tr>
+<tr><td style="text-align: center">0.12</td><td style="text-align: center">10</td><td style="text-align: center">4.77</td></tr>
+<tr><td style="text-align: center">0.08</td><td style="text-align: center">11</td><td style="text-align: center">5.74</td></tr>
+<tr><td style="text-align: center">0.07</td><td style="text-align: center">12</td><td style="text-align: center">6.73</td></tr>
+</tbody>
+</table>
+</div>
+<p>This tells us that $NIO is currently worth $5.27 per share, and we are looking at the option chain of the expiration date that is 106 days from today. As for the prices, let’s take a strike at random, say, $8. The chart tells us that the Call option at $8 trades at $0.25 per share (thus $25 to buy a Call for 100 shares), and the Put option at the same strike trades at $2.89 per share (thus $289 to buy a Put for 100 shares).</p>
+<p>Notice a heavy line separating the strike $5 from $6. This is merely a visual aid to remind you that the spot price of the underlying is somewhere between the two (it’s $5.27 as we said), it has no particular significance and can be ignored.</p>
+<h2 id="higher-strikes--cheaper-calls"><a class="header" href="#higher-strikes--cheaper-calls">Higher Strikes → Cheaper Calls</a></h2>
+<p>💡 <strong>We notice that as the strike gets bigger, the calls get cheaper. Why?</strong></p>
+<p>We need to remind ourselves. What is a call? It’s the right to buy the underlying asset at the strike price, in the future. If you had a call at strike $5, you could buy a share for $5. If someone was to replace your $5 call with a $4 call, you would be better off; you could then buy at $4 instead of $5, saving $1. Hence the lower the strike, the more valuable the call for its owner - and the more money he would demand to give up that call, compared to a call of a higher strike.</p>
+<p><strong>Exercise:</strong> what do you think would be the price of a call of strike $0, and why? I.e. a call that gives you the right to buy the share for <em>free</em>. Answer</p>
+<h2 id="higher-strikes--richer-puts"><a class="header" href="#higher-strikes--richer-puts">Higher Strikes → Richer Puts</a></h2>
+<p>💡 <strong>We notice that as the strikes grow, the prices of puts also grow. Why?</strong></p>
+<p>Let’s remind ourselves what a put is: it’s the right to sell the underlying asset at the strike price, in the future. If you had a put at strike $7, you might sell a share for $7. If someone was to replace your $7 put with a $10 put, you would be better off; you could then sell at $10 instead of $7, receiving an extra $3. Hence the higher the strike, the more valuable the put for its owner - and the more money he would demand to give up that put compared to a put of a lower strike.</p>
+<p><strong>Exercise:</strong> what do you think would be the price of a put of strike $1000, and why? I.e. a put that gives you the right to sell the share for $1000<sup class="footnote-reference" id="fr-28-1"><a href="#footnote-28">1</a></sup>. Assume it’s literally impossible for this stock to come anywhere close at such a price. Answer</p>
+<h2 id="at-the-money-atm-where-calls-and-puts-meet"><a class="header" href="#at-the-money-atm-where-calls-and-puts-meet">“At The Money” (ATM): Where Calls And Puts Meet</a></h2>
+<p>As we saw, for strike near $0, puts are worthless, and calls are nearly as valuable as the underlying itself. Hence, calls &gt; puts. For higher strikes, puts are increasingly more valuable, while calls are increasingly cheaper. At a strike of +∞, calls are completely worthless. It follows that at some strike, the “calls &gt; puts” relation flips and becomes “calls &lt; puts”.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Asset</th><th style="text-align: left">Spot Price</th><th style="text-align: left">Expiration</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">NIO</td><td style="text-align: left">$5.27</td><td style="text-align: left">106 days</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: center">Strike ($)</th><th style="text-align: center">Calls ($)</th><th style="text-align: center">Relation</th><th style="text-align: center">Puts ($)</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: center">1</td><td style="text-align: center">4.29</td><td style="text-align: center">&gt;</td><td style="text-align: center">0.01</td></tr>
+<tr><td style="text-align: center">2</td><td style="text-align: center">3.33</td><td style="text-align: center">&gt;</td><td style="text-align: center">0.03</td></tr>
+<tr><td style="text-align: center">3</td><td style="text-align: center">2.44</td><td style="text-align: center">&gt;</td><td style="text-align: center">0.12</td></tr>
+<tr><td style="text-align: center">4</td><td style="text-align: center">1.65</td><td style="text-align: center">&gt;</td><td style="text-align: center">0.31</td></tr>
+<tr><td style="text-align: center">5</td><td style="text-align: center">1.03</td><td style="text-align: center">&gt;</td><td style="text-align: center">0.69</td></tr>
+<tr><td style="text-align: center">6</td><td style="text-align: center">0.63</td><td style="text-align: center">&lt;</td><td style="text-align: center">1.28</td></tr>
+<tr><td style="text-align: center">7</td><td style="text-align: center">0.38</td><td style="text-align: center">&lt;</td><td style="text-align: center">2.03</td></tr>
+<tr><td style="text-align: center">8</td><td style="text-align: center">0.25</td><td style="text-align: center">&lt;</td><td style="text-align: center">2.89</td></tr>
+<tr><td style="text-align: center">9</td><td style="text-align: center">0.17</td><td style="text-align: center">&lt;</td><td style="text-align: center">3.81</td></tr>
+<tr><td style="text-align: center">10</td><td style="text-align: center">0.12</td><td style="text-align: center">&lt;</td><td style="text-align: center">4.77</td></tr>
+<tr><td style="text-align: center">11</td><td style="text-align: center">0.08</td><td style="text-align: center">&lt;</td><td style="text-align: center">5.74</td></tr>
+<tr><td style="text-align: center">12</td><td style="text-align: center">0.07</td><td style="text-align: center">&lt;</td><td style="text-align: center">6.73</td></tr>
+</tbody>
+</table>
+</div>
+<p>In this example, the relation flips between strike $5 and $6. That this happens is insignificant (any two lines that move opposite to each other eventually cross, duh). It is remarkable though that this crossing happens right around the spot price ($5.27)! This is by no means a coincidence: the market is telling us that the spot price is wherever the right to buy becomes exactly equivalent to the right to sell. In other words, it is equally probable that the price will move up or down. Profiting from buying or from selling is a 50-50 chance.</p>
+<p>Mind you, this is a simplification. The 50-50 chance is more correctly interpreted as follows: “the price has a 50% chance of overperforming the forward price of the underlying, and 50% underperforming it”, which in turn means, “the price has a 50% chance of overperforming the interest rate, and 50% chance of underperforming it”.</p>
+<p>In the example option chain this is not directly visible, because strikes are 18% of the spot price apart from each other, i.e. they are too sparse. It is plainly visible in other option chains. In other underlyings (e.g. $SPY) there are very frequent strikes (e.g. at 1% intervals), hence one can go to an option chain of a date that is ~1 year apart, and observe that calls and puts cross over not at the spot price, but at the spot price augmented by the interest rate for that duration of time. (This is also a simplification, as we ignore dividends, cost of carry, etc).</p>
+<p>That be as it may, we also need to visit some very frequently used terminology: the strike which is nearest to the spot price is called <strong>“At The Money”</strong> (ATM). For example, an “at the money call”, or an “at the money put”, would refer here at a call or put of the $5 strike. Option chain visualizations typically highlight the spot price (like we do, with a heavy horizontal line separating the $5 from the $6 strike). Sometimes they highlight the crossover point, i.e. the forward price.</p>
+<p>TODO: “in the money, at the money, out of the money”, defined here? Or earlier??</p>
+<h2 id="spot-buying-vs-buying-through-calls"><a class="header" href="#spot-buying-vs-buying-through-calls">Spot-Buying Vs Buying Through Calls</a></h2>
+<p>💡 <strong>We notice that an alternative to buying NIO shares directly, is to buy calls (i.e. rights to buy), and then immediately exercise<sup class="footnote-reference" id="fr-29-1"><a href="#footnote-29">2</a></sup> those rights, thus ending up buying NIO shares. Is it worth it?</strong></p>
+<p>For example, the call at $3 is worth $2.44. So we can buy a share by (1) buying that call for $2.44, (2) then exercising that call, meaning we buy for a further $3. Hence in total, we paid $2.44 + $3 = $5.44 dollars, for buying a share.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Asset</th><th style="text-align: left">Spot Price</th><th style="text-align: left">Expiration</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">NIO</td><td style="text-align: left">$5.27</td><td style="text-align: left">106 days</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: center">Calls ($)</th><th style="text-align: center">Strike ($)</th><th style="text-align: center">Total Cost ($)</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: center">4.29</td><td style="text-align: center">1</td><td style="text-align: center">4.29 + 1 = 5.29</td></tr>
+<tr><td style="text-align: center">3.33</td><td style="text-align: center">2</td><td style="text-align: center">3.33 + 2 = 5.33</td></tr>
+<tr><td style="text-align: center">2.44</td><td style="text-align: center">3</td><td style="text-align: center">2.44 + 3 = 5.44</td></tr>
+<tr><td style="text-align: center">1.65</td><td style="text-align: center">4</td><td style="text-align: center">1.65 + 4 = 5.65</td></tr>
+<tr><td style="text-align: center">1.03</td><td style="text-align: center">5</td><td style="text-align: center">1.03 + 5 = 6.03</td></tr>
+<tr><td style="text-align: center">0.63</td><td style="text-align: center">6</td><td style="text-align: center">0.63 + 6 = 6.63</td></tr>
+<tr><td style="text-align: center">0.38</td><td style="text-align: center">7</td><td style="text-align: center">0.38 + 7 = 7.38</td></tr>
+<tr><td style="text-align: center">0.25</td><td style="text-align: center">8</td><td style="text-align: center">0.25 + 8 = 8.25</td></tr>
+<tr><td style="text-align: center">0.17</td><td style="text-align: center">9</td><td style="text-align: center">0.17 + 9 = 9.17</td></tr>
+<tr><td style="text-align: center">0.12</td><td style="text-align: center">10</td><td style="text-align: center">0.12 + 10 = 10.12</td></tr>
+<tr><td style="text-align: center">0.08</td><td style="text-align: center">11</td><td style="text-align: center">0.08 + 11 = 11.08</td></tr>
+<tr><td style="text-align: center">0.07</td><td style="text-align: center">12</td><td style="text-align: center">0.07 + 12 = 12.07</td></tr>
+</tbody>
+</table>
+</div>
+<p>The cheapest price we can achieve by exercising a call is via the $1 strike (the lowest available strike) call, through which we can buy NIO at $5.29 a piece, more, but we can already buy NIO at $5.27 through the spot market. It’s never worth it.</p>
+<h2 id="spot-selling-vs-selling-through-puts"><a class="header" href="#spot-selling-vs-selling-through-puts">Spot-Selling Vs Selling Through Puts</a></h2>
+<p>💡 <strong>We notice that an alternative to selling NIO shares directly, is to buy puts (i.e. rights to sell), and then immediately exercise those rights, thus ending up selling NIO shares. Is it worth it?</strong></p>
+<p>For example, the put at $6 is worth $1.28. So we can sell a share by (1) buying that put for $1.28, (2) then exercising that put, meaning we sell for $6. Hence we paid $1.28, then received $6, thus we received $-1.28 + $6 = $4.72 net, for selling a share.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Asset</th><th style="text-align: left">Spot Price</th><th style="text-align: left">Expiration</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">NIO</td><td style="text-align: left">$5.27</td><td style="text-align: left">106 days</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: center">Total Revenue ($)</th><th style="text-align: center">Strike ($)</th><th style="text-align: center">Puts ($)</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: center">-0.01 + 1 = 0.99</td><td style="text-align: center">1</td><td style="text-align: center">0.01</td></tr>
+<tr><td style="text-align: center">-0.03 + 2 = 1.97</td><td style="text-align: center">2</td><td style="text-align: center">0.03</td></tr>
+<tr><td style="text-align: center">-0.12 + 3 = 2.88</td><td style="text-align: center">3</td><td style="text-align: center">0.12</td></tr>
+<tr><td style="text-align: center">-0.31 + 4 = 3.69</td><td style="text-align: center">4</td><td style="text-align: center">0.31</td></tr>
+<tr><td style="text-align: center">-0.69 + 5 = 4.31</td><td style="text-align: center">5</td><td style="text-align: center">0.69</td></tr>
+<tr><td style="text-align: center">-1.28 + 6 = 4.72</td><td style="text-align: center">6</td><td style="text-align: center">1.28</td></tr>
+<tr><td style="text-align: center">-2.03 + 7 = 4.97</td><td style="text-align: center">7</td><td style="text-align: center">2.03</td></tr>
+<tr><td style="text-align: center">-2.89 + 8 = 5.11</td><td style="text-align: center">8</td><td style="text-align: center">2.89</td></tr>
+<tr><td style="text-align: center">-3.81 + 9 = 5.19</td><td style="text-align: center">9</td><td style="text-align: center">3.81</td></tr>
+<tr><td style="text-align: center">-4.77 + 10 = 5.23</td><td style="text-align: center">10</td><td style="text-align: center">4.77</td></tr>
+<tr><td style="text-align: center">-5.74 + 11 = 5.26</td><td style="text-align: center">11</td><td style="text-align: center">5.74</td></tr>
+<tr><td style="text-align: center">-6.73 + 12 = 5.27</td><td style="text-align: center">12</td><td style="text-align: center">6.73</td></tr>
+</tbody>
+</table>
+</div>
+<p>Turns out, it’s never worth it. The best sum of money we can achieve with this method is via the $12 strike put, through which we can sell NIO at $5.27 a piece, which is the same as the spot market (but we can assume the spot market has lower transaction fees).</p>
+<h2 id="spot-selling-vs-promising-to-sell"><a class="header" href="#spot-selling-vs-promising-to-sell">Spot-Selling Vs Promising To Sell</a></h2>
+<p>💡 <strong>How does selling via spot compare to selling indirectly, via offering obligations to sell?</strong></p>
+<p>Writing a call means granting the owner of that call the right to buy (from you) a share, at the agreed price (strike). You essentially make a promise to sell. Let’s assume that the other party decides to exercise their right, and holds you up to your promise, thus you end up selling. How does that compare to you directly selling to the spot market instead?</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Asset</th><th style="text-align: left">Spot Price</th><th style="text-align: left">Expiration</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">NIO</td><td style="text-align: left">$5.27</td><td style="text-align: left">106 days</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: center">Calls ($)</th><th style="text-align: center">Strike ($)</th><th style="text-align: center">Total Revenue ($)</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: center">4.29</td><td style="text-align: center">1</td><td style="text-align: center">4.29 + 1 = 5.29</td></tr>
+<tr><td style="text-align: center">3.33</td><td style="text-align: center">2</td><td style="text-align: center">3.33 + 2 = 5.33</td></tr>
+<tr><td style="text-align: center">2.44</td><td style="text-align: center">3</td><td style="text-align: center">2.44 + 3 = 5.44</td></tr>
+<tr><td style="text-align: center">1.65</td><td style="text-align: center">4</td><td style="text-align: center">1.65 + 4 = 5.65</td></tr>
+<tr><td style="text-align: center">1.03</td><td style="text-align: center">5</td><td style="text-align: center">1.03 + 5 = 6.03</td></tr>
+<tr><td style="text-align: center">0.63</td><td style="text-align: center">6</td><td style="text-align: center">0.63 + 6 = 6.63</td></tr>
+<tr><td style="text-align: center">0.38</td><td style="text-align: center">7</td><td style="text-align: center">0.38 + 7 = 7.38</td></tr>
+<tr><td style="text-align: center">0.25</td><td style="text-align: center">8</td><td style="text-align: center">0.25 + 8 = 8.25</td></tr>
+<tr><td style="text-align: center">0.17</td><td style="text-align: center">9</td><td style="text-align: center">0.17 + 9 = 9.17</td></tr>
+<tr><td style="text-align: center">0.12</td><td style="text-align: center">10</td><td style="text-align: center">0.12 + 10 = 10.12</td></tr>
+<tr><td style="text-align: center">0.08</td><td style="text-align: center">11</td><td style="text-align: center">0.08 + 11 = 11.08</td></tr>
+<tr><td style="text-align: center">0.07</td><td style="text-align: center">12</td><td style="text-align: center">0.07 + 12 = 12.07</td></tr>
+</tbody>
+</table>
+</div>
+<p>First we sell a call, thus are paid its price, then we sell at the strike. For example, via the call of strike $4, we sell the call for 1.65, then we sell the stock for $4. The result is selling a stock for $1.65 + $4 = $5.65. That’s more than what we would receive in the spot market!</p>
+<p>Turns out, selling via selling calls always results in more proceeds than selling directly via the spot market. But unlike spot-selling, this method does not guarantee that you’ll sell the shares; this depends on whether the other party exercises the call. He would only do that if the selected strike is higher than the spot market. Otherwise, why buy from you when he can buy from the market for less?</p>
+<h2 id="spot-buying-vs-promising-to-buy"><a class="header" href="#spot-buying-vs-promising-to-buy">Spot-Buying Vs Promising To Buy</a></h2>
+<p>💡 <strong>How does buying via spot compare to buying indirectly, via offering obligations to buy?</strong></p>
+<p>Writing a put means granting the owner of that put the right to sell (to you) a share, at the agreed price (strike). You essentially make a promise to buy. Let’s assume that the other party decides to exercise their right, and holds you up to your promise, thus you end up buying. How does that compare to you directly buying from the spot market instead?</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Asset</th><th style="text-align: left">Spot Price</th><th style="text-align: left">Expiration</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">NIO</td><td style="text-align: left">$5.27</td><td style="text-align: left">106 days</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: center">Total Cost ($)</th><th style="text-align: center">Strike ($)</th><th style="text-align: center">Puts ($)</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: center">-0.01 - 1 = 0.99</td><td style="text-align: center">1</td><td style="text-align: center">0.01</td></tr>
+<tr><td style="text-align: center">-0.03 + 2 = 1.97</td><td style="text-align: center">2</td><td style="text-align: center">0.03</td></tr>
+<tr><td style="text-align: center">-0.12 + 3 = 2.88</td><td style="text-align: center">3</td><td style="text-align: center">0.12</td></tr>
+<tr><td style="text-align: center">-0.31 + 4 = 3.69</td><td style="text-align: center">4</td><td style="text-align: center">0.31</td></tr>
+<tr><td style="text-align: center">-0.69 + 5 = 4.31</td><td style="text-align: center">5</td><td style="text-align: center">0.69</td></tr>
+<tr><td style="text-align: center">-1.28 + 6 = 4.72</td><td style="text-align: center">6</td><td style="text-align: center">1.28</td></tr>
+<tr><td style="text-align: center">-2.03 + 7 = 4.97</td><td style="text-align: center">7</td><td style="text-align: center">2.03</td></tr>
+<tr><td style="text-align: center">-2.89 + 8 = 5.11</td><td style="text-align: center">8</td><td style="text-align: center">2.89</td></tr>
+<tr><td style="text-align: center">-3.81 + 9 = 5.19</td><td style="text-align: center">9</td><td style="text-align: center">3.81</td></tr>
+<tr><td style="text-align: center">-4.77 + 10 = 5.23</td><td style="text-align: center">10</td><td style="text-align: center">4.77</td></tr>
+<tr><td style="text-align: center">-5.74 + 11 = 5.26</td><td style="text-align: center">11</td><td style="text-align: center">5.74</td></tr>
+<tr><td style="text-align: center">-6.73 + 12 = 5.27</td><td style="text-align: center">12</td><td style="text-align: center">6.73</td></tr>
+</tbody>
+</table>
+</div>
+<p>First we sell a put, thus are paid its price, then we sell at the strike. For example, via the put of strike $5, we sell the put for 0.69, then we buy the stock for $5. The result is buying a stock for $5 - $0.69 = $4.31. That’s less than what we would spend in the spot market!</p>
+<p>Turns out, buying via selling puts is always cheaper than buying directly via the spot market. But unlike spot-buying, this method does not guarantee that you’ll get the shares; this depends on whether the other party exercises the put. He would only do that if the selected strike is higher than the spot market. Otherwise, why sell to you when he can sell to the spot market for more?</p>
+<h2 id="the-farther-from-atm-the-smaller-the-change-between-strikes"><a class="header" href="#the-farther-from-atm-the-smaller-the-change-between-strikes">The Farther From ATM, The Smaller The Change Between Strikes</a></h2>
+<p>Η διαφορα των διαδοχικων μικραινει οσο μακρυτερα απο “ATM”, γιατι?</p>
+<h2 id="longer-expirations-mean-higher-prices"><a class="header" href="#longer-expirations-mean-higher-prices">Longer Expirations Mean Higher Prices</a></h2>
+<p>Δείξε ότι με παραπάνω χρόνο, όλα αυξάνονται (γιατί?)</p>
+<h2 id="what-happens-when-spot-price-moves"><a class="header" href="#what-happens-when-spot-price-moves">What Happens When Spot Price Moves?</a></h2>
+<h2 id="call-and-put-prices-are-related-put-call-parity"><a class="header" href="#call-and-put-prices-are-related-put-call-parity">Call And Put Prices Are Related! (Put-Call Parity)</a></h2>
+<h2 id="project-an-option-onto-the-future"><a class="header" href="#project-an-option-onto-the-future">Project An Option Onto The Future!</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Asset</th><th style="text-align: left">Spot Price</th><th style="text-align: left">Expiration</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">NIO</td><td style="text-align: left">$5.27</td><td style="text-align: left">1 day ‒ 106 days ‒ 197 days</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: center">Calls ($)</th><th style="text-align: center">Strike ($)</th><th style="text-align: center">Puts ($)</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: center">4.27 ‒ 4.29 ‒ 4.37</td><td style="text-align: center">1</td><td style="text-align: center">0.00 ‒ 0.01 ‒ 0.10</td></tr>
+<tr><td style="text-align: center">3.27 ‒ 3.33 ‒ 3.39</td><td style="text-align: center">2</td><td style="text-align: center">0.00 ‒ 0.03 ‒ 0.12</td></tr>
+<tr><td style="text-align: center">2.28 ‒ 2.44 ‒ 2.55</td><td style="text-align: center">3</td><td style="text-align: center">0.00 ‒ 0.12 ‒ 0.25</td></tr>
+<tr><td style="text-align: center">1.28 ‒ 1.65 ‒ 1.85</td><td style="text-align: center">4</td><td style="text-align: center">0.01 ‒ 0.31 ‒ 0.54</td></tr>
+<tr><td style="text-align: center">0.33 ‒ 1.03 ‒ 1.30</td><td style="text-align: center">5</td><td style="text-align: center">0.05 ‒ 0.69 ‒ 0.96</td></tr>
+<tr><td style="text-align: center">0.03 ‒ 0.63 ‒ 0.98</td><td style="text-align: center">6</td><td style="text-align: center">0.75 ‒ 1.28 ‒ 1.62</td></tr>
+<tr><td style="text-align: center">0.01 ‒ 0.38 ‒ 0.68</td><td style="text-align: center">7</td><td style="text-align: center">1.73 ‒ 2.03 ‒ 2.31</td></tr>
+<tr><td style="text-align: center">0.00 ‒ 0.25 ‒ 0.49</td><td style="text-align: center">8</td><td style="text-align: center">2.73 ‒ 2.89 ‒ 3.11</td></tr>
+<tr><td style="text-align: center">0.00 ‒ 0.17 ‒ 0.37</td><td style="text-align: center">9</td><td style="text-align: center">3.73 ‒ 3.81 ‒ 3.98</td></tr>
+<tr><td style="text-align: center">0.00 ‒ 0.12 ‒ 0.28</td><td style="text-align: center">10</td><td style="text-align: center">4.73 ‒ 4.77 ‒ 4.89</td></tr>
+<tr><td style="text-align: center">0.00 ‒ 0.08 ‒ 0.22</td><td style="text-align: center">11</td><td style="text-align: center">5.73 ‒ 5.74 ‒ 5.83</td></tr>
+<tr><td style="text-align: center">0.00 ‒ 0.07 ‒ 0.17</td><td style="text-align: center">12</td><td style="text-align: center">6.73 ‒ 6.73 ‒ 6.78</td></tr>
+</tbody>
+</table>
+</div>
+<p>Δεν χρειάζεται paper trading: μπορεί κάποιος ΣΗΜΕΡΑ να δει τις σχετικές αξίες των options. Πχ αν αναρωτιεται πώς θα μεταβληθει η αξια ενος συμβολαιου.</p>
+<p>Example: short put that goes way OTM. Long call that goes way ITM. Spread.<br>Example: show how option loses value as expiration becomes shorter.<br>Γιατί η αξία του future εξισωνεται με το underlying στην λήξη? (Maybe not here)<br>formula: <code>startYield/remainingYield=pastYield</code>. This will be later used for touch bets.</p>
+<p>Option chain: καλυτερα να κοιτας puts (οταν &lt; spot price) και calls (οταν &gt; spot price). Οι αλλες τιμες ειναι “ITM” αλλα μερος τους αποζημειωνει… (ειναι σαν να παιρνεις δανειο)</p>
+<p>Δειξε ακριβως πως απ’ το ενα πας στο αλλο. Θα μπορουσαν να μην υπαρχουν calls, ή θα μπορουσαν να μην υπαρχουν puts.</p>
+<p>$$Forward = Call - Put$$</p>
+<p>Synthetic future<br>(Apply Call-Put Parity in following strategies)<br>Literature treats it as a formula to compute prices, thus arbitrage opportunities. But symbolically is more useful.</p>
+<p>Where to show algebra of:</p>
+<ul>
+<li>instead of closing a short put, you can reduce its price or shorten its expiration</li>
+<li>i.e. you can add or remove time, you can move legs, A put is the sum of its verticals.</li>
+</ul>
+<p>Spread with calls = spread with puts:
+$$S = C(100) - P(100)$$
+$$S = C(110) - P(110)$$</p>
+<p>Τώρα, ξεκιναω με $C(100) - C(110)$ που ειναι το debit spread:
+$$C(100) - C(110) = (S + P(100)) - (S + P(110)) = S + P(100) - S - P(110) = P(100) - P(110)$$
+αρα:
+$$C(100) - C(110) = P(100) - P(110)$$</p>
+<p>Spread arithmetic:</p>
+<ul>
+<li>single long put can be thought as a spread from 0.</li>
+<li>single long call can be thought as a spread to +∞.
+Show</li>
+</ul>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<ul>
+<li>Lower strikes -&gt; cheapens puts, enriches calls</li>
+<li>Higher strikes -&gt; cheapens calls, enriches puts</li>
+<li>Buying via puts-writing: always cheaper</li>
+<li>Selling via calls-writing: always richer</li>
+</ul>
+<hr>
+<ol class="footnote-definition">
+<li id="footnote-28">
+<p>Or for a strike of… precisely $1,005.27, to make the answer round. 😉 The implied answer is somewhat off though, it ignores the effect of positive interest rates. Let’s ignore this for now. <a href="#fr-28-1">↩</a></p>
+</li>
+<li id="footnote-29">
+<p>Let’s assume we can immediately exercise these NIO options, i.e. that we are talking about “American”-style options (vs European). This is actually the case for stock options, like NIO. <a href="#fr-29-1">↩</a></p>
+</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="put-call-parity"><a class="header" href="#put-call-parity">Put-Call Parity</a></h1>
+<p>Options &gt;: Futures
+Put-Call Parity
+Interest rates</p>
+<p>Construct future via options. Put-call parity. Simplified formula.
+Carry trade.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="strategies"><a class="header" href="#strategies">Strategies</a></h1>
+<p>Basic Strategies</p>
+<h2 id="the-oldest-record-of-an-option"><a class="header" href="#the-oldest-record-of-an-option">The Oldest Record Of An Option</a></h2>
+<p>Here’s a famous anecdote shared by Aristotle about Thales of Miletus; an ancient Greek philosopher of Asia Minor. Thales was poor, to the point that people made fun on him: how could he pretend to be wise if he couldn’t help himself out of poverty? Thales was hurt, but still was “too good” to earn a living in the usual time-consuming manner. Instead, he would watch the stars (philosophy in ancient times implied all sorts of sciences, including astronomy). Supposedly, something in the stars<sup class="footnote-reference" id="fr-24-1"><a href="#footnote-24">1</a></sup> informed him that the next olive harvest (almost a year later) would be distinctly great. So he decided to spent the little money he had in all<sup class="footnote-reference" id="fr-25-1"><a href="#footnote-25">2</a></sup> the olive mills of Miletus and Chius. He couldn’t of course rent them (let alone buy them), being poor. All he could receive for his money was the right to rent them, if so he decided later, at a particularly high rent. The deal seemed like a no-brainer for mill owners: they got paid to promise to rent their mills at a high price!</p>
+<p>Thales - long call
+Mill owners: covered call</p>
+<p>Advanced Strategies</p>
+<hr>
+<ol class="footnote-definition">
+<li id="footnote-24">
+<p>Spoiler: it was sheer luck and confirmation bias. Some things never change! <a href="#fr-24-1">↩</a></p>
+</li>
+<li id="footnote-25">
+<p>Spoiler: not all of them. Aristotle was exaggerating, because he wanted to discuss monopolies. <a href="#fr-25-1">↩</a></p>
+</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="position-lifecycle"><a class="header" href="#position-lifecycle">Position Lifecycle</a></h1>
+<p>Lifecycle Of A Position
+Hedging &amp; Speculation, Revisited
+Insights From The Options Market</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="miscellaneous"><a class="header" href="#miscellaneous">Miscellaneous</a></h1>
+<p>Topics and real-world mechanics deferred from conceptual foundations.</p>
+<h2 id="american-vs-european-options"><a class="header" href="#american-vs-european-options">American vs. European Options</a></h2>
+<!-- 
+Promise from options.md:
+- Early exercise boundaries and implications:
+  - American style: can exercise any time up to expiration.
+  - European style: can only exercise at expiration.
+  - Why early exercise of American options is usually suboptimal (surrendering remaining time/extrinsic value), with exceptions (e.g., deep ITM puts or calls right before an ex-dividend date).
+  - Pin risk and assignment dynamics for option sellers.
+-->
+<h2 id="settlement-cash-vs-physical"><a class="header" href="#settlement-cash-vs-physical">Settlement: Cash vs. Physical</a></h2>
+<!-- 
+Promise from options.md:
+- Physical settlement: actual underlying shares/assets change hands for strike price × lot size. Requires sufficient account capital or margin to hold the underlying position.
+- Cash settlement: difference between spot and strike is settled purely as a cash credit/debit (common in index options like SPX).
+- Tax and friction implications: physical assignment can trigger capital gains events on the underlying stock or force margin loan interest, whereas cash-settled contracts avoid secondary transaction steps.
+-->
+<h2 id="margin-trading--obligations"><a class="header" href="#margin-trading--obligations">Margin Trading &amp; Obligations</a></h2>
+<!--
+- Who enforces obligations? The clearing house (e.g. OCC) and the broker.
+- How collateral/margin works for short options: cash-secured vs. margin requirements.
+- Assignment mechanics: random allocation among short option holders.
+-->
+<h2 id="dividends--corporate-actions"><a class="header" href="#dividends--corporate-actions">Dividends &amp; Corporate Actions</a></h2>
+<!--
+- Impact of dividends on option pricing: stock drops by dividend amount on ex-date.
+- Early exercise risk for short call holders before ex-dividend date.
+- Contract adjustments for stock splits, reverse splits, and special dividends.
+-->
+<h2 id="what-to-do-with-the-premium"><a class="header" href="#what-to-do-with-the-premium">What To Do With The Premium</a></h2>
+<!--
+- Reinvesting collected premium vs. holding cash buffer for margin.
+- The psychological trap of treating collected premium as "instant free income".
+-->
+<h2 id="accounting"><a class="header" href="#accounting">Accounting</a></h2>
+<!--
+- Mark-to-market valuation of portfolio positions.
+-->
+<p>Κάποιοι μπερδεύουν την έννοια unrealized loss με κάποιο short option που ακρίβυνε. Διευκρίνισε ότι το realized/unrealized είναι καθαρά φορολογική διάκριση, και εξήγησε πώς γίνεται η αποτίμηση της αξίας του χαρτοφυλακίου μια χρονική στιγμή (mark to market). Μπορεί κάποιος να προβάλλει στο μέλλον την αξία του χαρτοφυλακίου, αλλά η σημερινή χασούρα είναι χασούρα, απολύτως πραγματική και μη αναστρέψιμη (αν δεν υπήρχε, θα είχες περισσότερα λεφτά και τώρα και στο μέλλον).</p>
+<h2 id="the-greeks"><a class="header" href="#the-greeks">The Greeks</a></h2>
+<!--
+- Intuitive sensitivities of option price to underlying changes:
+  - Delta: sensitivity to spot price moves (hedge ratio / synthetic stock equivalent).
+  - Gamma: acceleration of delta as spot moves.
+  - Theta: sensitivity to the passage of time (time decay).
+  - Vega: sensitivity to changes in market-implied volatility.
+  - Rho: sensitivity to risk-free interest rates (linking back to Fetter's time preference & futures pricing).
+-->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="taxation"><a class="header" href="#taxation">Taxation</a></h1>
+<p>Taxation</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="playbook"><a class="header" href="#playbook">Playbook</a></h1>
+<p>Trading Playbook - Cheat Sheet</p>
+<p>big diagram here, summarizing it all:</p>
+<p>cost basis, avg price
+what does +1 mean, what does -1 mean, in each market</p>
+<ul>
+<li>spot exchange: underlying,  bid, ask</li>
+<li>futures: underlying, expiration. bid, ask</li>
+<li>options: underlying, expiration, type, strike, bid,ask</li>
+</ul>
+<p>Long/Short, +1/-1. Sell option, write option, going to zero means cancelling obligation.
+-1 doesn’t mean you borrowed anything, unlike spot.</p>
+<p>There is a fixed amount of underlying
+There is unlimited amount of derivatives</p>
+<p>(Big box around futures &amp; options, naming them “derivatives”)</p>
+<p>Also showing that spot is a special case of futures (the shorter the expiration, the more similar, and they coincide when expiration=now).</p>
+<p>Also showing that futures is a special case of options (each future can be thought of as the combination of a long call and a short put.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
+<p>Glossary of Terms</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="formulas"><a class="header" href="#formulas">Formulas</a></h1>
+<p>Reference of Formulas</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-09f2665d.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            MathJax.Hub.Register.StartupHook('End', function() {
+                window.setTimeout(window.print, 100);
+            });
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>

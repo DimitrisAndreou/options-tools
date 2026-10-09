@@ -1,0 +1,319 @@
+<!DOCTYPE HTML>
+<html lang="en" class="navy sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Exchange - Options Tools Book</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "navy";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-72e51024.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-274a903b.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('navy')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Options Tools Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="exchange"><a class="header" href="#exchange">Exchange</a></h1>
+<p>The spot market: Exchange Now<br>The futures market: Exchange Later<br>The options market: Exchange Later, conditionally</p>
+<h2 id="exchanges-now--the-spot-market"><a class="header" href="#exchanges-now--the-spot-market">Exchanges Now — The Spot Market</a></h2>
+<p>The “Spot” Market, or simply the “market”, is where people gather, physically or virtually, to perform exchanges of present, readily available assets (for example: shares, bonds, commodities, forex, cryptocurrency), for other present assets.</p>
+<p>The asset on one side of the exchange is always a general medium of exchange, i.e. money<sup class="footnote-reference" id="fr-15-1"><a href="#footnote-15">1</a></sup>. People who desire to exchange money for another asset are called buyers. People who desire to exchange an asset for money are called sellers. Given that money is always one side of the exchanged assets, having two distinct words, “buy” and “sell”, helps us remember which way the money is transferred, and which (opposite) way the other asset is transferred, but it is also the source of much confusion, especially when it comes to derivatives<sup class="footnote-reference" id="fr-16-1"><a href="#footnote-16">2</a></sup>. Hence, we should not forget that the role of a “buyer” and a “seller” is entirely symmetric and equivalent when we consider the transaction as simply an “exchange”, rather than an act of “buying” or “selling”.</p>
+<p>The ratio of money exchanged, for a specific quantity of another asset, is called the price. For example, if 5 ounces of gold are exchanged for $10,000, then we say that the price of gold, as manifested in that exchange, is $2,000/ounce.</p>
+<p>Exchanges are voluntary. Someone only enters an exchange when, and if, the terms of it appear favorable. Since this applies to everyone, we can say that an exchange takes place only when both parties view it (simultaneously!) as favorable to them, at least at the time when the exchange is agreed to. This is very much similar to every day transactions, like buying bread. The bread maker has too much of it, and prefers to exchange it for money. The consumer has too little of it, and prefers giving up a little quantity of his available money, in exchange for bread.</p>
+<p>The exchanged assets can be later exchanged again in reverse direction (don’t try this at your local bakery), possibly at a different price, i.e. at a different ratio of one against the other. This will reveal that, at least in that moment in time, one of the parties lost money by the previous transaction, while the other gained from it. For example, assume someone buys one bitcoin for $50,000, and later sells it (not necessarily to the same person) for $55,000. Then, basic accounting reveals that he made a profit of $5,000, i.e. through exchanges he now possesses more money than he started with. Someone else started with one bitcoin, sold it for $50,000, then bought it back for $55,000. That person possesses $5,000 less than before made a loss of $5,000.</p>
+<p>Notice that it’s not necessary that the $5,000 loss falls on the initial seller. It could very well be the case that he bought back one Bitcoin for $50,100 (incurring a loss of only $100), and whoever sold for $50,100 later bought back for $50,200 (again incurring a loss of only $100), and so on. Whether though it was a single person losing $5,000, or 50 people losing $100 each, the basic accounting fact remains that the money profit made by one, is born out of an equivalent money loss from the rest of the market participants.</p>
+<p>One of the magnificent features of the market economy is the prices established between any money-exchanged asset. To calculate one’s money profit or loss, it is not necessary to first sell all the assets back to money, and then count the money. One can at any time mark to market his available assets, and tally them up their money equivalents (i.e. the amount of money he could, at will, exchange them for). For example, an owner of one bitcoin who simply holds it, can rightfully claim that he made a money profit of $5,000, by the mere fact that the price of it was $50,000 and now is<sup class="footnote-reference" id="fr-17-1"><a href="#footnote-17">3</a></sup> $55,000.</p>
+<p>It should be noticed that profit/loss calculations depends on the selection of what the “money” asset is. If the bitcoin holder considered bitcoin to be the money, and dollars to be the “other asset”, then he would have made zero profit in terms of bitcoin. It is similar to how an American does not consider it a “profit” if now dollars are exchanged for larger quantities of euros, neither a European would consider it a “loss”. But if for some reason the American used euros for money calculations, then the profit (in euros) would be apparent: he would mark-to-market his dollars in euros, and he would discover that he now owns the equivalent of more euros. Symmetrically, the European who would do money calculations in terms of dollars, would discover that he now owns assets that are worth a smaller quantity of dollars than before, hence a loss.</p>
+<p>Incidentally, this mark-to-price accounting is what allows for entrepreneurs to estimate the success or failure of their investments: they simply refer their assets back to market prices, and see if their investment grew or diminished in value; whether value was created or destroyed, which is essential in the act of economizing<sup class="footnote-reference" id="fr-18-1"><a href="#footnote-18">4</a></sup>.</p>
+<h2 id="price-negotiation"><a class="header" href="#price-negotiation">Price Negotiation</a></h2>
+<p>This section is rather basic for whoever is already familiar with bids &amp; asks and trading in the spot market; feel free to skip if already familiar with these concepts.</p>
+<p>For a spot exchange to happen, all that is needed is that a seller and a buyer find each other and discover that there is a exchange ratio, or a price, to which both agree to exchange a particular quantity of their goods with each other. Then, they exchange immediately the largest quantity they are both willing to exchange in that price, and no future obligation to each other remains.</p>
+<p>You don’t only want to find anybody that offers a price that you find agreeable - you want the best price. The best price maximizes the quantity of the asset you receive in exchange for what you offer. E.g. in the market of gold and dollars, people who offer dollars seek the maximum quantity of gold for their dollars, while people who offer gold seek the maximum quantity of dollars for their gold.</p>
+<p>Since, as we mentioned before, prices are quoted in money, the price could be something like $2000 per ounce of gold. In a typical stock exchange, “XAU” would be the symbol for Gold, and “USD” would be the symbol for dollars. Then, traditionally the quote is named “XAUUSD”, i.e. first the non-money asset, with the money asset following. If XAUUSD = $2000, it means “$2000 for a unit of the other asset” (= ounce of gold in this example). In this market, “the price” would refer to the quote of XAUUSD, in dollars.</p>
+<p>So, the “best price” for whoever wants to exchange dollars for gold, i.e. buy gold, is the minimum price. Because the price, i.e. “dollars per unit of gold” becomes smaller when the reverse ratio “gold to 1 dollar” is larger, and that maximizes the amount of gold fetched by each dollar.</p>
+<p>Similarly, the “best price” for whoever wants to exchange gold for dollars, i.e. sell gold, is the maximum price. Because the price means “dollars per unit of gold”, and when it is larger, it maximizes the amount of dollars fetched per unit of gold.</p>
+<h3 id="how-do-you-find-the-best-price"><a class="header" href="#how-do-you-find-the-best-price">How do you find the best price?</a></h3>
+<p>Imagine your local farmers market. You are a buyer of farmer goods, the farmers are the sellers. The sellers signal their prices via written tags. That is their “ask”, i.e. how much money they seek in exchange of a unit of product they offer. They also implicitly signal the size of their offers: the amount of produce in front of them. The price is non-binding if they run out of product! Buyers are expected to walk by, and if they observe an acceptable price for something they want to buy, they go ahead and an mutually acceptable exchange takes place.</p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="../assets/images/farmer_market.png" alt="Farmer’s Market"><span class="img-wrapper"><img src="../assets/images/farmer_market.png" alt="Farmer’s Market"></span></label></p>
+<p>This is about the best one can do with physical price tags and with the co-located physical presence of buyers, sellers, and goods. Technology and virtualization though affords us much more efficient markets. Here’s how it works:</p>
+<p>Unlike the farmer’s market, both buyers and sellers can signal the prices that they find agreeable. The price that any particular seller signals as acceptable is called the ask, as we saw above. The price that any particular buyer signals is called the bid. Further, you don’t have to walk the entire market to find the best price, or shout to each other, like in the photo below:</p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="../assets/images/open_outcry_pit.png" alt="Open Outcry Trading Pit"><span class="img-wrapper"><img src="../assets/images/open_outcry_pit.png" alt="Open Outcry Trading Pit"></span></label></p>
+<p>A simple computer algorithm maintains these price tags in sorted order tailored for both audiences:</p>
+<ul>
+<li>All asks, in ascending order. The first ask is the cheapest; buyers look at this.</li>
+<li>All bids, in descending order. The first bid is the richest; sellers look at this.</li>
+</ul>
+<p>What we think of as the “price” of an asset, is fully characterized by these two prices, the range of the cheapest ask and the richest bid. This is what means by saying “the price is controlled on the margin”. It doesn’t matter whether millions investors think that their $AAPL shares are worth $300 and don’t sell them cheaper than that, and it doesn’t matter that other millions investors think that they will buy $AAPL when it “dips” to $100 per share and don’t pay a dime more. At the moment of writing, there is someone who tries to buy $AAPL for $169.98 per share (and there is nobody offering more than that), and there is someone who tries to sell $AAPL for $170.00 (and there is nobody seeking less than that). Hence the “price” is somewhere between $169.98 and $170.00.</p>
+<p>Unlike the farmers’ market, you have to be a bit more explicit with the size. Each bid/ask comes with a precise quantity of assets that the participant is willing to exchange. That means that one can also see at a glance what quantities of what asset are immediately available at what price.</p>
+<p>A buyer and a seller signal their willingness to exchange a quantity of an asset at a given price (or better) via what is known as a limit order. They are called “limit” because they only limit the price in one direction (you won’t complain if someone offers to you even more versus what you were seeking!).</p>
+<ul>
+<li><strong>Bid</strong> = limit buy order = “I’m buying quantity $\le$ SIZE at price $\le$ LIMIT”</li>
+<li><strong>Ask</strong> = limit sell order = “I’m selling quantity $\le$ SIZE at price $\ge$ LIMIT”</li>
+</ul>
+<p>Examples of limit orders:</p>
+<ul>
+<li>“I’m willing to buy 0.5 bitcoin at a price of at most $50,000 each”</li>
+<li>“I’m willing to sell 2 bitcoins at a price of at least $60,000 each”</li>
+</ul>
+<p>In these examples, $50,000 and $60,000 are called the “limit” of each respective limit order. Hence, one can see that limit orders come in the varieties of limit buy orders, and limit sell orders, indicating as usual the direction of money in the intended exchange.</p>
+<p>There’s a common order type, called <strong>market order</strong>. This is simply a limit order, where the limit is effectively $+\infty$ for a limit buy order (meaning: you buy at the best available price, whatever that price happens to be, without any limit), or it is zero for a limit sell order (meaning: you sell at the best available price, whatever that happens to be, without any limit).</p>
+<p>At any given time, a modern spot market offers these two sorted sets of orders, the bids and the asks. Collectively they are known as the <strong>order book</strong>. The order book only contains <em>unsatisfied</em>, or “unfilled” orders (orders that find a counterparty are respectively said to be “filled”). Why is that? Because orders that become satisfiable execute (thus disappear) instantly.</p>
+<p>For example, if I make a bid at $60,000 for 0.5 bitcoin, and you make an ask at $50,000 for 0.1 bitcoin, it means I’m already willing to buy your 0.1 bitcoin at a better price that your minimum selling price. Thus 0.1 bitcoin changes hands, for a price between $50,000 and $60,000 (let’s assume this is the mid price, $55,000), thus what now remains in the order book from the previous orders, are:</p>
+<ul>
+<li>A bid at $60,000 for 0.4 bitcoin (initially wanted 0.5 but already bought 0.1 bitcoin…)</li>
+<li>No ask (the previous ask was fully exhausted; 0.1 bitcoin sold)</li>
+</ul>
+<p>An equivalent way to say that the order book always contains “unsatisfied” orders is to say that the “ask” price is always higher than the “bid” price. The two prices where the asset can instantly be sold and bought, respectively.</p>
+<p>It is common to describe a market situation with a single price instead of two: the middle point, or mid point for short, which is the average of the best bid and best ask:</p>
+<p>$$\text{MidPoint} = \frac{\text{Bid} + \text{Ask}}{2}$$</p>
+<p>This price is not immediately marketable (contrast to “market orders” mentioned above!), i.e. you cannot instantly perform an exchange at that price. You can post a limit order and wait.</p>
+<p>If one attempts to immediately exchange a quantity of an asset, he will either use the bid or the ask. The difference between the mid point and either the bid or the ask (it’s the same distance to either) is also called <strong>slippage</strong>: it represents something similar to a “transaction cost”: you are actually getting a worse price that what the mid point was telling you, as if you are paying extra fees. Furthermore, if your order is large enough, exhausting the size of the best bid or ask, you would then exchange with the second best bid or ask, and so on, meaning progressively worse and worse exchange price. The availability of many competing buyers and sellers in a market manifests as small spreads, and slippage.</p>
+<p>Another number sometimes mentioned is the spread (the <strong>“bid-ask spread”</strong> more specifically, because “spreads” also mean something else in options trading). It is simply the difference:</p>
+<p>$$\text{Spread} = \text{Ask} - \text{Bid}$$</p>
+<p>The absolute value of this number is not important; what is more important is the spread as a ratio (or a percent) against the mid point:</p>
+<p>$$\text{Spread}(%) = \frac{\text{Spread}}{\text{MidPoint}}$$</p>
+<p>E.g. if the spread(%) is 1%, it means that you pay 0.5% cost per transaction, so to complete a hypothetical exchange roundtrip (you buy something and immediately sell it back), you would pay 1%, thus retain only 99% of your initial capital.</p>
+<hr>
+<h2 id="exchanges-in-the-future--the-futures-market"><a class="header" href="#exchanges-in-the-future--the-futures-market">Exchanges In The Future — The Futures Market</a></h2>
+<p>Settlement<br>Time Value<br>“Pure” Futures<br>Interest Rates<br>“Perpetuals Futures”</p>
+<p>Futures could have strikes, but don’t, due to daily settlement (which resets/equalizes the strike price of all futures)</p>
+<p>Interest rate should be explained using Fetter’s theory:
+Frank Fetter’s <em>Pure Time Preference Theory</em> explains interest not as a monetary phenomenon or a return on capital goods, but as an inescapable category of human action. Present goods are systematically valued more highly than otherwise identical future goods (time preference). The market interest rate is simply the price ratio resulting from the exchange of present goods for future goods — the discount that future goods suffer relative to present ones. In futures markets, this discount/premium directly shapes the spread between spot and delivery prices.</p>
+<h2 id="optional-exchanges-in-the-future--the-options-market"><a class="header" href="#optional-exchanges-in-the-future--the-options-market">Optional Exchanges In The Future — The Options Market</a></h2>
+<p>The Oldest Record Of An Option</p>
+<hr>
+<ol class="footnote-definition">
+<li id="footnote-15">
+<p>This is the characteristic feature of the market economy compared to the primitive and highly inefficient barter economy. See Menger’s <em>On The Origins Of Money</em> for more information. <a href="#fr-15-1">↩</a></p>
+</li>
+<li id="footnote-16">
+<p>One can trade derivatives of negative value as we will see. So one can “buy X” for -$50, but that’s equivalent to “sell X for $50”, and must not be confused with “buy $X for $50” or “sell X for -$50). When in doubt, focus on what is being exchanged, for what. <a href="#fr-16-1">↩</a></p>
+</li>
+<li id="footnote-17">
+<p>Note that the price of each completed exchange is actually historical; it refers to the past. Nothing guarantees that the next price will be identical. We will soon clarify what it means to talk about the “current price”. <a href="#fr-17-1">↩</a></p>
+</li>
+<li id="footnote-18">
+<p>It is also the reason why the phrase “Socialist economy” is necessarily a contradiction in terms. If capital goods are publicly owned, there are no prices for them (reflecting their competing employments by entrepreneurs, as driven by consumer demand), hence they can’t be “marked-to-market”, thus it is not possible to estimate even after the fact whether any particular venture succeeded or failed, let alone calculate beforehand a successful venture. <a href="#fr-18-1">↩</a></p>
+</li>
+</ol>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../chapters/capital.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../chapters/options.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../chapters/capital.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../chapters/options.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

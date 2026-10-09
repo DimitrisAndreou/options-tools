@@ -31,10 +31,3 @@ $$\Pi_{\text{long call}}(S) = \max(S - K, 0) - P$$
 
 
 
-<!-- 
-Limit orders
-Markets orders like limit orders.
-
-You need this so in the next chapter, you show that options are like promised limit orders
-
--->
