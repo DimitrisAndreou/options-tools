@@ -1,4 +1,38 @@
+<!-- Keywords:
+three modes of exchange: now (spot), later (futures), conditionally later (options)
+spot market definition: exchange of present readily available assets
+money on one side of exchange (medium of exchange)
+symmetry of buyers and sellers (pure exchange vs buy/sell)
+prices as exchange ratios
+voluntary trade implies mutual benefit at transaction time
+reverse exchanges and historical PnL realization
+money profit born out of equivalent counterparty loss
+mark-to-market accounting without liquidating assets
+profit/loss dependence on chosen money asset
+entrepreneurial calculation of success/failure (critique of socialist calculation)
+price negotiation: seeking best price (minimum for buyers, maximum for sellers)
+asset quote conventions (e.g. XAUUSD)
+physical markets (farmers market with price tags/asks)
+virtualized electronic markets: bids and asks
+open outcry shouting pit vs electronic order book
+sorted order book algorithm: ascending asks, descending bids
+price determination on the margin (AAPL $169.98 vs $170.00 example)
+order size and depth
+limit orders (limit buy <=, limit sell >=)
+market orders (+infinity for buy, 0 for sell)
+order matching and order book filled vs unfilled
+midpoint price: (Bid + Ask) / 2
+slippage as transaction cost
+bid-ask spread: Ask - Bid
+spread percentage relative to midpoint: Spread / MidPoint
+futures market: settlement, time value, "pure" futures, interest rates, perpetuals
+why futures lack strikes (daily mark-to-market settlement)
+Fetter's pure time preference theory of interest (present vs future discount)
+options market: optional exchanges in the future
+-->
+
 # Exchange
+
 
 The spot market: Exchange Now  
 The futures market: Exchange Later  

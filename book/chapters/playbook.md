@@ -1,4 +1,19 @@
+<!-- Keywords:
+trading playbook cheat sheet
+grand synthesis diagram across markets (spot, futures, options)
+cost basis and average price conventions
+meaning of +1 (long) and -1 (short) in each market
+spot: underlying, bid, ask
+futures: underlying, expiration, bid, ask
+options: underlying, expiration, type, strike, bid, ask
+shorting derivatives vs borrowing spot assets (writing creates obligations without borrowing)
+fixed supply of underlying vs unconstrained supply of derivatives
+spot as zero-duration limit of futures
+futures as special case of options (long call + short put synthetic future)
+-->
+
 # Playbook
+
 
 Trading Playbook - Cheat Sheet
 

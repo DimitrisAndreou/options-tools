@@ -1,4 +1,32 @@
+<!-- Keywords:
+simplified option chain structure (midpoint pricing, NIO example, 1-share abstraction)
+live option chains sources (Yahoo Finance, Deribit)
+higher strikes -> cheaper calls (exercise at higher price saves less)
+zero strike call value (free asset = spot price)
+higher strikes -> richer puts (exercise at higher price receives more cash)
+extreme strike put value ($1000 put = strike minus spot)
+at-the-money (ATM): where calls and puts meet
+crossover point around spot price / 50-50 market implied probability
+forward price / interest rate crossover shift
+spot-buying vs buying through calls: C + K >= S (exercise cost comparison)
+spot-selling vs selling through puts: K - P <= S (net revenue comparison)
+spot-selling vs promising to sell (writing calls): always richer (premium + strike) but conditional
+spot-buying vs promising to buy (writing puts): always cheaper (strike - premium) but conditional
+farther from ATM -> smaller price delta between consecutive strikes
+longer expirations mean higher prices (more time optionality)
+what happens when spot price moves (dynamic chain shifts)
+call and put prices related (Put-Call Parity introductory relationship)
+projecting an option onto the future (1 day, 106 days, 197 days chain projection)
+no need for paper trading: today's chain contains the future
+deep ITM vs deep OTM option decay over time
+synthetic future: Forward = Call - Put
+spread equivalence: call vertical debit spread equals put vertical credit spread (C(100) - C(110) = P(100) - P(110))
+single long put as spread from 0; single long call as spread to +infinity
+summary: strike directional effects and writing advantages
+-->
+
 # Chain Arithmetic
+
 
 So now you understand what the numbers on an option chain page say, but they still look pretty random to you. In the following sections, we will unlock the secrets. You will only need basic arithmetic to follow along, but you will also need attention.
 

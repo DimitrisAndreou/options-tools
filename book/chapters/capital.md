@@ -1,4 +1,41 @@
+<!-- Keywords:
+titles of ownership and trading
+money as general medium of exchange
+market economy and price comparison to money
+economic calculation for inputs, outputs, revenue, costs
+net worth: assets minus liabilities
+positions (asset with positive/negative quantity)
+portfolio as collection of positions
+capital defined as quantity of money equivalent to portfolio
+mark-to-market accounting
+capital calculation across multiple assets and currencies
+ownership inherently involves risk (uncertain future preferences)
+risk defined as potential of capital loss (worst-case scenario vs bad outcome)
+profit and loss symmetry (upside vs downside)
+base currency choice (dollars, euros, francs, gold, bitcoin)
+no constant measure of value (economics is not physics)
+inflationism and currency illusion (Weimar 1923 mark)
+multiple base currencies and relative stability illusion
+unsolvability of basket-of-goods index numbers (CPI/PPI arbitrariness)
+inter-era comparison problems (quality, amenities, cars vs old buggies)
+assuming constant base currency for book analysis ("risk-free", "breakeven")
+advice: choose living expenses currency as base
+currency exposure vs transaction currency
+the law of one price and instantaneous arbitrage (gold, dual-listed shares)
+look-through balance sheet exposure (cash holdings vs debt)
+indebted companies in foreign currency (short dollar exposure)
+fiction of commercial currency-hedged ETFs (hidden currency shorting)
+speculation: trades that increase risk / all action across time
+hedging: opposite of speculation, reducing profit & loss potential
+conditional hedging across price ranges (promised sell prices)
+probability of loss across price ranges
+PnL payoff charts
+zero-sum nature of trade profit and counterparties
+all trades have a PnL including future trades
+-->
+
 # Capital
+
 
 ## Understanding Capital
 

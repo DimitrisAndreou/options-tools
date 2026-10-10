@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-72e51024.js";
+            window.path_to_searchindex_js = "../searchindex-1f18fc61.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-274a903b.js"></script>
@@ -176,7 +176,23 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="miscellaneous"><a class="header" href="#miscellaneous">Miscellaneous</a></h1>
+                        <!-- Keywords:
+deferred real-world complexities and mechanics
+American vs European options (exercise window differences)
+early exercise optimality boundaries (sacrificing extrinsic value vs dividend/deep ITM exceptions)
+pin risk and assignment dynamics
+settlement types: cash settlement vs physical delivery
+margin trading: who enforces obligations (clearing house / OCC)
+cash-secured vs margin collateral requirements
+random assignment allocation among option writers
+dividends: ex-dividend stock price drop and dividend assignment risk
+corporate actions adjustments (stock splits, reverse splits)
+what to do with collected premium (psychological traps vs cash buffer)
+accounting: mark-to-market portfolio valuation vs tax distinction of realized/unrealized loss
+unrealized loss on short options is real and irreversible loss
+the Greeks as sensitivities: Delta (first derivative), Gamma (second derivative), Theta (time decay), Vega (volatility), Rho (interest rates)
+-->
+<h1 id="miscellaneous"><a class="header" href="#miscellaneous">Miscellaneous</a></h1>
 <p>Topics and real-world mechanics deferred from conceptual foundations.</p>
 <h2 id="american-vs-european-options"><a class="header" href="#american-vs-european-options">American vs. European Options</a></h2>
 <!-- 
@@ -219,8 +235,8 @@ Promise from options.md:
 <h2 id="the-greeks"><a class="header" href="#the-greeks">The Greeks</a></h2>
 <!--
 - Intuitive sensitivities of option price to underlying changes:
-  - Delta: sensitivity to spot price moves (hedge ratio / synthetic stock equivalent).
-  - Gamma: acceleration of delta as spot moves.
+  - Delta: sensitivity to spot price moves (hedge ratio / synthetic stock equivalent). First derivative.
+  - Gamma: acceleration of delta as spot moves. Second derivative.
   - Theta: sensitivity to the passage of time (time decay).
   - Vega: sensitivity to changes in market-implied volatility.
   - Rho: sensitivity to risk-free interest rates (linking back to Fetter's time preference & futures pricing).

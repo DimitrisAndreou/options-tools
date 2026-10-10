@@ -1,4 +1,17 @@
+<!-- Keywords:
+basic strategies overview
+Thales of Miletus olive press options anecdote
+Thales position as long call (leveraged upside, capped downside)
+mill owners position as covered call (capped rental upside, collected upfront premium)
+cash-secured put and equivalence to covered call
+vertical debit spreads (bull call spread, bear put spread)
+vertical credit spreads (bull put spread, bear call spread)
+advanced strategies: straddles, strangles, calendars
+volatility trading vs directional trading
+-->
+
 # Strategies
+
 
 Basic Strategies
 

@@ -9,6 +9,10 @@ Concepts build on the ones before. Chapters build from the concepts of previous 
 I, the author, shall present goals, including paths of goals (first we hit this goal, then that etc),
 and the agent will help find minimal prose that connects the dots in an effective manner.
 
+No flowery language, no entertaining digressions, straight from point to point.
+
+Always explain the **why** behind things, not just say "this is how it is".
+
 ## What we believe:
 
 We adopt Mises & Rothbard's praxeological approach to the economy. This is the foundation, but then we
@@ -32,6 +36,12 @@ We can understand options by abstracting away from conceptually unnecessary comp
 Once we have built fundamental understanding, we can reintroduce the extra complexities of the real world.
 
 Put-call parity: show how options and futures are bridged. How futures and spot markets are bridged, interest rates, arbitrages.
+
+From option markets we can deduce a probabilistic superstructure on top of the market. There are observable
+probabilities associated with the various price points at various points in time. Our understanding of the market
+will always be consistent with that superstructure. For example, if someone predicts a future price, we would
+never just ask for the win rate of those predictions, but we would first weigh them according to the objective
+probabilities inferred from the options market. 
 
 ## Judge the book by these questions
 

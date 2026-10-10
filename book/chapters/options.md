@@ -1,4 +1,22 @@
+<!-- Keywords:
+option as a future choice between two outcomes at expiration
+walk away vs predetermined exchange
+economic calculation at expiration (comparing market value in base currency)
+strike price as money basket
+symmetries: calls and puts as identical contract viewed from opposite money flows
+call: right to buy (calling asset towards you at a discount)
+put: right to sell (putting asset onto counterparty at a premium)
+anatomy of an option contract: underlying, strike (K), expiration (T), lot size / multiplier
+asymmetry of rights vs obligations
+option writer assuming liability
+option premium as upfront compensation for surrendered optionality
+promised limit orders: call = limit buy voucher, put = limit sell voucher
+real-world complexities: American vs European exercise styles
+settlement methods: physical share delivery vs cash settlement
+-->
+
 # Options
+
 
 An **option** is a choice between two outcomes at a specified moment in the future (the **expiration date**).
 

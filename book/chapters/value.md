@@ -1,4 +1,17 @@
+<!-- Keywords:
+subjective preference (A vs B)
+market prices as exchange ratios
+taking better-than-market prices to get more of desired goods
+why anything has value
+future vs present goods (time dimension)
+carry trade
+valuation of future events (stocks, bonds, futures, options)
+weighted average of probable outcomes
+present value under income uncertainty
+-->
+
 # Value
+
 
 How do you prefer A to B? Subjective.
 But if there's a market, you can tell whether some quantity of A is more or less valuable than a quantity of B. The ratio is the price.

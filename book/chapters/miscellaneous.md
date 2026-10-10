@@ -1,4 +1,22 @@
+<!-- Keywords:
+deferred real-world complexities and mechanics
+American vs European options (exercise window differences)
+early exercise optimality boundaries (sacrificing extrinsic value vs dividend/deep ITM exceptions)
+pin risk and assignment dynamics
+settlement types: cash settlement vs physical delivery
+margin trading: who enforces obligations (clearing house / OCC)
+cash-secured vs margin collateral requirements
+random assignment allocation among option writers
+dividends: ex-dividend stock price drop and dividend assignment risk
+corporate actions adjustments (stock splits, reverse splits)
+what to do with collected premium (psychological traps vs cash buffer)
+accounting: mark-to-market portfolio valuation vs tax distinction of realized/unrealized loss
+unrealized loss on short options is real and irreversible loss
+the Greeks as sensitivities: Delta (first derivative), Gamma (second derivative), Theta (time decay), Vega (volatility), Rho (interest rates)
+-->
+
 # Miscellaneous
+
 
 Topics and real-world mechanics deferred from conceptual foundations.
 

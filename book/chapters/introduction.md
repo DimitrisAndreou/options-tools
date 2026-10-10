@@ -1,4 +1,23 @@
+<!-- Keywords:
+visualizing position payoffs
+profit and loss (PnL) at expiration
+bull call spread example
+intrinsic value functions at expiration
+call intrinsic value formula max(S - K, 0)
+put intrinsic value formula max(K - S, 0)
+net payoff with premium Pi(S)
+subjectively mutually beneficial
+Cautious Charlie vs Risky Richey
+praxeological exchange: voluntary trade implies subjective preference
+diminishing marginal utility of money
+objectively zero-sum game in money terms
+where trading profit comes from
+gambling vs investing distinction
+about the author
+-->
+
 # Introduction
+
 
 ## Visualizing Position Payoffs
 
