@@ -20,6 +20,7 @@ double asChange(double changedValue, double originalValue) =>
 
 void main() async {
   // testYFinance();
+  await testGoogCoveredCallUnrealizedGains();
 
   List<Market> markets = await Deribit.fetchMarkets(
       [Deribit.BTC], UrlFetcher(Duration(minutes: 15)));
@@ -32,7 +33,7 @@ void main() async {
 
   // browseLinearContracts();
   // browseProbabilities(markets);
-  playWithCostBasis(markets);
+  // playWithCostBasis(markets);
   // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
   // browseLongCalls(markets);
@@ -103,6 +104,91 @@ void testYFinance() async {
     //     "\n    equalSizedLongSpot: ${equalSizeLongStrategy.position.decompose()}"
     //     "\n    breakevenVsHolder: $pricesWithSameMaxGain"
     //     "\n");
+  }
+}
+
+Future<void> testGoogCoveredCallUnrealizedGains() async {
+  const numCoveredCalls = 1;
+  const unitCostBasis = 62.0;
+  const taxRate = 0.31;
+
+  final urlFetcher = UrlFetcher(Duration(minutes: 15));
+  YFinance yfinance = await YFinance.openConnection(urlFetcher);
+  final List<Market> markets =
+      await yfinance.fetchMarkets("GOOG", urlFetcher, minDTE: 30);
+
+  final money = Commodity("USD");
+  final underlying = Commodity("GOOG");
+  final oracle = Oracle.fromMarkets(markets);
+
+  // 45 covered calls = 4,500 shares with unitCostBasis of $20/share ($90,000 total)
+  final totalShares = numCoveredCalls * 100.0;
+  final heldStock = underlying.ofSize(totalShares, money.ofSize(unitCostBasis));
+  final stockBasis = heldStock.costBasisIn(oracle, money);
+
+  final spotMarket = oracle.marketFor(asset: underlying, money: money);
+  final currentStockValue =
+      oracle.markToMarket(position: heldStock, money: money).size;
+  final currentStockGain = currentStockValue - stockBasis.size;
+  final currentStockPostTaxValue =
+      currentStockValue - (currentStockGain * taxRate);
+
+  print(
+      "====================================================================================================");
+  print("GOOG Covered Calls Analysis Across All Expirations (DTE >= 30)");
+  print(
+      "Spot Price: \$${spotMarket.midPrice.toStringAsFixed(2)} | Target Price Mark: At Strike");
+  print(
+      "Holding: $numCoveredCalls Covered Calls ($totalShares shares @ \$${unitCostBasis.toStringAsFixed(2)} basis, Total Basis: \$${stockBasis.size.toStringAsFixed(2)})");
+  print("Current Value of Shares: \$${currentStockValue.toStringAsFixed(2)}");
+  print(
+      "Current Post-Tax Value of Shares: \$${currentStockPostTaxValue.toStringAsFixed(2)} (Tax: \$${(currentStockGain * taxRate).toStringAsFixed(2)})");
+  print("Capital Gains Tax Rate: ${(taxRate * 100).toStringAsFixed(1)}%");
+  print(
+      "====================================================================================================");
+
+  final calls = markets
+      .whereUnderlyingIs(underlying)
+      .calls
+      .coercedToMoney(money, oracle)
+      .where((m) => m.asset.toOption.expiration.daysLeft >= 30)
+      .sortByStrike(Order.asc)
+      .sortByExpiration(Order.asc)
+      .toList();
+
+  DateTime? lastExpiration;
+  for (final callMarket in calls) {
+    final option = callMarket.asset.toOption;
+    final strike = option.strike;
+    final expiration = option.expiration;
+    final dte = expiration.daysLeft;
+
+    if (expiration != lastExpiration) {
+      if (lastExpiration != null) print("");
+      print(
+          "${'Expiration'.padRight(12)} | ${'DTE'.padLeft(5)} | ${'Strike'.padLeft(8)} | ${'Premium'.padLeft(11)} | ${'Pos Value@Strike'.padLeft(18)} | ${'Unrealized Gain'.padLeft(17)} | ${'Net (Post Tax) Value'.padLeft(20)}");
+      print("-" * 103);
+      lastExpiration = expiration;
+    }
+    final totalPremium = callMarket.midPrice * numCoveredCalls;
+
+    // Covered call position: held stock + short call contracts
+    final shortCall = callMarket.short() * numCoveredCalls.toDouble();
+    final coveredCallPosition = heldStock + shortCall;
+
+    final analyzer = PositionAnalyzer(coveredCallPosition,
+        underlying: underlying, money: money);
+
+    // Value of the open position at underlying price S = strike
+    final valueAtStrike = analyzer.valueAt(strike);
+
+    // Unrealized capital gain/loss before assignment
+    final unrealizedGain = valueAtStrike - stockBasis.size;
+    final tax = unrealizedGain * taxRate;
+    final netPostTaxValue = valueAtStrike - tax;
+
+    print(
+        "${expiration.toIso8601String().substring(0, 10).padRight(12)} | ${dte.toString().padLeft(5)} | ${dollarify(strike).padLeft(8)} | ${dollarify(totalPremium).padLeft(11)} | ${dollarify(valueAtStrike).padLeft(18)} | ${dollarify(unrealizedGain).padLeft(17)} | ${dollarify(netPostTaxValue).padLeft(20)}");
   }
 }
 
@@ -517,19 +603,19 @@ void printGeometricCoveredCalls(List<Market> markets) {
 }
 
 void playWithCostBasis(List<Market> markets) {
-  print("==========================================================================");
-  print("                 EXPLORING COST BASIS WITH REAL DERIBIT DATA              ");
-  print("==========================================================================");
+  print(
+      "==========================================================================");
+  print(
+      "                 EXPLORING COST BASIS WITH REAL DERIBIT DATA              ");
+  print(
+      "==========================================================================");
 
   final oracle = Oracle.fromMarkets(markets);
   final btc = Commodity.fromName(Deribit.BTC);
   final usd = Commodity.fromName('USD');
 
-  final callMarket = markets
-      .whereUnderlyingIs(btc)
-      .calls
-      .sortByStrike(Order.asc)
-      .first;
+  final callMarket =
+      markets.whereUnderlyingIs(btc).calls.sortByStrike(Order.asc).first;
 
   print("\n1. Fresh Long Option Market Trade:");
   print("   • Market: ${callMarket.asset} quoted in ${callMarket.money}");
@@ -556,7 +642,8 @@ void playWithCostBasis(List<Market> markets) {
 
   print("   • Strategy decomposes to:");
   for (final line in coveredCall.decompose()) {
-    print("       - ${line.asset.name}: size=${line.size}, unitCostBasis=${line.unitCostBasis}, totalCostBasis=${line.costBasis}");
+    print(
+        "       - ${line.asset.name}: size=${line.size}, unitCostBasis=${line.unitCostBasis}, totalCostBasis=${line.costBasis}");
   }
   print("   • Strategy aggregate costBasis (multi-currency):");
   for (final basisLine in coveredCall.costBasis!.decompose()) {
@@ -572,5 +659,6 @@ void playWithCostBasis(List<Market> markets) {
   print("   • Reverse Market: ${revMarket.asset} quoted in ${revMarket.money}");
   print("   • Reverse Long Position: ${revMarket.long()}");
   print("   • Reverse Long costBasis: ${revMarket.long().costBasis}");
-  print("==========================================================================\n");
+  print(
+      "==========================================================================\n");
 }
