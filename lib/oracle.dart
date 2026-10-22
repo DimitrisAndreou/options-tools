@@ -154,3 +154,14 @@ class SimulatedOracle extends Oracle {
     _prices[(asset, money)] = price;
   }
 }
+
+extension PositionCostBasis on Position {
+  /// Evaluates the total cost basis of this position in terms of [money],
+  /// converting across FX/spot markets via [oracle] if necessary.
+  Line costBasisIn(Oracle oracle, Commodity money, {double slippage = 0.5}) {
+    final basis = costBasis;
+    if (basis == null) return money.ofSize(0.0);
+    return oracle.markToMarket(
+        position: basis, money: money, slippage: slippage);
+  }
+}

@@ -15,8 +15,12 @@ sealed class Asset {
   // final List<MarketURL> urls;
   const Asset(this.name, {Set<Venue>? venues}) : _venues = venues;
 
-  Line ofSize(double size) => Line(this, size);
+  Line ofSize(double size, [Line? costBasis]) => Line(this, size, costBasis);
   Line get unit => Line(this, 1.0);
+  Line atCost(Line costBasis, [double size = 1.0]) =>
+      Line(this, size, costBasis);
+  Line ofTotalCost(double size, Position? totalCostBasis) =>
+      Line.fromCostBasis(this, size, totalCostBasis);
 
   bool get isCommodity => this is Commodity;
   Commodity get asCommodity => this as Commodity;
@@ -71,35 +75,94 @@ sealed class Position {
     return single;
   }
 
+  // Returns the Position as a single Line, or null if it contains multiple
+  // or zero lines, or if expectedAsset does not match.
+  Line? singletonOrNull([Asset? expectedAsset]) {
+    final lines = decompose();
+    final single = lines.singleOrNull;
+    if (single == null) return null;
+    if (expectedAsset != null && expectedAsset != single.asset) return null;
+    return single;
+  }
+
+  // Total cost basis (could be heterogeneous).
+  Position? get costBasis;
+
+  // Returns the cost basis as a single Line, optionally asserting that
+  // it is in [expectedAsset] (e.g. USD).
+  Line? costBasisSingle([Asset? expectedAsset]) =>
+      costBasis?.singleton(expectedAsset);
+
+  // Parameterizes or overrides the *unit* cost basis for matching assets.
+  Position withCostBasis(Map<Asset, Line> bases) =>
+      Position.mergeAll(decompose().map((line) => bases.containsKey(line.asset)
+          ? line.withUnitCostBasis(bases[line.asset])
+          : line));
+
   @override
   String toString();
 }
 
 // A line in a portfolio. That is, a raw, directly tradeable instrument,
-// with a size.
+// with a size and an optional unit cost basis.
 class Line extends Position {
   final Asset asset;
   final double size;
-  Line(this.asset, this.size);
+  final Line? unitCostBasis;
+
+  Line(this.asset, this.size, [this.unitCostBasis]);
+
+  // Creates a Line initialized from a total [costBasis], deriving the unitCostBasis.
+  factory Line.fromCostBasis(Asset asset, double size, Position? costBasis) {
+    final costLine = costBasis?.singletonOrNull();
+    final unitCost = (costLine != null && size != 0.0)
+        ? Line(costLine.asset, (costLine.size / size).abs())
+        : null;
+    return Line(asset, size, unitCost);
+  }
+
+  // The total cost basis for this line (unitCostBasis * size).
+  @override
+  Line? get costBasis => unitCostBasis == null ? null : unitCostBasis! * size;
+
+  Line withUnitCostBasis(Line? unitCostBasis) =>
+      Line(asset, size, unitCostBasis);
 
   // Similar to the superclass implementation, except it returns Line,
   // not Position.
   @override
-  Line operator *(double size) => Line(asset, this.size * size);
+  Line operator *(double size) => Line(asset, this.size * size, unitCostBasis);
   @override
-  Line operator -() => this * -1.0;
+  Line operator -() => Line(asset, -this.size, unitCostBasis);
 
   @override
   Iterable<Line> decompose() => [this];
 
   @override
-  String toString() => '$size X $asset';
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Line &&
+          asset == other.asset &&
+          size == other.size &&
+          unitCostBasis == other.unitCostBasis;
+
+  @override
+  int get hashCode => Object.hash(asset, size, unitCostBasis);
+
+  @override
+  String toString() => unitCostBasis == null
+      ? '$size X $asset'
+      : '$size X $asset @ $unitCostBasis';
 }
 
 class _ScaledPosition extends Position {
   final Position position;
   final double scale;
   _ScaledPosition(this.position, this.scale);
+
+  @override
+  Position? get costBasis =>
+      position.costBasis == null ? null : position.costBasis! * scale;
 
   @override
   Iterable<Line> decompose() =>
@@ -111,24 +174,39 @@ class _ScaledPosition extends Position {
 
 class _MergedPosition extends Position {
   final Map<Asset, double> _assetPositions = HashMap();
+  final Map<Asset, Position> _assetCostBases = HashMap();
+
   _MergedPosition(Iterable<Position> positions) {
     for (final line in positions.expand((pos) => pos.decompose())) {
       _assetPositions.update(
           line.asset, (previousSize) => previousSize + line.size,
           ifAbsent: () => line.size);
+      if (line.costBasis != null) {
+        _assetCostBases.update(
+          line.asset,
+          (previousBasis) => previousBasis + line.costBasis!,
+          ifAbsent: () => line.costBasis!,
+        );
+      }
     }
   }
+
+  @override
+  Position? get costBasis => _assetCostBases.isEmpty
+      ? null
+      : Position.mergeAll(_assetCostBases.values);
 
   @override
   Iterable<Line> decompose() sync* {
     for (final entry in _assetPositions.entries) {
-      yield Line(entry.key, entry.value);
+      yield Line.fromCostBasis(
+          entry.key, entry.value, _assetCostBases[entry.key]);
     }
   }
 
-  // Overriden as an optimization.
   @override
-  Line operator [](Asset asset) => asset.ofSize(_assetPositions[asset]!);
+  Line operator [](Asset asset) =>
+      decompose().firstWhere((line) => line.asset == asset);
 
   @override
   String toString() => '($_assetPositions)';

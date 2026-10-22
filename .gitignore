@@ -8,3 +8,5 @@ example.xml
 web/*.dart.js
 web/*.dart.js.deps
 web/*.dart.js.map
+
+.vscode/

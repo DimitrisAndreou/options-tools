@@ -52,7 +52,7 @@ void main() {
   });
 
   group('Market long/short positions', () {
-    test('Market.long creates unit asset and subtracts money', () {
+    test('Market.long creates unit asset with costBasis and subtracts money', () {
       final btc = Commodity.fromName('BTC');
       final usd = Commodity.fromName('USD');
       final market = Market.create(
@@ -65,10 +65,20 @@ void main() {
       final Position longPos = market.long(0.5); // mid slippage imply buy price = 51000
       
       expect(longPos[btc].size, equals(1.0));
+      expect(longPos[btc].unitCostBasis, equals(usd.ofSize(51000.0)));
+      expect(longPos[btc].costBasis, equals(usd.ofSize(51000.0)));
+
+      // Money leg is pure cash flow, without cost basis
       expect(longPos[usd].size, equals(-51000.0));
+      expect(longPos[usd].unitCostBasis, isNull);
+      expect(longPos[usd].costBasis, isNull);
+
+      // Total position cost basis reflects the acquired asset in money
+      expect(longPos.costBasis![usd], equals(usd.ofSize(51000.0)));
+      expect(longPos.costBasisSingle(usd), equals(usd.ofSize(51000.0)));
     });
 
-    test('Market.short subtracts unit asset and adds money', () {
+    test('Market.short subtracts unit asset with costBasis and adds money', () {
       final btc = Commodity.fromName('BTC');
       final usd = Commodity.fromName('USD');
       final market = Market.create(
@@ -81,12 +91,42 @@ void main() {
       final Position shortPos = market.short(0.5); // mid slippage => sell price = 51000
       
       expect(shortPos[btc].size, equals(-1.0));
+      expect(shortPos[btc].unitCostBasis, equals(usd.ofSize(51000.0)));
+      expect(shortPos[btc].costBasis, equals(usd.ofSize(-51000.0)));
+
+      // Money leg has no cost basis
       expect(shortPos[usd].size, equals(51000.0));
+      expect(shortPos[usd].unitCostBasis, isNull);
+      expect(shortPos[usd].costBasis, isNull);
+
+      // Total position cost basis reflects the short asset's proceeds (credit)
+      expect(shortPos.costBasis![usd], equals(usd.ofSize(-51000.0)));
+      expect(shortPos.costBasisSingle(usd), equals(usd.ofSize(-51000.0)));
+    });
+
+    test('Market.reverse maintains cost basis symmetry', () {
+      final btc = Commodity.fromName('BTC');
+      final usd = Commodity.fromName('USD');
+      final market = Market.create(
+        asset: btc,
+        money: usd,
+        bidPrice: 50000.0,
+        askPrice: 50000.0,
+      );
+
+      // On reverse market: asset is USD, money is BTC
+      // Buying 50,000 USD costs 1 BTC (buy price = 1 / 50000 = 0.00002 BTC per USD)
+      final reverseLong = market.reverse.long() * 50000.0;
+      expect(reverseLong[usd].size, equals(50000.0));
+      expect(reverseLong[usd].unitCostBasis, equals(btc.ofSize(0.00002)));
+      expect(reverseLong[usd].costBasis?.size, closeTo(1.0, 1e-6));
+      expect(reverseLong[usd].costBasis?.asset, equals(btc));
+      expect(reverseLong.costBasisSingle(btc)?.size, closeTo(1.0, 1e-6));
     });
   });
 
   group('Market conversion methods', () {
-    test('Market.toAsset converts money to asset', () {
+    test('Market.toAsset converts money to asset and populates unitCostBasis', () {
       final btc = Commodity.fromName('BTC');
       final usd = Commodity.fromName('USD');
       final market = Market.create(
@@ -101,6 +141,8 @@ void main() {
       
       expect(assetLine.asset, equals(btc));
       expect(assetLine.size, closeTo(10.0, 1e-6));
+      expect(assetLine.unitCostBasis, equals(usd.ofSize(105.0)));
+      expect(assetLine.costBasis?.size, closeTo(1050.0, 1e-6));
     });
 
     test('Market.toAsset throws if given non-money asset', () {

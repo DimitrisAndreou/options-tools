@@ -33,24 +33,31 @@ abstract class Market {
   factory Market.createIdentity(Asset asset) => _IdentityMarket(asset);
 
   /// Creates a position consisting of:
-  ///   +1 of asset
+  ///   +1 of asset (with cost basis in money)
   ///   -price of money
-  Position long([double slippage = 0.5]) =>
-      asset.unit - money.ofSize(buyPrice(slippage));
+  Position long([double slippage = 0.5]) {
+    final price = buyPrice(slippage);
+    return asset.ofSize(1.0, money.ofSize(price)) - money.ofSize(price);
+  }
 
   /// Creates a position consisting of:
-  ///   -1 of asset
+  ///   -1 of asset (with cost basis in money)
   ///   +price of money
-  Position short([double slippage = 0.5]) =>
-      money.ofSize(sellPrice(slippage)) - asset.unit;
+  Position short([double slippage = 0.5]) {
+    final price = sellPrice(slippage);
+    return money.ofSize(price) - asset.ofSize(1.0, money.ofSize(price));
+  }
 
   /// Converts a money quantity to an asset quantity (of same sign) via this
-  /// market.
-  Line toAsset(Line line, [double slippage = 0.5]) => switch (line) {
-        Line(asset: final lineAsset, size: final s) when lineAsset == money =>
-          Line(asset, s / buyPrice(slippage)),
-        _ => throw ArgumentError("Expected money [$money], got: ${line.asset}"),
-      };
+  /// market, assigning the unit cost basis.
+  Line toAsset(Line line, [double slippage = 0.5]) {
+    final price = buyPrice(slippage);
+    return switch (line) {
+      Line(asset: final lineAsset, size: final s) when lineAsset == money =>
+        Line(asset, s / price, money.ofSize(price)),
+      _ => throw ArgumentError("Expected money [$money], got: ${line.asset}"),
+    };
+  }
 
   /// Converts an asset quantity to a money quantity (of same sign) via this
   /// market.

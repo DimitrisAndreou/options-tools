@@ -31,8 +31,8 @@ void main() async {
   // testMarketNavigator(oracle);
 
   // browseLinearContracts();
-  // browseVerticalSpreads(markets);
-  browseProbabilities(markets);
+  // browseProbabilities(markets);
+  playWithCostBasis(markets);
   // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
   // browseLongCalls(markets);
@@ -514,4 +514,63 @@ void printGeometricCoveredCalls(List<Market> markets) {
       }
     }
   }
+}
+
+void playWithCostBasis(List<Market> markets) {
+  print("==========================================================================");
+  print("                 EXPLORING COST BASIS WITH REAL DERIBIT DATA              ");
+  print("==========================================================================");
+
+  final oracle = Oracle.fromMarkets(markets);
+  final btc = Commodity.fromName(Deribit.BTC);
+  final usd = Commodity.fromName('USD');
+
+  final callMarket = markets
+      .whereUnderlyingIs(btc)
+      .calls
+      .sortByStrike(Order.asc)
+      .first;
+
+  print("\n1. Fresh Long Option Market Trade:");
+  print("   • Market: ${callMarket.asset} quoted in ${callMarket.money}");
+  print("   • Buy Price: ${callMarket.buyPrice()} ${callMarket.money}");
+
+  final longPos = callMarket.long();
+  print("   • Position decomposes to:");
+  for (final line in longPos.decompose()) {
+    print("       - $line (costBasis: ${line.costBasis})");
+  }
+  print("   • Total Position costBasisSingle(${callMarket.money}): "
+      "${longPos.costBasisSingle(callMarket.money as Commodity)}");
+
+  print("\n2. Pre-Existing Asset Holding & Parameterized Cost Basis:");
+  // Suppose we already bought 1.5 BTC at $45,000 USD each
+  final holding = btc.ofSize(1.5, usd.ofSize(45000.0));
+  print("   • Existing Holding: $holding");
+  print("   • Holding unitCostBasis: ${holding.unitCostBasis}");
+  print("   • Holding total costBasis: ${holding.costBasis}");
+
+  print("\n3. Covered Call Combining Existing Stock + Short Call:");
+  final shortCall = callMarket.short() * 1.5;
+  final coveredCall = holding + shortCall;
+
+  print("   • Strategy decomposes to:");
+  for (final line in coveredCall.decompose()) {
+    print("       - ${line.asset.name}: size=${line.size}, unitCostBasis=${line.unitCostBasis}, totalCostBasis=${line.costBasis}");
+  }
+  print("   • Strategy aggregate costBasis (multi-currency):");
+  for (final basisLine in coveredCall.costBasis!.decompose()) {
+    print("       - $basisLine");
+  }
+
+  // Convert aggregate cost basis into USD using Oracle!
+  final totalInUsd = coveredCall.costBasisIn(oracle, usd);
+  print("   • Converted total costBasis in USD via Oracle: $totalInUsd");
+
+  print("\n4. Market Reversal & Symmetry Invariance:");
+  final revMarket = callMarket.reverse;
+  print("   • Reverse Market: ${revMarket.asset} quoted in ${revMarket.money}");
+  print("   • Reverse Long Position: ${revMarket.long()}");
+  print("   • Reverse Long costBasis: ${revMarket.long().costBasis}");
+  print("==========================================================================\n");
 }
