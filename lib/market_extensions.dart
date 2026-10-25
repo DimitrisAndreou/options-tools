@@ -17,17 +17,21 @@ extension MarketListExtension on Iterable<Market> {
   Iterable<Market> whereMoneyIs(Commodity money) =>
       where((market) => market.money == money);
 
-  Market? get tighestMarketOrNull => isEmpty ? null : tighestMarket;
-  Market get tighestMarket {
+  Market? get tightestMarketOrNull => isEmpty ? null : tightestMarket;
+  Market get tightestMarket {
     final Asset asset = first.asset;
+    final Asset money = first.money;
     for (final m in this) {
-      if (m.asset != asset) {
-        throw StateError("tighestMarket was requested for markets of "
-            "different assets: $asset != ${m.asset}");
+      if (m.asset != asset || m.money != money) {
+        throw StateError("tightestMarket was requested for markets of "
+            "different pairs: ($asset, $money) != (${m.asset}, ${m.money})");
       }
     }
-    return maxBy(this, (m) => m.relativeSpread)!;
+    return minBy(this, (m) => m.relativeSpread)!;
   }
+
+  Market? get tighestMarketOrNull => tightestMarketOrNull;
+  Market get tighestMarket => tightestMarket;
 
   Iterable<Market> get spotMarkets =>
       where((market) => market.asset is Commodity);

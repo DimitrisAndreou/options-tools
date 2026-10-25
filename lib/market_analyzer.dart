@@ -35,14 +35,14 @@ class MarketNavigator {
     // and contracts per underlying (,money, for options).
     Map<DateTime, Market> futuresByDate = futures
         .groupByExpiration(Order.asc)
-        .mapValues((ms) => ms.tighestMarket);
+        .mapValues((ms) => ms.tightestMarket);
 
     Map<DateTime, Map<double, ({Market? call, Market? put})>>
         optionsByExpirationAndStrike = options
             .groupByExpiration(Order.asc)
             .mapValues((ms) => ms.groupByStrike(Order.asc).mapValues((ms) => (
-                  call: ms.calls.tighestMarketOrNull,
-                  put: ms.puts.tighestMarketOrNull
+                  call: ms.calls.tightestMarketOrNull,
+                  put: ms.puts.tightestMarketOrNull
                 )));
 
     // We only use the intersection of future expirations and

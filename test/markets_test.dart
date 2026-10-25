@@ -257,4 +257,68 @@ void main() {
       expect(() => m1.concatenate(m2), throwsArgumentError);
     });
   });
+
+  group('MarketListExtension tightestMarket', () {
+    final btc = Commodity.fromName('BTC');
+    final usd = Commodity.fromName('USD');
+    final eur = Commodity.fromName('EUR');
+    final eth = Commodity.fromName('ETH');
+
+    final wideMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 90.0,
+      askPrice: 110.0, // spread = 20, mid = 100, rel = 0.20
+    );
+    final mediumMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 95.0,
+      askPrice: 105.0, // spread = 10, mid = 100, rel = 0.10
+    );
+    final tightMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 99.0,
+      askPrice: 101.0, // spread = 2, mid = 100, rel = 0.02
+    );
+
+    test('returns market with lowest relativeSpread (not widest)', () {
+      final markets = [wideMarket, mediumMarket, tightMarket];
+      expect(markets.tightestMarket, equals(tightMarket));
+      expect(markets.tightestMarketOrNull, equals(tightMarket));
+      // Backward compatibility getter check
+      expect(markets.tighestMarket, equals(tightMarket));
+      expect(markets.tighestMarketOrNull, equals(tightMarket));
+    });
+
+    test('works with a single market', () {
+      expect([tightMarket].tightestMarket, equals(tightMarket));
+    });
+
+    test('handles empty collection', () {
+      expect(<Market>[].tightestMarketOrNull, isNull);
+      expect(() => <Market>[].tightestMarket, throwsStateError);
+    });
+
+    test('throws StateError when markets have different assets', () {
+      final ethMarket = Market.create(
+        asset: eth,
+        money: usd,
+        bidPrice: 2000.0,
+        askPrice: 2010.0,
+      );
+      expect(() => [tightMarket, ethMarket].tightestMarket, throwsStateError);
+    });
+
+    test('throws StateError when markets have different money', () {
+      final eurMarket = Market.create(
+        asset: btc,
+        money: eur,
+        bidPrice: 90.0,
+        askPrice: 92.0,
+      );
+      expect(() => [tightMarket, eurMarket].tightestMarket, throwsStateError);
+    });
+  });
 }

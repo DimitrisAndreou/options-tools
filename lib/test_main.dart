@@ -22,8 +22,8 @@ void main() async {
   // testYFinance();
   await testGoogCoveredCallUnrealizedGains();
 
-  List<Market> markets = await Deribit.fetchMarkets(
-      [Deribit.BTC], UrlFetcher(Duration(minutes: 15)));
+  // List<Market> markets = await Deribit.fetchMarkets(
+  //     [Deribit.BTC], UrlFetcher(Duration(minutes: 15)));
   // List<Market> markets = await Deribit.fetchMarkets(
   //     [Deribit.USDC], UrlFetcher(Duration(minutes: 15)));
   // [Deribit.BTC, Deribit.ETH], UrlFetcher(Duration(minutes: 15)));
@@ -115,7 +115,7 @@ Future<void> testGoogCoveredCallUnrealizedGains() async {
   final urlFetcher = UrlFetcher(Duration(minutes: 15));
   YFinance yfinance = await YFinance.openConnection(urlFetcher);
   final List<Market> markets =
-      await yfinance.fetchMarkets("GOOG", urlFetcher, minDTE: 30);
+      await yfinance.fetchMarkets("GOOG", urlFetcher, minDTE: 364);
 
   final money = Commodity("USD");
   final underlying = Commodity("GOOG");
@@ -135,7 +135,7 @@ Future<void> testGoogCoveredCallUnrealizedGains() async {
 
   print(
       "====================================================================================================");
-  print("GOOG Covered Calls Analysis Across All Expirations (DTE >= 30)");
+  print("GOOG Covered Calls Analysis");
   print(
       "Spot Price: \$${spotMarket.midPrice.toStringAsFixed(2)} | Target Price Mark: At Strike");
   print(
@@ -151,7 +151,6 @@ Future<void> testGoogCoveredCallUnrealizedGains() async {
       .whereUnderlyingIs(underlying)
       .calls
       .coercedToMoney(money, oracle)
-      .where((m) => m.asset.toOption.expiration.daysLeft >= 30)
       .sortByStrike(Order.asc)
       .sortByExpiration(Order.asc)
       .toList();
