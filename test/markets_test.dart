@@ -219,11 +219,27 @@ void main() {
       expect(reverse.money, equals(btc));
       expect(reverse.bidPrice, closeTo(1.0 / 20.0, 1e-6));
       expect(reverse.askPrice, closeTo(1.0 / 10.0, 1e-6));
-      expect(reverse.bidSize, closeTo(50.0 / 20.0, 1e-6));
-      expect(reverse.askSize, closeTo(100.0 / 10.0, 1e-6));
+      // 50 BTC offered at 20 USD/BTC = 1000 USD available to buy (reverse bidSize in USD)
+      expect(reverse.bidSize, closeTo(50.0 * 20.0, 1e-6));
+      // 100 BTC bid at 10 USD/BTC = 1000 USD available to sell (reverse askSize in USD)
+      expect(reverse.askSize, closeTo(100.0 * 10.0, 1e-6));
       
       // reversing again yields equivalent
       expect(reverse.reverse.asset, equals(btc));
+    });
+
+    test('Market.reverse preserves infinite sizes', () {
+      final btc = Commodity.fromName('BTC');
+      final usd = Commodity.fromName('USD');
+      final market = Market.create(
+        asset: btc,
+        money: usd,
+        bidPrice: 50000.0,
+        askPrice: 51000.0,
+      );
+      final reverse = market.reverse;
+      expect(reverse.bidSize, equals(double.infinity));
+      expect(reverse.askSize, equals(double.infinity));
     });
 
     test('Market.concatenate creates synthetic market across two steps', () {

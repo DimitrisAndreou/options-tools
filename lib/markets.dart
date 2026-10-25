@@ -170,11 +170,11 @@ class _InverseMarket extends Market {
   @override
   double get bidPrice => 1.0 / _market.askPrice;
   @override
-  double get bidSize => _market.askSize / _market.askPrice;
+  double get bidSize => _market.askSize * _market.askPrice;
   @override
   double get askPrice => 1.0 / _market.bidPrice;
   @override
-  double get askSize => _market.bidSize / _market.bidPrice;
+  double get askSize => _market.bidSize * _market.bidPrice;
 }
 
 class _SyntheticMarket extends Market {
