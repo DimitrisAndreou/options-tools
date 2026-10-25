@@ -77,7 +77,11 @@ class _RealMarketsOracle extends ArchOracle {
       // TODO: if we're indexing reverse markets, why not call-put parity too?
       // I.e. add synthetic calls or puts if they are missing.
       for (final m in [market, market.reverse]) {
-        (_markets[m.asset] ??= HashMap())[m.money] = m;
+        final pairMarkets = (_markets[m.asset] ??= HashMap());
+        final existing = pairMarkets[m.money];
+        if (existing == null || m.relativeSpread < existing.relativeSpread) {
+          pairMarkets[m.money] = m;
+        }
       }
     }
   }
