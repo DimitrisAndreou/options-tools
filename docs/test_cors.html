@@ -195,7 +195,7 @@
           
           <div class="mb-3">
             <label for="proxy-url">Proxy Worker URL</label>
-            <input type="text" id="proxy-url" class="input-field" value="https://yahoo-proxy.jim-andreou.workers.dev">
+            <input type="text" id="proxy-url" class="input-field" value="https://yahoo-proxy-v2.jim-andreou.workers.dev">
             <small class="text-muted mt-1 d-block">Enter your deployed worker URL (e.g. your new V2 worker endpoint).</small>
           </div>
 
@@ -396,12 +396,14 @@
         
         log('Test 3', `Successfully received result from Dart!`, 'success');
         const data = JSON.parse(resultJson);
-        log('Test 3', `Parsed ${data.length} options strategies. Spot price: ${data[0]?.spotMarket?.bidPrice || 'unknown'}`, 'success');
+        log('Test 3', `Parsed ${data.length} options strategies. Spot price: ${data[0]?.spotPrice ?? data[0]?.spotMarket?.bidPrice ?? 'unknown'}`, 'success');
         console.log(data);
       } catch (err) {
-        log('Test 3', `Dart Interop Error: ${err.message || err}`, 'error');
-        if (err.stack) {
-          console.error(err);
+        const detailedError = err?.error ? String(err.error) : (err?.message || err);
+        log('Test 3', `Dart Interop Error: ${detailedError}`, 'error');
+        if (err?.stack) {
+          log('Test 3', `Stack: ${err.stack}`, 'warning');
+          console.error(err.error || err, err.stack);
         }
       }
     }

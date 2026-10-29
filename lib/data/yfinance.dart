@@ -45,21 +45,22 @@ class YFinance {
 
       final quote =
           results["quote"] ?? (throw StateError("Did not find quote"));
-      final money = Commodity(quote["currency"]);
+      final money = Commodity((quote["currency"] as String?) ?? "USD");
       final underlying =
           Commodity(quote["symbol"], venues: {Venue.OptionStrat});
+      final regularMarketPrice = (quote["regularMarketPrice"] as num).toDouble();
       // Will add this to markets last, to have the latest value.
       // Not using quote["bid"] and quote["ask"] because they tend
       // to be very wide.
       spotMarket = Market.create(
           asset: underlying, // AAPL
           money: money, // USD
-          bidPrice: quote["regularMarketPrice"]!,
-          askPrice: quote["regularMarketPrice"]!);
+          bidPrice: regularMarketPrice,
+          askPrice: regularMarketPrice);
       print("Quote: $quote");
       final isMarketOpen = quote["marketState"] == "REGULAR";
       final regularMarketTime = DateTime.fromMillisecondsSinceEpoch(
-          quote["regularMarketTime"]! * 1000);
+          (quote["regularMarketTime"] as num).toInt() * 1000);
 
       final optionChain = (results["options"] as List?)?.firstOrNull;
       if (optionChain == null) continue;
@@ -83,7 +84,7 @@ class YFinance {
       }
 
       final currentExpirationDate = DateTime.fromMillisecondsSinceEpoch(
-          optionChain["expirationDate"] * 1000);
+          (optionChain["expirationDate"] as num).toInt() * 1000);
       final currentDte =
           currentExpirationDate.difference(DateTime.now()).inDays;
       bool skipChain = false;
@@ -94,15 +95,24 @@ class YFinance {
         continue;
       }
       for (final (optionType, isCall) in [("calls", true), ("puts", false)]) {
-        final options = optionChain[optionType] ??
-            (throw StateError("Did not find $optionType"));
+        final options = (optionChain[optionType] as List?) ?? const [];
         for (final option in options) {
-          final lastPrice = option["lastPrice"] ?? 0.0;
+          final contractSymbol = option["contractSymbol"] as String?;
+          final strike = (option["strike"] as num?)?.toDouble();
+          if (contractSymbol == null || strike == null) {
+            print("Skipping option due to missing symbol/strike: $option");
+            continue;
+          }
+          final lastPrice = (option["lastPrice"] as num?)?.toDouble() ?? 0.0;
 
-          double bid = isMarketOpen ? (option["bid"] ?? 0.0) : lastPrice;
-          double ask = isMarketOpen ? (option["ask"] ?? 0.0) : lastPrice;
+          double bid = isMarketOpen
+              ? ((option["bid"] as num?)?.toDouble() ?? 0.0)
+              : lastPrice;
+          double ask = isMarketOpen
+              ? ((option["ask"] as num?)?.toDouble() ?? 0.0)
+              : lastPrice;
           if (!isMarketOpen) {
-            final lastTradeDate = option["lastTradeDate"];
+            final lastTradeDate = (option["lastTradeDate"] as num?)?.toInt();
             if (lastTradeDate == null ||
                 regularMarketTime
                         .difference(DateTime.fromMillisecondsSinceEpoch(
@@ -118,20 +128,23 @@ class YFinance {
           }
           if (bid == 0.0 || ask == 0.0) {
             print(
-                "Skipping option ${option["contractSymbol"]} due to bad bid/ask: $option");
+                "Skipping option $contractSymbol due to bad bid/ask: $option");
             continue;
           }
+          final optionCurrency = option["currency"] as String?;
           final optionMarket = Market.create(
-              asset: Option(option["contractSymbol"],
+              asset: Option(contractSymbol,
                   underlying: underlying,
                   money: money,
-                  strike: option["strike"],
+                  strike: strike,
                   isPut: !isCall,
                   isCall: isCall,
                   expiration: currentExpirationDate,
                   contractLot: 100.0,
                   venues: {Venue.OptionStrat}),
-              money: Commodity(option["currency"]), // USD
+              money: optionCurrency != null
+                  ? Commodity(optionCurrency)
+                  : money, // USD
               bidPrice: bid * 100.0,
               askPrice: ask * 100.0);
           markets.add(optionMarket);
