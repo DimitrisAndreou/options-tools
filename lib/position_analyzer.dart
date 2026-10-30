@@ -206,7 +206,7 @@ class _PnLSegment {
     }
     final double tentativeDelta = (deltas..sort())[medianIndex];
     final double delta =
-        tentativeDelta.abs() < 0.0000000000000001 ? 0.0 : tentativeDelta;
+        tentativeDelta.abs() < 1e-9 ? 0.0 : tentativeDelta;
 
     return _PnLSegment(
         minPrice: minPrice,
@@ -221,11 +221,13 @@ class _PnLSegment {
   }
 
   static double _calcDelta(
-          {required double x1,
-          required double x2,
-          required double y1,
-          required double y2}) =>
-      (y2 - y1) / (x2 - x1);
+      {required double x1,
+      required double x2,
+      required double y1,
+      required double y2}) {
+    final d = (y2 - y1) / (x2 - x1);
+    return d.abs() < 1e-9 ? 0.0 : d;
+  }
 
   double get minValue => minOrMaxValue(delta);
   double get maxValue => minOrMaxValue(-delta);

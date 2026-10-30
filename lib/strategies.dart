@@ -119,6 +119,12 @@ class CoveredCall {
     // Breakeven could be a whole range, for a profit-less strategy.
     breakEvenVsFullMoney =
         PriceInfo.fromAbsolute(analyzer.breakevens.first.fromPrice, spotPrice);
+    if (!moneyYield.isFinite ||
+        !underlyingYield.isFinite ||
+        !moneyProfit.isFinite) {
+      throw Exception("Non-finite metrics in CoveredCall!\nStrategy: $strategy\n"
+          "Analyzer: $analyzer");
+    }
   }
 
   static Iterable<CoveredCall> generateAll(Iterable<Market> allMarkets,
@@ -263,6 +269,10 @@ class LongCall {
     // analyzer.deltaAfter(double.infinity) /
     // analyzer(fullUnderlyingStrategy).deltaAfter(double.infinity)
     maxLeverage = optionLeg.size / costInUnderlying.size;
+    if (!maxLeverage.isFinite) {
+      throw Exception("Non-finite maxLeverage in LongCall!\nStrategy: $strategy\n"
+          "Analyzer: $analyzer");
+    }
   }
 
   static Iterable<LongCall> generateAll(Iterable<Market> allMarkets,
@@ -394,6 +404,12 @@ class LongPut {
     maxLeverage = optionLeg.size / costInUnderlying.size;
     maxMoneyYield = analyzer.maxYield;
     maxMoneyProfit = analyzer.maxProfit;
+    if (!maxLeverage.isFinite ||
+        !maxMoneyYield.isFinite ||
+        !maxMoneyProfit.isFinite) {
+      throw Exception("Non-finite metrics in LongPut!\nStrategy: $strategy\n"
+          "Analyzer: $analyzer");
+    }
   }
 
   static Iterable<LongPut> generateAll(Iterable<Market> allMarkets,

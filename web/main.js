@@ -271,7 +271,7 @@ document.addEventListener('alpine:init', () => {
         config.renderer(dataJson, chartDom, this.selectedId);
 
       } catch (error) {
-        console.error("JavaScript caught Dart error:", error.error || error);
+        console.error("JavaScript caught Dart error:", error.error || error, error.stack || "");
         
         let errorMsg = "An unexpected error occurred.";
         if (error) {
@@ -282,24 +282,26 @@ document.addEventListener('alpine:init', () => {
               if (val.message) return String(val.message);
               if (typeof val.toString === 'function') {
                 const s = val.toString();
-                if (s !== '[object Object]') return s;
+                if (s && s !== '[object Object]') return s;
               }
               try {
-                return JSON.stringify(val);
+                const json = JSON.stringify(val);
+                if (json && json !== '{}' && json !== '[]' && json !== 'null') {
+                  return json;
+                }
+                return '';
               } catch (e) {
-                return '[Complex Object]';
+                return '';
               }
             }
             return String(val);
           };
 
-          if (error.error) {
-            errorMsg = getMsg(error.error);
-          } else if (error.message) {
-            errorMsg = getMsg(error.message);
-          } else {
-            errorMsg = getMsg(error);
-          }
+          errorMsg =
+            getMsg(error.error) ||
+            getMsg(error.message) ||
+            getMsg(error) ||
+            "An unexpected error occurred.";
         }
         errorMsg = errorMsg.replace(/^(Exception|StateError|Error):\s*/i, "");
 

@@ -123,58 +123,58 @@ Future<String> yfinanceStraddles(
       .toList());
 }
 
+JSPromise<JSString> _toJsPromise(Future<String> future) => future
+    .then(
+      (value) => value.toJS,
+      onError: (Object error, StackTrace stackTrace) {
+        print("Dart error: $error\n$stackTrace");
+        String msg = error.toString();
+        if (error is JsonUnsupportedObjectError && error.cause != null) {
+          msg = "$msg (cause: ${error.cause})";
+        }
+        throw msg;
+      },
+    )
+    .toJS;
+
 void setupJsInterop() {
   deribitCoveredCallsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return deribitCoveredCalls(ticker.toDart, slippage.toDartDouble,
-            minDTE.toDartInt, maxDTE.toDartInt)
-        .then((value) => value.toJS)
-        .toJS;
+    return _toJsPromise(deribitCoveredCalls(ticker.toDart,
+        slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
   }.toJS;
   deribitVerticalSpreadsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return deribitVerticalSpreads(ticker.toDart, slippage.toDartDouble,
-            minDTE.toDartInt, maxDTE.toDartInt)
-        .then((value) => value.toJS)
-        .toJS;
+    return _toJsPromise(deribitVerticalSpreads(ticker.toDart,
+        slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
   }.toJS;
   yfinanceCoveredCallsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return yfinanceCoveredCalls(ticker.toDart, slippage.toDartDouble,
-            minDTE.toDartInt, maxDTE.toDartInt)
-        .then((value) => value.toJS)
-        .toJS;
+    return _toJsPromise(yfinanceCoveredCalls(ticker.toDart,
+        slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
   }.toJS;
 
   deribitLongOptionsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return deribitLongOptions(ticker.toDart, slippage.toDartDouble,
-            minDTE.toDartInt, maxDTE.toDartInt)
-        .then((value) => value.toJS)
-        .toJS;
+    return _toJsPromise(deribitLongOptions(ticker.toDart, slippage.toDartDouble,
+        minDTE.toDartInt, maxDTE.toDartInt));
   }.toJS;
 
   yfinanceLongOptionsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return yfinanceLongOptions(ticker.toDart, slippage.toDartDouble,
-            minDTE.toDartInt, maxDTE.toDartInt)
-        .then((value) => value.toJS)
-        .toJS;
+    return _toJsPromise(yfinanceLongOptions(ticker.toDart,
+        slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
   }.toJS;
 
   deribitStraddlesDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return deribitStraddles(ticker.toDart, slippage.toDartDouble,
-            minDTE.toDartInt, maxDTE.toDartInt)
-        .then((value) => value.toJS)
-        .toJS;
+    return _toJsPromise(deribitStraddles(ticker.toDart, slippage.toDartDouble,
+        minDTE.toDartInt, maxDTE.toDartInt));
   }.toJS;
 
   yfinanceStraddlesDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return yfinanceStraddles(ticker.toDart, slippage.toDartDouble,
-            minDTE.toDartInt, maxDTE.toDartInt)
-        .then((value) => value.toJS)
-        .toJS;
+    return _toJsPromise(yfinanceStraddles(ticker.toDart, slippage.toDartDouble,
+        minDTE.toDartInt, maxDTE.toDartInt));
   }.toJS;
 }
