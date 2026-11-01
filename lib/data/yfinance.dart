@@ -12,12 +12,42 @@ class YFinance {
   static DateTime? _cacheTime;
   static const Duration _cacheDuration = Duration(minutes: 30);
 
-  final Map<String, String> _headers;
-  final String _crumb;
+  Map<String, String> _headers;
+  String _crumb;
 
   YFinance(this._headers, this._crumb);
 
   Future<List<Market>> fetchMarkets(String ticker, UrlFetcher urlFetcher,
+      {int? minDTE, int? maxDTE}) async {
+    for (int attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await _fetchMarketsOnce(
+          ticker,
+          urlFetcher,
+          minDTE: minDTE,
+          maxDTE: maxDTE,
+        );
+      } catch (e) {
+        final errStr = e.toString();
+        final isAuthError = errStr.contains('400') ||
+            errStr.contains('401') ||
+            errStr.contains('403');
+        if (isAuthError && attempt == 0) {
+          print("Retrying $ticker with a fresh YFinance handshake after auth error: $e");
+          _cachedConnection = null;
+          _cacheTime = null;
+          final refreshed = await openConnection(urlFetcher);
+          _headers = refreshed._headers;
+          _crumb = refreshed._crumb;
+          continue;
+        }
+        rethrow;
+      }
+    }
+    throw StateError("Unreachable");
+  }
+
+  Future<List<Market>> _fetchMarketsOnce(String ticker, UrlFetcher urlFetcher,
       {int? minDTE, int? maxDTE}) async {
     bool firstOptionChain = true;
     Market? spotMarket;

@@ -99,8 +99,19 @@ https://dimitrisandreou.github.io/options-tools
 
 ## Testing
 
-Run `dart test` to run all tests. Agents should not be trying to debug or verify the UI
+Run `dart test` to run all unit tests. Agents should not be trying to debug or verify the UI
 on their own; leave it to the human.
+
+To run a live Yahoo Finance CLI smoke test (verifying the worker handshake, option chain parsing, strategy calculations, and JSON serialization end-to-end):
+
+```bash
+# Test default tickers (GOOG, F)
+./bin/smoke_test_yfinance.sh
+
+# Test one or more specific tickers
+./bin/smoke_test_yfinance.sh AAPL
+./bin/smoke_test_yfinance.sh NVDA TSLA --verbose
+```
 
 ## Cloudflare Worker Proxy Deployment
 

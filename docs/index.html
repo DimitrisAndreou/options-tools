@@ -101,7 +101,7 @@
   <div class="container-fluid" x-data>
     <div class="row justify-content-center">
       <!-- Chart -->
-      <div class="col-lg-7 col-12">
+      <div class="col-lg-6 col-12">
         <div class="card mb-4 mb-lg-0 h-100">
           <div class="card-header d-flex align-items-center">
             <h4 class="mb-0 text-white" x-show="$store.app.spotPrice !== null"
@@ -127,12 +127,30 @@
         </div>
       </div>
       <!-- Strategy Details Panel -->
-      <div class="col-lg-5 col-12" style="max-width: 600px;">
+      <div class="col-lg-6 col-12">
         <div class="card h-100">
-          <div class="card-header">
-            <h5>
-              <i class="fas fa-info-circle me-2 text-primary"></i>Strategy Details
+          <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h5 class="mb-0 d-flex align-items-center gap-2">
+              <span><i class="fas fa-info-circle me-2 text-primary"></i>Strategy Details</span>
+              <template x-if="$store.app.strategy === 'coveredCall' && $store.app.unrealized?.hasDiff">
+                <span class="badge rounded-pill"
+                  :class="$store.app.unrealized.isRoll ? 'bg-warning text-dark' : 'bg-info text-dark'"
+                  style="font-size: 0.72rem;"
+                  x-text="$store.app.unrealized.isRoll ? 'Roll Impact' : 'Unrealized Results'">
+                </span>
+              </template>
             </h5>
+            <div class="d-flex gap-2" x-show="$store.app.strategy === 'coveredCall'">
+              <button type="button" class="btn btn-sm btn-outline-primary" x-show="$store.app.selectedId"
+                @click="$store.app.pinSelected()">
+                <i class="fas fa-thumbtack me-1"></i><span
+                  x-text="$store.app.entryPosition ? 'Pin New' : 'Pin Selected'">Pin Selected</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.entryPosition"
+                @click="$store.app.clearEntryPosition()">
+                <i class="fas fa-trash-alt me-1"></i>Clear Entry
+              </button>
+            </div>
           </div>
           <div class="card-body">
             <!-- Strategy Details Panel -->
@@ -142,9 +160,98 @@
               </div>
 
               <div x-show="$store.app.details">
-                <!-- Covered Call Details -->
+                <!-- Covered Call Unified Details & Diff Panel -->
                 <div x-show="$store.app.strategy === 'coveredCall'">
-                  <div class="cc-details-placeholder" x-data="{ get d() { return $store.app.details; } }"></div>
+                  <template x-if="$store.app.unrealized">
+                    <div>
+                      <div class="strategy-header">
+                        <i class="fas fa-cube me-2"></i>
+                        <template x-if="$store.app.unrealized.header?.strategyURL">
+                          <a :href="$store.app.unrealized.header.strategyURL" target="_blank"
+                            style="color: inherit; text-decoration: underline;"
+                            x-text="$store.app.unrealized.header.strategyName"></a>
+                        </template>
+                        <template x-if="!$store.app.unrealized.header?.strategyURL">
+                          <span x-text="$store.app.unrealized.header?.strategyName"></span>
+                        </template>
+                        <span> on </span>
+                        <template x-if="$store.app.unrealized.header?.underlyingURL">
+                          <a :href="$store.app.unrealized.header.underlyingURL" class="text-neutral" target="_blank"
+                            style="text-decoration: underline;"
+                            x-text="$store.app.unrealized.header.underlyingName"></a>
+                        </template>
+                        <template x-if="!$store.app.unrealized.header?.underlyingURL">
+                          <span class="text-neutral" x-text="$store.app.unrealized.header?.underlyingName"></span>
+                        </template>
+                      </div>
+
+                      <div tabindex="0" role="region" aria-label="Covered Call Strategy Details"
+                        class="table-wrapper unified-table-wrapper">
+                        <table class="unified-strategy-table">
+                          <thead x-show="$store.app.unrealized.hasDiff">
+                            <tr>
+                              <th scope="col" class="col-metric">Metric</th>
+                              <th scope="col" class="col-val">
+                                <template x-if="$store.app.unrealized.isRoll">
+                                  <a href="#" @click.prevent="$store.app.selectEntryPosition()"
+                                    title="Select pinned entry strategy on chart"
+                                    style="color: inherit; text-decoration: underline dotted;">Entry</a>
+                                </template>
+                                <template x-if="!$store.app.unrealized.isRoll">
+                                  <span>Entry</span>
+                                </template>
+                              </th>
+                              <th scope="col" class="col-val"
+                                x-text="$store.app.unrealized.isRoll ? 'New' : 'Current'">Current</th>
+                              <th scope="col" class="col-diff">Change</th>
+                            </tr>
+                          </thead>
+                          <template x-for="section in $store.app.unrealized.sections" :key="section.title">
+                            <tbody class="strategy-section-body">
+                              <tr class="section-header-row">
+                                <th scope="colgroup" :colspan="$store.app.unrealized.hasDiff ? 4 : 2"
+                                  x-text="section.title"></th>
+                              </tr>
+                              <template x-for="row in section.rows" :key="row.label">
+                                <tr class="strategy-metric-row">
+                                  <th scope="row" class="metric-label-cell">
+                                    <div class="metric-label" x-text="row.label"></div>
+                                    <template x-if="row.subtitle">
+                                      <div class="metric-subtitle" x-html="row.subtitle"></div>
+                                    </template>
+                                  </th>
+                                  <template x-if="!$store.app.unrealized.hasDiff">
+                                    <td class="metric-val-single" x-html="row.single"></td>
+                                  </template>
+                                  <template x-if="$store.app.unrealized.hasDiff">
+                                    <td class="metric-val-col" x-html="row.before"></td>
+                                  </template>
+                                  <template x-if="$store.app.unrealized.hasDiff">
+                                    <td class="metric-val-col" x-html="row.after"></td>
+                                  </template>
+                                  <template x-if="$store.app.unrealized.hasDiff">
+                                    <td class="metric-diff-col" :class="row.diffClass" x-html="row.diff"></td>
+                                  </template>
+                                </tr>
+                              </template>
+                            </tbody>
+                          </template>
+                        </table>
+                      </div>
+
+                      <div class="instructions-panel mt-3" x-show="!$store.app.entryPosition">
+                        <div class="instructions-header">Execution Instructions</div>
+                        <div class="instructions-content">
+                          &bull; <b>Buy</b> <span class="text-good"
+                            x-text="$store.app.unrealized.header?.buyAmount"></span> for <span class="text-bad"
+                            x-text="$store.app.unrealized.header?.buyCost"></span><br />
+                          &bull; <b>Sell</b> <span class="text-bad"
+                            x-text="$store.app.unrealized.header?.sellAmount"></span> for <span class="text-good"
+                            x-text="$store.app.unrealized.header?.sellPremium"></span>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
                 </div>
 
                 <!-- Long Option Details -->
@@ -473,197 +580,7 @@
         </div>
       </div>
     </div>
-
-    <!-- Second Row: Unrealized Results & Entry Strategy Details -->
-    <!-- TODO: Temporary condition. Remove x-show when entry position is supported for other strategies -->
-    <div x-show="$store.app.strategy === 'coveredCall'">
-      <div class="row justify-content-center mt-4 mb-4">
-        <!-- Unrealized Results Card -->
-        <div class="col-lg-7 col-12 d-flex flex-column">
-          <div class="card w-100 flex-grow-1">
-            <div class="card-header d-flex align-items-center justify-content-between">
-              <h5 class="mb-0 text-white">
-                <i class="fas fa-chart-line me-2 text-primary"></i><span
-                  x-text="$store.app.unrealized?.isRoll ? 'Roll Impact' : 'Unrealized Results'">Unrealized
-                  Results</span>
-              </h5>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-primary" x-show="$store.app.selectedId"
-                  @click="$store.app.pinSelected()">
-                  <i class="fas fa-thumbtack me-1"></i>Pin Selected
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.entryPosition"
-                  @click="$store.app.clearEntryPosition()">
-                  <i class="fas fa-trash-alt me-1"></i>Clear Entry
-                </button>
-              </div>
-            </div>
-            <div class="card-body">
-              <div x-show="!$store.app.unrealized" class="text-muted text-center py-4">
-                Select a point on the chart or initialize an entry position to calculate unrealized results.
-              </div>
-
-              <div id="unrealizedResultsPanel" x-show="$store.app.unrealized" class="text-white"
-                style="font-family: monospace;">
-                <div class="outcomes-panel" style="padding: 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 16px;">
-                  <table class="w-100" style="border-collapse: collapse; font-family: monospace; table-layout: fixed;">
-                    <thead>
-                      <tr style="border-bottom: 1px solid #334155;">
-                        <th style="padding: 6px 4px; text-align: left; color: var(--text-muted); font-size: 0.85rem; width: 34%;"></th>
-                        <th style="padding: 6px 4px; text-align: right; color: var(--text-muted); font-size: 0.85rem; width: 22%;">Entry</th>
-                        <th style="padding: 6px 4px; text-align: right; color: var(--text-muted); font-size: 0.85rem; width: 22%;" x-text="$store.app.unrealized?.isRoll ? 'New' : 'Current'">Current</th>
-                        <th style="padding: 6px 4px; text-align: right; color: var(--text-muted); font-size: 0.85rem; width: 22%;">Change</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <template x-for="(row, index) in $store.app.unrealized?.rows">
-                        <tr :style="row.separator ? 'border-bottom: 1.5px solid #475569;' : (index === $store.app.unrealized?.rows.length - 1 ? '' : 'border-bottom: 1px dashed rgba(51, 65, 85, 0.3);')">
-                          <td style="padding: 8px 4px; text-align: left; color: #94a3b8; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" x-text="row.label"></td>
-                          <td style="padding: 8px 4px; text-align: right; color: #f8fafc;" x-html="row.before"></td>
-                          <td style="padding: 8px 4px; text-align: right; color: #f8fafc;" x-html="row.after"></td>
-                          <td style="padding: 8px 4px; text-align: right; font-weight: bold;" :class="row.diffClass" x-html="row.diff"></td>
-                        </tr>
-                      </template>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Entry Strategy Details Card -->
-        <div class="col-lg-5 col-12 d-flex flex-column" style="max-width: 600px;">
-          <div class="card w-100 flex-grow-1">
-            <div class="card-header">
-              <h5 class="mb-0 text-white">
-                <i class="fas fa-info-circle me-2 text-primary"></i>Entry Strategy Details
-              </h5>
-            </div>
-            <div class="card-body">
-              <div x-show="!$store.app.entryPosition" class="text-muted text-center py-4">
-                Select a point on the chart with Ctrl+Click to set the Entry position.
-              </div>
-
-              <div x-show="$store.app.entryPosition" class="text-white" style="font-family: monospace">
-                <div class="cc-details-placeholder" x-data="{ get d() { return $store.app.entryDetails; } }"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
-  <template id="cc-details-tpl">
-    <div>
-      <div class="strategy-header">
-        <i class="fas fa-cube me-2"></i>
-        <template x-if="d?.strategyURL">
-          <a :href="d.strategyURL" target="_blank" style="color: inherit; text-decoration: underline;"
-            x-text="d.strategyName"></a>
-        </template>
-        <template x-if="!d?.strategyURL">
-          <span x-text="d?.strategyName"></span>
-        </template>
-        <span> on </span>
-        <template x-if="d?.underlyingURL">
-          <a :href="d.underlyingURL" class="text-neutral" target="_blank" style="text-decoration: underline;"
-            x-text="d.underlyingName"></a>
-        </template>
-        <template x-if="!d?.underlyingURL">
-          <span class="text-neutral" x-text="d?.underlyingName"></span>
-        </template>
-      </div>
-
-      <table class="strategy-table">
-        <tr>
-          <td><span class="text-label">Expiration</span></td>
-          <td class="text-end">
-            <span class="text-neutral" x-text="d?.formattedDate"></span>
-            <small class="text-bad">(<span x-text="d?.DTE"></span>d)</small>
-          </td>
-        </tr>
-        <tr>
-          <td><span class="text-label">Spot Price</span></td>
-          <td class="text-end">
-            <span class="text-spot" x-text="d?.spotPrice"></span>
-          </td>
-        </tr>
-        <tr>
-          <td><span class="text-label">Strike Price</span></td>
-          <td class="text-end">
-            <span class="strike-relative">(<span x-text="d?.strikeRelative"></span>)</span>
-            <span class="text-neutral" x-text="d?.strikeAbsolute"></span>
-          </td>
-        </tr>
-        <tr>
-          <td><span class="text-label">Contract</span></td>
-          <td class="text-end contract-name">
-            <template x-if="d?.callURL">
-              <a :href="d.callURL" class="text-neutral" target="_blank" style="text-decoration: underline;"
-                x-text="d.callName"></a>
-            </template>
-            <template x-if="!d?.callURL">
-              <span class="text-neutral" x-text="d?.callName"></span>
-            </template>
-          </td>
-        </tr>
-        <tr>
-          <td><span class="text-label">Capital Required</span></td>
-          <td class="text-end">
-            <span class="text-neutral" x-text="d?.capitalRequired"></span>
-            <small class="text-muted-alt">(<span x-text="d?.capitalRequiredUnderlying"></span>)</small>
-          </td>
-        </tr>
-      </table>
-
-      <div class="outcomes-panel">
-        <div class="outcomes-header">Outcomes at Expiration</div>
-        <div class="outcome-row">
-          <span>If <span x-text="d?.underlying"></span> &ge; <span x-text="d?.strikeAbsolute"></span><template
-              x-if="d?.moneyProbability != null"> <span class="text-probs"
-                x-text="'(' + Math.round(d.moneyProbability * 100) + '% prob)'"></span></template></span>
-          <span><span class="text-good" x-text="d?.moneyYield"></span> <span class="text-good" x-text="d?.money"></span>
-            <small class="text-good-alt">(+<span x-text="d?.moneyProfit"></span>)</small></span>
-        </div>
-        <div class="outcome-row mb-0">
-          <span>If <span x-text="d?.underlying"></span> &lt; <span x-text="d?.strikeAbsolute"></span><template
-              x-if="d?.underlyingProbability != null"> <span class="text-probs"
-                x-text="'(' + Math.round(d.underlyingProbability * 100) + '% prob)'"></span></template></span>
-          <span><span class="text-good" x-text="d?.underlyingYield"></span> <span class="text-good"
-              x-text="d?.underlying"></span> <small class="text-good-alt">(+<span
-                x-text="d?.underlyingProfit"></span>)</small></span>
-        </div>
-      </div>
-
-      <div class="warnings-panel">
-        <div class="warning-row">
-          <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-          If <span x-text="d?.underlying"></span> falls below <span class="text-bad" x-text="d?.beAbsolute"></span>
-          (<span class="text-bad" x-text="d?.beRelative"></span>),
-          you will have <span class="text-bad">less</span> <span x-text="d?.money"></span>
-          than starting with a 100% <span x-text="d?.money"></span> allocation.
-        </div>
-        <div class="warning-row">
-          <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-          If <span x-text="d?.underlying"></span> surpasses <span class="text-good" x-text="d?.capAbsolute"></span>
-          (<span class="text-good" x-text="d?.capRelative"></span>),
-          you will have <span class="text-bad">less</span> <span x-text="d?.underlying"></span> than starting with a
-          100% <span x-text="d?.underlying"></span> allocation.
-        </div>
-      </div>
-
-      <div class="instructions-panel">
-        <div class="instructions-header">Execution Instructions</div>
-        <div class="instructions-content">
-          &bull; <b>Buy</b> <span class="text-good" x-text="d?.buyAmount"></span> for <span class="text-bad"
-            x-text="d?.buyCost"></span><br />
-          &bull; <b>Sell</b> <span class="text-bad" x-text="d?.sellAmount"></span> for <span class="text-good"
-            x-text="d?.sellPremium"></span>
-        </div>
-      </div>
-    </div>
-  </template>
 
   <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">

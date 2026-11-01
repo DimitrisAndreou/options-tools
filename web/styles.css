@@ -320,3 +320,110 @@ footer {
   color: var(--bg-dark);
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
 }
+
+/* Unified Strategy Details & Comparison Table */
+.unified-table-wrapper {
+  overflow: auto;
+  max-inline-size: 100%;
+  container-type: inline-size;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background-color: rgba(15, 23, 42, 0.35);
+}
+
+.unified-strategy-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.unified-strategy-table thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+  background-color: #0f172a;
+}
+
+.unified-strategy-table thead th {
+  padding: 8px 10px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-block-end: 1px solid #334155;
+  background-color: #0f172a;
+}
+
+.unified-strategy-table thead th.col-metric {
+  text-align: start;
+  width: 34%;
+}
+
+.unified-strategy-table thead th.col-val,
+.unified-strategy-table thead th.col-diff {
+  text-align: end;
+  width: 22%;
+}
+
+.unified-strategy-table .section-header-row th {
+  padding: 6px 10px;
+  background-color: rgba(30, 41, 59, 0.85);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-block-end: 1px solid #334155;
+}
+
+.unified-strategy-table .strategy-section-body + .strategy-section-body .section-header-row th {
+  border-block-start: 1px solid #334155;
+}
+
+.unified-strategy-table .strategy-metric-row th,
+.unified-strategy-table .strategy-metric-row td {
+  padding: 7px 10px;
+  vertical-align: middle;
+  border-block-end: 1px dashed rgba(51, 65, 85, 0.45);
+}
+
+.unified-strategy-table .strategy-section-body tr:last-child th,
+.unified-strategy-table .strategy-section-body tr:last-child td {
+  border-block-end: none;
+}
+
+.unified-strategy-table tbody th.metric-label-cell {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background-color: #162032;
+  text-align: start;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.unified-strategy-table .metric-label {
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.unified-strategy-table .metric-subtitle {
+  font-size: 0.76rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-block-start: 2px;
+}
+
+.unified-strategy-table td.metric-val-single,
+.unified-strategy-table td.metric-val-col,
+.unified-strategy-table td.metric-diff-col {
+  text-align: end;
+  white-space: nowrap;
+}
+
+.unified-strategy-table td.metric-diff-col {
+  font-weight: 700;
+}

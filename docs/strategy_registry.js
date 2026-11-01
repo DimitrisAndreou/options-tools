@@ -92,11 +92,15 @@ function selectStrategyById(idToSelect) {
 
   if (!idToSelect || !targetItem) {
     store.selectedId = null;
-    store.details = null;
-    store.unrealized = null;
-    store.entryPosition = null;
 
-
+    if (store.entryPosition) {
+      const entryType = store.entryPosition.strategyType || strategy;
+      const entryConfig = StrategyRegistry[entryType];
+      store.details = entryConfig && entryConfig.prepareData ? entryConfig.prepareData(store.entryPosition) : null;
+    } else {
+      store.details = null;
+    }
+    store.updateUnrealized();
 
     const registryTypes = getRegistryTypesForStrategy(strategy);
     for (const type of registryTypes) {
@@ -112,15 +116,9 @@ function selectStrategyById(idToSelect) {
 
   const config = StrategyRegistry[targetItem.strategyType];
   if (config) {
-
-
-    // Update details and unrealized
+    // Update details and unrealized/unified view
     store.details = config.prepareData(targetItem);
-    if (config.prepareUnrealizedOrRollData) {
-      store.unrealized = config.prepareUnrealizedOrRollData(targetItem);
-    } else {
-      store.unrealized = null;
-    }
+    store.updateUnrealized();
 
     if (config.updateSelection) {
       config.updateSelection(idToSelect);

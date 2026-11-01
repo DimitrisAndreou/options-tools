@@ -1,13 +1,3 @@
-// Clone covered call details template into placeholders before Alpine compiles them
-document.addEventListener('DOMContentLoaded', () => {
-  const tpl = document.getElementById('cc-details-tpl');
-  if (tpl) {
-    document.querySelectorAll('.cc-details-placeholder').forEach(el => {
-      el.appendChild(tpl.content.cloneNode(true));
-    });
-  }
-});
-
 document.addEventListener('alpine:init', () => {
   Alpine.store('app', {
     ticker: '',
@@ -60,7 +50,7 @@ document.addEventListener('alpine:init', () => {
       return this.chartData.find(item => item.id === this.selectedId);
     },
 
-     get entryDetails() {
+    get entryDetails() {
       if (!this.entryPosition) return null;
       const strategyType = this.entryPosition.strategyType || this.strategy;
       const config = StrategyRegistry[strategyType];
@@ -71,24 +61,29 @@ document.addEventListener('alpine:init', () => {
     },
 
     updateEntryPosition() {
+      const item = this.selectedItem;
+      const strategyType = item?.strategyType || this.entryPosition?.strategyType || this.strategy;
+      const config = StrategyRegistry[strategyType];
+      if (!item && !this.entryPosition) {
+        this.details = null;
+      } else if (!item && this.entryPosition && config?.prepareData) {
+        this.details = config.prepareData(this.entryPosition);
+      }
       this.updateUnrealized();
 
-      const item = this.selectedItem;
-      if (item) {
-        const config = StrategyRegistry[item.strategyType];
-        if (config && config.updateSelection) {
-          config.updateSelection(this.selectedId);
-        }
+      if (config && config.updateSelection) {
+        config.updateSelection(this.selectedId);
       }
     },
 
     updateUnrealized() {
       const item = this.selectedItem;
-      if (!item) {
+      if (!item && !this.entryPosition) {
         this.unrealized = null;
         return;
       }
-      const config = StrategyRegistry[item.strategyType];
+      const strategyType = item?.strategyType || this.entryPosition?.strategyType || this.strategy;
+      const config = StrategyRegistry[strategyType];
       if (config && config.prepareUnrealizedOrRollData) {
         this.unrealized = config.prepareUnrealizedOrRollData(item);
       } else {
@@ -114,6 +109,11 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    selectEntryPosition() {
+      if (this.entryPosition && this.entryPosition.id) {
+        selectStrategyById(this.entryPosition.id);
+      }
+    },
 
     init() {
       // 1. Load initial params from URL
@@ -131,6 +131,9 @@ document.addEventListener('alpine:init', () => {
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
       if (this.strategy === 'coveredCall' && encodedPos) {
         this.entryPosition = UrlManager.decodeState(encodedPos);
+        if (!this.selectedId && this.entryPosition?.id) {
+          this.selectedId = this.entryPosition.id;
+        }
       } else {
         this.entryPosition = null;
       }
@@ -190,19 +193,20 @@ document.addEventListener('alpine:init', () => {
       this.minDte = parseInt(UrlManager.get(URL_PARAMS.MIN_DTE, '7'), 10);
       this.maxDte = parseInt(UrlManager.get(URL_PARAMS.MAX_DTE, '1092'), 10);
       
-      const newSelectedId = UrlManager.get(URL_PARAMS.ID);
-      if (this.selectedId !== newSelectedId) {
-        this.selectedId = newSelectedId;
-        selectStrategyById(this.selectedId);
-      }
-
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
       if (this.strategy === 'coveredCall' && encodedPos) {
         this.entryPosition = UrlManager.decodeState(encodedPos);
       } else {
         this.entryPosition = null;
       }
-      this.updateUnrealized();
+
+      const newSelectedId = UrlManager.get(URL_PARAMS.ID) || (this.entryPosition?.id ?? null);
+      if (this.selectedId !== newSelectedId) {
+        this.selectedId = newSelectedId;
+        selectStrategyById(this.selectedId);
+      } else {
+        this.updateUnrealized();
+      }
 
       if (this.ticker) {
         this.loadData();
