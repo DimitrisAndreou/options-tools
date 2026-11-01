@@ -127,12 +127,12 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     const formatExpirationCell = (pos, compact) => {
       if (!pos) return '—';
       const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral">${pos.formattedDate}</span>${sep}<small class="text-bad">(${pos.DTE}d)</small>`;
+      return `<span class="text-neutral text-nowrap">${pos.formattedDate}</span>${sep}<small class="text-bad text-nowrap">(${pos.DTE}d)</small>`;
     };
 
     const formatSpotCell = (pos) => {
       if (!pos) return '—';
-      return `<span class="text-spot">${dollarFmt.format(Number(pos.spotPrice))}</span>`;
+      return `<span class="text-spot text-nowrap">${dollarFmt.format(Number(pos.spotPrice))}</span>`;
     };
 
     const formatStrikeCell = (pos, compact) => {
@@ -141,18 +141,18 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       const spot = Number(pos.spotPrice);
       const rel = percentFmt.format(strike / spot - 1.0);
       const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral">${dollarFmt.format(strike)}</span>${sep}<small class="strike-relative">(${rel})</small>`;
+      return `<span class="text-neutral text-nowrap">${dollarFmt.format(strike)}</span>${sep}<small class="strike-relative text-nowrap">(${rel})</small>`;
     };
 
     const formatCapitalMoneyCell = (pos) => {
       if (!pos) return '—';
-      return `<span class="text-neutral">${dollarFmt.format(-pos.moneySize)}</span>`;
+      return `<span class="text-neutral text-nowrap">${dollarFmt.format(-pos.moneySize)}</span>`;
     };
 
     const formatCapitalUnderlyingCell = (pos, compact) => {
       if (!pos) return '—';
       const suffix = compact ? '' : ` ${pos.underlying}`;
-      return `<span class="text-neutral">${underlyingFmt.format(pos.underlyingToBuy)}${suffix}</span>`;
+      return `<span class="text-neutral text-nowrap">${underlyingFmt.format(pos.underlyingToBuy)}${suffix}</span>`;
     };
 
     const formatMoneyYieldCell = (pos, compact) => {
@@ -161,9 +161,9 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       const profitStr = `+${dollarFmt.format(pos.moneyProfit)}`;
       const probStr = pos.moneyProbability != null ? `${Math.round(pos.moneyProbability * 100)}% prob` : '';
       if (compact) {
-        return `<span class="text-good">${yieldStr}</span><br/><small class="text-good-alt">(${profitStr})</small>${probStr ? `<br/><small class="text-probs">${probStr}</small>` : ''}`;
+        return `<span class="text-good text-nowrap">${yieldStr}</span><br/><small class="text-good-alt text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">${probStr}</small>` : ''}`;
       }
-      return `<span class="text-good">${yieldStr} ${pos.money}</span> <small class="text-good-alt">(${profitStr})</small>${probStr ? ` <small class="text-probs">(${probStr})</small>` : ''}`;
+      return `<span class="text-good text-nowrap">${yieldStr} ${pos.money}</span> <small class="text-good-alt text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">(${probStr})</small>` : ''}`;
     };
 
     const formatUndYieldCell = (pos, compact) => {
@@ -172,9 +172,9 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       const profitStr = `+${underlyingFmt.format(pos.premiumToReceive)} ${pos.underlying}`;
       const probStr = pos.underlyingProbability != null ? `${Math.round(pos.underlyingProbability * 100)}% prob` : '';
       if (compact) {
-        return `<span class="text-good">${yieldStr}</span><br/><small class="text-good-alt">(+${underlyingFmt.format(pos.premiumToReceive)})</small>${probStr ? `<br/><small class="text-probs">${probStr}</small>` : ''}`;
+        return `<span class="text-good text-nowrap">${yieldStr}</span><br/><small class="text-good-alt text-nowrap">(+${underlyingFmt.format(pos.premiumToReceive)})</small>${probStr ? `<br/><small class="text-probs text-nowrap">${probStr}</small>` : ''}`;
       }
-      return `<span class="text-good">${yieldStr} ${pos.underlying}</span> <small class="text-good-alt">(${profitStr})</small>${probStr ? ` <small class="text-probs">(${probStr})</small>` : ''}`;
+      return `<span class="text-good text-nowrap">${yieldStr} ${pos.underlying}</span> <small class="text-good-alt text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">(${probStr})</small>` : ''}`;
     };
 
     const formatBeMoneyCell = (pos, compact) => {
@@ -182,7 +182,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       const absStr = dollarFmt.format(pos.breakEvenVsFullMoneyAbsolute);
       const relStr = percentFmt.format(pos.breakEvenVsFullMoneyRelative - 1.0);
       const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral">${absStr}</span>${sep}<small class="text-bad">(${relStr})</small>`;
+      return `<span class="text-neutral text-nowrap">${absStr}</span>${sep}<small class="text-bad text-nowrap">(${relStr})</small>`;
     };
 
     const formatBeUndCell = (pos, compact) => {
@@ -190,7 +190,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       const absStr = dollarFmt.format(pos.breakEvenVsFullUnderlyingAbsolute);
       const relStr = percentFmt.format(pos.breakEvenVsFullUnderlyingRelative - 1.0);
       const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral">${absStr}</span>${sep}<small class="text-good">(${relStr})</small>`;
+      return `<span class="text-neutral text-nowrap">${absStr}</span>${sep}<small class="text-good text-nowrap">(${relStr})</small>`;
     };
 
     // Diff calculations when both entryPos and currentPos are present

@@ -421,7 +421,6 @@ footer {
 .unified-strategy-table td.metric-val-col,
 .unified-strategy-table td.metric-diff-col {
   text-align: end;
-  white-space: nowrap;
 }
 
 .unified-strategy-table td.metric-diff-col {
