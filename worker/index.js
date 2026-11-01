@@ -26,6 +26,7 @@ export default {
 
     const isFcYahoo = targetUrl.startsWith('https://fc.yahoo.com');
     const isGetCrumb = targetUrl.includes('getcrumb');
+    const disguisedCookie = request.headers.get('x-proxy-cookie');
     const now = Date.now();
     const isCacheValid = cachedCookie && cachedCrumb && (now - lastCacheTime < CACHE_TTL);
 
@@ -43,13 +44,16 @@ export default {
           }
         });
       }
-      if (isGetCrumb) {
+      // Only serve cachedCrumb if the client's cookie matches this isolate's cachedCookie
+      if (isGetCrumb && (!disguisedCookie || cachedCookie.includes(disguisedCookie))) {
         console.log(`[Proxy] Serving cached crumb from memory: ${cachedCrumb}`);
         return new Response(cachedCrumb, {
           status: 200,
           headers: {
             'Access-Control-Allow-Origin': '*',
+            'Access-Control-Expose-Headers': 'x-yahoo-cookie, X-Yahoo-Cookie, Content-Type',
             'Content-Type': 'text/plain',
+            'x-yahoo-cookie': cachedCookie,
           }
         });
       }
@@ -61,7 +65,6 @@ export default {
     yahooHeaders.set('Accept', '*/*');
 
     // 3. Log and Extract the camouflaged cookie
-    const disguisedCookie = request.headers.get('x-proxy-cookie');
     if (disguisedCookie) {
       console.log(`[Proxy] Found x-proxy-cookie. Length: ${disguisedCookie.length}`);
       yahooHeaders.set('cookie', disguisedCookie); // Restore to standard 'cookie'
@@ -93,10 +96,14 @@ export default {
       const body = await response.arrayBuffer();
 
       // If we are fetching getcrumb and successfully received a crumb, cache it
+      // along with the cookie that was used to obtain it so this isolate stays in sync.
       if (isGetCrumb && response.status === 200) {
         const text = new TextDecoder().decode(body);
         if (text && !text.includes('<html') && !text.toLowerCase().includes('too many requests') && text.length < 30) {
           cachedCrumb = text;
+          if (disguisedCookie && (!cachedCookie || !cachedCookie.includes(disguisedCookie))) {
+            cachedCookie = disguisedCookie;
+          }
           lastCacheTime = Date.now();
           console.log(`[Proxy] Successfully cached crumb: ${cachedCrumb}`);
         }
