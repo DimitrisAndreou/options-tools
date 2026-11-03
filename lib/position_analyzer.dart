@@ -14,12 +14,26 @@ class PositionAnalyzer {
   PositionAnalyzer(this.position,
       {required this.underlying, required this.money}) {
     final Set<DateTime> expirations = {};
-    final interestingPoints = SplayTreeSet<double>();
+    final interestingPoints = SplayTreeSet<double>()..add(0.0);
 
     for (final inner in position.decompose()) {
       final innerAsset = inner.asset;
+      if (innerAsset.isCommodity &&
+          innerAsset != underlying &&
+          innerAsset != money) {
+        throw ArgumentError(
+            "A PositionAnalyzer(underlying=$underlying, money=$money) cannot "
+            "analyze commodity $innerAsset");
+      }
       if (innerAsset.isExpirable) {
-        expirations.add(innerAsset.toExpirable.expiration);
+        final expirable = innerAsset.toExpirable;
+        if (expirable.underlying != underlying) {
+          throw ArgumentError(
+              "A PositionAnalyzer(underlying=$underlying) cannot "
+              "analyze $expirable because its underlying is "
+              "${expirable.underlying}");
+        }
+        expirations.add(expirable.expiration);
         if (expirations.length >= 2) {
           throw ArgumentError("At least 2 different option expirations "
               "involved in position: $position, impossible to analyze");
@@ -32,6 +46,10 @@ class PositionAnalyzer {
               "analyze an option $option because its strike is of "
               "a different money: ${option.money}");
         }
+        if (option.strike < 0.0) {
+          throw ArgumentError(
+              "Option strike (${option.strike}) cannot be negative: $option");
+        }
         interestingPoints.add(option.strike);
       }
     }
@@ -42,8 +60,8 @@ class PositionAnalyzer {
             .intrinsicValue(position: position, money: money)
             .size;
 
-    double prevPrice = 0.0;
-    for (final nextPrice in interestingPoints) {
+    double prevPrice = interestingPoints.first;
+    for (final nextPrice in interestingPoints.skip(1)) {
       _segments.add(_PnLSegment.closed(priceToValue,
           minPrice: prevPrice, maxPrice: nextPrice));
       prevPrice = nextPrice;
@@ -204,9 +222,7 @@ class _PnLSegment {
       prevPrice = nextPrice;
       prevValue = nextValue;
     }
-    final double tentativeDelta = (deltas..sort())[medianIndex];
-    final double delta =
-        tentativeDelta.abs() < 1e-9 ? 0.0 : tentativeDelta;
+    final double delta = (deltas..sort())[medianIndex];
 
     return _PnLSegment(
         minPrice: minPrice,

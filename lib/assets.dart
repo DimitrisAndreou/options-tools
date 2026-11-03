@@ -11,7 +11,7 @@ enum Venue {
 sealed class Asset {
   final String name;
   final Set<Venue>? _venues;
-  // // Links to markets where this asset can be traded, if known.
+  // Links to markets where this asset can be traded, if known.
   // final List<MarketURL> urls;
   const Asset(this.name, {Set<Venue>? venues}) : _venues = venues;
 

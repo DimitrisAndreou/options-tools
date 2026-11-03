@@ -273,5 +273,66 @@ void main() {
       // Actually, we just need to verify it returns a valid analyzer with some known properties.
       expect(analyzer.breakevens.isNotEmpty, isTrue);
     });
+
+    test('supports options with strike == 0.0 (thought experiment: zero-strike call equals underlying)', () {
+      final zeroStrikeCall = Option(
+        'BTC-0-C',
+        underlying: btc,
+        money: usd,
+        strike: 0.0,
+        isCall: true,
+        expiration: expiration,
+      );
+      final zeroStrikePut = Option(
+        'BTC-0-P',
+        underlying: btc,
+        money: usd,
+        strike: 0.0,
+        isPut: true,
+        expiration: expiration,
+      );
+
+      // A zero-strike call bought for $1000 behaves identically to 1 BTC bought for $1000
+      final callPos = zeroStrikeCall.ofSize(1.0) - usd.ofSize(1000.0);
+      final callAnalyzer = PositionAnalyzer(callPos, underlying: btc, money: usd);
+      expect(callAnalyzer.minValue, equals(-1000.0));
+      expect(callAnalyzer.maxValue, equals(double.infinity));
+      expect(callAnalyzer.breakevens.single.price, equals(1000.0));
+      expect(callAnalyzer.deltaAfter(0.0), equals(1.0));
+
+      // Comparing 1 zero-strike call vs 1 unit of underlying yields identically 0 across all prices
+      final diffAnalyzer = zeroStrikeCall.unit.analyzeVersus(btc.unit, underlying: btc, money: usd);
+      expect(diffAnalyzer.minValue, equals(0.0));
+      expect(diffAnalyzer.maxValue, equals(0.0));
+      expect(diffAnalyzer.deltaAfter(0.0), equals(0.0));
+
+      // A zero-strike put is always worthless (0 payoff everywhere)
+      final putAnalyzer = PositionAnalyzer(zeroStrikePut.unit, underlying: btc, money: usd);
+      expect(putAnalyzer.minValue, equals(0.0));
+      expect(putAnalyzer.maxValue, equals(0.0));
+      expect(putAnalyzer.deltaAfter(0.0), equals(0.0));
+    });
+
+    test('throws error for mismatched underlying or unrelated commodity', () {
+      final eth = Commodity.fromName('ETH');
+      final eur = Commodity.fromName('EUR');
+      final ethCall = Option(
+        'ETH-1000-C',
+        underlying: eth,
+        money: usd,
+        strike: 1000.0,
+        isCall: true,
+        expiration: expiration,
+      );
+
+      expect(
+        () => PositionAnalyzer(ethCall.unit, underlying: btc, money: usd),
+        throwsArgumentError,
+      );
+      expect(
+        () => PositionAnalyzer(eur.ofSize(100.0), underlying: btc, money: usd),
+        throwsArgumentError,
+      );
+    });
   });
 }
