@@ -15,6 +15,7 @@ class CoveredCallMetrics {
   final double underlyingYield;
   final double moneyProfit;
   final Line premiumToReceive;
+  final double unassignedTax;
   final PriceInfo breakEvenVsFullUnderlying;
   final PriceInfo breakEvenVsFullMoney;
 
@@ -23,6 +24,7 @@ class CoveredCallMetrics {
     required this.underlyingYield,
     required this.moneyProfit,
     required this.premiumToReceive,
+    this.unassignedTax = 0.0,
     required this.breakEvenVsFullUnderlying,
     required this.breakEvenVsFullMoney,
   });
@@ -32,6 +34,7 @@ class CoveredCallMetrics {
         'underlyingYield': underlyingYield,
         'moneyProfit': moneyProfit,
         'premiumToReceive': premiumToReceive.size,
+        if (unassignedTax != 0.0) 'unassignedTax': unassignedTax,
         'breakEvenVsFullUnderlying': breakEvenVsFullUnderlying.toJson(),
         'breakEvenVsFullMoney': breakEvenVsFullMoney.toJson(),
       };
@@ -169,15 +172,8 @@ class CoveredCall {
     } else {
       final taxBelow = analyzer.valueBefore(option.strike) -
           postTaxAnalyzer.valueBefore(option.strike);
-      final postTaxPremium = (strategy[underlying] -
-              underlyingToBuy -
-              (taxBelow == 0.0
-                  ? Position.mergeAll(const [])
-                  : spotMarket.toAsset(money.ofSize(taxBelow))))
-          .singleton(underlying);
       final postTaxProfit = postTaxAnalyzer.valueAfter(option.strike);
       final postTaxMoneyYield = 1.0 + postTaxProfit / (-moneyLeg.size);
-      final postTaxUndYield = postTaxPremium.size / underlyingToBuy.size + 1.0;
       final postTaxBeUnd = PriceInfo.fromAbsolute(
           (postTaxProfit - moneyLeg.size) / underlyingToBuy.size, spotPrice);
       final postTaxBeMoneyPrice = postTaxAnalyzer.breakevens.isNotEmpty
@@ -189,9 +185,10 @@ class CoveredCall {
 
       postTax = CoveredCallMetrics(
         moneyYield: postTaxMoneyYield,
-        underlyingYield: postTaxUndYield,
+        underlyingYield: preTaxUndYield,
         moneyProfit: postTaxProfit,
-        premiumToReceive: postTaxPremium,
+        premiumToReceive: preTaxPremium,
+        unassignedTax: taxBelow,
         breakEvenVsFullUnderlying: postTaxBeUnd,
         breakEvenVsFullMoney: postTaxBeMoney,
       );

@@ -147,13 +147,14 @@ void main() {
         closeTo(1100.0 / 0.95, 1e-12));
 
     // Post-tax metrics:
-    // Below strike: +50 derivative PnL taxed at 30% -> 15 tax -> 0.035 BTC net premium
+    // Below strike: +50 derivative PnL taxed at 30% -> 15 USD unassignedTax (underlying shares untouched)
     // Above strike: +650 underlying PnL taxed at 20% -> 130 tax -> postTax.moneyProfit = 150 - 130 = 20
     final postTax = cc.postTax!;
     expect(postTax.moneyProfit, closeTo(20.0, 1e-12));
     expect(postTax.moneyYield, closeTo(1.0 + 20.0 / 950.0, 1e-12));
-    expect(postTax.premiumToReceive.size, closeTo(0.035, 1e-12));
-    expect(postTax.underlyingYield, closeTo(1.0 + 0.035 / 0.95, 1e-12));
+    expect(postTax.premiumToReceive.size, closeTo(0.05, 1e-12));
+    expect(postTax.underlyingYield, closeTo(1.0 + 0.05 / 0.95, 1e-12));
+    expect(postTax.unassignedTax, closeTo(15.0, 1e-12));
     expect(postTax.breakEvenVsFullMoney.absolute, closeTo(965.0, 1e-12));
     expect(postTax.breakEvenVsFullUnderlying.absolute,
         closeTo((20.0 + 950.0) / 0.95, 1e-12));
@@ -163,6 +164,7 @@ void main() {
     expect(json['derivativeTaxRate'], equals(0.30));
     expect(json['postTax'], isNotNull);
     expect(json['postTax']['moneyProfit'], closeTo(20.0, 1e-12));
+    expect(json['postTax']['unassignedTax'], closeTo(15.0, 1e-12));
     expect(json['postTax']['breakEvenVsFullMoney']['absolute'],
         closeTo(965.0, 1e-12));
   });

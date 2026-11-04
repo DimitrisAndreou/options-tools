@@ -204,21 +204,16 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const formatPostTaxUndYieldCell = (pos, compact) => {
       if (!pos || !pos.postTax) return '—';
-      const pre = pos.preTax;
-      const post = pos.postTax;
-      const yieldVal = post.underlyingYield - 1.0;
-      const yieldStr = percentFmt.format(yieldVal);
-      const sign = post.premiumToReceive >= 0 ? '+' : '';
-      const cls = yieldVal >= 0 ? 'text-good' : 'text-bad';
-      const altCls = post.premiumToReceive >= 0 ? 'text-good-alt' : 'text-bad';
-      const relImpact = post.underlyingYield / pre.underlyingYield - 1.0;
-      const absImpact = post.premiumToReceive - pre.premiumToReceive;
-      const impactSign = absImpact >= 0 ? '+' : '';
-      const impactCls = relImpact > 0 ? 'text-good' : (relImpact < 0 ? 'text-bad' : 'text-muted-alt');
+      const taxBelow = pos.postTax.unassignedTax ?? 0;
+      const netTaxImpact = -taxBelow;
+      const capital = -pos.moneySize;
+      const capPct = capital > 0 ? (netTaxImpact / capital) : 0;
+      const cls = netTaxImpact > 0 ? 'text-good' : (netTaxImpact < 0 ? 'text-bad' : 'text-muted-alt');
+      const labelSuffix = netTaxImpact > 0 ? 'tax benefit' : 'tax';
       if (compact) {
-        return `<span class="${cls} text-nowrap">${yieldStr}</span><br/><small class="${altCls} text-nowrap">(${sign}${underlyingFmt.format(post.premiumToReceive)})</small><br/><small class="${impactCls} text-nowrap">${percentFmt.format(relImpact)} (${impactSign}${underlyingFmt.format(absImpact)})</small>`;
+        return `<span class="${cls} text-nowrap">${formatSignedDollar(netTaxImpact)} ${labelSuffix}</span><br/><small class="${cls} text-nowrap">(${percentFmt.format(capPct)} cap.)</small>`;
       }
-      return `<span class="${cls} text-nowrap">${yieldStr} ${pos.underlying}</span> <small class="${altCls} text-nowrap">(${sign}${underlyingFmt.format(post.premiumToReceive)} ${pos.underlying})</small><br/><small class="${impactCls} text-nowrap">Tax impact: ${percentFmt.format(relImpact)} (${impactSign}${underlyingFmt.format(absImpact)} ${pos.underlying})</small>`;
+      return `<span class="${cls} text-nowrap">${formatSignedDollar(netTaxImpact)} ${pos.money} ${labelSuffix}</span><br/><small class="${cls} text-nowrap">(${percentFmt.format(capPct)} of capital)</small>`;
     };
 
     const formatBeMoneyCell = (pos, compact) => {
@@ -359,10 +354,14 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       undYieldDiffClass = undYieldRatioChange >= 0 ? 'text-good' : 'text-bad';
 
       if (hasTaxes && entryPos.postTax && currentPos.postTax) {
-        const ptUndRatioChange = currentPos.postTax.underlyingYield / entryPos.postTax.underlyingYield - 1.0;
-        const ptPremDiff = currentPos.postTax.premiumToReceive - entryPos.postTax.premiumToReceive;
-        postTaxUndYieldDiffText = `${percentFmt.format(ptUndRatioChange)}<br/><small>(${ptPremDiff >= 0 ? '+' : ''}${underlyingFmt.format(ptPremDiff)})</small>`;
-        postTaxUndYieldDiffClass = ptUndRatioChange >= 0 ? 'text-good' : 'text-bad';
+        const entryTaxImpact = -(entryPos.postTax.unassignedTax ?? 0);
+        const curTaxImpact = -(currentPos.postTax.unassignedTax ?? 0);
+        const taxImpactDiff = curTaxImpact - entryTaxImpact;
+        const entryCapPct = (-entryPos.moneySize) > 0 ? entryTaxImpact / (-entryPos.moneySize) : 0;
+        const curCapPct = (-currentPos.moneySize) > 0 ? curTaxImpact / (-currentPos.moneySize) : 0;
+        const capPctDiff = curCapPct - entryCapPct;
+        postTaxUndYieldDiffText = `${formatSignedDollar(taxImpactDiff)}<br/><small>(${percentFmt.format(capPctDiff)} cap.)</small>`;
+        postTaxUndYieldDiffClass = taxImpactDiff > 0 ? 'text-good' : (taxImpactDiff < 0 ? 'text-bad' : 'text-neutral-alt');
       }
 
       // 9. Breakeven (vs full money)
