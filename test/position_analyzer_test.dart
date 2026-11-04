@@ -333,6 +333,168 @@ void main() {
         () => PositionAnalyzer(eur.ofSize(100.0), underlying: btc, money: usd),
         throwsArgumentError,
       );
+      expect(
+        () => PositionAnalyzer(btc.ofSize(1.0, eur.ofSize(900.0)), underlying: btc, money: usd),
+        throwsArgumentError,
+      );
+    });
+
+    group('costBasis, realizedPnL, and unrealizedPnL per segment', () {
+      test('covered call with pre-owned stock at custom costBasis', () {
+        final callOption = Option(
+          'BTC-1100-C',
+          underlying: btc,
+          money: usd,
+          strike: 1100.0,
+          isCall: true,
+          expiration: expiration,
+        );
+
+        // User already bought 1 BTC at $1200 (even though current spot may be $1000),
+        // and sells 1 Call at strike $1100 for $50.
+        final position = btc.ofSize(1.0, usd.ofSize(1200.0)) -
+            usd.ofSize(1000.0) +
+            (-callOption.ofSize(1.0, usd.ofSize(50.0)) + usd.ofSize(50.0));
+
+        final analyzer = PositionAnalyzer(position, underlying: btc, money: usd);
+
+        // Below strike (< 1100): Call expires worthless (+50 realized), BTC remains open at $1200 cost basis.
+        expect(analyzer.costBasisBefore(1100.0), equals(1200.0));
+        expect(analyzer.realizedPnLBefore(1100.0), equals(50.0));
+        expect(analyzer.unrealizedPnLBefore(900.0), equals(-300.0));  // 900 - 1200
+        expect(analyzer.unrealizedPnLBefore(1100.0), equals(-100.0)); // 1100 - 1200
+
+        // Above strike (>= 1100): Call is exercised; option cost basis (-$50) transfers to stock sale
+        // (effective sale proceeds = $1100 + $50 = $1150 vs $1200 basis -> -$50 realized).
+        // No shares remain open, so remaining cost basis and unrealized PnL are 0.
+        expect(analyzer.costBasisAfter(1100.0), equals(0.0));
+        expect(analyzer.realizedPnLAfter(1100.0), equals(-50.0));
+        expect(analyzer.unrealizedPnLAfter(1100.0), equals(0.0));
+        expect(analyzer.unrealizedPnLAfter(1500.0), equals(0.0));
+      });
+
+      test('long call transfers costBasis to underlying upon exercise', () {
+        final callOption = Option(
+          'BTC-1000-C',
+          underlying: btc,
+          money: usd,
+          strike: 1000.0,
+          isCall: true,
+          expiration: expiration,
+        );
+
+        // Buy 1 Call at $1000 strike for $50
+        final position = callOption.ofSize(1.0, usd.ofSize(50.0)) - usd.ofSize(50.0);
+        final analyzer = PositionAnalyzer(position, underlying: btc, money: usd);
+
+        // Below strike: Call expires worthless -> -$50 realized, 0 remaining costBasis, 0 unrealized
+        expect(analyzer.costBasisBefore(1000.0), equals(0.0));
+        expect(analyzer.realizedPnLBefore(1000.0), equals(-50.0));
+        expect(analyzer.unrealizedPnLBefore(900.0), equals(0.0));
+        expect(analyzer.unrealizedPnLBefore(1000.0), equals(0.0));
+
+        // Above strike: Call is exercised -> acquires 1 BTC with cost basis $1000 + $50 = $1050.
+        // Exercise itself realizes $0; PnL is unrealized on the acquired BTC.
+        expect(analyzer.costBasisAfter(1000.0), equals(1050.0));
+        expect(analyzer.realizedPnLAfter(1000.0), equals(0.0));
+        expect(analyzer.unrealizedPnLAfter(1000.0), equals(-50.0));  // 1000 - 1050
+        expect(analyzer.unrealizedPnLAfter(1200.0), equals(150.0));  // 1200 - 1050
+      });
+
+      test('short put transfers costBasis to underlying upon assignment', () {
+        final putOption = Option(
+          'BTC-1000-P',
+          underlying: btc,
+          money: usd,
+          strike: 1000.0,
+          isPut: true,
+          expiration: expiration,
+        );
+
+        // Sell 1 Put at $1000 strike for $50
+        final position = -putOption.ofSize(1.0, usd.ofSize(50.0)) + usd.ofSize(50.0);
+        final analyzer = PositionAnalyzer(position, underlying: btc, money: usd);
+
+        // Below strike: Put is assigned -> acquires 1 BTC at net cost basis $1000 - $50 = $950.
+        // Assignment realizes $0; PnL is unrealized on the acquired BTC.
+        expect(analyzer.costBasisBefore(1000.0), equals(950.0));
+        expect(analyzer.realizedPnLBefore(1000.0), equals(0.0));
+        expect(analyzer.unrealizedPnLBefore(900.0), equals(-50.0));  // 900 - 950
+        expect(analyzer.unrealizedPnLBefore(1000.0), equals(50.0));  // 1000 - 950
+
+        // Above strike: Put expires worthless -> +$50 realized, 0 remaining costBasis, 0 unrealized
+        expect(analyzer.costBasisAfter(1000.0), equals(0.0));
+        expect(analyzer.realizedPnLAfter(1000.0), equals(50.0));
+        expect(analyzer.unrealizedPnLAfter(1000.0), equals(0.0));
+        expect(analyzer.unrealizedPnLAfter(1200.0), equals(0.0));
+      });
+
+      test('vertical bull call spread across all three segments', () {
+        final call900 = Option(
+          'BTC-900-C',
+          underlying: btc,
+          money: usd,
+          strike: 900.0,
+          isCall: true,
+          expiration: expiration,
+        );
+        final call1000 = Option(
+          'BTC-1000-C',
+          underlying: btc,
+          money: usd,
+          strike: 1000.0,
+          isCall: true,
+          expiration: expiration,
+        );
+
+        // Long 900 Call @ $80, Short 1000 Call @ $30 (net debit $50)
+        final position = call900.ofSize(1.0, usd.ofSize(80.0)) -
+            call1000.ofSize(1.0, usd.ofSize(30.0)) -
+            usd.ofSize(50.0);
+        final analyzer = PositionAnalyzer(position, underlying: btc, money: usd);
+
+        // Segment 1 [0..900]: Both expire worthless -> realized = -80 + 30 = -50
+        expect(analyzer.costBasisBefore(900.0), equals(0.0));
+        expect(analyzer.realizedPnLBefore(900.0), equals(-50.0));
+        expect(analyzer.unrealizedPnLBefore(850.0), equals(0.0));
+
+        // Segment 2 [900..1000]: 900 Call exercised (costBasis = 980), 1000 Call expires OTM (realized = +30)
+        expect(analyzer.costBasisAfter(900.0), equals(980.0));
+        expect(analyzer.realizedPnLAfter(900.0), equals(30.0));
+        expect(analyzer.unrealizedPnLAfter(950.0), equals(-30.0)); // 950 - 980 (total PnL = 30 - 30 = 0 at breakeven 950!)
+
+        // Segment 3 [1000..inf): Both exercised -> +1 BTC @ 980 closed against -1 BTC @ 1030 -> realized = +50
+        expect(analyzer.costBasisAfter(1000.0), equals(0.0));
+        expect(analyzer.realizedPnLAfter(1000.0), equals(50.0));
+        expect(analyzer.unrealizedPnLAfter(1100.0), equals(0.0));
+      });
+
+      test('partial covered call disposes covered portion and preserves cost basis of remaining shares', () {
+        final callOption = Option(
+          'BTC-1100-C',
+          underlying: btc,
+          money: usd,
+          strike: 1100.0,
+          isCall: true,
+          expiration: expiration,
+        );
+
+        // Hold 2 BTC @ $1200 each (total cost basis $2400), sell 1 Call @ $1100 for $50
+        final position = btc.ofSize(2.0, usd.ofSize(1200.0)) -
+            callOption.ofSize(1.0, usd.ofSize(50.0));
+        final analyzer = PositionAnalyzer(position, underlying: btc, money: usd);
+
+        // Below 1100: Call expires worthless (+50 realized), 2 BTC remain at $2400 cost basis
+        expect(analyzer.costBasisBefore(1100.0), equals(2400.0));
+        expect(analyzer.realizedPnLBefore(1100.0), equals(50.0));
+        expect(analyzer.unrealizedPnLBefore(1000.0), equals(-400.0)); // 2 * 1000 - 2400
+
+        // Above 1100: 1 BTC is called away at $1150 vs $1200 basis -> -$50 realized;
+        // 1 BTC remains open at $1200 cost basis.
+        expect(analyzer.costBasisAfter(1100.0), equals(1200.0));
+        expect(analyzer.realizedPnLAfter(1100.0), equals(-50.0));
+        expect(analyzer.unrealizedPnLAfter(1300.0), equals(100.0)); // 1 * 1300 - 1200
+      });
     });
   });
 }

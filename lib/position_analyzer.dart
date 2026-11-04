@@ -25,6 +25,13 @@ class PositionAnalyzer {
             "A PositionAnalyzer(underlying=$underlying, money=$money) cannot "
             "analyze commodity $innerAsset");
       }
+      // We could use an Oracle to do: inner.costBasisIn(oracle, money) if
+      // we want, but is an overkill for now.
+      if (inner.unitCostBasis != null && inner.unitCostBasis!.asset != money) {
+        throw ArgumentError("A PositionAnalyzer(money=$money) cannot "
+            "analyze $inner because its cost basis is in "
+            "${inner.unitCostBasis!.asset}");
+      }
       if (innerAsset.isExpirable) {
         final expirable = innerAsset.toExpirable;
         if (expirable.underlying != underlying) {
@@ -62,11 +69,29 @@ class PositionAnalyzer {
 
     double prevPrice = interestingPoints.first;
     for (final nextPrice in interestingPoints.skip(1)) {
+      final settled = _PnLSegment._settle(position,
+          underlying: underlying,
+          money: money,
+          minPrice: prevPrice,
+          maxPrice: nextPrice);
       _segments.add(_PnLSegment.closed(priceToValue,
-          minPrice: prevPrice, maxPrice: nextPrice));
+          minPrice: prevPrice,
+          maxPrice: nextPrice,
+          costBasis: settled.costBasis,
+          realizedUnderlyingPnL: settled.realizedUnderlyingPnL,
+          realizedDerivativePnL: settled.realizedDerivativePnL));
       prevPrice = nextPrice;
     }
-    _segments.add(_PnLSegment.open(priceToValue, minPrice: prevPrice));
+    final settledOpen = _PnLSegment._settle(position,
+        underlying: underlying,
+        money: money,
+        minPrice: prevPrice,
+        maxPrice: double.infinity);
+    _segments.add(_PnLSegment.open(priceToValue,
+        minPrice: prevPrice,
+        costBasis: settledOpen.costBasis,
+        realizedUnderlyingPnL: settledOpen.realizedUnderlyingPnL,
+        realizedDerivativePnL: settledOpen.realizedDerivativePnL));
   }
 
   double get minValue => _segments.map((segment) => segment.minValue).min;
@@ -79,25 +104,49 @@ class PositionAnalyzer {
   Iterable<PriceRange> whereValueIs(double value) => PriceRange._mergeAdjacents(
       _segments.map((segment) => segment.whereValueIs(value)).nonNulls);
 
-  // The delta for prices just below the specified one.
-  double deltaBefore(double price) {
+  _PnLSegment _segmentBefore(double price) {
     for (final segment in _segments) {
       if (segment.includes(price)) {
-        return segment.delta;
+        return segment;
       }
     }
     throw StateError("No segment included price $price, segments: $_segments");
   }
 
-  // The delta for prices just above the specified one.
-  double deltaAfter(double price) {
+  _PnLSegment _segmentAfter(double price) {
     for (final segment in _segments.reversed) {
       if (segment.includes(price)) {
-        return segment.delta;
+        return segment;
       }
     }
     throw StateError("No segment included price $price, segments: $_segments");
   }
+
+  // The delta for prices just below the specified one.
+  double deltaBefore(double price) => _segmentBefore(price).delta;
+
+  // The delta for prices just above the specified one.
+  double deltaAfter(double price) => _segmentAfter(price).delta;
+
+  // The remaining cost basis (in money) for prices just below the specified one.
+  double costBasisBefore(double price) => _segmentBefore(price).costBasis;
+
+  // The remaining cost basis (in money) for prices just above the specified one.
+  double costBasisAfter(double price) => _segmentAfter(price).costBasis;
+
+  // The realized PnL (in money) for prices just below the specified one.
+  double realizedPnLBefore(double price) => _segmentBefore(price).realizedPnL;
+
+  // The realized PnL (in money) for prices just above the specified one.
+  double realizedPnLAfter(double price) => _segmentAfter(price).realizedPnL;
+
+  // The unrealized PnL (in money) at [price], evaluated on the segment just below [price].
+  double unrealizedPnLBefore(double price) =>
+      _segmentBefore(price).unrealizedPnLAt(price);
+
+  // The unrealized PnL (in money) at [price], evaluated on the segment just above [price].
+  double unrealizedPnLAfter(double price) =>
+      _segmentAfter(price).unrealizedPnLAt(price);
 
   // Transforms a position to a position of different size, such as
   // the resulting position has the same maxRisk as this PositionAnalyzer.
@@ -174,12 +223,26 @@ class _PnLSegment {
   // zero, not 0.00000000009
   late final double delta;
 
+  // Remaining cost basis (in money) of open underlying units on this segment.
+  final double costBasis;
+  // Realized PnL (in money) from closed underlying units on this segment.
+  final double realizedUnderlyingPnL;
+  // Realized PnL (in money) from OTM options expiring worthless on this segment.
+  final double realizedDerivativePnL;
+
+  double get realizedPnL => realizedUnderlyingPnL + realizedDerivativePnL;
+
+  double unrealizedPnLAt(double price) => delta * price - costBasis;
+
   _PnLSegment(
       {required this.minPrice,
       required this.valueAtMinPrice,
       required this.maxPrice,
       required this.valueAtMaxPrice,
-      required this.delta}) {
+      required this.delta,
+      this.costBasis = 0.0,
+      this.realizedUnderlyingPnL = 0.0,
+      this.realizedDerivativePnL = 0.0}) {
     if (!minPrice.isFinite) {
       throw ArgumentError("minPrice ($minPrice) must be finite");
     }
@@ -189,7 +252,11 @@ class _PnLSegment {
   }
 
   factory _PnLSegment.closed(double Function(double) priceToValue,
-      {required double minPrice, required double maxPrice}) {
+      {required double minPrice,
+      required double maxPrice,
+      double costBasis = 0.0,
+      double realizedUnderlyingPnL = 0.0,
+      double realizedDerivativePnL = 0.0}) {
     if (!maxPrice.isFinite) {
       throw ArgumentError("maxPrice ($maxPrice) must be finite");
     }
@@ -204,11 +271,17 @@ class _PnLSegment {
             x1: minPrice,
             x2: maxPrice,
             y1: valueAtMinPrice,
-            y2: valueAtMaxPrice));
+            y2: valueAtMaxPrice),
+        costBasis: costBasis,
+        realizedUnderlyingPnL: realizedUnderlyingPnL,
+        realizedDerivativePnL: realizedDerivativePnL);
   }
 
   factory _PnLSegment.open(double Function(double) priceToValue,
-      {required double minPrice}) {
+      {required double minPrice,
+      double costBasis = 0.0,
+      double realizedUnderlyingPnL = 0.0,
+      double realizedDerivativePnL = 0.0}) {
     double valueAtMinPrice = priceToValue(minPrice);
     final List<double> deltas = [];
     double prevPrice = minPrice;
@@ -233,7 +306,99 @@ class _PnLSegment {
           -1.0 => double.negativeInfinity,
           _ => valueAtMinPrice
         },
-        delta: delta);
+        delta: delta,
+        costBasis: costBasis,
+        realizedUnderlyingPnL: realizedUnderlyingPnL,
+        realizedDerivativePnL: realizedDerivativePnL);
+  }
+
+  static ({
+    double costBasis,
+    double realizedUnderlyingPnL,
+    double realizedDerivativePnL,
+  }) _settle(
+    Position position, {
+    required Commodity underlying,
+    required Commodity money,
+    required double minPrice,
+    required double maxPrice,
+  }) {
+    double longUnderlyingSize = 0.0;
+    double longUnderlyingCost = 0.0;
+    double shortUnderlyingSize = 0.0;
+    double shortUnderlyingProceeds = 0.0;
+    double realizedDerivativePnL = 0.0;
+
+    void addUnderlying(double size, double costBasis) {
+      if (size > 0.0) {
+        longUnderlyingSize += size;
+        longUnderlyingCost += costBasis;
+      } else if (size < 0.0) {
+        shortUnderlyingSize += -size;
+        shortUnderlyingProceeds += -costBasis;
+      }
+    }
+
+    for (final line in position.decompose()) {
+      final asset = line.asset;
+      final costBasis = line.costBasisSingle(money)?.size ?? 0.0;
+
+      if (asset == money) {
+        continue;
+      } else if (asset == underlying) {
+        addUnderlying(line.size, costBasis);
+      } else if (asset.isDatedFuture) {
+        final future = asset.toDatedFuture;
+        addUnderlying(line.size * future.contractLot, costBasis);
+      } else if (asset.isOption) {
+        final option = asset.toOption;
+        final isExercised = option.isCall
+            ? minPrice >= option.strike
+            : maxPrice <= option.strike;
+        if (isExercised) {
+          final underlyingDelta =
+              line.size * option.contractLot * (option.isCall ? 1.0 : -1.0);
+          final exercisedCostBasis =
+              underlyingDelta * option.strike + costBasis;
+          addUnderlying(underlyingDelta, exercisedCostBasis);
+        } else {
+          realizedDerivativePnL -= costBasis;
+        }
+      }
+    }
+
+    final closedSize = min(longUnderlyingSize, shortUnderlyingSize);
+    final double realizedUnderlyingPnL;
+    if (closedSize == 0.0) {
+      realizedUnderlyingPnL = 0.0;
+    } else if (longUnderlyingSize == shortUnderlyingSize) {
+      realizedUnderlyingPnL = shortUnderlyingProceeds - longUnderlyingCost;
+    } else {
+      realizedUnderlyingPnL = closedSize *
+          (shortUnderlyingProceeds / shortUnderlyingSize -
+              longUnderlyingCost / longUnderlyingSize);
+    }
+
+    final netUnderlyingSize = longUnderlyingSize - shortUnderlyingSize;
+    final double remainingCostBasis;
+    if (netUnderlyingSize.abs() < 1e-9) {
+      remainingCostBasis = 0.0;
+    } else if (netUnderlyingSize > 0.0) {
+      remainingCostBasis = shortUnderlyingSize == 0.0
+          ? longUnderlyingCost
+          : longUnderlyingCost * (netUnderlyingSize / longUnderlyingSize);
+    } else {
+      remainingCostBasis = longUnderlyingSize == 0.0
+          ? -shortUnderlyingProceeds
+          : -shortUnderlyingProceeds *
+              (-netUnderlyingSize / shortUnderlyingSize);
+    }
+
+    return (
+      costBasis: remainingCostBasis,
+      realizedUnderlyingPnL: realizedUnderlyingPnL,
+      realizedDerivativePnL: realizedDerivativePnL,
+    );
   }
 
   static double _calcDelta(
@@ -274,16 +439,15 @@ class _PnLSegment {
 
   @override
   String toString() => "[($minPrice..$maxPrice), "
-      "minValue=$minValue, maxValue=$maxValue, delta=$delta]";
+      "minValue=$minValue, maxValue=$maxValue, delta=$delta, "
+      "costBasis=$costBasis, realizedPnL=$realizedPnL]";
 }
 
 extension PositionAnalysis on Position {
-  /// Analyzes the relative performance of this position compared to another, 
+  /// Analyzes the relative performance of this position compared to another,
   /// useful for determining crossover points (breakevens) between two strategies.
   PositionAnalyzer analyzeVersus(Position other,
       {required Commodity underlying, required Commodity money}) {
-    return PositionAnalyzer(this - other,
-        underlying: underlying, money: money);
+    return PositionAnalyzer(this - other, underlying: underlying, money: money);
   }
 }
-
