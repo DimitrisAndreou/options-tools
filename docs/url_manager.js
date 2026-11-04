@@ -4,6 +4,9 @@ const URL_PARAMS = {
   SLIPPAGE: 'slippage',
   MIN_DTE: 'minDTE',
   MAX_DTE: 'maxDTE',
+  AVG_PRICE: 'avgPrice',
+  UND_TAX: 'undTax',
+  DERIV_TAX: 'derivTax',
   ID: 'id',
   POS: 'pos'
 };

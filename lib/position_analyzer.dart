@@ -4,15 +4,29 @@ import 'package:collection/collection.dart';
 
 import 'assets.dart';
 import 'oracle.dart';
+import 'taxes.dart';
+
+export 'taxes.dart';
 
 class PositionAnalyzer {
   final Position position;
   final Commodity underlying;
   final Commodity money;
-  final List<_PnLSegment> _segments = [];
+  final TaxProfile taxes;
+  final List<_PnLSegment> _segments;
+
+  PositionAnalyzer._(this.position,
+      {required this.underlying,
+      required this.money,
+      required this.taxes,
+      required List<_PnLSegment> segments})
+      : _segments = segments;
 
   PositionAnalyzer(this.position,
-      {required this.underlying, required this.money}) {
+      {required this.underlying,
+      required this.money,
+      this.taxes = TaxProfile.none})
+      : _segments = [] {
     final Set<DateTime> expirations = {};
     final interestingPoints = SplayTreeSet<double>()..add(0.0);
 
@@ -79,7 +93,10 @@ class PositionAnalyzer {
           maxPrice: nextPrice,
           costBasis: settled.costBasis,
           realizedUnderlyingPnL: settled.realizedUnderlyingPnL,
-          realizedDerivativePnL: settled.realizedDerivativePnL));
+          realizedDerivativePnL: settled.realizedDerivativePnL,
+          tax: taxes.computeTax(
+              realizedUnderlyingPnL: settled.realizedUnderlyingPnL,
+              realizedDerivativePnL: settled.realizedDerivativePnL)));
       prevPrice = nextPrice;
     }
     final settledOpen = _PnLSegment._settle(position,
@@ -91,7 +108,26 @@ class PositionAnalyzer {
         minPrice: prevPrice,
         costBasis: settledOpen.costBasis,
         realizedUnderlyingPnL: settledOpen.realizedUnderlyingPnL,
-        realizedDerivativePnL: settledOpen.realizedDerivativePnL));
+        realizedDerivativePnL: settledOpen.realizedDerivativePnL,
+        tax: taxes.computeTax(
+            realizedUnderlyingPnL: settledOpen.realizedUnderlyingPnL,
+            realizedDerivativePnL: settledOpen.realizedDerivativePnL)));
+  }
+
+  /// Returns a [PositionAnalyzer] for this position with [taxes] applied to
+  /// each segment's realized PnL. Calling [withTaxes] on an already taxed
+  /// analyzer replaces (rather than compounds) the tax profile.
+  PositionAnalyzer withTaxes(TaxProfile taxes) {
+    if (this.taxes == taxes) return this;
+    return PositionAnalyzer._(
+      position,
+      underlying: underlying,
+      money: money,
+      taxes: taxes,
+      segments: _segments
+          .map((segment) => segment.withTaxes(taxes))
+          .toList(growable: false),
+    );
   }
 
   double get minValue => _segments.map((segment) => segment.minValue).min;
@@ -148,16 +184,24 @@ class PositionAnalyzer {
   double unrealizedPnLAfter(double price) =>
       _segmentAfter(price).unrealizedPnLAt(price);
 
+  // The value (in money) at [price], evaluated on the segment just below [price].
+  double valueBefore(double price) => _segmentBefore(price).valueAt(price)!;
+
+  // The value (in money) at [price], evaluated on the segment just above [price].
+  double valueAfter(double price) => _segmentAfter(price).valueAt(price)!;
+
   // Transforms a position to a position of different size, such as
   // the resulting position has the same maxRisk as this PositionAnalyzer.
   // TODO: unused
   PositionAnalyzer equalizeRisk(Position position) => PositionAnalyzer(
       position *
           (maxRisk /
-              PositionAnalyzer(position, underlying: underlying, money: money)
+              PositionAnalyzer(position,
+                      underlying: underlying, money: money, taxes: taxes)
                   .maxRisk),
       underlying: underlying,
-      money: money);
+      money: money,
+      taxes: taxes);
 
   // Can be negative for profitless strategies.
   double get maxProfit => max(maxValue, 0.0);
@@ -216,12 +260,12 @@ class _PnLSegment {
   // Price of the underlying (in money).
   final double minPrice;
   final double maxPrice;
-  late final double valueAtMinPrice;
-  late final double valueAtMaxPrice;
+  final double _preTaxValueAtMinPrice;
+  final double _preTaxValueAtMaxPrice;
   // Value change for a unit of price change
   // Critical to have correct sign here, i.e. if it is zero, it must be
   // zero, not 0.00000000009
-  late final double delta;
+  final double delta;
 
   // Remaining cost basis (in money) of open underlying units on this segment.
   final double costBasis;
@@ -229,20 +273,29 @@ class _PnLSegment {
   final double realizedUnderlyingPnL;
   // Realized PnL (in money) from OTM options expiring worthless on this segment.
   final double realizedDerivativePnL;
+  // Tax (in money) on realized PnL on this segment.
+  final double tax;
 
-  double get realizedPnL => realizedUnderlyingPnL + realizedDerivativePnL;
+  double get valueAtMinPrice => _preTaxValueAtMinPrice - tax;
+  double get valueAtMaxPrice => _preTaxValueAtMaxPrice - tax;
+
+  double get realizedPnL =>
+      realizedUnderlyingPnL + realizedDerivativePnL - tax;
 
   double unrealizedPnLAt(double price) => delta * price - costBasis;
 
   _PnLSegment(
       {required this.minPrice,
-      required this.valueAtMinPrice,
+      required double valueAtMinPrice,
       required this.maxPrice,
-      required this.valueAtMaxPrice,
+      required double valueAtMaxPrice,
       required this.delta,
       this.costBasis = 0.0,
       this.realizedUnderlyingPnL = 0.0,
-      this.realizedDerivativePnL = 0.0}) {
+      this.realizedDerivativePnL = 0.0,
+      this.tax = 0.0})
+      : _preTaxValueAtMinPrice = valueAtMinPrice,
+        _preTaxValueAtMaxPrice = valueAtMaxPrice {
     if (!minPrice.isFinite) {
       throw ArgumentError("minPrice ($minPrice) must be finite");
     }
@@ -251,12 +304,26 @@ class _PnLSegment {
     }
   }
 
+  _PnLSegment withTaxes(TaxProfile taxes) => _PnLSegment(
+      minPrice: minPrice,
+      valueAtMinPrice: _preTaxValueAtMinPrice,
+      maxPrice: maxPrice,
+      valueAtMaxPrice: _preTaxValueAtMaxPrice,
+      delta: delta,
+      costBasis: costBasis,
+      realizedUnderlyingPnL: realizedUnderlyingPnL,
+      realizedDerivativePnL: realizedDerivativePnL,
+      tax: taxes.computeTax(
+          realizedUnderlyingPnL: realizedUnderlyingPnL,
+          realizedDerivativePnL: realizedDerivativePnL));
+
   factory _PnLSegment.closed(double Function(double) priceToValue,
       {required double minPrice,
       required double maxPrice,
       double costBasis = 0.0,
       double realizedUnderlyingPnL = 0.0,
-      double realizedDerivativePnL = 0.0}) {
+      double realizedDerivativePnL = 0.0,
+      double tax = 0.0}) {
     if (!maxPrice.isFinite) {
       throw ArgumentError("maxPrice ($maxPrice) must be finite");
     }
@@ -274,14 +341,16 @@ class _PnLSegment {
             y2: valueAtMaxPrice),
         costBasis: costBasis,
         realizedUnderlyingPnL: realizedUnderlyingPnL,
-        realizedDerivativePnL: realizedDerivativePnL);
+        realizedDerivativePnL: realizedDerivativePnL,
+        tax: tax);
   }
 
   factory _PnLSegment.open(double Function(double) priceToValue,
       {required double minPrice,
       double costBasis = 0.0,
       double realizedUnderlyingPnL = 0.0,
-      double realizedDerivativePnL = 0.0}) {
+      double realizedDerivativePnL = 0.0,
+      double tax = 0.0}) {
     double valueAtMinPrice = priceToValue(minPrice);
     final List<double> deltas = [];
     double prevPrice = minPrice;
@@ -309,7 +378,8 @@ class _PnLSegment {
         delta: delta,
         costBasis: costBasis,
         realizedUnderlyingPnL: realizedUnderlyingPnL,
-        realizedDerivativePnL: realizedDerivativePnL);
+        realizedDerivativePnL: realizedDerivativePnL,
+        tax: tax);
   }
 
   static ({

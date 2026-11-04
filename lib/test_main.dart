@@ -420,8 +420,8 @@ void coveredCallProbabilities(List<Market> markets) {
         pAbove = pAbove.clamp(0.0, 1.0);
 
         print("  ${json['id']} -- K: ${k.toStringAsFixed(0).padLeft(6)} "
-            "| \$: ${json['moneyYield'].toStringAsFixed(4)} "
-            "| U: ${json['underlyingYield'].toStringAsFixed(4)} "
+            "| \$: ${json['preTax']['moneyYield'].toStringAsFixed(4)} "
+            "| U: ${json['preTax']['underlyingYield'].toStringAsFixed(4)} "
             "| Prob(Above): ${(pAbove * 100).toStringAsFixed(1)}%");
       }
     } else {

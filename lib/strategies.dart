@@ -8,6 +8,35 @@ import 'oracle.dart';
 import 'position_analyzer.dart';
 import 'renderers.dart';
 
+export 'taxes.dart';
+
+class CoveredCallMetrics {
+  final double moneyYield;
+  final double underlyingYield;
+  final double moneyProfit;
+  final Line premiumToReceive;
+  final PriceInfo breakEvenVsFullUnderlying;
+  final PriceInfo breakEvenVsFullMoney;
+
+  const CoveredCallMetrics({
+    required this.moneyYield,
+    required this.underlyingYield,
+    required this.moneyProfit,
+    required this.premiumToReceive,
+    required this.breakEvenVsFullUnderlying,
+    required this.breakEvenVsFullMoney,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'moneyYield': moneyYield,
+        'underlyingYield': underlyingYield,
+        'moneyProfit': moneyProfit,
+        'premiumToReceive': premiumToReceive.size,
+        'breakEvenVsFullUnderlying': breakEvenVsFullUnderlying.toJson(),
+        'breakEvenVsFullMoney': breakEvenVsFullMoney.toJson(),
+      };
+}
+
 class CoveredCall {
   final Commodity underlying;
   final Commodity money;
@@ -15,8 +44,10 @@ class CoveredCall {
   final DateTime expiration;
   final Market spotMarket;
   final Market callMarket;
+  final TaxProfile taxes;
 
   final PositionAnalyzer analyzer;
+  late final PositionAnalyzer postTaxAnalyzer;
 
   final Position strategy;
   final Line optionLeg;
@@ -27,18 +58,26 @@ class CoveredCall {
   // First buy this much underlying asset (via spot market),
   // then open the option leg.
   final Line underlyingToBuy;
-  late final Line premiumToReceive;
 
   final double spotPrice;
   final PriceInfo strikePrice;
-  late final double moneyProfit; // of minimum position.
-
-  late final double moneyYield;
-  late final double underlyingYield;
-  late final PriceInfo breakEvenVsFullUnderlying;
-  late final PriceInfo breakEvenVsFullMoney;
   final double? moneyProbability;
   final double? underlyingProbability;
+
+  late final CoveredCallMetrics preTax;
+  late final CoveredCallMetrics? postTax;
+
+  Line get premiumToReceive => preTax.premiumToReceive;
+  double get moneyProfit => preTax.moneyProfit;
+  double get moneyYield => preTax.moneyYield;
+  double get underlyingYield => preTax.underlyingYield;
+  PriceInfo get breakEvenVsFullUnderlying => preTax.breakEvenVsFullUnderlying;
+  PriceInfo get breakEvenVsFullMoney => preTax.breakEvenVsFullMoney;
+
+  double get unitCostBasis =>
+      underlyingLeg.unitCostBasis?.size ??
+      (costBasis / underlyingLeg.size);
+  double get costBasis => analyzer.costBasisBefore(option.strike);
 
   String? get callURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
 
@@ -50,16 +89,11 @@ class CoveredCall {
         'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
         'strategyType': 'coveredCall',
         'strategyURL': strategyURL,
-        'moneyYield': moneyYield,
-        'underlyingYield': underlyingYield,
-
         'underlying': underlying.name,
         'underlyingURL': underlyingURL,
         'underlyingToBuy': underlyingToBuy.size,
-        'premiumToReceive': premiumToReceive.size,
         'money': money.name,
         'moneySize': moneyLeg.size,
-        'moneyProfit': moneyProfit,
         'spotPrice': spotPrice,
         'call': optionLeg.asset.name,
         'callURL': callURL,
@@ -68,15 +102,14 @@ class CoveredCall {
         'formattedDate': expiration.formattedDate,
         'strikeAbsolute': strikePrice.absolute,
         'strikeRelative': strikePrice.relative,
-
-        // Where does this CC meet with the strategy of 100% underlying?
-        'breakEvenVsFullUnderlyingAbsolute': breakEvenVsFullUnderlying.absolute,
-        'breakEvenVsFullUnderlyingRelative': breakEvenVsFullUnderlying.relative,
-        // Where does this CC meet with the strategy of 100% money?
-        'breakEvenVsFullMoneyAbsolute': breakEvenVsFullMoney.absolute,
-        'breakEvenVsFullMoneyRelative': breakEvenVsFullMoney.relative,
         'moneyProbability': moneyProbability,
         'underlyingProbability': underlyingProbability,
+        'unitCostBasis': unitCostBasis,
+        'costBasis': costBasis,
+        'underlyingTaxRate': taxes.underlyingTaxRate,
+        'derivativeTaxRate': taxes.derivativeTaxRate,
+        'preTax': preTax.toJson(),
+        if (postTax != null) 'postTax': postTax!.toJson(),
       };
 
   @override
@@ -91,7 +124,8 @@ class CoveredCall {
       required this.expiration,
       required this.spotPrice,
       this.moneyProbability,
-      this.underlyingProbability})
+      this.underlyingProbability,
+      this.taxes = TaxProfile.none})
       : analyzer =
             PositionAnalyzer(strategy, underlying: underlying, money: money),
         moneyLeg = strategy[money],
@@ -99,12 +133,13 @@ class CoveredCall {
         optionLeg = strategy[option],
         underlyingToBuy = spotMarket.toAsset(-strategy[money]),
         strikePrice = PriceInfo.fromAbsolute(option.strike, spotPrice) {
-    premiumToReceive =
+    postTaxAnalyzer = analyzer.withTaxes(taxes);
+    final preTaxPremium =
         (strategy[underlying] - underlyingToBuy).singleton(underlying);
-    moneyYield = analyzer.maxYield;
-    underlyingYield = premiumToReceive.size / underlyingToBuy.size + 1.0;
-    moneyProfit = analyzer.maxProfit;
-    breakEvenVsFullUnderlying = PriceInfo.fromAbsolute(
+    final preTaxProfit = analyzer.maxProfit;
+    final preTaxMoneyYield = analyzer.maxYield;
+    final preTaxUndYield = preTaxPremium.size / underlyingToBuy.size + 1.0;
+    final preTaxBeUnd = PriceInfo.fromAbsolute(
         strategy
             .analyzeVersus(moneyLeg + spotMarket.toAsset(-moneyLeg),
                 underlying: underlying, money: money)
@@ -117,11 +152,58 @@ class CoveredCall {
           "Analyzer: $analyzer");
     }
     // Breakeven could be a whole range, for a profit-less strategy.
-    breakEvenVsFullMoney =
+    final preTaxBeMoney =
         PriceInfo.fromAbsolute(analyzer.breakevens.first.fromPrice, spotPrice);
-    if (!moneyYield.isFinite ||
-        !underlyingYield.isFinite ||
-        !moneyProfit.isFinite) {
+
+    preTax = CoveredCallMetrics(
+      moneyYield: preTaxMoneyYield,
+      underlyingYield: preTaxUndYield,
+      moneyProfit: preTaxProfit,
+      premiumToReceive: preTaxPremium,
+      breakEvenVsFullUnderlying: preTaxBeUnd,
+      breakEvenVsFullMoney: preTaxBeMoney,
+    );
+
+    if (taxes.isTaxFree) {
+      postTax = null;
+    } else {
+      final taxBelow = analyzer.valueBefore(option.strike) -
+          postTaxAnalyzer.valueBefore(option.strike);
+      final postTaxPremium = (strategy[underlying] -
+              underlyingToBuy -
+              (taxBelow == 0.0
+                  ? Position.mergeAll(const [])
+                  : spotMarket.toAsset(money.ofSize(taxBelow))))
+          .singleton(underlying);
+      final postTaxProfit = postTaxAnalyzer.valueAfter(option.strike);
+      final postTaxMoneyYield = 1.0 + postTaxProfit / (-moneyLeg.size);
+      final postTaxUndYield = postTaxPremium.size / underlyingToBuy.size + 1.0;
+      final postTaxBeUnd = PriceInfo.fromAbsolute(
+          (postTaxProfit - moneyLeg.size) / underlyingToBuy.size, spotPrice);
+      final postTaxBeMoneyPrice = postTaxAnalyzer.breakevens.isNotEmpty
+          ? postTaxAnalyzer.breakevens.first.fromPrice
+          : -postTaxAnalyzer.valueBefore(0.0) /
+              postTaxAnalyzer.deltaBefore(option.strike);
+      final postTaxBeMoney =
+          PriceInfo.fromAbsolute(postTaxBeMoneyPrice, spotPrice);
+
+      postTax = CoveredCallMetrics(
+        moneyYield: postTaxMoneyYield,
+        underlyingYield: postTaxUndYield,
+        moneyProfit: postTaxProfit,
+        premiumToReceive: postTaxPremium,
+        breakEvenVsFullUnderlying: postTaxBeUnd,
+        breakEvenVsFullMoney: postTaxBeMoney,
+      );
+    }
+
+    if (!preTax.moneyYield.isFinite ||
+        !preTax.underlyingYield.isFinite ||
+        !preTax.moneyProfit.isFinite ||
+        (postTax != null &&
+            (!postTax!.moneyYield.isFinite ||
+                !postTax!.underlyingYield.isFinite ||
+                !postTax!.moneyProfit.isFinite))) {
       throw Exception("Non-finite metrics in CoveredCall!\nStrategy: $strategy\n"
           "Analyzer: $analyzer");
     }
@@ -130,7 +212,9 @@ class CoveredCall {
   static Iterable<CoveredCall> generateAll(Iterable<Market> allMarkets,
       {required Commodity underlying,
       required Commodity money,
-      double slippage = 0.5}) sync* {
+      double slippage = 0.5,
+      double? avgPrice,
+      TaxProfile taxes = TaxProfile.none}) sync* {
     final oracle = Oracle.fromMarkets(allMarkets);
     final spotMarket = oracle.marketFor(asset: underlying, money: money);
     final spreads = VerticalSpread.generateAll(allMarkets,
@@ -155,20 +239,27 @@ class CoveredCall {
           // Out of bounds or not found
         }
 
+        Position strategy = (call.short(slippage) +
+                spotMarket.long(slippage) * option.contractLot) *
+            option.minSize;
+        if (avgPrice != null) {
+          strategy =
+              strategy.withCostBasis({underlying: money.ofSize(avgPrice)});
+        }
+
         yield CoveredCall._(
-            (call.short(slippage) +
-                    spotMarket.long(slippage) *
-                        option.contractLot) *
-                option.minSize,
-            spotMarket: spotMarket,
-            callMarket: call,
-            underlying: underlying,
-            money: money,
-            option: option,
-            expiration: expiration,
-            spotPrice: spotMarket.midPrice,
-            moneyProbability: moneyProb,
-            underlyingProbability: underlyingProb);
+          strategy,
+          spotMarket: spotMarket,
+          callMarket: call,
+          underlying: underlying,
+          money: money,
+          option: option,
+          expiration: expiration,
+          spotPrice: spotMarket.midPrice,
+          moneyProbability: moneyProb,
+          underlyingProbability: underlyingProb,
+          taxes: taxes,
+        );
       } catch (e) {
         print("Skipped Covered Call on $call due to error: $e");
       }
@@ -890,6 +981,11 @@ class PriceInfo {
   static PriceInfo fromRelative(
           double relativeTargetPrice, double baseAbsolutePrice) =>
       fromAbsolute(relativeTargetPrice * baseAbsolutePrice, baseAbsolutePrice);
+
+  Map<String, dynamic> toJson() => {
+        'absolute': absolute,
+        'relative': relative,
+      };
 }
 
 String _formatDate(DateTime dt) =>

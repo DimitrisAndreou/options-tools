@@ -6,6 +6,9 @@ document.addEventListener('alpine:init', () => {
     slippage: 0.5,
     minDte: 7,
     maxDte: 1092,
+    avgPrice: '',
+    underlyingTax: 0,
+    derivativeTax: 0,
     selectedId: null,
     details: null,
     unrealized: null,
@@ -14,19 +17,30 @@ document.addEventListener('alpine:init', () => {
     entryPosition: null,
 
     // DTE Formatting helper
-    formatDte(days) {
+    formatDteDate(days) {
       const date = new Date();
       date.setDate(date.getDate() + days);
-      const dateString = new Intl.DateTimeFormat('en-GB', {
+      return new Intl.DateTimeFormat('en-GB', {
         day: 'numeric',
-        month: 'long',
+        month: 'short',
         year: 'numeric'
       }).format(date);
-      return `${dateString} (${days}d)`;
+    },
+
+    formatDte(days) {
+      return `${this.formatDteDate(days)} (${days}d)`;
     },
 
     get dteValueDisplay() {
-      return `${this.formatDte(this.minDte)} - ${this.formatDte(this.maxDte)}`;
+      return `${this.formatDte(this.minDte)} – ${this.formatDte(this.maxDte)}`;
+    },
+
+    get dteDateRangeDisplay() {
+      return `${this.formatDteDate(this.minDte)} – ${this.formatDteDate(this.maxDte)}`;
+    },
+
+    get dteDaysRangeDisplay() {
+      return `${this.minDte}d – ${this.maxDte}d`;
     },
 
     get dteRangeStyle() {
@@ -126,6 +140,9 @@ document.addEventListener('alpine:init', () => {
       this.slippage = parseFloat(UrlManager.get(URL_PARAMS.SLIPPAGE, '0.5'));
       this.minDte = parseInt(UrlManager.get(URL_PARAMS.MIN_DTE, '7'), 10);
       this.maxDte = parseInt(UrlManager.get(URL_PARAMS.MAX_DTE, '1092'), 10);
+      this.avgPrice = UrlManager.get(URL_PARAMS.AVG_PRICE, '') ?? '';
+      this.underlyingTax = parseFloat(UrlManager.get(URL_PARAMS.UND_TAX, '0')) || 0;
+      this.derivativeTax = parseFloat(UrlManager.get(URL_PARAMS.DERIV_TAX, '0')) || 0;
       this.selectedId = UrlManager.get(URL_PARAMS.ID);
 
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
@@ -150,6 +167,9 @@ document.addEventListener('alpine:init', () => {
         const slippage = this.slippage;
         const minDte = this.minDte;
         const maxDte = this.maxDte;
+        const avgPrice = this.avgPrice;
+        const underlyingTax = this.underlyingTax;
+        const derivativeTax = this.derivativeTax;
         const selectedId = this.selectedId;
         const entryPosition = this.entryPosition;
 
@@ -159,6 +179,9 @@ document.addEventListener('alpine:init', () => {
         UrlManager.setWithDefault(url, URL_PARAMS.SLIPPAGE, slippage, 0.5);
         UrlManager.setWithDefault(url, URL_PARAMS.MIN_DTE, minDte, 7);
         UrlManager.setWithDefault(url, URL_PARAMS.MAX_DTE, maxDte, 1092);
+        UrlManager.set(url, URL_PARAMS.AVG_PRICE, (avgPrice !== '' && avgPrice !== null) ? String(avgPrice) : null);
+        UrlManager.setWithDefault(url, URL_PARAMS.UND_TAX, Number(underlyingTax) || 0, 0);
+        UrlManager.setWithDefault(url, URL_PARAMS.DERIV_TAX, Number(derivativeTax) || 0, 0);
         UrlManager.set(url, URL_PARAMS.ID, selectedId || null);
 
         if (entryPosition) {
@@ -192,6 +215,9 @@ document.addEventListener('alpine:init', () => {
       this.slippage = parseFloat(UrlManager.get(URL_PARAMS.SLIPPAGE, '0.5'));
       this.minDte = parseInt(UrlManager.get(URL_PARAMS.MIN_DTE, '7'), 10);
       this.maxDte = parseInt(UrlManager.get(URL_PARAMS.MAX_DTE, '1092'), 10);
+      this.avgPrice = UrlManager.get(URL_PARAMS.AVG_PRICE, '') ?? '';
+      this.underlyingTax = parseFloat(UrlManager.get(URL_PARAMS.UND_TAX, '0')) || 0;
+      this.derivativeTax = parseFloat(UrlManager.get(URL_PARAMS.DERIV_TAX, '0')) || 0;
       
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
       if (this.strategy === 'coveredCall' && encodedPos) {
@@ -215,12 +241,16 @@ document.addEventListener('alpine:init', () => {
 
     clearAllStrategyParams(url) {
       UrlManager.set(url, URL_PARAMS.ID, null);
-      UrlManager.clearParams(url, [URL_PARAMS.POS]);
+      UrlManager.clearParams(url, [URL_PARAMS.POS, URL_PARAMS.AVG_PRICE]);
     },
 
     submitTicker() {
       const userInput = this.tickerInput.trim().toUpperCase();
       if (userInput) {
+        if (userInput === this.ticker) {
+          this.reloadData();
+          return;
+        }
         const url = UrlManager.createUrl();
         UrlManager.set(url, URL_PARAMS.TICKER, userInput);
         this.clearAllStrategyParams(url);
@@ -265,7 +295,16 @@ document.addEventListener('alpine:init', () => {
           throw new Error(`Fetcher ${fetcherName} is not registered on window by Dart.`);
         }
 
-        const rawData = await fetcher(this.ticker, this.slippage, this.minDte, this.maxDte);
+        const parsedAvg = (this.avgPrice !== '' && this.avgPrice !== null)
+          ? parseFloat(this.avgPrice)
+          : NaN;
+        const avgPriceArg = (!isNaN(parsedAvg) && parsedAvg >= 0) ? parsedAvg : null;
+        const undTaxRate = (parseFloat(this.underlyingTax) || 0) / 100.0;
+        const derivTaxRate = (parseFloat(this.derivativeTax) || 0) / 100.0;
+
+        const rawData = this.strategy === 'coveredCall'
+          ? await fetcher(this.ticker, this.slippage, this.minDte, this.maxDte, avgPriceArg, undTaxRate, derivTaxRate)
+          : await fetcher(this.ticker, this.slippage, this.minDte, this.maxDte);
         const dataJson = JSON.parse(rawData);
         console.log({ strategy: this.strategy, dataJson });
 

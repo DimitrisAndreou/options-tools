@@ -3,6 +3,7 @@
 function prepareCCData(value) {
   const money = value.money;
   const underlying = value.underlying;
+  const preTax = value.preTax;
 
   return {
     underlying,
@@ -22,22 +23,22 @@ function prepareCCData(value) {
     capitalRequiredUnderlying: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
 
     // Yields
-    moneyYield: percentFmt.format(value.moneyYield - 1.0),
-    moneyProfit: `${dollarFmt.format(value.moneyProfit)}`,
-    underlyingYield: percentFmt.format(value.underlyingYield - 1.0),
-    underlyingProfit: `${underlyingFmt.format(value.premiumToReceive)} ${underlying}`,
+    moneyYield: percentFmt.format(preTax.moneyYield - 1.0),
+    moneyProfit: `${dollarFmt.format(preTax.moneyProfit)}`,
+    underlyingYield: percentFmt.format(preTax.underlyingYield - 1.0),
+    underlyingProfit: `${underlyingFmt.format(preTax.premiumToReceive)} ${underlying}`,
 
     // Breakeven / Caps
-    beAbsolute: dollarFmt.format(value.breakEvenVsFullMoneyAbsolute),
-    beRelative: percentFmt.format(value.breakEvenVsFullMoneyRelative - 1.0),
-    capAbsolute: dollarFmt.format(value.breakEvenVsFullUnderlyingAbsolute),
-    capRelative: percentFmt.format(value.breakEvenVsFullUnderlyingRelative - 1.0),
+    beAbsolute: dollarFmt.format(preTax.breakEvenVsFullMoney.absolute),
+    beRelative: percentFmt.format(preTax.breakEvenVsFullMoney.relative - 1.0),
+    capAbsolute: dollarFmt.format(preTax.breakEvenVsFullUnderlying.absolute),
+    capRelative: percentFmt.format(preTax.breakEvenVsFullUnderlying.relative - 1.0),
 
     // Instructions
     buyAmount: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
     buyCost: dollarFmt.format(-value.moneySize),
     sellAmount: `${-value.callSize} call(s)`,
-    sellPremium: `${underlyingFmt.format(value.premiumToReceive)} ${underlying}`,
+    sellPremium: `${underlyingFmt.format(preTax.premiumToReceive)} ${underlying}`,
 
     // Probabilities
     moneyProbability: value.moneyProbability,
@@ -100,20 +101,18 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const hasDiff = Boolean(entryPos && currentPos);
     const activePos = currentPos || entryPos;
+    const hasTaxes = Boolean(activePos?.postTax || entryPos?.postTax);
 
     // Rolls mean replacing the old position with a new one.
     // Their difference does not represent a loss or a gain.
     // If it's not a roll, i.e. we are comparing the same position in two different moments,
     // then the difference is the unrealized loss or gain.
-    // In both cases we are showing the diff of the various important aspects,
-    // but only the direction of the good/bad changes.
-    // E.g. for an unrealized result, going to less capital means a capital loss.
-    // But for a roll, it means that we get more premium, thus capital return,
-    // thus we retain less risk, which is "good".
     const isRoll = hasDiff && currentPos.id !== entryPos.id;
     const mode = hasDiff ? (isRoll ? 'roll' : 'unrealized') : (entryPos ? 'pinnedOnly' : 'single');
 
     const header = prepareCCData(activePos);
+
+    const formatSignedDollar = (val) => `${val >= 0 ? '+' : ''}${dollarFmt.format(val)}`;
 
     const formatContractCell = (pos, compact) => {
       if (!pos) return '—';
@@ -155,10 +154,17 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       return `<span class="text-neutral text-nowrap">${underlyingFmt.format(pos.underlyingToBuy)}${suffix}</span>`;
     };
 
+    const formatCostBasisCell = (pos, compact) => {
+      if (!pos || pos.costBasis == null) return '—';
+      const sep = compact ? '<br/>' : ' ';
+      return `<span class="text-neutral text-nowrap">${dollarFmt.format(pos.costBasis)}</span>${sep}<small class="text-muted-alt text-nowrap">(@${dollarFmt.format(pos.unitCostBasis)})</small>`;
+    };
+
     const formatMoneyYieldCell = (pos, compact) => {
-      if (!pos) return '—';
-      const yieldStr = percentFmt.format(pos.moneyYield - 1.0);
-      const profitStr = `+${dollarFmt.format(pos.moneyProfit)}`;
+      if (!pos || !pos.preTax) return '—';
+      const m = pos.preTax;
+      const yieldStr = percentFmt.format(m.moneyYield - 1.0);
+      const profitStr = formatSignedDollar(m.moneyProfit);
       const probStr = pos.moneyProbability != null ? `${Math.round(pos.moneyProbability * 100)}% prob` : '';
       if (compact) {
         return `<span class="text-good text-nowrap">${yieldStr}</span><br/><small class="text-good-alt text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">${probStr}</small>` : ''}`;
@@ -166,31 +172,103 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       return `<span class="text-good text-nowrap">${yieldStr} ${pos.money}</span> <small class="text-good-alt text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">(${probStr})</small>` : ''}`;
     };
 
+    const formatPostTaxMoneyYieldCell = (pos, compact) => {
+      if (!pos || !pos.postTax) return '—';
+      const pre = pos.preTax;
+      const post = pos.postTax;
+      const yieldVal = post.moneyYield - 1.0;
+      const yieldStr = percentFmt.format(yieldVal);
+      const profitStr = formatSignedDollar(post.moneyProfit);
+      const cls = yieldVal >= 0 ? 'text-good' : 'text-bad';
+      const altCls = post.moneyProfit >= 0 ? 'text-good-alt' : 'text-bad';
+      const relImpact = post.moneyYield / pre.moneyYield - 1.0;
+      const absImpact = post.moneyProfit - pre.moneyProfit;
+      const impactCls = relImpact > 0 ? 'text-good' : (relImpact < 0 ? 'text-bad' : 'text-muted-alt');
+      if (compact) {
+        return `<span class="${cls} text-nowrap">${yieldStr}</span><br/><small class="${altCls} text-nowrap">(${profitStr})</small><br/><small class="${impactCls} text-nowrap">${percentFmt.format(relImpact)} (${formatSignedDollar(absImpact)})</small>`;
+      }
+      return `<span class="${cls} text-nowrap">${yieldStr} ${pos.money}</span> <small class="${altCls} text-nowrap">(${profitStr})</small><br/><small class="${impactCls} text-nowrap">Tax impact: ${percentFmt.format(relImpact)} (${formatSignedDollar(absImpact)})</small>`;
+    };
+
     const formatUndYieldCell = (pos, compact) => {
-      if (!pos) return '—';
-      const yieldStr = percentFmt.format(pos.underlyingYield - 1.0);
-      const profitStr = `+${underlyingFmt.format(pos.premiumToReceive)} ${pos.underlying}`;
+      if (!pos || !pos.preTax) return '—';
+      const m = pos.preTax;
+      const yieldStr = percentFmt.format(m.underlyingYield - 1.0);
+      const profitStr = `+${underlyingFmt.format(m.premiumToReceive)} ${pos.underlying}`;
       const probStr = pos.underlyingProbability != null ? `${Math.round(pos.underlyingProbability * 100)}% prob` : '';
       if (compact) {
-        return `<span class="text-good text-nowrap">${yieldStr}</span><br/><small class="text-good-alt text-nowrap">(+${underlyingFmt.format(pos.premiumToReceive)})</small>${probStr ? `<br/><small class="text-probs text-nowrap">${probStr}</small>` : ''}`;
+        return `<span class="text-good text-nowrap">${yieldStr}</span><br/><small class="text-good-alt text-nowrap">(+${underlyingFmt.format(m.premiumToReceive)})</small>${probStr ? `<br/><small class="text-probs text-nowrap">${probStr}</small>` : ''}`;
       }
       return `<span class="text-good text-nowrap">${yieldStr} ${pos.underlying}</span> <small class="text-good-alt text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">(${probStr})</small>` : ''}`;
     };
 
+    const formatPostTaxUndYieldCell = (pos, compact) => {
+      if (!pos || !pos.postTax) return '—';
+      const pre = pos.preTax;
+      const post = pos.postTax;
+      const yieldVal = post.underlyingYield - 1.0;
+      const yieldStr = percentFmt.format(yieldVal);
+      const sign = post.premiumToReceive >= 0 ? '+' : '';
+      const cls = yieldVal >= 0 ? 'text-good' : 'text-bad';
+      const altCls = post.premiumToReceive >= 0 ? 'text-good-alt' : 'text-bad';
+      const relImpact = post.underlyingYield / pre.underlyingYield - 1.0;
+      const absImpact = post.premiumToReceive - pre.premiumToReceive;
+      const impactSign = absImpact >= 0 ? '+' : '';
+      const impactCls = relImpact > 0 ? 'text-good' : (relImpact < 0 ? 'text-bad' : 'text-muted-alt');
+      if (compact) {
+        return `<span class="${cls} text-nowrap">${yieldStr}</span><br/><small class="${altCls} text-nowrap">(${sign}${underlyingFmt.format(post.premiumToReceive)})</small><br/><small class="${impactCls} text-nowrap">${percentFmt.format(relImpact)} (${impactSign}${underlyingFmt.format(absImpact)})</small>`;
+      }
+      return `<span class="${cls} text-nowrap">${yieldStr} ${pos.underlying}</span> <small class="${altCls} text-nowrap">(${sign}${underlyingFmt.format(post.premiumToReceive)} ${pos.underlying})</small><br/><small class="${impactCls} text-nowrap">Tax impact: ${percentFmt.format(relImpact)} (${impactSign}${underlyingFmt.format(absImpact)} ${pos.underlying})</small>`;
+    };
+
     const formatBeMoneyCell = (pos, compact) => {
-      if (!pos) return '—';
-      const absStr = dollarFmt.format(pos.breakEvenVsFullMoneyAbsolute);
-      const relStr = percentFmt.format(pos.breakEvenVsFullMoneyRelative - 1.0);
+      if (!pos || !pos.preTax) return '—';
+      const be = pos.preTax.breakEvenVsFullMoney;
+      const absStr = dollarFmt.format(be.absolute);
+      const relStr = percentFmt.format(be.relative - 1.0);
       const sep = compact ? '<br/>' : ' ';
       return `<span class="text-neutral text-nowrap">${absStr}</span>${sep}<small class="text-bad text-nowrap">(${relStr})</small>`;
     };
 
+    const formatPostTaxBeMoneyCell = (pos, compact) => {
+      if (!pos || !pos.postTax) return '—';
+      const preBe = pos.preTax.breakEvenVsFullMoney;
+      const postBe = pos.postTax.breakEvenVsFullMoney;
+      const absStr = dollarFmt.format(postBe.absolute);
+      const relStr = percentFmt.format(postBe.relative - 1.0);
+      const absDiff = postBe.absolute - preBe.absolute;
+      const relDiff = preBe.absolute > 0
+        ? (postBe.absolute / preBe.absolute - 1.0)
+        : 0;
+      const impactCls = absDiff < 0 ? 'text-good' : (absDiff > 0 ? 'text-bad' : 'text-muted-alt');
+      const sep = compact ? '<br/>' : ' ';
+      const prefix = compact ? '' : 'Tax impact: ';
+      return `<span class="text-neutral text-nowrap">${absStr}</span>${sep}<small class="text-bad text-nowrap">(${relStr})</small><br/><small class="${impactCls} text-nowrap">${prefix}${formatSignedDollar(absDiff)} (${percentFmt.format(relDiff)})</small>`;
+    };
+
     const formatBeUndCell = (pos, compact) => {
-      if (!pos) return '—';
-      const absStr = dollarFmt.format(pos.breakEvenVsFullUnderlyingAbsolute);
-      const relStr = percentFmt.format(pos.breakEvenVsFullUnderlyingRelative - 1.0);
+      if (!pos || !pos.preTax) return '—';
+      const be = pos.preTax.breakEvenVsFullUnderlying;
+      const absStr = dollarFmt.format(be.absolute);
+      const relStr = percentFmt.format(be.relative - 1.0);
       const sep = compact ? '<br/>' : ' ';
       return `<span class="text-neutral text-nowrap">${absStr}</span>${sep}<small class="text-good text-nowrap">(${relStr})</small>`;
+    };
+
+    const formatPostTaxBeUndCell = (pos, compact) => {
+      if (!pos || !pos.postTax) return '—';
+      const preBe = pos.preTax.breakEvenVsFullUnderlying;
+      const postBe = pos.postTax.breakEvenVsFullUnderlying;
+      const absStr = dollarFmt.format(postBe.absolute);
+      const relStr = percentFmt.format(postBe.relative - 1.0);
+      const absDiff = postBe.absolute - preBe.absolute;
+      const relDiff = preBe.absolute > 0
+        ? (postBe.absolute / preBe.absolute - 1.0)
+        : 0;
+      const impactCls = absDiff > 0 ? 'text-good' : (absDiff < 0 ? 'text-bad' : 'text-muted-alt');
+      const sep = compact ? '<br/>' : ' ';
+      const prefix = compact ? '' : 'Tax impact: ';
+      return `<span class="text-neutral text-nowrap">${absStr}</span>${sep}<small class="text-good text-nowrap">(${relStr})</small><br/><small class="${impactCls} text-nowrap">${prefix}${formatSignedDollar(absDiff)} (${percentFmt.format(relDiff)})</small>`;
     };
 
     // Diff calculations when both entryPos and currentPos are present
@@ -200,10 +278,15 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     let strikeDiffText = '', strikeDiffClass = 'text-neutral-alt';
     let moneyDiffText = '', moneyDiffClass = 'text-neutral-alt';
     let undDiffText = '', undDiffClass = 'text-neutral-alt';
+    let costBasisDiffText = '', costBasisDiffClass = 'text-neutral-alt';
     let moneyYieldDiffText = '', moneyYieldDiffClass = 'text-neutral-alt';
+    let postTaxMoneyYieldDiffText = '', postTaxMoneyYieldDiffClass = 'text-neutral-alt';
     let undYieldDiffText = '', undYieldDiffClass = 'text-neutral-alt';
+    let postTaxUndYieldDiffText = '', postTaxUndYieldDiffClass = 'text-neutral-alt';
     let beMoneyDiffText = '', beMoneyDiffClass = 'text-neutral-alt';
+    let postTaxBeMoneyDiffText = '', postTaxBeMoneyDiffClass = 'text-neutral-alt';
     let beUndDiffText = '', beUndDiffClass = 'text-neutral-alt';
+    let postTaxBeUndDiffText = '', postTaxBeUndDiffClass = 'text-neutral-alt';
 
     if (hasDiff) {
       // 1. Contract
@@ -251,29 +334,70 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
         ? (undDiff <= 0 ? 'text-good' : 'text-bad')
         : (undDiff >= 0 ? 'text-good' : 'text-bad');
 
+      // 6b. Cost Basis
+      const cbDiff = (currentPos.costBasis ?? 0) - (entryPos.costBasis ?? 0);
+      costBasisDiffText = cbDiff === 0 ? 'Same' : `${formatSignedDollar(cbDiff)}`;
+      costBasisDiffClass = cbDiff === 0 ? 'text-muted-alt' : 'text-neutral-alt';
+
       // 7. Money Yield
-      const moneyYieldRatioChange = currentPos.moneyYield / entryPos.moneyYield - 1.0;
-      const profitDiff = currentPos.moneyProfit - entryPos.moneyProfit;
-      moneyYieldDiffText = `${percentFmt.format(moneyYieldRatioChange)}<br/><small>(${profitDiff >= 0 ? '+' : ''}${dollarFmt.format(profitDiff)})</small>`;
+      const moneyYieldRatioChange = currentPos.preTax.moneyYield / entryPos.preTax.moneyYield - 1.0;
+      const profitDiff = currentPos.preTax.moneyProfit - entryPos.preTax.moneyProfit;
+      moneyYieldDiffText = `${percentFmt.format(moneyYieldRatioChange)}<br/><small>(${formatSignedDollar(profitDiff)})</small>`;
       moneyYieldDiffClass = moneyYieldRatioChange >= 0 ? 'text-good' : 'text-bad';
 
+      if (hasTaxes && entryPos.postTax && currentPos.postTax) {
+        const ptRatioChange = currentPos.postTax.moneyYield / entryPos.postTax.moneyYield - 1.0;
+        const ptProfitDiff = currentPos.postTax.moneyProfit - entryPos.postTax.moneyProfit;
+        postTaxMoneyYieldDiffText = `${percentFmt.format(ptRatioChange)}<br/><small>(${formatSignedDollar(ptProfitDiff)})</small>`;
+        postTaxMoneyYieldDiffClass = ptRatioChange >= 0 ? 'text-good' : 'text-bad';
+      }
+
       // 8. Underlying Yield
-      const undYieldRatioChange = currentPos.underlyingYield / entryPos.underlyingYield - 1.0;
-      const premDiff = currentPos.premiumToReceive - entryPos.premiumToReceive;
+      const undYieldRatioChange = currentPos.preTax.underlyingYield / entryPos.preTax.underlyingYield - 1.0;
+      const premDiff = currentPos.preTax.premiumToReceive - entryPos.preTax.premiumToReceive;
       undYieldDiffText = `${percentFmt.format(undYieldRatioChange)}<br/><small>(${premDiff >= 0 ? '+' : ''}${underlyingFmt.format(premDiff)})</small>`;
       undYieldDiffClass = undYieldRatioChange >= 0 ? 'text-good' : 'text-bad';
 
+      if (hasTaxes && entryPos.postTax && currentPos.postTax) {
+        const ptUndRatioChange = currentPos.postTax.underlyingYield / entryPos.postTax.underlyingYield - 1.0;
+        const ptPremDiff = currentPos.postTax.premiumToReceive - entryPos.postTax.premiumToReceive;
+        postTaxUndYieldDiffText = `${percentFmt.format(ptUndRatioChange)}<br/><small>(${ptPremDiff >= 0 ? '+' : ''}${underlyingFmt.format(ptPremDiff)})</small>`;
+        postTaxUndYieldDiffClass = ptUndRatioChange >= 0 ? 'text-good' : 'text-bad';
+      }
+
       // 9. Breakeven (vs full money)
-      const beMoneyDiff = currentPos.breakEvenVsFullMoneyAbsolute - entryPos.breakEvenVsFullMoneyAbsolute;
-      const beMoneyDiffPct = entryPos.breakEvenVsFullMoneyAbsolute > 0 ? (beMoneyDiff / entryPos.breakEvenVsFullMoneyAbsolute) * 100 : 0;
+      const entryBeMoney = entryPos.preTax.breakEvenVsFullMoney.absolute;
+      const curBeMoney = currentPos.preTax.breakEvenVsFullMoney.absolute;
+      const beMoneyDiff = curBeMoney - entryBeMoney;
+      const beMoneyDiffPct = entryBeMoney > 0 ? (beMoneyDiff / entryBeMoney) * 100 : 0;
       beMoneyDiffText = `${beMoneyDiff >= 0 ? '+' : ''}${dollarFmt.format(beMoneyDiff)}<br/><small>(${beMoneyDiff >= 0 ? '+' : ''}${beMoneyDiffPct.toFixed(1)}%)</small>`;
       beMoneyDiffClass = beMoneyDiff <= 0 ? 'text-good' : 'text-bad';
 
+      if (hasTaxes && entryPos.postTax && currentPos.postTax) {
+        const ptEntryBeMoney = entryPos.postTax.breakEvenVsFullMoney.absolute;
+        const ptCurBeMoney = currentPos.postTax.breakEvenVsFullMoney.absolute;
+        const ptBeMoneyDiff = ptCurBeMoney - ptEntryBeMoney;
+        const ptBeMoneyDiffPct = ptEntryBeMoney > 0 ? (ptBeMoneyDiff / ptEntryBeMoney) * 100 : 0;
+        postTaxBeMoneyDiffText = `${ptBeMoneyDiff >= 0 ? '+' : ''}${dollarFmt.format(ptBeMoneyDiff)}<br/><small>(${ptBeMoneyDiff >= 0 ? '+' : ''}${ptBeMoneyDiffPct.toFixed(1)}%)</small>`;
+        postTaxBeMoneyDiffClass = ptBeMoneyDiff <= 0 ? 'text-good' : 'text-bad';
+      }
+
       // 10. Breakeven (vs full underlying)
-      const beUndDiff = currentPos.breakEvenVsFullUnderlyingAbsolute - entryPos.breakEvenVsFullUnderlyingAbsolute;
-      const beUndDiffPct = entryPos.breakEvenVsFullUnderlyingAbsolute > 0 ? (beUndDiff / entryPos.breakEvenVsFullUnderlyingAbsolute) * 100 : 0;
+      const entryBeUnd = entryPos.preTax.breakEvenVsFullUnderlying.absolute;
+      const curBeUnd = currentPos.preTax.breakEvenVsFullUnderlying.absolute;
+      const beUndDiff = curBeUnd - entryBeUnd;
+      const beUndDiffPct = entryBeUnd > 0 ? (beUndDiff / entryBeUnd) * 100 : 0;
       beUndDiffText = `${beUndDiff >= 0 ? '+' : ''}${dollarFmt.format(beUndDiff)}<br/><small>(${beUndDiff >= 0 ? '+' : ''}${beUndDiffPct.toFixed(1)}%)</small>`;
       beUndDiffClass = beUndDiff >= 0 ? 'text-good' : 'text-bad';
+
+      if (hasTaxes && entryPos.postTax && currentPos.postTax) {
+        const ptEntryBeUnd = entryPos.postTax.breakEvenVsFullUnderlying.absolute;
+        const ptCurBeUnd = currentPos.postTax.breakEvenVsFullUnderlying.absolute;
+        const ptBeUndDiff = ptCurBeUnd - ptEntryBeUnd;
+        const ptBeUndDiffPct = ptEntryBeUnd > 0 ? (ptBeUndDiff / ptEntryBeUnd) * 100 : 0;
+        postTaxBeUndDiffText = `${ptBeUndDiff >= 0 ? '+' : ''}${dollarFmt.format(ptBeUndDiff)}<br/><small>(${ptBeUndDiff >= 0 ? '+' : ''}${ptBeUndDiffPct.toFixed(1)}%)</small>`;
+        postTaxBeUndDiffClass = ptBeUndDiff >= 0 ? 'text-good' : 'text-bad';
+      }
     }
 
     const sameStrike = !hasDiff || Number(entryPos.strikeAbsolute) === Number(currentPos.strikeAbsolute);
@@ -338,6 +462,15 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
             single: formatCapitalUnderlyingCell(activePos, false),
             diff: undDiffText,
             diffClass: undDiffClass
+          },
+          {
+            label: `Cost Basis (${activePos.money})`,
+            subtitle: null,
+            before: formatCostBasisCell(entryPos, true),
+            after: formatCostBasisCell(currentPos, true),
+            single: formatCostBasisCell(activePos, false),
+            diff: costBasisDiffText,
+            diffClass: costBasisDiffClass
           }
         ]
       },
@@ -345,46 +478,98 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
         title: 'Outcomes at Expiration',
         rows: [
           {
+            key: 'moneyYield',
             label: `${activePos.money} Yield`,
             subtitle: `If ${activePos.underlying} &ge; ${strikeLabelForOutcome}`,
+            hasSubrow: hasTaxes,
             before: formatMoneyYieldCell(entryPos, true),
             after: formatMoneyYieldCell(currentPos, true),
             single: formatMoneyYieldCell(activePos, false),
             diff: moneyYieldDiffText,
             diffClass: moneyYieldDiffClass
           },
+          ...(hasTaxes ? [{
+            key: 'moneyYieldPostTax',
+            label: 'Post-Tax:',
+            subtitle: null,
+            isSubrow: true,
+            before: formatPostTaxMoneyYieldCell(entryPos, true),
+            after: formatPostTaxMoneyYieldCell(currentPos, true),
+            single: formatPostTaxMoneyYieldCell(activePos, false),
+            diff: postTaxMoneyYieldDiffText,
+            diffClass: postTaxMoneyYieldDiffClass
+          }] : []),
           {
+            key: 'undYield',
             label: `${activePos.underlying} Yield`,
             subtitle: `If ${activePos.underlying} &lt; ${strikeLabelForOutcome}`,
+            hasSubrow: hasTaxes,
             before: formatUndYieldCell(entryPos, true),
             after: formatUndYieldCell(currentPos, true),
             single: formatUndYieldCell(activePos, false),
             diff: undYieldDiffText,
             diffClass: undYieldDiffClass
-          }
+          },
+          ...(hasTaxes ? [{
+            key: 'undYieldPostTax',
+            label: 'Post-Tax:',
+            subtitle: null,
+            isSubrow: true,
+            before: formatPostTaxUndYieldCell(entryPos, true),
+            after: formatPostTaxUndYieldCell(currentPos, true),
+            single: formatPostTaxUndYieldCell(activePos, false),
+            diff: postTaxUndYieldDiffText,
+            diffClass: postTaxUndYieldDiffClass
+          }] : [])
         ]
       },
       {
         title: 'Breakevens',
         rows: [
           {
+            key: 'beMoney',
             label: `vs 100% ${activePos.money}`,
             subtitle: `<i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>Less ${activePos.money} below this`,
+            hasSubrow: hasTaxes,
             before: formatBeMoneyCell(entryPos, true),
             after: formatBeMoneyCell(currentPos, true),
             single: formatBeMoneyCell(activePos, false),
             diff: beMoneyDiffText,
             diffClass: beMoneyDiffClass
           },
+          ...(hasTaxes ? [{
+            key: 'beMoneyPostTax',
+            label: 'Post-Tax:',
+            subtitle: null,
+            isSubrow: true,
+            before: formatPostTaxBeMoneyCell(entryPos, true),
+            after: formatPostTaxBeMoneyCell(currentPos, true),
+            single: formatPostTaxBeMoneyCell(activePos, false),
+            diff: postTaxBeMoneyDiffText,
+            diffClass: postTaxBeMoneyDiffClass
+          }] : []),
           {
+            key: 'beUnd',
             label: `vs 100% ${activePos.underlying}`,
             subtitle: `<i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>Less ${activePos.underlying} above this`,
+            hasSubrow: hasTaxes,
             before: formatBeUndCell(entryPos, true),
             after: formatBeUndCell(currentPos, true),
             single: formatBeUndCell(activePos, false),
             diff: beUndDiffText,
             diffClass: beUndDiffClass
-          }
+          },
+          ...(hasTaxes ? [{
+            key: 'beUndPostTax',
+            label: 'Post-Tax:',
+            subtitle: null,
+            isSubrow: true,
+            before: formatPostTaxBeUndCell(entryPos, true),
+            after: formatPostTaxBeUndCell(currentPos, true),
+            single: formatPostTaxBeUndCell(activePos, false),
+            diff: postTaxBeUndDiffText,
+            diffClass: postTaxBeUndDiffClass
+          }] : [])
         ]
       }
     ];
@@ -428,24 +613,26 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 function calculateOverlay(target) {
   const store = getAppStore();
   const entryPosition = store ? store.entryPosition : null;
-  if (!entryPosition) return null;
+  if (!entryPosition || !entryPosition.preTax) return null;
 
-  const { moneyYield, underlyingYield } = entryPosition;
-  if (!target) {
+  const { moneyYield, underlyingYield } = entryPosition.preTax;
+  if (!target || !target.preTax) {
     return {
       entry: [moneyYield, underlyingYield],
       current: null
     };
   }
 
-  const moneyRatio = target.moneyYield ? moneyYield / target.moneyYield : null;
-  const underlyingRatio = target.underlyingYield ? underlyingYield / target.underlyingYield : null;
+  const targetMoneyYield = target.preTax.moneyYield;
+  const targetUndYield = target.preTax.underlyingYield;
+  const moneyRatio = targetMoneyYield ? moneyYield / targetMoneyYield : null;
+  const underlyingRatio = targetUndYield ? underlyingYield / targetUndYield : null;
   const moneyDiffers = moneyRatio !== null && Math.abs(moneyRatio - 1.0) > 0.0001;
   const underlyingDiffers = underlyingRatio !== null && Math.abs(underlyingRatio - 1.0) > 0.0001;
 
   return {
     entry: [moneyYield, underlyingYield],
-    current: (moneyDiffers || underlyingDiffers) ? [target.moneyYield, target.underlyingYield] : null
+    current: (moneyDiffers || underlyingDiffers) ? [targetMoneyYield, targetUndYield] : null
   };
 }
 
@@ -457,10 +644,16 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
   const targetItem = data.find(item => item.id === idToSelect);
   const overlay = calculateOverlay(targetItem);
 
+  const chartSource = data.map(item => ({
+    ...item,
+    moneyYield: item.preTax.moneyYield,
+    underlyingYield: item.preTax.underlyingYield
+  }));
+
   const dataset = {
     id: "original",
     dimensions: ["moneyYield", "underlyingYield", "DTE", "id"],
-    source: data
+    source: chartSource
   };
   const highlightDataset = {
     id: 'highlightDataset',

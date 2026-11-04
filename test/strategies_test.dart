@@ -53,15 +53,11 @@ void main() {
           'id': '2026-12-31~1000',
           'strategyType': 'coveredCall',
           'strategyURL': null,
-          'moneyYield': 1.0526315789473684,
-          'underlyingYield': 1.0526315789473686,
           'underlying': 'BTC',
           'underlyingURL': 'https://www.deribit.com/spot/BTC_USDT',
           'underlyingToBuy': 0.95,
-          'premiumToReceive': 0.050000000000000044,
           'money': 'USD',
           'moneySize': -950.0,
-          'moneyProfit': 50.0,
           'spotPrice': 1000.0,
           'call': 'BTC-1000-C',
           'callURL':
@@ -70,13 +66,105 @@ void main() {
           'formattedDate': '31 December 2026',
           'strikeAbsolute': 1000.0,
           'strikeRelative': 1.0,
-          'breakEvenVsFullUnderlyingAbsolute': 1052.6315789473686,
-          'breakEvenVsFullUnderlyingRelative': 1.0526315789473686,
-          'breakEvenVsFullMoneyAbsolute': 950.0,
-          'breakEvenVsFullMoneyRelative': 0.95,
           'moneyProbability': null,
-          'underlyingProbability': null
+          'underlyingProbability': null,
+          'unitCostBasis': 1000.0,
+          'costBasis': 1000.0,
+          'underlyingTaxRate': 0.0,
+          'derivativeTaxRate': 0.0,
+          'preTax': {
+            'moneyYield': 1.0526315789473684,
+            'underlyingYield': 1.0526315789473686,
+            'moneyProfit': 50.0,
+            'premiumToReceive': 0.050000000000000044,
+            'breakEvenVsFullUnderlying': {
+              'absolute': 1052.6315789473686,
+              'relative': 1.0526315789473686,
+            },
+            'breakEvenVsFullMoney': {
+              'absolute': 950.0,
+              'relative': 0.95,
+            },
+          },
         }));
+  });
+
+  test('CoveredCall with custom avgPrice and TaxProfile', () {
+    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
+    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
+
+    final spotMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 1000.0,
+      askPrice: 1000.0,
+    );
+
+    final callOption = Option(
+      'BTC-1100-C',
+      underlying: btc,
+      money: usd,
+      strike: 1100.0,
+      isCall: true,
+      expiration: expiration,
+      venues: {Venue.Deribit},
+    );
+
+    final callMarket = Market.create(
+      asset: callOption,
+      money: usd,
+      bidPrice: 50.0,
+      askPrice: 50.0,
+    );
+
+    const taxes = TaxProfile(
+      underlyingTaxRate: 0.20,
+      derivativeTaxRate: 0.30,
+    );
+
+    final coveredCalls = CoveredCall.generateAll(
+      [spotMarket, callMarket],
+      underlying: btc,
+      money: usd,
+      slippage: 0.0,
+      avgPrice: 500.0,
+      taxes: taxes,
+    ).toList();
+
+    expect(coveredCalls.length, equals(1));
+    final cc = coveredCalls.first;
+
+    // Pre-tax metrics:
+    expect(cc.unitCostBasis, equals(500.0));
+    expect(cc.costBasis, equals(500.0));
+    expect(cc.preTax.moneyProfit, equals(150.0)); // 1100 - 950 = 150
+    expect(cc.preTax.moneyYield, closeTo(1.0 + 150.0 / 950.0, 1e-12));
+    expect(cc.preTax.premiumToReceive.size, closeTo(0.05, 1e-12));
+    expect(cc.preTax.underlyingYield, closeTo(1.0 + 0.05 / 0.95, 1e-12));
+    expect(cc.preTax.breakEvenVsFullMoney.absolute, closeTo(950.0, 1e-12));
+    expect(cc.preTax.breakEvenVsFullUnderlying.absolute,
+        closeTo(1100.0 / 0.95, 1e-12));
+
+    // Post-tax metrics:
+    // Below strike: +50 derivative PnL taxed at 30% -> 15 tax -> 0.035 BTC net premium
+    // Above strike: +650 underlying PnL taxed at 20% -> 130 tax -> postTax.moneyProfit = 150 - 130 = 20
+    final postTax = cc.postTax!;
+    expect(postTax.moneyProfit, closeTo(20.0, 1e-12));
+    expect(postTax.moneyYield, closeTo(1.0 + 20.0 / 950.0, 1e-12));
+    expect(postTax.premiumToReceive.size, closeTo(0.035, 1e-12));
+    expect(postTax.underlyingYield, closeTo(1.0 + 0.035 / 0.95, 1e-12));
+    expect(postTax.breakEvenVsFullMoney.absolute, closeTo(965.0, 1e-12));
+    expect(postTax.breakEvenVsFullUnderlying.absolute,
+        closeTo((20.0 + 950.0) / 0.95, 1e-12));
+
+    final json = cc.toJson();
+    expect(json['underlyingTaxRate'], equals(0.20));
+    expect(json['derivativeTaxRate'], equals(0.30));
+    expect(json['postTax'], isNotNull);
+    expect(json['postTax']['moneyProfit'], closeTo(20.0, 1e-12));
+    expect(json['postTax']['breakEvenVsFullMoney']['absolute'],
+        closeTo(965.0, 1e-12));
   });
 
   test('LongCall JSON generation golden test', () {

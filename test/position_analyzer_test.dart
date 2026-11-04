@@ -496,5 +496,134 @@ void main() {
         expect(analyzer.unrealizedPnLAfter(1300.0), equals(100.0)); // 1 * 1300 - 1200
       });
     });
+
+    group('withTaxes (TaxProfile)', () {
+      test('applies underlying and derivative tax rates to realized PnL per segment', () {
+        final callOption = Option(
+          'BTC-1100-C',
+          underlying: btc,
+          money: usd,
+          strike: 1100.0,
+          isCall: true,
+          expiration: expiration,
+        );
+
+        // Pre-owned 1 BTC with $500 cost basis (current spot $1000), sell 1100 Call for $50.
+        final position = btc.ofSize(1.0, usd.ofSize(500.0)) -
+            usd.ofSize(1000.0) -
+            callOption.ofSize(1.0, usd.ofSize(50.0)) +
+            usd.ofSize(50.0);
+
+        final preTax = PositionAnalyzer(position, underlying: btc, money: usd);
+        // Pre-tax:
+        // Below 1100: valueAt(0) = -950, valueBefore(1100) = 150, breakeven = 950
+        // Above 1100: valueAfter(1100) = 150
+        expect(preTax.valueBefore(1100.0), equals(150.0));
+        expect(preTax.valueAfter(1100.0), equals(150.0));
+        expect(preTax.breakevens.single.price, equals(950.0));
+
+        // 20% underlying tax, 30% derivative tax
+        const taxes = TaxProfile(
+          underlyingTaxRate: 0.20,
+          derivativeTaxRate: 0.30,
+        );
+        final postTax = preTax.withTaxes(taxes);
+
+        // Below 1100: Call expires OTM -> +$50 realized derivative PnL -> $15 tax.
+        // Post-tax realized PnL = 50 - 15 = 35.
+        // Post-tax value at 0 = -950 - 15 = -965; at 1100 (before) = 150 - 15 = 135.
+        // Post-tax breakeven = 965.
+        expect(postTax.realizedPnLBefore(1100.0), equals(35.0));
+        expect(postTax.valueBefore(0.0), equals(-965.0));
+        expect(postTax.valueBefore(1100.0), equals(135.0));
+        expect(postTax.breakevens.single.price, equals(965.0));
+
+        // Above 1100: Call is exercised -> 1 BTC sold for $1100 + $50 = $1150 vs $500 cost basis.
+        // Realized underlying PnL = +$650 -> 20% tax = $130.
+        // Post-tax realized PnL = 650 - 130 = 520.
+        // Post-tax valueAfter(1100) = 150 - 130 = 20 (step down at strike!).
+        expect(postTax.realizedPnLAfter(1100.0), equals(520.0));
+        expect(postTax.valueAfter(1100.0), equals(20.0));
+      });
+
+      test('withTaxes is idempotent and does not double-tax', () {
+        final callOption = Option(
+          'BTC-1100-C',
+          underlying: btc,
+          money: usd,
+          strike: 1100.0,
+          isCall: true,
+          expiration: expiration,
+        );
+        final position = btc.ofSize(1.0, usd.ofSize(500.0)) -
+            usd.ofSize(1000.0) -
+            callOption.ofSize(1.0, usd.ofSize(50.0)) +
+            usd.ofSize(50.0);
+
+        const taxes = TaxProfile(
+          underlyingTaxRate: 0.20,
+          derivativeTaxRate: 0.30,
+        );
+        const otherTaxes = TaxProfile(
+          underlyingTaxRate: 0.10,
+          derivativeTaxRate: 0.10,
+        );
+
+        final preTax = PositionAnalyzer(position, underlying: btc, money: usd);
+        final taxedOnce = preTax.withTaxes(taxes);
+        final taxedTwice = taxedOnce.withTaxes(taxes);
+        final reTaxed = preTax.withTaxes(otherTaxes).withTaxes(taxes);
+        final restored = taxedOnce.withTaxes(TaxProfile.none);
+
+        expect(taxedTwice.valueBefore(1100.0), equals(taxedOnce.valueBefore(1100.0)));
+        expect(taxedTwice.valueAfter(1100.0), equals(taxedOnce.valueAfter(1100.0)));
+        expect(taxedTwice.realizedPnLBefore(1100.0), equals(taxedOnce.realizedPnLBefore(1100.0)));
+        expect(taxedTwice.realizedPnLAfter(1100.0), equals(taxedOnce.realizedPnLAfter(1100.0)));
+
+        expect(reTaxed.valueBefore(1100.0), equals(taxedOnce.valueBefore(1100.0)));
+        expect(reTaxed.valueAfter(1100.0), equals(taxedOnce.valueAfter(1100.0)));
+
+        expect(restored.valueBefore(1100.0), equals(preTax.valueBefore(1100.0)));
+        expect(restored.valueAfter(1100.0), equals(preTax.valueAfter(1100.0)));
+      });
+
+      test('includeTaxBenefits controls whether realized losses generate tax credits', () {
+        final callOption = Option(
+          'BTC-1100-C',
+          underlying: btc,
+          money: usd,
+          strike: 1100.0,
+          isCall: true,
+          expiration: expiration,
+        );
+
+        // Pre-owned 1 BTC with $1200 cost basis, sell 1100 Call for $50.
+        // Above 1100: realized underlying PnL = 1150 - 1200 = -50 (realized loss).
+        final position = btc.ofSize(1.0, usd.ofSize(1200.0)) -
+            usd.ofSize(1000.0) -
+            callOption.ofSize(1.0, usd.ofSize(50.0)) +
+            usd.ofSize(50.0);
+
+        final preTax = PositionAnalyzer(position, underlying: btc, money: usd);
+        expect(preTax.valueAfter(1100.0), equals(150.0));
+        expect(preTax.realizedPnLAfter(1100.0), equals(-50.0));
+
+        // With tax benefits (default: true), -$50 loss at 20% yields -$10 tax (+$10 credit).
+        final withBenefits = preTax.withTaxes(const TaxProfile(
+          underlyingTaxRate: 0.20,
+          includeTaxBenefits: true,
+        ));
+        expect(withBenefits.realizedPnLAfter(1100.0), equals(-40.0));
+        expect(withBenefits.valueAfter(1100.0), equals(160.0));
+
+        // Without tax benefits (includeTaxBenefits: false), -$50 loss yields $0 tax.
+        final withoutBenefits = preTax.withTaxes(const TaxProfile(
+          underlyingTaxRate: 0.20,
+          includeTaxBenefits: false,
+        ));
+        expect(withoutBenefits.realizedPnLAfter(1100.0), equals(-50.0));
+        expect(withoutBenefits.valueAfter(1100.0), equals(150.0));
+      });
+    });
   });
 }

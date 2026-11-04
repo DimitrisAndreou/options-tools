@@ -43,12 +43,20 @@ Future<List<Market>> deribitMarkets(
 }
 
 Future<String> deribitCoveredCalls(
-    String ticker, double slippage, int minDTE, int maxDTE) async {
+    String ticker, double slippage, int minDTE, int maxDTE,
+    {double? avgPrice,
+    double underlyingTaxRate = 0.0,
+    double derivativeTaxRate = 0.0}) async {
   List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
   return jsonEncode(CoveredCall.generateAll(markets,
           underlying: Commodity(ticker, venues: const {Venue.Deribit}),
           money: Commodity("USD"),
-          slippage: slippage)
+          slippage: slippage,
+          avgPrice: avgPrice,
+          taxes: TaxProfile(
+            underlyingTaxRate: underlyingTaxRate,
+            derivativeTaxRate: derivativeTaxRate,
+          ))
       .toList());
 }
 
@@ -87,13 +95,21 @@ Future<String> deribitStraddles(
 }
 
 Future<String> yfinanceCoveredCalls(
-    String ticker, double slippage, int minDTE, int maxDTE) async {
+    String ticker, double slippage, int minDTE, int maxDTE,
+    {double? avgPrice,
+    double underlyingTaxRate = 0.0,
+    double derivativeTaxRate = 0.0}) async {
   List<Market> markets = await (await YFinance.openConnection(_urlFetcher))
       .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
   return jsonEncode(CoveredCall.generateAll(markets,
           underlying: Commodity(ticker, venues: const {Venue.OptionStrat}),
           money: Commodity("USD"),
-          slippage: slippage)
+          slippage: slippage,
+          avgPrice: avgPrice,
+          taxes: TaxProfile(
+            underlyingTaxRate: underlyingTaxRate,
+            derivativeTaxRate: derivativeTaxRate,
+          ))
       .toList());
 }
 
@@ -138,20 +154,40 @@ JSPromise<JSString> _toJsPromise(Future<String> future) => future
     .toJS;
 
 void setupJsInterop() {
-  deribitCoveredCallsDart =
-      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return _toJsPromise(deribitCoveredCalls(ticker.toDart,
-        slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
+  deribitCoveredCallsDart = (JSString ticker, JSNumber slippage,
+      JSNumber minDTE, JSNumber maxDTE,
+      [JSNumber? avgPrice,
+      JSNumber? underlyingTaxRate,
+      JSNumber? derivativeTaxRate]) {
+    return _toJsPromise(deribitCoveredCalls(
+      ticker.toDart,
+      slippage.toDartDouble,
+      minDTE.toDartInt,
+      maxDTE.toDartInt,
+      avgPrice: avgPrice?.toDartDouble,
+      underlyingTaxRate: underlyingTaxRate?.toDartDouble ?? 0.0,
+      derivativeTaxRate: derivativeTaxRate?.toDartDouble ?? 0.0,
+    ));
   }.toJS;
   deribitVerticalSpreadsDart =
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
     return _toJsPromise(deribitVerticalSpreads(ticker.toDart,
         slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
   }.toJS;
-  yfinanceCoveredCallsDart =
-      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
-    return _toJsPromise(yfinanceCoveredCalls(ticker.toDart,
-        slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
+  yfinanceCoveredCallsDart = (JSString ticker, JSNumber slippage,
+      JSNumber minDTE, JSNumber maxDTE,
+      [JSNumber? avgPrice,
+      JSNumber? underlyingTaxRate,
+      JSNumber? derivativeTaxRate]) {
+    return _toJsPromise(yfinanceCoveredCalls(
+      ticker.toDart,
+      slippage.toDartDouble,
+      minDTE.toDartInt,
+      maxDTE.toDartInt,
+      avgPrice: avgPrice?.toDartDouble,
+      underlyingTaxRate: underlyingTaxRate?.toDartDouble ?? 0.0,
+      derivativeTaxRate: derivativeTaxRate?.toDartDouble ?? 0.0,
+    ));
   }.toJS;
 
   deribitLongOptionsDart =
