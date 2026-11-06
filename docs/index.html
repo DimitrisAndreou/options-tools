@@ -131,6 +131,24 @@
               </div>
             </div>
 
+            <!-- Size -->
+            <div class="toolbar-field">
+              <div class="toolbar-label-row">
+                <label for="size-input" class="toolbar-label"
+                  title="Number of covered call units to trade (e.g. 1 means 100 shares for stocks, or 0.1 BTC on Deribit — enough for a single covered call)">
+                  Size <i class="fas fa-info-circle toolbar-info-icon"></i>
+                </label>
+              </div>
+              <div class="toolbar-control">
+                <div class="toolbar-affix-box">
+                  <input type="number" id="size-input" min="1" step="1"
+                    x-model.number="$store.app.size"
+                    class="toolbar-input font-monospace text-end"
+                    style="width: 56px;">
+                </div>
+              </div>
+            </div>
+
             <!-- Underlying Tax -->
             <div class="toolbar-field">
               <div class="toolbar-label-row">
@@ -316,15 +334,18 @@
                         </table>
                       </div>
 
-                      <div class="instructions-panel mt-3" x-show="!$store.app.entryPosition">
+                      <div class="instructions-panel mt-3"
+                        x-show="!$store.app.entryPosition && $store.app.unrealized.header?.instructions?.length">
                         <div class="instructions-header">Execution Instructions</div>
                         <div class="instructions-content">
-                          &bull; <b>Buy</b> <span class="text-good"
-                            x-text="$store.app.unrealized.header?.buyAmount"></span> for <span class="text-bad"
-                            x-text="$store.app.unrealized.header?.buyCost"></span><br />
-                          &bull; <b>Sell</b> <span class="text-bad"
-                            x-text="$store.app.unrealized.header?.sellAmount"></span> for <span class="text-good"
-                            x-text="$store.app.unrealized.header?.sellPremium"></span>
+                          <template x-for="(inst, idx) in $store.app.unrealized.header?.instructions" :key="idx">
+                            <div>
+                              &bull; <b x-text="inst.action"></b>
+                              <span :class="inst.targetClass" x-text="inst.target"></span>
+                              for
+                              <span :class="inst.considerationClass" x-text="inst.consideration"></span>
+                            </div>
+                          </template>
                         </div>
                       </div>
                     </div>

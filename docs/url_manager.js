@@ -5,6 +5,7 @@ const URL_PARAMS = {
   MIN_DTE: 'minDTE',
   MAX_DTE: 'maxDTE',
   AVG_PRICE: 'avgPrice',
+  SIZE: 'size',
   UND_TAX: 'undTax',
   DERIV_TAX: 'derivTax',
   ID: 'id',

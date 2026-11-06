@@ -75,6 +75,22 @@ void main() {
           'costBasis': 1000.0,
           'underlyingTaxRate': 0.0,
           'derivativeTaxRate': 0.0,
+          'instructions': [
+            {
+              'action': 'Buy',
+              'size': 0.95,
+              'unit': 'BTC',
+              'price': 950.0,
+              'priceUnit': 'USD',
+            },
+            {
+              'action': 'Sell',
+              'size': 1.0,
+              'unit': 'call(s)',
+              'price': 0.05,
+              'priceUnit': 'BTC',
+            },
+          ],
           'preTax': {
             'moneyYield': 1.0526315789473684,
             'underlyingYield': 1.0526315789473684,
@@ -286,6 +302,51 @@ void main() {
       ccWithoutAvg.strategyURL,
       equals(
           'https://optionstrat.com/build/covered-call/CRWV/CRWVx100@75.5,-.CRWV290119C65@17.46'),
+    );
+    expect(
+      jsonWithAvg['instructions'],
+      equals([
+        {
+          'action': 'Sell',
+          'size': 1.0,
+          'unit': 'call(s)',
+          'price': 1746.0,
+          'priceUnit': 'USD',
+        },
+      ]),
+    );
+
+    // With size = 3 and avgPrice = 100.0
+    final ccSize3 = CoveredCall.generateAll(
+      [spotMarket, callMarket],
+      underlying: crwv,
+      money: usd,
+      slippage: 0.0,
+      avgPrice: 100.0,
+      size: 3,
+    ).single;
+
+    expect(
+      ccSize3.strategyURL,
+      equals(
+          'https://optionstrat.com/build/covered-call/CRWV/CRWVx300@100,-3.CRWV290119C65@17.46'),
+    );
+    final jsonSize3 = ccSize3.toJson();
+    expect(jsonSize3['costBasis'], closeTo(30000.0, 1e-9));
+    expect(jsonSize3['moneySize'], closeTo(-(30000.0 - 3 * 1746.0), 1e-9));
+    expect(jsonSize3['callSize'], equals(-3.0));
+    expect(jsonSize3['preTax']['moneyProfit'], closeTo(3 * (6500.0 + 1746.0 - 10000.0), 1e-9));
+    expect(
+      jsonSize3['instructions'],
+      equals([
+        {
+          'action': 'Sell',
+          'size': 3.0,
+          'unit': 'call(s)',
+          'price': 3 * 1746.0,
+          'priceUnit': 'USD',
+        },
+      ]),
     );
   });
 

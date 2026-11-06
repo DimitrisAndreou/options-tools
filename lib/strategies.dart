@@ -10,6 +10,30 @@ import 'renderers.dart';
 
 export 'taxes.dart';
 
+class ExecutionInstruction {
+  final String action;
+  final double size;
+  final String unit;
+  final double price;
+  final String priceUnit;
+
+  const ExecutionInstruction({
+    required this.action,
+    required this.size,
+    required this.unit,
+    required this.price,
+    required this.priceUnit,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'action': action,
+        'size': size,
+        'unit': unit,
+        'price': price,
+        'priceUnit': priceUnit,
+      };
+}
+
 class CoveredCallMetrics {
   final double moneyYield;
   final double underlyingYield;
@@ -112,6 +136,26 @@ class CoveredCall {
     return PositionRenderer.tryRenderFirst(posWithCostBasis);
   }
 
+  List<ExecutionInstruction> get instructions => [
+        if (avgPrice == null)
+          ExecutionInstruction(
+            action: 'Buy',
+            size: underlyingToBuy.size,
+            unit: underlying.name,
+            price: -moneyLeg.size,
+            priceUnit: money.name,
+          ),
+        ExecutionInstruction(
+          action: 'Sell',
+          size: -optionLeg.size,
+          unit: 'call(s)',
+          price: avgPrice == null
+              ? preTax.premiumToReceive.size
+              : analyzer.realizedPnLBefore(option.strike),
+          priceUnit: avgPrice == null ? underlying.name : money.name,
+        ),
+      ];
+
   Map<String, dynamic> toJson() => {
         'id':
             '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
@@ -140,6 +184,7 @@ class CoveredCall {
         'costBasis': costBasis,
         'underlyingTaxRate': taxes.underlyingTaxRate,
         'derivativeTaxRate': taxes.derivativeTaxRate,
+        'instructions': instructions.map((i) => i.toJson()).toList(),
         'preTax': preTax.toJson(),
         if (postTax != null) 'postTax': postTax!.toJson(),
       };
@@ -222,7 +267,11 @@ class CoveredCall {
       required Commodity money,
       double slippage = 0.5,
       double? avgPrice,
+      int size = 1,
       TaxProfile taxes = TaxProfile.none}) sync* {
+    if (size < 1) {
+      throw ArgumentError.value(size, 'size', 'Must be at least 1');
+    }
     final oracle = Oracle.fromMarkets(allMarkets);
     final spotMarket = oracle.marketFor(asset: underlying, money: money);
     final underlyingMarket = avgPrice == null
@@ -257,9 +306,11 @@ class CoveredCall {
 
         final Position underlyingPosition = underlyingMarket.long(slippage) *
             option.contractLot *
-            option.minSize;
+            option.minSize *
+            size.toDouble();
         final Position strategy =
-            call.short(slippage) * option.minSize + underlyingPosition;
+            call.short(slippage) * option.minSize * size.toDouble() +
+                underlyingPosition;
         final double? maxRisk = avgPrice == null
             ? null
             : PositionAnalyzer(underlyingPosition,

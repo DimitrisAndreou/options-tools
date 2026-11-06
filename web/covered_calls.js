@@ -1,5 +1,15 @@
 
 
+function formatInstructionValue(amount, unit, money) {
+  if (unit === money) {
+    return dollarFmt.format(amount);
+  }
+  if (unit === 'call(s)') {
+    return `${Number(Number(amount).toFixed(4))} ${unit}`;
+  }
+  return `${underlyingFmt.format(amount)} ${unit}`;
+}
+
 function prepareCCData(value) {
   const money = value.money;
   const underlying = value.underlying;
@@ -42,10 +52,13 @@ function prepareCCData(value) {
     capRelative: active.breakEvenVsFullUnderlying ? percentFmt.format(active.breakEvenVsFullUnderlying.relative - 1.0) : null,
 
     // Instructions
-    buyAmount: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
-    buyCost: dollarFmt.format(-value.moneySize),
-    sellAmount: `${-value.callSize} call(s)`,
-    sellPremium: `${underlyingFmt.format(preTax.premiumToReceive)} ${underlying}`,
+    instructions: (value.instructions || []).map(inst => ({
+      action: inst.action,
+      target: formatInstructionValue(inst.size, inst.unit, money),
+      targetClass: inst.action === 'Buy' ? 'text-good' : 'text-bad',
+      consideration: formatInstructionValue(inst.price, inst.priceUnit, money),
+      considerationClass: inst.action === 'Buy' ? 'text-bad' : 'text-good',
+    })),
 
     // Probabilities
     moneyProbability: value.moneyProbability,
@@ -113,6 +126,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     const hasDiff = Boolean(entryPos && currentPos);
     const activePos = currentPos || entryPos;
     const hasTaxes = Boolean(activePos?.postTax || entryPos?.postTax);
+    const hasAvgPrice = Boolean(activePos?.avgPrice != null || entryPos?.avgPrice != null);
 
     // Rolls mean replacing the old position with a new one.
     // Their difference does not represent a loss or a gain.
@@ -170,36 +184,37 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const formatCapitalMoneyCell = (pos) => {
       if (!pos) return '—';
-      const capital = -pos.moneySize;
-      const capitalStr = dollarFmt.format(capital);
-      const store = getAppStore();
-      const avgPrice = pos.avgPrice != null
-        ? Number(pos.avgPrice)
-        : (store?.avgPrice !== '' && store?.avgPrice != null ? parseFloat(store.avgPrice) : null);
-
-      if (avgPrice != null && !isNaN(avgPrice) && avgPrice > 0) {
-        const lot = pos.contractLot ?? 100;
-        const costBasis = avgPrice * lot;
-        const diff = capital - costBasis;
-        const pct = costBasis > 0 ? (diff / costBasis) : 0;
-        const pctStr = percentFmt.format(pct);
-        if (diff < 0) {
-          const lossAmt = dollarFmt.format(Math.abs(diff));
-          return `<span class="text-neutral text-nowrap">${capitalStr}</span><br/><small class="text-bad text-nowrap">${lossAmt} (${pctStr}) loss</small>`;
-        } else if (diff > 0) {
-          const profitAmt = dollarFmt.format(diff);
-          return `<span class="text-neutral text-nowrap">${capitalStr}</span><br/><small class="text-good text-nowrap">${profitAmt} (${pctStr}) profit</small>`;
-        } else {
-          return `<span class="text-neutral text-nowrap">${capitalStr}</span><br/><small class="text-neutral-alt text-nowrap">$0.00 (0.0%)</small>`;
-        }
-      }
-      return `<span class="text-neutral text-nowrap">${capitalStr}</span>`;
+      return `<span class="text-neutral text-nowrap">${dollarFmt.format(-pos.moneySize)}</span>`;
     };
 
     const formatCapitalUnderlyingCell = (pos, compact) => {
       if (!pos) return '—';
       const suffix = compact ? '' : ` ${pos.underlying}`;
       return `<span class="text-neutral text-nowrap">${underlyingFmt.format(pos.underlyingToBuy)}${suffix}</span>`;
+    };
+
+    const formatExistingCostBasisCell = (pos) => {
+      if (!pos || pos.avgPrice == null || pos.costBasis == null) return '—';
+      const avgPrice = Number(pos.avgPrice);
+      const spotPrice = Number(pos.spotPrice);
+      const costBasis = Number(pos.costBasis);
+      const costBasisStr = dollarFmt.format(costBasis);
+      if (!(avgPrice > 0) || !Number.isFinite(spotPrice)) {
+        return `<span class="text-neutral text-nowrap">${costBasisStr}</span>`;
+      }
+      const spotValue = costBasis * (spotPrice / avgPrice);
+      const diff = spotValue - costBasis;
+      const pct = diff / costBasis;
+      const pctStr = percentFmt.format(pct);
+      if (diff < 0) {
+        const lossAmt = dollarFmt.format(Math.abs(diff));
+        return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-bad text-nowrap">${lossAmt} (${pctStr}) loss</small>`;
+      } else if (diff > 0) {
+        const profitAmt = dollarFmt.format(diff);
+        return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-good text-nowrap">${profitAmt} (${pctStr}) profit</small>`;
+      } else {
+        return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-neutral-alt text-nowrap">$0.00 (0.0%)</small>`;
+      }
     };
 
     const formatMoneyYieldCell = (pos, compact) => {
@@ -328,6 +343,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     let strikeDiffText = '', strikeDiffClass = 'text-neutral-alt';
     let moneyDiffText = '', moneyDiffClass = 'text-neutral-alt';
     let undDiffText = '', undDiffClass = 'text-neutral-alt';
+    let costBasisDiffText = '', costBasisDiffClass = 'text-neutral-alt';
     let moneyYieldDiffText = '', moneyYieldDiffClass = 'text-neutral-alt';
     let postTaxMoneyYieldDiffText = '', postTaxMoneyYieldDiffClass = 'text-neutral-alt';
     let undYieldDiffText = '', undYieldDiffClass = 'text-neutral-alt';
@@ -382,6 +398,20 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       undDiffClass = isRoll
         ? (undDiff <= 0 ? 'text-good' : 'text-bad')
         : (undDiff >= 0 ? 'text-good' : 'text-bad');
+
+      // 6b. Existing Cost Basis
+      if (hasAvgPrice) {
+        const entryCb = entryPos.avgPrice != null ? (entryPos.costBasis ?? 0) : null;
+        const curCb = currentPos.avgPrice != null ? (currentPos.costBasis ?? 0) : null;
+        if (entryCb != null && curCb != null) {
+          const cbDiff = curCb - entryCb;
+          costBasisDiffText = cbDiff === 0 ? 'Same' : `${formatSignedDollar(cbDiff)}`;
+          costBasisDiffClass = cbDiff === 0 ? 'text-muted-alt' : 'text-neutral-alt';
+        } else {
+          costBasisDiffText = '—';
+          costBasisDiffClass = 'text-muted-alt';
+        }
+      }
 
       // 7. Money Yield
       const moneyYieldRatioChange = currentPos.preTax.moneyYield / entryPos.preTax.moneyYield - 1.0;
@@ -530,7 +560,16 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
             single: formatCapitalUnderlyingCell(activePos, false),
             diff: undDiffText,
             diffClass: undDiffClass
-          }
+          },
+          ...(hasAvgPrice ? [{
+            label: 'Existing Cost Basis',
+            subtitle: null,
+            before: formatExistingCostBasisCell(entryPos),
+            after: formatExistingCostBasisCell(currentPos),
+            single: formatExistingCostBasisCell(activePos),
+            diff: costBasisDiffText,
+            diffClass: costBasisDiffClass
+          }] : [])
         ]
       },
       {

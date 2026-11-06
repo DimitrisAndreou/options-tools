@@ -7,6 +7,7 @@ document.addEventListener('alpine:init', () => {
     minDte: 7,
     maxDte: 1092,
     avgPrice: '',
+    size: 1,
     underlyingTax: 0,
     derivativeTax: 0,
     selectedId: null,
@@ -23,6 +24,11 @@ document.addEventListener('alpine:init', () => {
       return (!isNaN(n) && n >= 0) ? n : null;
     },
 
+    normalizeSize(val) {
+      const n = parseInt(val, 10);
+      return (!isNaN(n) && n >= 1) ? n : 1;
+    },
+
     getCurrentParamsSnapshot() {
       return {
         ticker: (this.tickerInput || '').trim().toUpperCase(),
@@ -30,6 +36,7 @@ document.addEventListener('alpine:init', () => {
         maxDte: Number(this.maxDte),
         slippage: Number(this.slippage),
         avgPrice: this.normalizeAvgPrice(this.avgPrice),
+        size: this.normalizeSize(this.size),
         underlyingTax: Number(this.underlyingTax) || 0,
         derivativeTax: Number(this.derivativeTax) || 0,
       };
@@ -50,6 +57,7 @@ document.addEventListener('alpine:init', () => {
       if (this.strategy === 'coveredCall') {
         if (
           current.avgPrice !== this.loadedParams.avgPrice ||
+          current.size !== this.loadedParams.size ||
           current.underlyingTax !== this.loadedParams.underlyingTax ||
           current.derivativeTax !== this.loadedParams.derivativeTax
         ) {
@@ -184,6 +192,7 @@ document.addEventListener('alpine:init', () => {
       this.minDte = parseInt(UrlManager.get(URL_PARAMS.MIN_DTE, '7'), 10);
       this.maxDte = parseInt(UrlManager.get(URL_PARAMS.MAX_DTE, '1092'), 10);
       this.avgPrice = UrlManager.get(URL_PARAMS.AVG_PRICE, '') ?? '';
+      this.size = this.normalizeSize(UrlManager.get(URL_PARAMS.SIZE, '1'));
       this.underlyingTax = parseFloat(UrlManager.get(URL_PARAMS.UND_TAX, '0')) || 0;
       this.derivativeTax = parseFloat(UrlManager.get(URL_PARAMS.DERIV_TAX, '0')) || 0;
       this.selectedId = UrlManager.get(URL_PARAMS.ID);
@@ -215,6 +224,7 @@ document.addEventListener('alpine:init', () => {
         const minDte = this.minDte;
         const maxDte = this.maxDte;
         const avgPrice = this.avgPrice;
+        const size = this.size;
         const underlyingTax = this.underlyingTax;
         const derivativeTax = this.derivativeTax;
         const selectedId = this.selectedId;
@@ -227,6 +237,7 @@ document.addEventListener('alpine:init', () => {
         UrlManager.setWithDefault(url, URL_PARAMS.MIN_DTE, minDte, 7);
         UrlManager.setWithDefault(url, URL_PARAMS.MAX_DTE, maxDte, 1092);
         UrlManager.set(url, URL_PARAMS.AVG_PRICE, (avgPrice !== '' && avgPrice !== null) ? String(avgPrice) : null);
+        UrlManager.setWithDefault(url, URL_PARAMS.SIZE, this.normalizeSize(size), 1);
         UrlManager.setWithDefault(url, URL_PARAMS.UND_TAX, Number(underlyingTax) || 0, 0);
         UrlManager.setWithDefault(url, URL_PARAMS.DERIV_TAX, Number(derivativeTax) || 0, 0);
         UrlManager.set(url, URL_PARAMS.ID, selectedId || null);
@@ -263,6 +274,7 @@ document.addEventListener('alpine:init', () => {
       this.minDte = parseInt(UrlManager.get(URL_PARAMS.MIN_DTE, '7'), 10);
       this.maxDte = parseInt(UrlManager.get(URL_PARAMS.MAX_DTE, '1092'), 10);
       this.avgPrice = UrlManager.get(URL_PARAMS.AVG_PRICE, '') ?? '';
+      this.size = this.normalizeSize(UrlManager.get(URL_PARAMS.SIZE, '1'));
       this.underlyingTax = parseFloat(UrlManager.get(URL_PARAMS.UND_TAX, '0')) || 0;
       this.derivativeTax = parseFloat(UrlManager.get(URL_PARAMS.DERIV_TAX, '0')) || 0;
       
@@ -288,7 +300,7 @@ document.addEventListener('alpine:init', () => {
 
     clearAllStrategyParams(url) {
       UrlManager.set(url, URL_PARAMS.ID, null);
-      UrlManager.clearParams(url, [URL_PARAMS.POS, URL_PARAMS.AVG_PRICE]);
+      UrlManager.clearParams(url, [URL_PARAMS.POS, URL_PARAMS.AVG_PRICE, URL_PARAMS.SIZE]);
     },
 
     submitTicker() {
@@ -356,11 +368,12 @@ document.addEventListener('alpine:init', () => {
           ? parseFloat(this.avgPrice)
           : NaN;
         const avgPriceArg = (!isNaN(parsedAvg) && parsedAvg >= 0) ? parsedAvg : null;
+        const sizeArg = this.normalizeSize(this.size);
         const undTaxRate = (parseFloat(this.underlyingTax) || 0) / 100.0;
         const derivTaxRate = (parseFloat(this.derivativeTax) || 0) / 100.0;
 
         const rawData = this.strategy === 'coveredCall'
-          ? await fetcher(this.ticker, this.slippage, this.minDte, this.maxDte, avgPriceArg, undTaxRate, derivTaxRate)
+          ? await fetcher(this.ticker, this.slippage, this.minDte, this.maxDte, avgPriceArg, undTaxRate, derivTaxRate, sizeArg)
           : await fetcher(this.ticker, this.slippage, this.minDte, this.maxDte);
         const dataJson = JSON.parse(rawData);
         console.log({ strategy: this.strategy, dataJson });
