@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:options_tools/market_analyzer.dart';
@@ -20,7 +21,8 @@ double asChange(double changedValue, double originalValue) =>
 
 void main() async {
   // testYFinance();
-  await testGoogCoveredCallUnrealizedGains();
+  // await testGoogCoveredCallUnrealizedGains();
+  compareCoveredCallConfigs();
 
   // List<Market> markets = await Deribit.fetchMarkets(
   //     [Deribit.BTC], UrlFetcher(Duration(minutes: 15)));
@@ -660,4 +662,117 @@ void playWithCostBasis(List<Market> markets) {
   print("   • Reverse Long costBasis: ${revMarket.long().costBasis}");
   print(
       "==========================================================================\n");
+}
+
+void compareCoveredCallConfigs() {
+  final abc = Commodity.fromName('ABC', venues: {Venue.OptionStrat});
+  final usd = Commodity.fromName('USD', venues: {Venue.OptionStrat});
+  final expiration = DateTime.utc(2027, 1, 15, 16, 0, 0);
+
+  final spotMarket = Market.create(
+    asset: abc,
+    money: usd,
+    bidPrice: 100.0,
+    askPrice: 100.0,
+  );
+
+  // Strike $120, premium $10/share, lot=100 -> contract price = $1000
+  final callOption = Option(
+    'ABC270115C00120000',
+    underlying: abc,
+    money: usd,
+    strike: 120.0,
+    isCall: true,
+    expiration: expiration,
+    contractLot: 100.0,
+    venues: {Venue.OptionStrat},
+  );
+
+  final callMarket = Market.create(
+    asset: callOption,
+    money: usd,
+    bidPrice: 1000.0,
+    askPrice: 1000.0,
+  );
+
+  final markets = [spotMarket, callMarket];
+  const taxes15 = TaxProfile(
+    underlyingTaxRate: 0.15,
+    derivativeTaxRate: 0.15,
+  );
+
+  final configs = <(String, CoveredCall)>[
+    (
+      '1. Normal (avgPrice: null, taxes: 0%)',
+      CoveredCall.generateAll(
+        markets,
+        underlying: abc,
+        money: usd,
+      ).single,
+    ),
+    (
+      '2. AvgPrice \$50 (avgPrice: 50, taxes: 0%)',
+      CoveredCall.generateAll(
+        markets,
+        underlying: abc,
+        money: usd,
+        avgPrice: 50.0,
+      ).single,
+    ),
+    (
+      '3. Taxes 15% (avgPrice: null, taxes: 15%)',
+      CoveredCall.generateAll(
+        markets,
+        underlying: abc,
+        money: usd,
+        taxes: taxes15,
+      ).single,
+    ),
+    (
+      '4. AvgPrice \$50 + Taxes 15% (avgPrice: 50, taxes: 15%)',
+      CoveredCall.generateAll(
+        markets,
+        underlying: abc,
+        money: usd,
+        avgPrice: 50.0,
+        taxes: taxes15,
+      ).single,
+    ),
+  ];
+
+  print(
+      "==========================================================================================================");
+  print(
+      "                   ABC COVERED CALL COMPARISON (Spot: \$100, Strike: \$120, Call: \$10 x 100)               ");
+  print(
+      "==========================================================================================================\n");
+
+  String fmtMetrics(CoveredCallMetrics? m) {
+    if (m == null) return "null";
+    final beMoney = m.breakEvenVsFullMoney;
+    final beUnd = m.breakEvenVsFullUnderlying;
+    return "moneyYield: ${percentify(m.moneyYield - 1.0, decimals: 2)} (${m.moneyYield.toStringAsFixed(4)}), "
+        "moneyProfit: \$${m.moneyProfit.toStringAsFixed(2)}, "
+        "undYield: ${percentify(m.underlyingYield - 1.0, decimals: 2)} (${m.underlyingYield.toStringAsFixed(4)}), "
+        "premium: ${m.premiumToReceive.size.toStringAsFixed(3)} ABC, "
+        "unassignedTax: \$${m.unassignedTax.toStringAsFixed(2)}, "
+        "BE(\$): \$${beMoney.absolute.toStringAsFixed(2)} (${percentify(beMoney.relative - 1.0, decimals: 1)}), "
+        "BE(ABC): \$${beUnd.absolute.toStringAsFixed(2)} (${percentify(beUnd.relative - 1.0, decimals: 1)})";
+  }
+
+  const encoder = JsonEncoder.withIndent('  ');
+  for (final (label, cc) in configs) {
+    print("----------------------------------------------------------------------------------------------------------");
+    print(label);
+    print("----------------------------------------------------------------------------------------------------------");
+    print("  Position        : ${cc.strategy}");
+    print("  moneySize       : \$${cc.moneyLeg.size.toStringAsFixed(2)}");
+    print("  underlyingToBuy : ${cc.underlyingToBuy.size.toStringAsFixed(3)} ABC");
+    print("  costBasis       : \$${cc.costBasis.toStringAsFixed(2)} (@ \$${cc.unitCostBasis.toStringAsFixed(2)}/sh)");
+    print("  preTax          : ${fmtMetrics(cc.preTax)}");
+    print("  postTax         : ${fmtMetrics(cc.postTax)}");
+    print("\n  JSON:");
+    print(encoder.convert(cc.toJson()));
+    print("");
+  }
 }

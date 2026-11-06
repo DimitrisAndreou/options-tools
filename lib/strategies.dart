@@ -60,7 +60,7 @@ class CoveredCall {
   // This is an imaginary approach to executing the trade:
   // First buy this much underlying asset (via spot market),
   // then open the option leg.
-  final Line underlyingToBuy;
+  late final Line underlyingToBuy;
 
   final double spotPrice;
   final PriceInfo strikePrice;
@@ -78,8 +78,7 @@ class CoveredCall {
   PriceInfo get breakEvenVsFullMoney => preTax.breakEvenVsFullMoney;
 
   double get unitCostBasis =>
-      underlyingLeg.unitCostBasis?.size ??
-      (costBasis / underlyingLeg.size);
+      underlyingLeg.unitCostBasis?.size ?? (costBasis / underlyingLeg.size);
   double get costBasis => analyzer.costBasisBefore(option.strike);
 
   String? get callURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
@@ -89,7 +88,8 @@ class CoveredCall {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
-        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
+        'id':
+            '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
         'strategyType': 'coveredCall',
         'strategyURL': strategyURL,
         'underlying': underlying.name,
@@ -128,71 +128,49 @@ class CoveredCall {
       required this.spotPrice,
       this.moneyProbability,
       this.underlyingProbability,
+      double? maxRisk,
       this.taxes = TaxProfile.none})
-      : analyzer =
-            PositionAnalyzer(strategy, underlying: underlying, money: money),
+      : analyzer = PositionAnalyzer(strategy,
+            underlying: underlying, money: money, maxRisk: maxRisk),
         moneyLeg = strategy[money],
         underlyingLeg = strategy[underlying],
         optionLeg = strategy[option],
-        underlyingToBuy = spotMarket.toAsset(-strategy[money]),
         strikePrice = PriceInfo.fromAbsolute(option.strike, spotPrice) {
     postTaxAnalyzer = analyzer.withTaxes(taxes);
-    final preTaxPremium =
-        (strategy[underlying] - underlyingToBuy).singleton(underlying);
-    final preTaxProfit = analyzer.maxProfit;
-    final preTaxMoneyYield = analyzer.maxYield;
-    final preTaxUndYield = preTaxPremium.size / underlyingToBuy.size + 1.0;
-    final preTaxBeUnd = PriceInfo.fromAbsolute(
-        strategy
-            .analyzeVersus(moneyLeg + spotMarket.toAsset(-moneyLeg),
-                underlying: underlying, money: money)
-            .breakevens
-            .last
-            .price,
-        spotPrice);
-    if (analyzer.breakevens.isEmpty) {
-      throw Exception("No breakeven!\nStrategy: $strategy\n"
-          "Analyzer: $analyzer");
-    }
-    // Breakeven could be a whole range, for a profit-less strategy.
-    final preTaxBeMoney =
-        PriceInfo.fromAbsolute(analyzer.breakevens.first.fromPrice, spotPrice);
+    underlyingToBuy = (strategy[underlying] -
+            spotMarket.toAsset(
+                money.ofSize(analyzer.realizedPnLBefore(option.strike))))
+        .singleton(underlying);
 
-    preTax = CoveredCallMetrics(
-      moneyYield: preTaxMoneyYield,
-      underlyingYield: preTaxUndYield,
-      moneyProfit: preTaxProfit,
-      premiumToReceive: preTaxPremium,
-      breakEvenVsFullUnderlying: preTaxBeUnd,
-      breakEvenVsFullMoney: preTaxBeMoney,
-    );
+    CoveredCallMetrics metricsFrom(PositionAnalyzer a) {
+      if (a.breakevens.isEmpty) {
+        throw Exception("No breakeven!\nStrategy: $strategy\n"
+            "Analyzer: $a");
+      }
+      final premium = spotMarket
+          .toAsset(money.ofSize(a.realizedPnLBefore(option.strike)))
+          .singleton(underlying);
+      final beUnd = PriceInfo.fromAbsolute(
+          a.analyzeVersus(moneyLeg + underlyingToBuy).breakevens.last.price,
+          spotPrice);
+      // Breakeven could be a whole range, for a profit-less strategy.
+      final beMoney =
+          PriceInfo.fromAbsolute(a.breakevens.first.fromPrice, spotPrice);
 
-    if (taxes.isTaxFree) {
-      postTax = null;
-    } else {
-      final taxBelow = analyzer.valueBefore(option.strike) -
-          postTaxAnalyzer.valueBefore(option.strike);
-      final postTaxProfit = postTaxAnalyzer.valueAfter(option.strike);
-      final postTaxMoneyYield = 1.0 + postTaxProfit / (-moneyLeg.size);
-      final postTaxBeUnd = PriceInfo.fromAbsolute(
-          (postTaxProfit - moneyLeg.size) / underlyingToBuy.size, spotPrice);
-      final postTaxBeMoneyPrice = postTaxAnalyzer.breakevens.isNotEmpty
-          ? postTaxAnalyzer.breakevens.first.fromPrice
-          : -postTaxAnalyzer.valueBefore(0.0) /
-              postTaxAnalyzer.deltaBefore(option.strike);
-      final postTaxBeMoney =
-          PriceInfo.fromAbsolute(postTaxBeMoneyPrice, spotPrice);
-
-      postTax = CoveredCallMetrics(
-        moneyYield: postTaxMoneyYield,
-        underlyingYield: preTaxUndYield,
-        moneyProfit: postTaxProfit,
-        premiumToReceive: preTaxPremium,
-        unassignedTax: taxBelow,
-        breakEvenVsFullUnderlying: postTaxBeUnd,
-        breakEvenVsFullMoney: postTaxBeMoney,
+      return CoveredCallMetrics(
+        moneyYield: a.yieldAfter(option.strike),
+        underlyingYield: premium.size / underlyingToBuy.size + 1.0,
+        moneyProfit: a.valueAfter(option.strike),
+        premiumToReceive: premium,
+        unassignedTax:
+            analyzer.valueBefore(option.strike) - a.valueBefore(option.strike),
+        breakEvenVsFullUnderlying: beUnd,
+        breakEvenVsFullMoney: beMoney,
       );
     }
+
+    preTax = metricsFrom(analyzer);
+    postTax = taxes.isTaxFree ? null : metricsFrom(postTaxAnalyzer);
 
     if (!preTax.moneyYield.isFinite ||
         !preTax.underlyingYield.isFinite ||
@@ -201,7 +179,8 @@ class CoveredCall {
             (!postTax!.moneyYield.isFinite ||
                 !postTax!.underlyingYield.isFinite ||
                 !postTax!.moneyProfit.isFinite))) {
-      throw Exception("Non-finite metrics in CoveredCall!\nStrategy: $strategy\n"
+      throw Exception(
+          "Non-finite metrics in CoveredCall!\nStrategy: $strategy\n"
           "Analyzer: $analyzer");
     }
   }
@@ -214,6 +193,13 @@ class CoveredCall {
       TaxProfile taxes = TaxProfile.none}) sync* {
     final oracle = Oracle.fromMarkets(allMarkets);
     final spotMarket = oracle.marketFor(asset: underlying, money: money);
+    final underlyingMarket = avgPrice == null
+        ? spotMarket
+        : Market.create(
+            asset: spotMarket.asset,
+            money: spotMarket.money,
+            bidPrice: avgPrice,
+            askPrice: avgPrice);
     final spreads = VerticalSpread.generateAll(allMarkets,
         underlying: underlying, money: money, slippage: slippage);
     final probs = Probabilities(spreads, underlying: underlying, money: money);
@@ -230,19 +216,23 @@ class CoveredCall {
         double? moneyProb;
         double? underlyingProb;
         try {
-          moneyProb = probs.getProbabilityExpiringAbove(expiration, option.strike);
+          moneyProb =
+              probs.getProbabilityExpiringAbove(expiration, option.strike);
           underlyingProb = 1.0 - moneyProb;
         } catch (_) {
           // Out of bounds or not found
         }
 
-        Position strategy = (call.short(slippage) +
-                spotMarket.long(slippage) * option.contractLot) *
+        final Position underlyingPosition = underlyingMarket.long(slippage) *
+            option.contractLot *
             option.minSize;
-        if (avgPrice != null) {
-          strategy =
-              strategy.withCostBasis({underlying: money.ofSize(avgPrice)});
-        }
+        final Position strategy =
+            call.short(slippage) * option.minSize + underlyingPosition;
+        final double? maxRisk = avgPrice == null
+            ? null
+            : PositionAnalyzer(underlyingPosition,
+                    underlying: underlying, money: money)
+                .maxRisk;
 
         yield CoveredCall._(
           strategy,
@@ -255,6 +245,7 @@ class CoveredCall {
           spotPrice: spotMarket.midPrice,
           moneyProbability: moneyProb,
           underlyingProbability: underlyingProb,
+          maxRisk: maxRisk,
           taxes: taxes,
         );
       } catch (e) {
@@ -295,7 +286,8 @@ class LongCall {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
-        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}~C',
+        'id':
+            '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}~C',
         'strategyType': 'longCall',
         'strategyURL': strategyURL,
         'maxLeverage': maxLeverage,
@@ -358,7 +350,8 @@ class LongCall {
     // analyzer(fullUnderlyingStrategy).deltaAfter(double.infinity)
     maxLeverage = optionLeg.size / costInUnderlying.size;
     if (!maxLeverage.isFinite) {
-      throw Exception("Non-finite maxLeverage in LongCall!\nStrategy: $strategy\n"
+      throw Exception(
+          "Non-finite maxLeverage in LongCall!\nStrategy: $strategy\n"
           "Analyzer: $analyzer");
     }
   }
@@ -427,7 +420,8 @@ class LongPut {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
-        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}~P',
+        'id':
+            '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}~P',
         'strategyType': 'longPut',
         'strategyURL': strategyURL,
         'maxLeverage': maxLeverage,
@@ -563,7 +557,8 @@ class Straddle {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
-        'id': '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
+        'id':
+            '${_formatDate(expiration)}~${_formatDouble(strikePrice.absolute)}',
         'strategyType': 'straddle',
         'strategyURL': strategyURL,
         'underlying': underlying.name,
@@ -768,7 +763,8 @@ class VerticalSpread {
   String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
 
   Map<String, dynamic> toJson() => {
-        'id': '${_formatDate(expiration)}~${_formatDouble(shortOption.strike)}~${_formatDouble(longOption.strike)}~${shortOption.isCall ? 'call' : 'put'}',
+        'id':
+            '${_formatDate(expiration)}~${_formatDouble(shortOption.strike)}~${_formatDouble(longOption.strike)}~${shortOption.isCall ? 'call' : 'put'}',
         'strategyType': 'verticalSpread',
         'strategyURL': strategyURL,
         'underlying': underlying.name,
@@ -896,9 +892,8 @@ class VerticalSpread {
             .entries) {
       final expiration = expirationToStrike.key,
           strikeToOptions = expirationToStrike.value;
-      VerticalSpread makeSpread(
-              Position position, Option shortOption, Option longOption,
-              Market shortMarket, Market longMarket) =>
+      VerticalSpread makeSpread(Position position, Option shortOption,
+              Option longOption, Market shortMarket, Market longMarket) =>
           VerticalSpread._(position,
               underlying: underlying,
               money: money,
@@ -920,8 +915,12 @@ class VerticalSpread {
             makeSpread(highPut.long(slippage) + lowPut.short(slippage),
                 lowPut.asset.toOption, highPut.asset.toOption, lowPut, highPut),
           if (lowCall != null && highCall != null)
-            makeSpread(highCall.long(slippage) + lowCall.short(slippage),
-                lowCall.asset.toOption, highCall.asset.toOption, lowCall, highCall),
+            makeSpread(
+                highCall.long(slippage) + lowCall.short(slippage),
+                lowCall.asset.toOption,
+                highCall.asset.toOption,
+                lowCall,
+                highCall),
         ]);
 
         // over @ highStrike
@@ -930,8 +929,12 @@ class VerticalSpread {
             makeSpread(highPut.short(slippage) + lowPut.long(slippage),
                 highPut.asset.toOption, lowPut.asset.toOption, highPut, lowPut),
           if (lowCall != null && highCall != null)
-            makeSpread(highCall.short(slippage) + lowCall.long(slippage),
-                highCall.asset.toOption, lowCall.asset.toOption, highCall, lowCall),
+            makeSpread(
+                highCall.short(slippage) + lowCall.long(slippage),
+                highCall.asset.toOption,
+                lowCall.asset.toOption,
+                highCall,
+                lowCall),
         ]);
 
         yield* [under, over].nonNulls;
@@ -997,7 +1000,8 @@ String _formatDouble(double val) {
 
 class Probabilities {
   final Map<DateTime, Map<double, double>> _probs = {};
-  final Map<DateTime, Map<double, List<VerticalSpread>>> _contributingSpreads = {};
+  final Map<DateTime, Map<double, List<VerticalSpread>>> _contributingSpreads =
+      {};
   final Map<DateTime, double> _atmStrikes = {};
 
   Map<DateTime, Map<double, double>> get distributions => _probs;
@@ -1037,7 +1041,8 @@ class Probabilities {
       final Map<double, Market> putMarkets = {};
       for (final vs in expSpreads) {
         for (final option in [vs.shortOption, vs.longOption]) {
-          final market = (option == vs.shortOption) ? vs.shortMarket : vs.longMarket;
+          final market =
+              (option == vs.shortOption) ? vs.shortMarket : vs.longMarket;
           if (option.isCall) {
             callMarkets[option.strike] = market;
           } else {
@@ -1046,7 +1051,10 @@ class Probabilities {
         }
       }
 
-      final commonStrikes = callMarkets.keys.where((s) => putMarkets.containsKey(s)).toList()..sort();
+      final commonStrikes = callMarkets.keys
+          .where((s) => putMarkets.containsKey(s))
+          .toList()
+        ..sort();
       double? atmStrike;
 
       for (final strike in commonStrikes) {
@@ -1119,7 +1127,8 @@ class Probabilities {
           final weightOver = spreadOver <= 0.0 ? 1e9 : 1.0 / spreadOver;
           final weightUnder = spreadUnder <= 0.0 ? 1e9 : 1.0 / spreadUnder;
 
-          prob = (maxProbAbove * weightOver + minProbAbove * weightUnder) / (weightOver + weightUnder);
+          prob = (maxProbAbove * weightOver + minProbAbove * weightUnder) /
+              (weightOver + weightUnder);
           weight = weightOver + weightUnder;
         } else if (overSpread != null) {
           prob = overSpread.maxProbAbove;
@@ -1191,19 +1200,22 @@ class Probabilities {
     }
   }
 
-  List<VerticalSpread> getContributingSpreads(DateTime expiration, double strike) {
+  List<VerticalSpread> getContributingSpreads(
+      DateTime expiration, double strike) {
     return _contributingSpreads[expiration]?[strike] ?? const [];
   }
 
   double getProbabilityExpiringAbove(DateTime expiration, double strike) {
     final expProbs = _probs[expiration];
     if (expProbs == null || expProbs.isEmpty) {
-      throw ArgumentError("No probability distribution found for expiration $expiration");
+      throw ArgumentError(
+          "No probability distribution found for expiration $expiration");
     }
 
     final strikes = expProbs.keys.toList()..sort();
     if (strike < strikes.first || strike > strikes.last) {
-      throw ArgumentError("Extrapolation is not allowed. Strike $strike is outside the known range [${strikes.first}, ${strikes.last}]");
+      throw ArgumentError(
+          "Extrapolation is not allowed. Strike $strike is outside the known range [${strikes.first}, ${strikes.last}]");
     }
 
     if (expProbs.containsKey(strike)) {

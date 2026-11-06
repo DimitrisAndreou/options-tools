@@ -13,20 +13,25 @@ class PositionAnalyzer {
   final Commodity underlying;
   final Commodity money;
   final TaxProfile taxes;
+  final double? _maxRisk;
   final List<_PnLSegment> _segments;
 
   PositionAnalyzer._(this.position,
       {required this.underlying,
       required this.money,
       required this.taxes,
+      double? maxRisk,
       required List<_PnLSegment> segments})
-      : _segments = segments;
+      : _maxRisk = maxRisk,
+        _segments = segments;
 
   PositionAnalyzer(this.position,
       {required this.underlying,
       required this.money,
-      this.taxes = TaxProfile.none})
-      : _segments = [] {
+      this.taxes = TaxProfile.none,
+      double? maxRisk})
+      : _maxRisk = maxRisk,
+        _segments = [] {
     final Set<DateTime> expirations = {};
     final interestingPoints = SplayTreeSet<double>()..add(0.0);
 
@@ -124,6 +129,7 @@ class PositionAnalyzer {
       underlying: underlying,
       money: money,
       taxes: taxes,
+      maxRisk: _maxRisk,
       segments: _segments
           .map((segment) => segment.withTaxes(taxes))
           .toList(growable: false),
@@ -137,8 +143,27 @@ class PositionAnalyzer {
   Iterable<PriceRange> get bestPrices => whereValueIs(maxValue);
   Iterable<PriceRange> get worstPrices => whereValueIs(minValue);
 
-  Iterable<PriceRange> whereValueIs(double value) => PriceRange._mergeAdjacents(
-      _segments.map((segment) => segment.whereValueIs(value)).nonNulls);
+  Iterable<PriceRange> whereValueIs(double value) {
+    final List<PriceRange> ranges = [];
+    for (int i = 0; i < _segments.length; i++) {
+      final segment = _segments[i];
+      if (i > 0) {
+        final prev = _segments[i - 1];
+        if (prev.maxPrice == segment.minPrice) {
+          final d1 = prev.valueAtMaxPrice - value;
+          final d2 = segment.valueAtMinPrice - value;
+          if (d1 != 0.0 && d2 != 0.0 && d1.sign != d2.sign) {
+            ranges.add(PriceRange.point(segment.minPrice));
+          }
+        }
+      }
+      final range = segment.whereValueIs(value);
+      if (range != null) {
+        ranges.add(range);
+      }
+    }
+    return PriceRange._mergeAdjacents(ranges);
+  }
 
   _PnLSegment _segmentBefore(double price) {
     for (final segment in _segments) {
@@ -204,14 +229,46 @@ class PositionAnalyzer {
       taxes: taxes);
 
   // Can be negative for profitless strategies.
-  double get maxProfit => max(maxValue, 0.0);
-  double get maxRisk => max(-minValue, 0.0);
+  double get maxProfit => maxValue;
+  double get maxRisk => _maxRisk ?? max(-minValue, 0.0);
 
   double get maxYield => 1.0 + maxProfit / maxRisk;
   double yieldAt(double price) => 1.0 + valueAt(price) / maxRisk;
+  double yieldBefore(double price) => 1.0 + valueBefore(price) / maxRisk;
+  double yieldAfter(double price) => 1.0 + valueAfter(price) / maxRisk;
 
   double valueAt(double price) =>
       _segments.map((segment) => segment.valueAt(price)).nonNulls.first;
+
+  /// Analyzes the relative performance of this analyzed position compared to
+  /// [other], preserving this analyzer's tax profile.
+  PositionAnalyzer analyzeVersus(Position other) {
+    final diffBase = PositionAnalyzer(position - other,
+        underlying: underlying, money: money);
+    if (taxes.isTaxFree) return diffBase;
+    final otherAnalyzer = PositionAnalyzer(other,
+        underlying: underlying, money: money, taxes: taxes);
+    return PositionAnalyzer._(
+      position - other,
+      underlying: underlying,
+      money: money,
+      taxes: taxes,
+      segments: diffBase._segments
+          .map((seg) => _PnLSegment(
+                minPrice: seg.minPrice,
+                valueAtMinPrice: seg._preTaxValueAtMinPrice,
+                maxPrice: seg.maxPrice,
+                valueAtMaxPrice: seg._preTaxValueAtMaxPrice,
+                delta: seg.delta,
+                costBasis: seg.costBasis,
+                realizedUnderlyingPnL: seg.realizedUnderlyingPnL,
+                realizedDerivativePnL: seg.realizedDerivativePnL,
+                tax: _segmentAfter(seg.minPrice).tax -
+                    otherAnalyzer._segmentAfter(seg.minPrice).tax,
+              ))
+          .toList(growable: false),
+    );
+  }
 
   @override
   String toString() =>
@@ -279,8 +336,7 @@ class _PnLSegment {
   double get valueAtMinPrice => _preTaxValueAtMinPrice - tax;
   double get valueAtMaxPrice => _preTaxValueAtMaxPrice - tax;
 
-  double get realizedPnL =>
-      realizedUnderlyingPnL + realizedDerivativePnL - tax;
+  double get realizedPnL => realizedUnderlyingPnL + realizedDerivativePnL - tax;
 
   double unrealizedPnLAt(double price) => delta * price - costBasis;
 

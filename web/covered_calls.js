@@ -4,6 +4,7 @@ function prepareCCData(value) {
   const money = value.money;
   const underlying = value.underlying;
   const preTax = value.preTax;
+  const active = value.postTax ?? preTax;
 
   return {
     underlying,
@@ -22,17 +23,19 @@ function prepareCCData(value) {
     capitalRequired: dollarFmt.format(-value.moneySize),
     capitalRequiredUnderlying: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
 
-    // Yields
-    moneyYield: percentFmt.format(preTax.moneyYield - 1.0),
-    moneyProfit: `${dollarFmt.format(preTax.moneyProfit)}`,
-    underlyingYield: percentFmt.format(preTax.underlyingYield - 1.0),
+    // Yields (reflecting postTax when taxes are active, matching chart axes)
+    moneyYield: percentFmt.format(active.moneyYield - 1.0),
+    moneyYieldPositive: active.moneyYield >= 1.0,
+    moneyProfit: `${dollarFmt.format(active.moneyProfit)}`,
+    underlyingYield: percentFmt.format(active.underlyingYield - 1.0),
+    underlyingYieldPositive: active.underlyingYield >= 1.0,
     underlyingProfit: `${underlyingFmt.format(preTax.premiumToReceive)} ${underlying}`,
 
     // Breakeven / Caps
-    beAbsolute: dollarFmt.format(preTax.breakEvenVsFullMoney.absolute),
-    beRelative: percentFmt.format(preTax.breakEvenVsFullMoney.relative - 1.0),
-    capAbsolute: dollarFmt.format(preTax.breakEvenVsFullUnderlying.absolute),
-    capRelative: percentFmt.format(preTax.breakEvenVsFullUnderlying.relative - 1.0),
+    beAbsolute: dollarFmt.format(active.breakEvenVsFullMoney.absolute),
+    beRelative: percentFmt.format(active.breakEvenVsFullMoney.relative - 1.0),
+    capAbsolute: dollarFmt.format(active.breakEvenVsFullUnderlying.absolute),
+    capRelative: percentFmt.format(active.breakEvenVsFullUnderlying.relative - 1.0),
 
     // Instructions
     buyAmount: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
@@ -49,6 +52,8 @@ function prepareCCData(value) {
 function renderTooltipCC(d) {
   const moneyProbSuffix = d.moneyProbability != null ? ` <span class="probs">(${Math.round(d.moneyProbability * 100)}% prob)</span>` : '';
   const underlyingProbSuffix = d.underlyingProbability != null ? ` <span class="probs">(${Math.round(d.underlyingProbability * 100)}% prob)</span>` : '';
+  const moneyYieldCls = d.moneyYieldPositive === false ? 'tooltip-yield-bad' : 'tooltip-yield-good';
+  const undYieldCls = d.underlyingYieldPositive === false ? 'tooltip-yield-bad' : 'tooltip-yield-good';
 
   return `
     <div class="tooltip-container">
@@ -58,13 +63,13 @@ function renderTooltipCC(d) {
       </div>
       
       <div class="tooltip-body">
-        <div class="tooltip-yield-good">${d.moneyYield} ${d.money} ⬆${moneyProbSuffix}</div>
+        <div class="${moneyYieldCls}">${d.moneyYield} ${d.money} ⬆${moneyProbSuffix}</div>
         <div class="tooltip-divider"></div>
         <div class="tooltip-strike-badge">
           ${d.strikeAbsolute} <span class="strike-relative">(${d.strikeRelative})</span>
         </div>
         <div class="tooltip-divider"></div>
-        <div class="tooltip-yield-good">${d.underlyingYield} ${d.underlying} ⬇${underlyingProbSuffix}</div>
+        <div class="${undYieldCls}">${d.underlyingYield} ${d.underlying} ⬇${underlyingProbSuffix}</div>
       </div>
 
       <div class="tooltip-breakeven">
@@ -163,13 +168,16 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     const formatMoneyYieldCell = (pos, compact) => {
       if (!pos || !pos.preTax) return '—';
       const m = pos.preTax;
-      const yieldStr = percentFmt.format(m.moneyYield - 1.0);
+      const yieldVal = m.moneyYield - 1.0;
+      const yieldStr = percentFmt.format(yieldVal);
       const profitStr = formatSignedDollar(m.moneyProfit);
+      const cls = yieldVal >= 0 ? 'text-good' : 'text-bad';
+      const altCls = m.moneyProfit >= 0 ? 'text-good-alt' : 'text-bad';
       const probStr = pos.moneyProbability != null ? `${Math.round(pos.moneyProbability * 100)}% prob` : '';
       if (compact) {
-        return `<span class="text-good text-nowrap">${yieldStr}</span><br/><small class="text-good-alt text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">${probStr}</small>` : ''}`;
+        return `<span class="${cls} text-nowrap">${yieldStr}</span><br/><small class="${altCls} text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">${probStr}</small>` : ''}`;
       }
-      return `<span class="text-good text-nowrap">${yieldStr} ${pos.money}</span> <small class="text-good-alt text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">(${probStr})</small>` : ''}`;
+      return `<span class="${cls} text-nowrap">${yieldStr} ${pos.money}</span> <small class="${altCls} text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">(${probStr})</small>` : ''}`;
     };
 
     const formatPostTaxMoneyYieldCell = (pos, compact) => {
@@ -204,16 +212,20 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const formatPostTaxUndYieldCell = (pos, compact) => {
       if (!pos || !pos.postTax) return '—';
-      const taxBelow = pos.postTax.unassignedTax ?? 0;
+      const post = pos.postTax;
+      const yieldVal = post.underlyingYield - 1.0;
+      const yieldStr = percentFmt.format(yieldVal);
+      const yieldCls = yieldVal >= 0 ? 'text-good' : 'text-bad';
+      const taxBelow = post.unassignedTax ?? 0;
       const netTaxImpact = -taxBelow;
       const capital = -pos.moneySize;
       const capPct = capital > 0 ? (netTaxImpact / capital) : 0;
       const cls = netTaxImpact > 0 ? 'text-good' : (netTaxImpact < 0 ? 'text-bad' : 'text-muted-alt');
       const labelSuffix = netTaxImpact > 0 ? 'tax benefit' : 'tax';
       if (compact) {
-        return `<span class="${cls} text-nowrap">${formatSignedDollar(netTaxImpact)} ${labelSuffix}</span><br/><small class="${cls} text-nowrap">(${percentFmt.format(capPct)} cap.)</small>`;
+        return `<span class="${yieldCls} text-nowrap">${yieldStr}</span><br/><small class="${cls} text-nowrap">${formatSignedDollar(netTaxImpact)} ${labelSuffix}</small><br/><small class="${cls} text-nowrap">(${percentFmt.format(capPct)} cap.)</small>`;
       }
-      return `<span class="${cls} text-nowrap">${formatSignedDollar(netTaxImpact)} ${pos.money} ${labelSuffix}</span><br/><small class="${cls} text-nowrap">(${percentFmt.format(capPct)} of capital)</small>`;
+      return `<span class="${yieldCls} text-nowrap">${yieldStr} ${pos.underlying}</span><br/><small class="${cls} text-nowrap">${formatSignedDollar(netTaxImpact)} ${pos.money} ${labelSuffix} (${percentFmt.format(capPct)} of capital)</small>`;
     };
 
     const formatBeMoneyCell = (pos, compact) => {
@@ -612,18 +624,20 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 function calculateOverlay(target) {
   const store = getAppStore();
   const entryPosition = store ? store.entryPosition : null;
-  if (!entryPosition || !entryPosition.preTax) return null;
+  const entryMetrics = entryPosition?.postTax ?? entryPosition?.preTax;
+  if (!entryMetrics) return null;
 
-  const { moneyYield, underlyingYield } = entryPosition.preTax;
-  if (!target || !target.preTax) {
+  const { moneyYield, underlyingYield } = entryMetrics;
+  const targetMetrics = target?.postTax ?? target?.preTax;
+  if (!targetMetrics) {
     return {
       entry: [moneyYield, underlyingYield],
       current: null
     };
   }
 
-  const targetMoneyYield = target.preTax.moneyYield;
-  const targetUndYield = target.preTax.underlyingYield;
+  const targetMoneyYield = targetMetrics.moneyYield;
+  const targetUndYield = targetMetrics.underlyingYield;
   const moneyRatio = targetMoneyYield ? moneyYield / targetMoneyYield : null;
   const underlyingRatio = targetUndYield ? underlyingYield / targetUndYield : null;
   const moneyDiffers = moneyRatio !== null && Math.abs(moneyRatio - 1.0) > 0.0001;
@@ -643,11 +657,19 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
   const targetItem = data.find(item => item.id === idToSelect);
   const overlay = calculateOverlay(targetItem);
 
-  const chartSource = data.map(item => ({
-    ...item,
-    moneyYield: item.preTax.moneyYield,
-    underlyingYield: item.preTax.underlyingYield
-  }));
+  const chartSource = data.map(item => {
+    const active = item.postTax ?? item.preTax;
+    return {
+      ...item,
+      moneyYield: active.moneyYield,
+      underlyingYield: active.underlyingYield
+    };
+  });
+
+  const moneyYields = chartSource.map(d => d.moneyYield).filter(Number.isFinite);
+  const minMoneyYield = moneyYields.length ? Math.min(...moneyYields) : 1.0;
+  const xStart = (minMoneyYield >= 1.0 && minMoneyYield <= 1.25) ? 1.0 : minMoneyYield;
+  const xEnd = xStart + 0.5;
 
   const dataset = {
     id: "original",
@@ -698,7 +720,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
         },
       },
       axisLine,
-      min: function (value) { return Math.max(1.0, value.min - 0.5); },
+      min: function (value) { return value.min < 1.0 ? value.min - 0.1 : Math.max(1.0, value.min - 0.5); },
       max: function (value) { return value.max + 0.5; },
       position: 'bottom',
     },
@@ -812,8 +834,8 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
         throttle: 50,
         xAxisIndex: 0,
         filterMode: 'none',
-        startValue: 1.0,
-        endValue: 1.5
+        startValue: xStart,
+        endValue: xEnd
       },
       {
         type: 'inside',

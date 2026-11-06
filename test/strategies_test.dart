@@ -74,9 +74,9 @@ void main() {
           'derivativeTaxRate': 0.0,
           'preTax': {
             'moneyYield': 1.0526315789473684,
-            'underlyingYield': 1.0526315789473686,
+            'underlyingYield': 1.0526315789473684,
             'moneyProfit': 50.0,
-            'premiumToReceive': 0.050000000000000044,
+            'premiumToReceive': 0.05,
             'breakEvenVsFullUnderlying': {
               'absolute': 1052.6315789473686,
               'relative': 1.0526315789473686,
@@ -119,7 +119,7 @@ void main() {
     );
 
     const taxes = TaxProfile(
-      underlyingTaxRate: 0.20,
+      underlyingTaxRate: 0.05,
       derivativeTaxRate: 0.30,
     );
 
@@ -135,38 +135,38 @@ void main() {
     expect(coveredCalls.length, equals(1));
     final cc = coveredCalls.first;
 
-    // Pre-tax metrics:
+    // Pre-tax metrics (reflecting avgPrice = 500, maxRisk = 500):
     expect(cc.unitCostBasis, equals(500.0));
     expect(cc.costBasis, equals(500.0));
-    expect(cc.preTax.moneyProfit, equals(150.0)); // 1100 - 950 = 150
-    expect(cc.preTax.moneyYield, closeTo(1.0 + 150.0 / 950.0, 1e-12));
+    expect(cc.preTax.moneyProfit, equals(650.0)); // 1100 + 50 - 500 = 650
+    expect(cc.preTax.moneyYield, closeTo(1.0 + 650.0 / 500.0, 1e-12));
     expect(cc.preTax.premiumToReceive.size, closeTo(0.05, 1e-12));
     expect(cc.preTax.underlyingYield, closeTo(1.0 + 0.05 / 0.95, 1e-12));
-    expect(cc.preTax.breakEvenVsFullMoney.absolute, closeTo(950.0, 1e-12));
+    expect(cc.preTax.breakEvenVsFullMoney.absolute, closeTo(450.0, 1e-12));
     expect(cc.preTax.breakEvenVsFullUnderlying.absolute,
-        closeTo(1100.0 / 0.95, 1e-12));
+        closeTo(1100.0 / 0.95, 1e-9));
 
     // Post-tax metrics:
-    // Below strike: +50 derivative PnL taxed at 30% -> 15 USD unassignedTax (underlying shares untouched)
-    // Above strike: +650 underlying PnL taxed at 20% -> 130 tax -> postTax.moneyProfit = 150 - 130 = 20
+    // Below strike: +50 derivative PnL taxed at 30% -> 15 USD unassignedTax
+    // Above strike: +650 underlying PnL taxed at 5% -> 32.5 tax -> postTax.moneyProfit = 650 - 32.5 = 617.5
     final postTax = cc.postTax!;
-    expect(postTax.moneyProfit, closeTo(20.0, 1e-12));
-    expect(postTax.moneyYield, closeTo(1.0 + 20.0 / 950.0, 1e-12));
-    expect(postTax.premiumToReceive.size, closeTo(0.05, 1e-12));
-    expect(postTax.underlyingYield, closeTo(1.0 + 0.05 / 0.95, 1e-12));
+    expect(postTax.moneyProfit, closeTo(617.5, 1e-12));
+    expect(postTax.moneyYield, closeTo(1.0 + 617.5 / 500.0, 1e-12));
+    expect(postTax.premiumToReceive.size, closeTo(0.035, 1e-12));
+    expect(postTax.underlyingYield, closeTo(1.0 + 0.035 / 0.95, 1e-12));
     expect(postTax.unassignedTax, closeTo(15.0, 1e-12));
-    expect(postTax.breakEvenVsFullMoney.absolute, closeTo(965.0, 1e-12));
+    expect(postTax.breakEvenVsFullMoney.absolute, closeTo(465.0, 1e-12));
     expect(postTax.breakEvenVsFullUnderlying.absolute,
-        closeTo((20.0 + 950.0) / 0.95, 1e-12));
+        closeTo((617.5 + 450.0) / 0.95, 1e-9));
 
     final json = cc.toJson();
-    expect(json['underlyingTaxRate'], equals(0.20));
+    expect(json['underlyingTaxRate'], equals(0.05));
     expect(json['derivativeTaxRate'], equals(0.30));
     expect(json['postTax'], isNotNull);
-    expect(json['postTax']['moneyProfit'], closeTo(20.0, 1e-12));
+    expect(json['postTax']['moneyProfit'], closeTo(617.5, 1e-12));
     expect(json['postTax']['unassignedTax'], closeTo(15.0, 1e-12));
     expect(json['postTax']['breakEvenVsFullMoney']['absolute'],
-        closeTo(965.0, 1e-12));
+        closeTo(465.0, 1e-12));
   });
 
   test('LongCall JSON generation golden test', () {
@@ -366,8 +366,10 @@ void main() {
     ).toList();
 
     expect(spreads.length, equals(2));
-    final overVs = spreads.firstWhere((vs) => vs.type == VerticalSpreadType.over);
-    final underVs = spreads.firstWhere((vs) => vs.type == VerticalSpreadType.under);
+    final overVs =
+        spreads.firstWhere((vs) => vs.type == VerticalSpreadType.over);
+    final underVs =
+        spreads.firstWhere((vs) => vs.type == VerticalSpreadType.under);
 
     final overJson = overVs.toJson();
     final overDte = overJson.remove('DTE');
@@ -385,9 +387,11 @@ void main() {
           'moneySize': -30.0,
           'spotPrice': 1000.0,
           'shortLeg': 'BTC-1100-C',
-          'shortLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1100-C',
+          'shortLegURL':
+              'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1100-C',
           'longLeg': 'BTC-1000-C',
-          'longLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
+          'longLegURL':
+              'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
           'type': 'over',
           'formattedDate': '31 December 2026',
           'breakEvenVsFullMoneyAbsolute': 1030.0,
@@ -420,9 +424,11 @@ void main() {
           'moneySize': 30.0,
           'spotPrice': 1000.0,
           'shortLeg': 'BTC-1000-C',
-          'shortLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
+          'shortLegURL':
+              'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
           'longLeg': 'BTC-1100-C',
-          'longLegURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1100-C',
+          'longLegURL':
+              'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1100-C',
           'type': 'under',
           'formattedDate': '31 December 2026',
           'breakEvenVsFullMoneyAbsolute': 1030.0,
@@ -453,25 +459,75 @@ void main() {
     );
 
     // Strike 900 options (cheaper but less centered) - total cost 120
-    final call900 = Option('BTC-900-C', underlying: btc, money: usd, strike: 900.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket900 = Market.create(asset: call900, money: usd, bidPrice: 60.0, askPrice: 60.0);
-    final put900 = Option('BTC-900-P', underlying: btc, money: usd, strike: 900.0, isPut: true, expiration: expiration, venues: {Venue.Deribit});
-    final putMarket900 = Market.create(asset: put900, money: usd, bidPrice: 60.0, askPrice: 60.0);
+    final call900 = Option('BTC-900-C',
+        underlying: btc,
+        money: usd,
+        strike: 900.0,
+        isCall: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final callMarket900 = Market.create(
+        asset: call900, money: usd, bidPrice: 60.0, askPrice: 60.0);
+    final put900 = Option('BTC-900-P',
+        underlying: btc,
+        money: usd,
+        strike: 900.0,
+        isPut: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final putMarket900 = Market.create(
+        asset: put900, money: usd, bidPrice: 60.0, askPrice: 60.0);
 
     // Strike 1000 options (ATM - more expensive but perfectly centered) - total cost 140
-    final call1000 = Option('BTC-1000-C', underlying: btc, money: usd, strike: 1000.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket1000 = Market.create(asset: call1000, money: usd, bidPrice: 70.0, askPrice: 70.0);
-    final put1000 = Option('BTC-1000-P', underlying: btc, money: usd, strike: 1000.0, isPut: true, expiration: expiration, venues: {Venue.Deribit});
-    final putMarket1000 = Market.create(asset: put1000, money: usd, bidPrice: 70.0, askPrice: 70.0);
+    final call1000 = Option('BTC-1000-C',
+        underlying: btc,
+        money: usd,
+        strike: 1000.0,
+        isCall: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final callMarket1000 = Market.create(
+        asset: call1000, money: usd, bidPrice: 70.0, askPrice: 70.0);
+    final put1000 = Option('BTC-1000-P',
+        underlying: btc,
+        money: usd,
+        strike: 1000.0,
+        isPut: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final putMarket1000 = Market.create(
+        asset: put1000, money: usd, bidPrice: 70.0, askPrice: 70.0);
 
     // Strike 1100 options (cheaper but less centered) - total cost 120
-    final call1100 = Option('BTC-1100-C', underlying: btc, money: usd, strike: 1100.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket1100 = Market.create(asset: call1100, money: usd, bidPrice: 60.0, askPrice: 60.0);
-    final put1100 = Option('BTC-1100-P', underlying: btc, money: usd, strike: 1100.0, isPut: true, expiration: expiration, venues: {Venue.Deribit});
-    final putMarket1100 = Market.create(asset: put1100, money: usd, bidPrice: 60.0, askPrice: 60.0);
+    final call1100 = Option('BTC-1100-C',
+        underlying: btc,
+        money: usd,
+        strike: 1100.0,
+        isCall: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final callMarket1100 = Market.create(
+        asset: call1100, money: usd, bidPrice: 60.0, askPrice: 60.0);
+    final put1100 = Option('BTC-1100-P',
+        underlying: btc,
+        money: usd,
+        strike: 1100.0,
+        isPut: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final putMarket1100 = Market.create(
+        asset: put1100, money: usd, bidPrice: 60.0, askPrice: 60.0);
 
     final straddles = Straddle.generateAll(
-      [spotMarket, callMarket900, putMarket900, callMarket1000, putMarket1000, callMarket1100, putMarket1100],
+      [
+        spotMarket,
+        callMarket900,
+        putMarket900,
+        callMarket1000,
+        putMarket1000,
+        callMarket1100,
+        putMarket1100
+      ],
       underlying: btc,
       money: usd,
       slippage: 0.0,
@@ -500,12 +556,14 @@ void main() {
           'money': 'USD',
           'spotPrice': 1000.0,
           'call': 'BTC-1000-C',
-          'callURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
+          'callURL':
+              'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
           'callSize': 1.0,
           'callCostInMoney': 70.0,
           'callCostInUnderlying': 0.07,
           'put': 'BTC-1000-P',
-          'putURL': 'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-P',
+          'putURL':
+              'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-P',
           'putSize': 1.0,
           'putCostInMoney': 70.0,
           'putCostInUnderlying': 0.07,
@@ -542,14 +600,35 @@ void main() {
     );
 
     // Create leg options and markets
-    final call1000 = Option('BTC-1000-C', underlying: btc, money: usd, strike: 1000.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket1000 = Market.create(asset: call1000, money: usd, bidPrice: 100.0, askPrice: 100.0);
+    final call1000 = Option('BTC-1000-C',
+        underlying: btc,
+        money: usd,
+        strike: 1000.0,
+        isCall: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final callMarket1000 = Market.create(
+        asset: call1000, money: usd, bidPrice: 100.0, askPrice: 100.0);
 
-    final call1100 = Option('BTC-1100-C', underlying: btc, money: usd, strike: 1100.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket1100 = Market.create(asset: call1100, money: usd, bidPrice: 30.0, askPrice: 30.0);
+    final call1100 = Option('BTC-1100-C',
+        underlying: btc,
+        money: usd,
+        strike: 1100.0,
+        isCall: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final callMarket1100 = Market.create(
+        asset: call1100, money: usd, bidPrice: 30.0, askPrice: 30.0);
 
-    final call1200 = Option('BTC-1200-C', underlying: btc, money: usd, strike: 1200.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket1200 = Market.create(asset: call1200, money: usd, bidPrice: 10.0, askPrice: 10.0);
+    final call1200 = Option('BTC-1200-C',
+        underlying: btc,
+        money: usd,
+        strike: 1200.0,
+        isCall: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final callMarket1200 = Market.create(
+        asset: call1200, money: usd, bidPrice: 10.0, askPrice: 10.0);
 
     // Let's generate vertical spreads from these
     final spreads = VerticalSpread.generateAll(
@@ -570,8 +649,10 @@ void main() {
     expect(p1150, lessThan(1.0));
 
     // Verify extrapolation throws ArgumentError
-    expect(() => probs.getProbabilityExpiringAbove(expiration, 900.0), throwsArgumentError);
-    expect(() => probs.getProbabilityExpiringAbove(expiration, 1300.0), throwsArgumentError);
+    expect(() => probs.getProbabilityExpiringAbove(expiration, 900.0),
+        throwsArgumentError);
+    expect(() => probs.getProbabilityExpiringAbove(expiration, 1300.0),
+        throwsArgumentError);
   });
 
   test('CoveredCall attaches probabilities test', () {
@@ -587,14 +668,35 @@ void main() {
     );
 
     // Create leg options and markets
-    final call1000 = Option('BTC-1000-C', underlying: btc, money: usd, strike: 1000.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket1000 = Market.create(asset: call1000, money: usd, bidPrice: 100.0, askPrice: 100.0);
+    final call1000 = Option('BTC-1000-C',
+        underlying: btc,
+        money: usd,
+        strike: 1000.0,
+        isCall: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final callMarket1000 = Market.create(
+        asset: call1000, money: usd, bidPrice: 100.0, askPrice: 100.0);
 
-    final call1100 = Option('BTC-1100-C', underlying: btc, money: usd, strike: 1100.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket1100 = Market.create(asset: call1100, money: usd, bidPrice: 30.0, askPrice: 30.0);
+    final call1100 = Option('BTC-1100-C',
+        underlying: btc,
+        money: usd,
+        strike: 1100.0,
+        isCall: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final callMarket1100 = Market.create(
+        asset: call1100, money: usd, bidPrice: 30.0, askPrice: 30.0);
 
-    final call1200 = Option('BTC-1200-C', underlying: btc, money: usd, strike: 1200.0, isCall: true, expiration: expiration, venues: {Venue.Deribit});
-    final callMarket1200 = Market.create(asset: call1200, money: usd, bidPrice: 10.0, askPrice: 10.0);
+    final call1200 = Option('BTC-1200-C',
+        underlying: btc,
+        money: usd,
+        strike: 1200.0,
+        isCall: true,
+        expiration: expiration,
+        venues: {Venue.Deribit});
+    final callMarket1200 = Market.create(
+        asset: call1200, money: usd, bidPrice: 10.0, askPrice: 10.0);
 
     final coveredCalls = CoveredCall.generateAll(
       [spotMarket, callMarket1000, callMarket1100, callMarket1200],
@@ -607,7 +709,8 @@ void main() {
     final cc1100 = coveredCalls.firstWhere((cc) => cc.option.strike == 1100.0);
     expect(cc1100.moneyProbability, isNotNull);
     expect(cc1100.underlyingProbability, isNotNull);
-    expect(cc1100.moneyProbability! + cc1100.underlyingProbability!, closeTo(1.0, 1e-9));
+    expect(cc1100.moneyProbability! + cc1100.underlyingProbability!,
+        closeTo(1.0, 1e-9));
 
     // BTC-1000-C is also within the range [1000, 1200]
     final cc1000 = coveredCalls.firstWhere((cc) => cc.option.strike == 1000.0);
@@ -615,4 +718,3 @@ void main() {
     expect(cc1000.underlyingProbability, closeTo(0.3, 1e-9));
   });
 }
-
