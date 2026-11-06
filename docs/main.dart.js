@@ -9782,8 +9782,10 @@ if(i==null){h=g.f
 i=h.gv()-h.az(0.5)}d.k(0,"callPrice",i/k)
 o=j?null:o.b
 if(o==null){o=g.f
-o=o.gv()-o.az(0.5)}d.k(0,"callContractPrice",o)
+o=o.gv()-o.az(0.5)}j=m.e
+d.k(0,"callContractPrice",o*j)
 d.k(0,"contractLot",l)
+d.k(0,"minSize",j)
 o=g.db
 j=o==null
 if(!j)d.k(0,"avgPrice",o)

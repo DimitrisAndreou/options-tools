@@ -114,9 +114,12 @@ class CoveredCall {
   }
 
   double get callContractPrice =>
-      optionLeg.unitCostBasis?.size ?? callMarket.sellPrice();
+      (optionLeg.unitCostBasis?.size ?? callMarket.sellPrice()) *
+      option.minSize;
 
   double get contractLot => option.contractLot;
+
+  double get minSize => option.minSize;
 
   String? get callURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
 
@@ -173,6 +176,7 @@ class CoveredCall {
         'callPrice': callPrice,
         'callContractPrice': callContractPrice,
         'contractLot': contractLot,
+        'minSize': minSize,
         if (avgPrice != null) 'avgPrice': avgPrice,
         'DTE': expiration.daysLeft,
         'formattedDate': expiration.formattedDate,

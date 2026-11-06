@@ -66,6 +66,7 @@ void main() {
           'callPrice': 50.0,
           'callContractPrice': 50.0,
           'contractLot': 1.0,
+          'minSize': 1.0,
           'formattedDate': '31 December 2026',
           'strikeAbsolute': 1000.0,
           'strikeRelative': 1.0,
@@ -284,10 +285,12 @@ void main() {
     expect(ccWithAvg.callPrice, closeTo(17.46, 1e-12));
     expect(ccWithAvg.callContractPrice, closeTo(1746.0, 1e-12));
     expect(ccWithAvg.contractLot, equals(100.0));
+    expect(ccWithAvg.minSize, equals(1.0));
     final jsonWithAvg = ccWithAvg.toJson();
     expect(jsonWithAvg['callPrice'], closeTo(17.46, 1e-12));
     expect(jsonWithAvg['callContractPrice'], closeTo(1746.0, 1e-12));
     expect(jsonWithAvg['contractLot'], equals(100.0));
+    expect(jsonWithAvg['minSize'], equals(1.0));
 
     // Without avgPrice, defaults to spotPrice (75.5)
     final ccWithoutAvg = CoveredCall.generateAll(
@@ -348,6 +351,54 @@ void main() {
         },
       ]),
     );
+  });
+
+  test('CoveredCall with fractional minSize (e.g. BTC 0.1) computes correct callContractPrice', () {
+    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
+    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
+
+    final spotMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 75000.0,
+      askPrice: 75000.0,
+    );
+
+    final callOption = Option(
+      'BTC-94000-C',
+      underlying: btc,
+      money: usd,
+      strike: 94000.0,
+      isCall: true,
+      expiration: expiration,
+      contractLot: 1.0,
+      minSize: 0.1,
+      venues: {Venue.Deribit},
+    );
+
+    final callMarket = Market.create(
+      asset: callOption,
+      money: usd,
+      bidPrice: 6421.75,
+      askPrice: 6421.75,
+    );
+
+    final cc = CoveredCall.generateAll(
+      [spotMarket, callMarket],
+      underlying: btc,
+      money: usd,
+      slippage: 0.0,
+    ).single;
+
+    expect(cc.callPrice, closeTo(6421.75, 1e-12));
+    expect(cc.callContractPrice, closeTo(642.175, 1e-12));
+    expect(cc.minSize, equals(0.1));
+    expect(cc.contractLot, equals(1.0));
+    final json = cc.toJson();
+    expect(json['callPrice'], closeTo(6421.75, 1e-12));
+    expect(json['callContractPrice'], closeTo(642.175, 1e-12));
+    expect(json['minSize'], equals(0.1));
   });
 
   test('CoveredCall strategyURL returns null for non-OptionStrat venue', () {

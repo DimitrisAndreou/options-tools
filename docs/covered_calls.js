@@ -33,6 +33,7 @@ function prepareCCData(value) {
     callPrice: value.callPrice,
     callContractPrice: value.callContractPrice,
     contractLot: value.contractLot,
+    minSize: value.minSize,
     avgPrice: value.avgPrice,
     capitalRequired: dollarFmt.format(-value.moneySize),
     capitalRequiredUnderlying: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
@@ -173,11 +174,15 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       let callPriceLine = '';
       if (pos.callPrice != null) {
         const cp = Number(pos.callPrice);
-        const lot = pos.contractLot ?? 100;
+        const minSize = pos.minSize != null
+          ? Number(pos.minSize)
+          : (pos.underlying === 'BTC' ? 0.1 : 1);
+        const lot = pos.contractLot != null ? Number(pos.contractLot) : 100;
         const contractPrice = pos.callContractPrice != null
           ? Number(pos.callContractPrice)
-          : cp * lot;
-        callPriceLine = `<br/><small class="text-probs text-nowrap">${dollarFmt.format(cp)} (${formatContractPrice(contractPrice)} per contract)</small>`;
+          : cp * lot * minSize;
+        const contractSizeStr = Number(minSize.toFixed(4));
+        callPriceLine = `<br/><small class="text-probs"><span class="text-nowrap">${dollarFmt.format(cp)}</span> <span class="text-nowrap">(${formatContractPrice(contractPrice)} per ${contractSizeStr} contract)</span></small>`;
       }
       return `<span class="text-neutral text-nowrap">${dollarFmt.format(strike)}</span>${sep}<small class="strike-relative text-nowrap">(${rel})</small>${callPriceLine}`;
     };
