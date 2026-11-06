@@ -9788,7 +9788,9 @@ d.k(0,"contractLot",l)
 d.k(0,"minSize",j)
 o=g.db
 j=o==null
-if(!j)d.k(0,"avgPrice",o)
+h=!j
+if(h)d.k(0,"avgPrice",o)
+if(h)d.k(0,"underlyingHeld",g.Q.b)
 d.k(0,"DTE",B.c.Z(c.aF(new A.ac(Date.now(),0,!1)).a,864e8))
 d.k(0,"formattedDate",A.fk(c))
 d.k(0,"strikeAbsolute",a)

@@ -110,6 +110,34 @@ document.addEventListener('alpine:init', () => {
       return dollarFmt.format(this.spotPrice);
     },
 
+    get existingHolding() {
+      if (this.strategy !== 'coveredCall') return null;
+      if (!this.chartData || this.chartData.length === 0) return null;
+      const sample = this.chartData[0];
+      const avgPrice = sample.avgPrice != null ? Number(sample.avgPrice) : null;
+      if (avgPrice === null || !(avgPrice > 0)) return null;
+
+      const spotPrice = this.spotPrice ?? Number(sample.spotPrice);
+      if (!Number.isFinite(spotPrice)) return null;
+
+      const underlying = sample.underlying || this.ticker || 'Underlying';
+      const unitsHeld = sample.underlyingHeld != null
+        ? Number(sample.underlyingHeld)
+        : (sample.costBasis != null && sample.avgPrice != null
+            ? sample.costBasis / sample.avgPrice
+            : Math.abs(sample.callSize) * (sample.contractLot || 1));
+      if (!Number.isFinite(unitsHeld) || unitsHeld <= 0) return null;
+
+      const costBasis = Number(sample.costBasis) || (unitsHeld * avgPrice);
+      const unitsFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
+
+      return {
+        underlying,
+        unitsHeld: unitsFmt.format(unitsHeld),
+        costBasisHtml: formatExistingCostBasisHtml(costBasis, avgPrice, spotPrice)
+      };
+    },
+
     get selectedItem() {
       if (!this.selectedId || !this.chartData) return null;
       return this.chartData.find(item => item.id === this.selectedId);

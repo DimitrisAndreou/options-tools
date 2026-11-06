@@ -143,3 +143,24 @@ function formatDaysDiff(entryDTE, currentDTE) {
   const pctSign = pctDte >= 0 ? '+' : '';
   return `${sign}${diffDte} days (${pctSign}${pctDte.toFixed(2)}%)`;
 }
+
+function formatExistingCostBasisHtml(costBasis, avgPrice, spotPrice) {
+  if (costBasis == null || avgPrice == null || !(avgPrice > 0)) return '—';
+  const costBasisStr = dollarFmt.format(costBasis);
+  if (!Number.isFinite(spotPrice)) {
+    return `<span class="text-neutral text-nowrap">${costBasisStr}</span>`;
+  }
+  const spotValue = costBasis * (spotPrice / avgPrice);
+  const diff = spotValue - costBasis;
+  const pct = diff / costBasis;
+  const pctStr = percentFmt.format(pct);
+  if (diff < 0) {
+    const lossAmt = dollarFmt.format(Math.abs(diff));
+    return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-bad text-nowrap">${lossAmt} (${pctStr}) loss</small>`;
+  } else if (diff > 0) {
+    const profitAmt = dollarFmt.format(diff);
+    return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-good text-nowrap">${profitAmt} (${pctStr}) profit</small>`;
+  } else {
+    return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-neutral-alt text-nowrap">$0.00 (0.0%)</small>`;
+  }
+}

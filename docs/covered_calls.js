@@ -35,6 +35,8 @@ function prepareCCData(value) {
     contractLot: value.contractLot,
     minSize: value.minSize,
     avgPrice: value.avgPrice,
+    underlyingHeld: value.underlyingHeld,
+    costBasis: value.costBasis,
     capitalRequired: dollarFmt.format(-value.moneySize),
     capitalRequiredUnderlying: `${underlyingFmt.format(value.underlyingToBuy)} ${underlying}`,
 
@@ -127,7 +129,6 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     const hasDiff = Boolean(entryPos && currentPos);
     const activePos = currentPos || entryPos;
     const hasTaxes = Boolean(activePos?.postTax || entryPos?.postTax);
-    const hasAvgPrice = Boolean(activePos?.avgPrice != null || entryPos?.avgPrice != null);
 
     // Rolls mean replacing the old position with a new one.
     // Their difference does not represent a loss or a gain.
@@ -196,30 +197,6 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       if (!pos) return '—';
       const suffix = compact ? '' : ` ${pos.underlying}`;
       return `<span class="text-neutral text-nowrap">${underlyingFmt.format(pos.underlyingToBuy)}${suffix}</span>`;
-    };
-
-    const formatExistingCostBasisCell = (pos) => {
-      if (!pos || pos.avgPrice == null || pos.costBasis == null) return '—';
-      const avgPrice = Number(pos.avgPrice);
-      const spotPrice = Number(pos.spotPrice);
-      const costBasis = Number(pos.costBasis);
-      const costBasisStr = dollarFmt.format(costBasis);
-      if (!(avgPrice > 0) || !Number.isFinite(spotPrice)) {
-        return `<span class="text-neutral text-nowrap">${costBasisStr}</span>`;
-      }
-      const spotValue = costBasis * (spotPrice / avgPrice);
-      const diff = spotValue - costBasis;
-      const pct = diff / costBasis;
-      const pctStr = percentFmt.format(pct);
-      if (diff < 0) {
-        const lossAmt = dollarFmt.format(Math.abs(diff));
-        return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-bad text-nowrap">${lossAmt} (${pctStr}) loss</small>`;
-      } else if (diff > 0) {
-        const profitAmt = dollarFmt.format(diff);
-        return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-good text-nowrap">${profitAmt} (${pctStr}) profit</small>`;
-      } else {
-        return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-neutral-alt text-nowrap">$0.00 (0.0%)</small>`;
-      }
     };
 
     const formatMoneyYieldCell = (pos, compact) => {
@@ -348,7 +325,6 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     let strikeDiffText = '', strikeDiffClass = 'text-neutral-alt';
     let moneyDiffText = '', moneyDiffClass = 'text-neutral-alt';
     let undDiffText = '', undDiffClass = 'text-neutral-alt';
-    let costBasisDiffText = '', costBasisDiffClass = 'text-neutral-alt';
     let moneyYieldDiffText = '', moneyYieldDiffClass = 'text-neutral-alt';
     let postTaxMoneyYieldDiffText = '', postTaxMoneyYieldDiffClass = 'text-neutral-alt';
     let undYieldDiffText = '', undYieldDiffClass = 'text-neutral-alt';
@@ -403,20 +379,6 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       undDiffClass = isRoll
         ? (undDiff <= 0 ? 'text-good' : 'text-bad')
         : (undDiff >= 0 ? 'text-good' : 'text-bad');
-
-      // 6b. Existing Cost Basis
-      if (hasAvgPrice) {
-        const entryCb = entryPos.avgPrice != null ? (entryPos.costBasis ?? 0) : null;
-        const curCb = currentPos.avgPrice != null ? (currentPos.costBasis ?? 0) : null;
-        if (entryCb != null && curCb != null) {
-          const cbDiff = curCb - entryCb;
-          costBasisDiffText = cbDiff === 0 ? 'Same' : `${formatSignedDollar(cbDiff)}`;
-          costBasisDiffClass = cbDiff === 0 ? 'text-muted-alt' : 'text-neutral-alt';
-        } else {
-          costBasisDiffText = '—';
-          costBasisDiffClass = 'text-muted-alt';
-        }
-      }
 
       // 7. Money Yield
       const moneyYieldRatioChange = currentPos.preTax.moneyYield / entryPos.preTax.moneyYield - 1.0;
@@ -565,16 +527,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
             single: formatCapitalUnderlyingCell(activePos, false),
             diff: undDiffText,
             diffClass: undDiffClass
-          },
-          ...(hasAvgPrice ? [{
-            label: 'Existing Cost Basis',
-            subtitle: null,
-            before: formatExistingCostBasisCell(entryPos),
-            after: formatExistingCostBasisCell(currentPos),
-            single: formatExistingCostBasisCell(activePos),
-            diff: costBasisDiffText,
-            diffClass: costBasisDiffClass
-          }] : [])
+          }
         ]
       },
       {
@@ -745,6 +698,13 @@ function calculateOverlay(target) {
 function renderCoveredCallsChart(data, chartDom, idToSelect) {
   const money = data.at(0)?.money || '';
   const underlying = data.at(0)?.underlying || '';
+
+  const store = getAppStore();
+  const hasAvgPrice = Boolean(
+    data.some(d => d.avgPrice != null) ||
+    store?.entryPosition?.avgPrice != null ||
+    (store && store.avgPrice !== '' && store.avgPrice != null && !isNaN(parseFloat(store.avgPrice)) && parseFloat(store.avgPrice) >= 0)
+  );
 
   const targetItem = data.find(item => item.id === idToSelect);
   const overlay = calculateOverlay(targetItem);
@@ -958,7 +918,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
           data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
         }
       },
-      {
+      ...(!hasAvgPrice ? [{
         type: 'line',
         name: '45°',
         data: [[diagMin, diagMin], [diagMax, diagMax]],
@@ -980,7 +940,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
           }
         },
         showSymbol: false
-      }
+      }] : [])
     ],
     legend: legend,
     animationDurationUpdate: 800,
@@ -1005,7 +965,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
         endValue: yEnd
       }
     ],
-  });
+  }, true);
 
   chart.on('click', function (params) {
     if (params.componentType === 'series' && params.data) {

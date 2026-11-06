@@ -154,6 +154,7 @@ void main() {
 
     expect(coveredCalls.length, equals(1));
     final cc = coveredCalls.first;
+    expect(cc.toJson()['underlyingHeld'], equals(1.0));
 
     // Pre-tax metrics (reflecting avgPrice = 500, maxRisk = 500):
     expect(cc.unitCostBasis, equals(500.0));
@@ -229,6 +230,7 @@ void main() {
 
     expect(coveredCalls.length, equals(1));
     final cc = coveredCalls.first;
+    expect(cc.toJson()['underlyingHeld'], equals(1.0));
 
     // Max value at expiration is 1100 + 50 - 1500 = -350 (< 0)
     expect(cc.preTax.moneyProfit, closeTo(-350.0, 1e-12));
@@ -336,6 +338,7 @@ void main() {
     );
     final jsonSize3 = ccSize3.toJson();
     expect(jsonSize3['costBasis'], closeTo(30000.0, 1e-9));
+    expect(jsonSize3['underlyingHeld'], equals(300.0));
     expect(jsonSize3['moneySize'], closeTo(-(30000.0 - 3 * 1746.0), 1e-9));
     expect(jsonSize3['callSize'], equals(-3.0));
     expect(jsonSize3['preTax']['moneyProfit'], closeTo(3 * (6500.0 + 1746.0 - 10000.0), 1e-9));

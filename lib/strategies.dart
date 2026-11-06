@@ -178,6 +178,7 @@ class CoveredCall {
         'contractLot': contractLot,
         'minSize': minSize,
         if (avgPrice != null) 'avgPrice': avgPrice,
+        if (avgPrice != null) 'underlyingHeld': underlyingLeg.size,
         'DTE': expiration.daysLeft,
         'formattedDate': expiration.formattedDate,
         'strikeAbsolute': strikePrice.absolute,

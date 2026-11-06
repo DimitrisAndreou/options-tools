@@ -221,8 +221,40 @@
         </div>
       </div>
       <!-- Strategy Details Panel -->
-      <div class="col-lg-6 col-12">
-        <div class="card h-100">
+      <div class="col-lg-6 col-12 d-flex flex-column">
+        <!-- Existing Position Panel -->
+        <div class="card mb-3" x-show="$store.app.existingHolding" style="font-family: monospace;">
+          <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h5 class="mb-0 d-flex align-items-center gap-2">
+              <span><i class="fas fa-wallet me-2 text-primary"></i>Existing Position</span>
+            </h5>
+          </div>
+          <div class="card-body">
+            <div tabindex="0" role="region" aria-label="Existing Position Details"
+              class="table-wrapper unified-table-wrapper">
+              <table class="unified-strategy-table">
+                <tbody class="strategy-section-body">
+                  <tr class="strategy-metric-row">
+                    <th scope="row" class="metric-label-cell">
+                      <div class="metric-label" x-text="`Units of ${$store.app.existingHolding?.underlying} held`"></div>
+                    </th>
+                    <td class="metric-val-single">
+                      <span class="text-neutral text-nowrap" x-text="$store.app.existingHolding?.unitsHeld"></span>
+                    </td>
+                  </tr>
+                  <tr class="strategy-metric-row">
+                    <th scope="row" class="metric-label-cell">
+                      <div class="metric-label">Cost Basis</div>
+                    </th>
+                    <td class="metric-val-single" x-html="$store.app.existingHolding?.costBasisHtml"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card flex-grow-1 mb-4 mb-lg-0">
           <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
             <h5 class="mb-0 d-flex align-items-center gap-2">
               <span><i class="fas fa-info-circle me-2 text-primary"></i>Strategy Details</span>
