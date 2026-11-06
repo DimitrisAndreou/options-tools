@@ -177,6 +177,26 @@ StrategyRegistry['longPut'] = new class extends BaseStrategyConfig {
 
 function renderLongOptionsChart(data, chartDom, idToSelect) {
   const underlying = data.at(0)?.underlying || '';
+  const targetItem = data.find(item => item.id === idToSelect);
+
+  let xStart = 0.0;
+  let xEnd = 10.0;
+  let yStart = 0.8;
+  let yEnd = 1.2;
+
+  if (targetItem) {
+    const tx = Number(targetItem.maxLeverage);
+    const ty = Number(targetItem.breakEvenVsFullUnderlyingRelative);
+    if (Number.isFinite(tx)) {
+      xStart = Math.min(xStart, Math.max(0.0, tx - 1.0));
+      xEnd = Math.max(xEnd, tx + 1.0);
+    }
+    if (Number.isFinite(ty)) {
+      yStart = Math.min(yStart, Math.max(0.0, ty - 0.05));
+      yEnd = Math.max(yEnd, ty + 0.05);
+    }
+  }
+
   const dataset = {
     id: "original",
     dimensions: ["maxLeverage", "breakEvenVsFullUnderlyingRelative", "DTE", "id"],
@@ -293,15 +313,15 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
         type: 'inside',
         xAxisIndex: 0,
         filterMode: 'none',
-        startValue: 0.0,
-        endValue: 10.0
+        startValue: xStart,
+        endValue: xEnd
       },
       {
         type: 'inside',
         yAxisIndex: 0,
         filterMode: 'none',
-        startValue: 0.8,
-        endValue: 1.2
+        startValue: yStart,
+        endValue: yEnd
       }
     ],
   });

@@ -751,13 +751,19 @@ void compareCoveredCallConfigs() {
     if (m == null) return "null";
     final beMoney = m.breakEvenVsFullMoney;
     final beUnd = m.breakEvenVsFullUnderlying;
+    final beMoneyStr = beMoney == null
+        ? "none"
+        : "\$${beMoney.absolute.toStringAsFixed(2)} (${percentify(beMoney.relative - 1.0, decimals: 1)})";
+    final beUndStr = beUnd == null
+        ? "none"
+        : "\$${beUnd.absolute.toStringAsFixed(2)} (${percentify(beUnd.relative - 1.0, decimals: 1)})";
     return "moneyYield: ${percentify(m.moneyYield - 1.0, decimals: 2)} (${m.moneyYield.toStringAsFixed(4)}), "
         "moneyProfit: \$${m.moneyProfit.toStringAsFixed(2)}, "
         "undYield: ${percentify(m.underlyingYield - 1.0, decimals: 2)} (${m.underlyingYield.toStringAsFixed(4)}), "
         "premium: ${m.premiumToReceive.size.toStringAsFixed(3)} ABC, "
         "unassignedTax: \$${m.unassignedTax.toStringAsFixed(2)}, "
-        "BE(\$): \$${beMoney.absolute.toStringAsFixed(2)} (${percentify(beMoney.relative - 1.0, decimals: 1)}), "
-        "BE(ABC): \$${beUnd.absolute.toStringAsFixed(2)} (${percentify(beUnd.relative - 1.0, decimals: 1)})";
+        "BE(\$): $beMoneyStr, "
+        "BE(ABC): $beUndStr";
   }
 
   const encoder = JsonEncoder.withIndent('  ');

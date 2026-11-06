@@ -130,6 +130,14 @@ class _OptionStratPositionRenderer implements PositionRenderer {
     return name;
   }
 
+  static String _formatPrice(double val) {
+    if ((val - val.roundToDouble()).abs() < 1e-6) {
+      return val.round().toString();
+    }
+    final str = val.toStringAsFixed(4);
+    return str.replaceAll(RegExp(r'\.?0+$'), '');
+  }
+
   @override
   String render(Position position) {
     final validLines = <Line>[];
@@ -164,14 +172,67 @@ class _OptionStratPositionRenderer implements PositionRenderer {
       throw ArgumentError('No valid OptionStrat assets found in position.');
     }
 
+    final commodityLines =
+        validLines.where((l) => l.asset is Commodity).toList();
+    final optionLines = validLines.where((l) => l.asset is Option).toList();
+
+    final isCoveredCall = validLines.length == 2 &&
+        commodityLines.length == 1 &&
+        commodityLines.single.size > 0 &&
+        optionLines.length == 1 &&
+        (optionLines.single.asset as Option).isCall &&
+        optionLines.single.size < 0;
+
+    if (isCoveredCall) {
+      final c = commodityLines.single;
+      final o = optionLines.single;
+      final option = o.asset as Option;
+      final shares = c.size.round();
+      final price = c.unitCostBasis?.size;
+      final priceSuffix = price != null ? '@${_formatPrice(price)}' : '';
+      final stockLeg = '${c.asset.name}x$shares$priceSuffix';
+
+      final optionName = _formatOptionStratName(o.asset.name);
+      final oSize = o.size.round();
+      final oPrefix = switch (oSize) {
+        1 => '.',
+        -1 => '-.',
+        _ => '$oSize.'
+      };
+      final oPrice = o.unitCostBasis?.size;
+      final lot = option.contractLot > 0 ? option.contractLot : 1.0;
+      final oPricePerShare = oPrice != null ? oPrice / lot : null;
+      final oPriceSuffix =
+          oPricePerShare != null ? '@${_formatPrice(oPricePerShare)}' : '';
+      final optionLeg = '$oPrefix$optionName$oPriceSuffix';
+
+      return 'https://optionstrat.com/build/covered-call/$underlyingName/$stockLeg,$optionLeg';
+    }
+
     final parts = <String>[];
     for (final line in validLines) {
       final sizeStr = line.size.round().toString();
       if (line.asset is Commodity) {
-        parts.add('${line.asset.name}x$sizeStr');
+        final costBasis = line.unitCostBasis?.size;
+        final costBasisStr =
+            costBasis != null ? '@${_formatPrice(costBasis)}' : '';
+        parts.add('${line.asset.name}x$sizeStr$costBasisStr');
       } else if (line.asset is Option) {
+        final option = line.asset as Option;
         final optionName = _formatOptionStratName(line.asset.name);
-        parts.add('.${optionName}x$sizeStr');
+        final size = line.size.round();
+        final prefix = switch (size) {
+          1 => '.',
+          -1 => '-.',
+          _ => '$size.'
+        };
+        final costBasis = line.unitCostBasis?.size;
+        final lot = option.contractLot > 0 ? option.contractLot : 1.0;
+        final costBasisPerShare =
+            costBasis != null ? costBasis / lot : null;
+        final costBasisStr =
+            costBasisPerShare != null ? '@${_formatPrice(costBasisPerShare)}' : '';
+        parts.add('$prefix$optionName$costBasisStr');
       }
     }
 

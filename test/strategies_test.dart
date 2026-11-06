@@ -63,6 +63,9 @@ void main() {
           'callURL':
               'https://www.deribit.com/options/BTC/BTC-31DEC26/BTC-1000-C',
           'callSize': -1.0,
+          'callPrice': 50.0,
+          'callContractPrice': 50.0,
+          'contractLot': 1.0,
           'formattedDate': '31 December 2026',
           'strikeAbsolute': 1000.0,
           'strikeRelative': 1.0,
@@ -142,8 +145,8 @@ void main() {
     expect(cc.preTax.moneyYield, closeTo(1.0 + 650.0 / 500.0, 1e-12));
     expect(cc.preTax.premiumToReceive.size, closeTo(0.05, 1e-12));
     expect(cc.preTax.underlyingYield, closeTo(1.0 + 0.05 / 0.95, 1e-12));
-    expect(cc.preTax.breakEvenVsFullMoney.absolute, closeTo(450.0, 1e-12));
-    expect(cc.preTax.breakEvenVsFullUnderlying.absolute,
+    expect(cc.preTax.breakEvenVsFullMoney!.absolute, closeTo(450.0, 1e-12));
+    expect(cc.preTax.breakEvenVsFullUnderlying!.absolute,
         closeTo(1100.0 / 0.95, 1e-9));
 
     // Post-tax metrics:
@@ -155,8 +158,8 @@ void main() {
     expect(postTax.premiumToReceive.size, closeTo(0.035, 1e-12));
     expect(postTax.underlyingYield, closeTo(1.0 + 0.035 / 0.95, 1e-12));
     expect(postTax.unassignedTax, closeTo(15.0, 1e-12));
-    expect(postTax.breakEvenVsFullMoney.absolute, closeTo(465.0, 1e-12));
-    expect(postTax.breakEvenVsFullUnderlying.absolute,
+    expect(postTax.breakEvenVsFullMoney!.absolute, closeTo(465.0, 1e-12));
+    expect(postTax.breakEvenVsFullUnderlying!.absolute,
         closeTo((617.5 + 450.0) / 0.95, 1e-9));
 
     final json = cc.toJson();
@@ -167,6 +170,162 @@ void main() {
     expect(json['postTax']['unassignedTax'], closeTo(15.0, 1e-12));
     expect(json['postTax']['breakEvenVsFullMoney']['absolute'],
         closeTo(465.0, 1e-12));
+  });
+
+  test('CoveredCall with high avgPrice (negative moneyYield) is not filtered',
+      () {
+    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
+    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
+
+    final spotMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 1000.0,
+      askPrice: 1000.0,
+    );
+
+    final callOption = Option(
+      'BTC-1100-C',
+      underlying: btc,
+      money: usd,
+      strike: 1100.0,
+      isCall: true,
+      expiration: expiration,
+      venues: {Venue.Deribit},
+    );
+
+    final callMarket = Market.create(
+      asset: callOption,
+      money: usd,
+      bidPrice: 50.0,
+      askPrice: 50.0,
+    );
+
+    final coveredCalls = CoveredCall.generateAll(
+      [spotMarket, callMarket],
+      underlying: btc,
+      money: usd,
+      slippage: 0.0,
+      avgPrice: 1500.0,
+    ).toList();
+
+    expect(coveredCalls.length, equals(1));
+    final cc = coveredCalls.first;
+
+    // Max value at expiration is 1100 + 50 - 1500 = -350 (< 0)
+    expect(cc.preTax.moneyProfit, closeTo(-350.0, 1e-12));
+    expect(cc.preTax.moneyYield, closeTo(1.0 - 350.0 / 1500.0, 1e-12));
+    expect(cc.preTax.breakEvenVsFullMoney, isNull);
+    expect(cc.preTax.breakEvenVsFullUnderlying!.absolute,
+        closeTo(1100.0 / 0.95, 1e-9));
+  });
+
+  test('CoveredCall strategyURL renders OptionStrat URL with avgPrice or spotPrice', () {
+    final crwv = Commodity.fromName('CRWV', venues: {Venue.OptionStrat});
+    final usd = Commodity.fromName('USD', venues: {Venue.OptionStrat});
+    final expiration = DateTime.utc(2029, 1, 19);
+
+    final spotMarket = Market.create(
+      asset: crwv,
+      money: usd,
+      bidPrice: 75.5,
+      askPrice: 75.5,
+    );
+
+    final callOption = Option(
+      'CRWV290119C00065000',
+      underlying: crwv,
+      money: usd,
+      strike: 65.0,
+      isCall: true,
+      expiration: expiration,
+      venues: {Venue.OptionStrat},
+      contractLot: 100.0,
+    );
+
+    final callMarket = Market.create(
+      asset: callOption,
+      money: usd,
+      bidPrice: 1746.0,
+      askPrice: 1746.0,
+    );
+
+    // With explicit avgPrice
+    final ccWithAvg = CoveredCall.generateAll(
+      [spotMarket, callMarket],
+      underlying: crwv,
+      money: usd,
+      slippage: 0.0,
+      avgPrice: 100.0,
+    ).single;
+
+    expect(
+      ccWithAvg.strategyURL,
+      equals(
+          'https://optionstrat.com/build/covered-call/CRWV/CRWVx100@100,-.CRWV290119C65@17.46'),
+    );
+    expect(ccWithAvg.callPrice, closeTo(17.46, 1e-12));
+    expect(ccWithAvg.callContractPrice, closeTo(1746.0, 1e-12));
+    expect(ccWithAvg.contractLot, equals(100.0));
+    final jsonWithAvg = ccWithAvg.toJson();
+    expect(jsonWithAvg['callPrice'], closeTo(17.46, 1e-12));
+    expect(jsonWithAvg['callContractPrice'], closeTo(1746.0, 1e-12));
+    expect(jsonWithAvg['contractLot'], equals(100.0));
+
+    // Without avgPrice, defaults to spotPrice (75.5)
+    final ccWithoutAvg = CoveredCall.generateAll(
+      [spotMarket, callMarket],
+      underlying: crwv,
+      money: usd,
+      slippage: 0.0,
+      avgPrice: null,
+    ).single;
+
+    expect(
+      ccWithoutAvg.strategyURL,
+      equals(
+          'https://optionstrat.com/build/covered-call/CRWV/CRWVx100@75.5,-.CRWV290119C65@17.46'),
+    );
+  });
+
+  test('CoveredCall strategyURL returns null for non-OptionStrat venue', () {
+    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
+    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
+
+    final spotMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 1000.0,
+      askPrice: 1000.0,
+    );
+
+    final callOption = Option(
+      'BTC-1100-C',
+      underlying: btc,
+      money: usd,
+      strike: 1100.0,
+      isCall: true,
+      expiration: expiration,
+      venues: {Venue.Deribit},
+    );
+
+    final callMarket = Market.create(
+      asset: callOption,
+      money: usd,
+      bidPrice: 50.0,
+      askPrice: 50.0,
+    );
+
+    final cc = CoveredCall.generateAll(
+      [spotMarket, callMarket],
+      underlying: btc,
+      money: usd,
+      slippage: 0.0,
+    ).single;
+
+    expect(cc.strategyURL, isNull);
   });
 
   test('LongCall JSON generation golden test', () {

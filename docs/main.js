@@ -15,6 +15,49 @@ document.addEventListener('alpine:init', () => {
     spotPrice: null,
     chartData: null,
     entryPosition: null,
+    loadedParams: null,
+
+    normalizeAvgPrice(val) {
+      if (val === '' || val === null || val === undefined) return null;
+      const n = parseFloat(val);
+      return (!isNaN(n) && n >= 0) ? n : null;
+    },
+
+    getCurrentParamsSnapshot() {
+      return {
+        ticker: (this.tickerInput || '').trim().toUpperCase(),
+        minDte: Number(this.minDte),
+        maxDte: Number(this.maxDte),
+        slippage: Number(this.slippage),
+        avgPrice: this.normalizeAvgPrice(this.avgPrice),
+        underlyingTax: Number(this.underlyingTax) || 0,
+        derivativeTax: Number(this.derivativeTax) || 0,
+      };
+    },
+
+    get hasPendingChanges() {
+      const current = this.getCurrentParamsSnapshot();
+      if (!current.ticker) return false;
+      if (!this.loadedParams) return true;
+      if (
+        current.ticker !== this.loadedParams.ticker ||
+        current.minDte !== this.loadedParams.minDte ||
+        current.maxDte !== this.loadedParams.maxDte ||
+        current.slippage !== this.loadedParams.slippage
+      ) {
+        return true;
+      }
+      if (this.strategy === 'coveredCall') {
+        if (
+          current.avgPrice !== this.loadedParams.avgPrice ||
+          current.underlyingTax !== this.loadedParams.underlyingTax ||
+          current.derivativeTax !== this.loadedParams.derivativeTax
+        ) {
+          return true;
+        }
+      }
+      return false;
+    },
 
     // DTE Formatting helper
     formatDteDate(days) {
@@ -155,6 +198,10 @@ document.addEventListener('alpine:init', () => {
         this.entryPosition = null;
       }
 
+      if (this.ticker) {
+        this.loadedParams = this.getCurrentParamsSnapshot();
+      }
+
       // Listen to popstate for back/forward browser navigation
       window.addEventListener('popstate', () => {
         this.syncFromUrl();
@@ -246,16 +293,23 @@ document.addEventListener('alpine:init', () => {
 
     submitTicker() {
       const userInput = this.tickerInput.trim().toUpperCase();
-      if (userInput) {
-        if (userInput === this.ticker) {
-          this.reloadData();
-          return;
+      if (!userInput) return;
+
+      if (userInput !== this.ticker) {
+        const avgPriceWasModified = this.loadedParams
+          ? this.normalizeAvgPrice(this.avgPrice) !== this.loadedParams.avgPrice
+          : this.normalizeAvgPrice(this.avgPrice) !== null;
+        this.ticker = userInput;
+        this.tickerInput = userInput;
+        this.selectedId = null;
+        this.entryPosition = null;
+        this.details = null;
+        this.unrealized = null;
+        if (!avgPriceWasModified) {
+          this.avgPrice = '';
         }
-        const url = UrlManager.createUrl();
-        UrlManager.set(url, URL_PARAMS.TICKER, userInput);
-        this.clearAllStrategyParams(url);
-        window.location.href = url.toString();
       }
+      this.reloadData();
     },
 
     changeStrategy() {
@@ -275,6 +329,9 @@ document.addEventListener('alpine:init', () => {
 
     async loadData() {
       if (!this.ticker) return;
+
+      this.tickerInput = this.ticker;
+      this.loadedParams = this.getCurrentParamsSnapshot();
 
       try {
 

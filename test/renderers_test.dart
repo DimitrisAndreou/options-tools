@@ -98,7 +98,44 @@ void main() {
       
       final position = iren.ofSize(100.0) + option.ofSize(-1.0);
       expect(renderer.render(position), 
-          equals('https://optionstrat.com/build/custom/IREN/IRENx100,.IREN280121C37x-1'));
+          equals('https://optionstrat.com/build/covered-call/IREN/IRENx100,-.IREN280121C37'));
+    });
+
+    test('renders covered call with unitCostBasis correctly', () {
+      final iren = Commodity('IREN', venues: {Venue.OptionStrat});
+      final option = Option(
+        'IREN280121C37',
+        underlying: iren,
+        money: Commodity('USD'),
+        strike: 37.0,
+        isCall: true,
+        expiration: DateTime(2028, 1, 21),
+        venues: {Venue.OptionStrat},
+      );
+      
+      final position = iren.ofSize(100.0, Commodity('USD').ofSize(35.0)) +
+          option.ofSize(-1.0);
+      expect(renderer.render(position), 
+          equals('https://optionstrat.com/build/covered-call/IREN/IRENx100@35,-.IREN280121C37'));
+    });
+
+    test('renders covered call with unitCostBasis on stock and option leg', () {
+      final iren = Commodity('IREN', venues: {Venue.OptionStrat});
+      final option = Option(
+        'IREN280121C37',
+        underlying: iren,
+        money: Commodity('USD'),
+        strike: 37.0,
+        isCall: true,
+        expiration: DateTime(2028, 1, 21),
+        contractLot: 100.0,
+        venues: {Venue.OptionStrat},
+      );
+      
+      final position = iren.ofSize(100.0, Commodity('USD').ofSize(35.0)) +
+          option.ofSize(-1.0, Commodity('USD').ofSize(250.0));
+      expect(renderer.render(position), 
+          equals('https://optionstrat.com/build/covered-call/IREN/IRENx100@35,-.IREN280121C37@2.5'));
     });
 
     test('renders covered call correctly with 8-digit padded option names', () {
@@ -115,7 +152,7 @@ void main() {
       
       final position = iren.ofSize(100.0) + option.ofSize(-1.0);
       expect(renderer.render(position), 
-          equals('https://optionstrat.com/build/custom/IREN/IRENx100,.IREN280121C18x-1'));
+          equals('https://optionstrat.com/build/covered-call/IREN/IRENx100,-.IREN280121C18'));
     });
 
     test('skips non-OptionStrat assets', () {

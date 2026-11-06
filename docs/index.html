@@ -57,7 +57,9 @@
               <input type="text" id="ticker-input" name="ticker" x-model="$store.app.tickerInput"
                 class="toolbar-input font-monospace" placeholder="BTC, GOOG..."
                 style="width: 110px; text-transform: uppercase;" required>
-              <button type="submit" class="toolbar-load-btn" title="Load market data">
+              <button type="submit" class="toolbar-load-btn"
+                :class="{ 'toolbar-load-btn-dirty': $store.app.hasPendingChanges }"
+                :title="$store.app.hasPendingChanges ? 'Parameters modified — click to recompute' : 'Load market data'">
                 <i class="fas fa-bolt me-1"></i>Load
               </button>
             </div>
@@ -79,11 +81,9 @@
               <div class="dual-slider-track"></div>
               <div class="dual-slider-fill" id="dte-slider-range" :style="$store.app.dteRangeStyle"></div>
               <input type="range" id="min-dte-input" min="0" max="1095" step="7" x-model.number="$store.app.minDte"
-                @input="if ($store.app.minDte > $store.app.maxDte) $store.app.maxDte = $store.app.minDte"
-                @change="$store.app.reloadData()">
+                @input="if ($store.app.minDte > $store.app.maxDte) $store.app.maxDte = $store.app.minDte">
               <input type="range" id="max-dte-input" min="0" max="1095" step="7" x-model.number="$store.app.maxDte"
-                @input="if ($store.app.maxDte < $store.app.minDte) $store.app.minDte = $store.app.maxDte"
-                @change="$store.app.reloadData()">
+                @input="if ($store.app.maxDte < $store.app.minDte) $store.app.minDte = $store.app.maxDte">
             </div>
           </div>
         </div>
@@ -97,7 +97,7 @@
           </div>
           <div class="toolbar-control">
             <input type="range" id="slippage-input" class="form-range toolbar-range" min="0" max="1" step="0.25"
-              x-model.number="$store.app.slippage" @change="$store.app.reloadData()" list="slippage-ticks">
+              x-model.number="$store.app.slippage" list="slippage-ticks">
             <datalist id="slippage-ticks">
               <option value="0.0"></option>
               <option value="0.25"></option>
@@ -126,7 +126,6 @@
                 <div class="toolbar-affix-box">
                   <span class="toolbar-affix">$</span>
                   <input type="number" id="avg-price-input" min="0" step="any" x-model="$store.app.avgPrice"
-                    @change="$store.app.reloadData()" @keydown.enter.prevent="$el.blur()"
                     class="toolbar-input font-monospace" placeholder="Spot" style="width: 88px;">
                 </div>
               </div>
@@ -143,8 +142,8 @@
               <div class="toolbar-control">
                 <div class="toolbar-affix-box">
                   <input type="number" id="underlying-tax-input" min="0" max="100" step="any"
-                    x-model.number="$store.app.underlyingTax" @change="$store.app.reloadData()"
-                    @keydown.enter.prevent="$el.blur()" class="toolbar-input font-monospace text-end"
+                    x-model.number="$store.app.underlyingTax"
+                    class="toolbar-input font-monospace text-end"
                     style="width: 60px;">
                   <span class="toolbar-affix">%</span>
                 </div>
@@ -162,8 +161,8 @@
               <div class="toolbar-control">
                 <div class="toolbar-affix-box">
                   <input type="number" id="derivative-tax-input" min="0" max="100" step="any"
-                    x-model.number="$store.app.derivativeTax" @change="$store.app.reloadData()"
-                    @keydown.enter.prevent="$el.blur()" class="toolbar-input font-monospace text-end"
+                    x-model.number="$store.app.derivativeTax"
+                    class="toolbar-input font-monospace text-end"
                     style="width: 60px;">
                   <span class="toolbar-affix">%</span>
                 </div>

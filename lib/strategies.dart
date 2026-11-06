@@ -16,8 +16,8 @@ class CoveredCallMetrics {
   final double moneyProfit;
   final Line premiumToReceive;
   final double unassignedTax;
-  final PriceInfo breakEvenVsFullUnderlying;
-  final PriceInfo breakEvenVsFullMoney;
+  final PriceInfo? breakEvenVsFullUnderlying;
+  final PriceInfo? breakEvenVsFullMoney;
 
   const CoveredCallMetrics({
     required this.moneyYield,
@@ -35,8 +35,8 @@ class CoveredCallMetrics {
         'moneyProfit': moneyProfit,
         'premiumToReceive': premiumToReceive.size,
         if (unassignedTax != 0.0) 'unassignedTax': unassignedTax,
-        'breakEvenVsFullUnderlying': breakEvenVsFullUnderlying.toJson(),
-        'breakEvenVsFullMoney': breakEvenVsFullMoney.toJson(),
+        'breakEvenVsFullUnderlying': breakEvenVsFullUnderlying?.toJson(),
+        'breakEvenVsFullMoney': breakEvenVsFullMoney?.toJson(),
       };
 }
 
@@ -74,18 +74,43 @@ class CoveredCall {
   double get moneyProfit => preTax.moneyProfit;
   double get moneyYield => preTax.moneyYield;
   double get underlyingYield => preTax.underlyingYield;
-  PriceInfo get breakEvenVsFullUnderlying => preTax.breakEvenVsFullUnderlying;
-  PriceInfo get breakEvenVsFullMoney => preTax.breakEvenVsFullMoney;
+  PriceInfo? get breakEvenVsFullUnderlying => preTax.breakEvenVsFullUnderlying;
+  PriceInfo? get breakEvenVsFullMoney => preTax.breakEvenVsFullMoney;
+
+  final double? avgPrice;
 
   double get unitCostBasis =>
       underlyingLeg.unitCostBasis?.size ?? (costBasis / underlyingLeg.size);
   double get costBasis => analyzer.costBasisBefore(option.strike);
 
+  double get callPrice {
+    final lot = option.contractLot > 0 ? option.contractLot : 1.0;
+    final total = optionLeg.unitCostBasis?.size ?? callMarket.sellPrice();
+    return total / lot;
+  }
+
+  double get callContractPrice =>
+      optionLeg.unitCostBasis?.size ?? callMarket.sellPrice();
+
+  double get contractLot => option.contractLot;
+
   String? get callURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
 
   String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
 
-  String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
+  String? get strategyURL {
+    if (!underlying.venues.contains(Venue.OptionStrat)) {
+      return null;
+    }
+    final costBasis = underlyingLeg.unitCostBasis?.size ?? spotPrice;
+    final optionCostBasis =
+        optionLeg.unitCostBasis?.size ?? callMarket.sellPrice();
+    final posWithCostBasis = strategy.withCostBasis({
+      underlying: money.ofSize(costBasis),
+      option: money.ofSize(optionCostBasis),
+    });
+    return PositionRenderer.tryRenderFirst(posWithCostBasis);
+  }
 
   Map<String, dynamic> toJson() => {
         'id':
@@ -101,6 +126,10 @@ class CoveredCall {
         'call': optionLeg.asset.name,
         'callURL': callURL,
         'callSize': optionLeg.size,
+        'callPrice': callPrice,
+        'callContractPrice': callContractPrice,
+        'contractLot': contractLot,
+        if (avgPrice != null) 'avgPrice': avgPrice,
         'DTE': expiration.daysLeft,
         'formattedDate': expiration.formattedDate,
         'strikeAbsolute': strikePrice.absolute,
@@ -128,6 +157,7 @@ class CoveredCall {
       required this.spotPrice,
       this.moneyProbability,
       this.underlyingProbability,
+      this.avgPrice,
       double? maxRisk,
       this.taxes = TaxProfile.none})
       : analyzer = PositionAnalyzer(strategy,
@@ -143,19 +173,21 @@ class CoveredCall {
         .singleton(underlying);
 
     CoveredCallMetrics metricsFrom(PositionAnalyzer a) {
-      if (a.breakevens.isEmpty) {
-        throw Exception("No breakeven!\nStrategy: $strategy\n"
-            "Analyzer: $a");
-      }
       final premium = spotMarket
           .toAsset(money.ofSize(a.realizedPnLBefore(option.strike)))
           .singleton(underlying);
-      final beUnd = PriceInfo.fromAbsolute(
-          a.analyzeVersus(moneyLeg + underlyingToBuy).breakevens.last.price,
-          spotPrice);
-      // Breakeven could be a whole range, for a profit-less strategy.
-      final beMoney =
-          PriceInfo.fromAbsolute(a.breakevens.first.fromPrice, spotPrice);
+      final undBreakevens =
+          a.analyzeVersus(moneyLeg + underlyingToBuy).breakevens;
+      final beUnd = undBreakevens.isEmpty
+          ? null
+          : PriceInfo.fromAbsolute(undBreakevens.last.fromPrice, spotPrice);
+      // Breakeven could be a whole range (for a zero-profit strategy) or empty
+      // (when moneyProfit < 0, i.e. negative money yield).
+      final moneyBreakevens = a.breakevens;
+      final beMoney = moneyBreakevens.isEmpty
+          ? null
+          : PriceInfo.fromAbsolute(
+              moneyBreakevens.first.fromPrice, spotPrice);
 
       return CoveredCallMetrics(
         moneyYield: a.yieldAfter(option.strike),
@@ -245,6 +277,7 @@ class CoveredCall {
           spotPrice: spotMarket.midPrice,
           moneyProbability: moneyProb,
           underlyingProbability: underlyingProb,
+          avgPrice: avgPrice,
           maxRisk: maxRisk,
           taxes: taxes,
         );
