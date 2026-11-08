@@ -5,8 +5,8 @@ import 'package:options_tools/strategies.dart';
 
 void main() {
   test('CoveredCall JSON generation golden test', () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -23,7 +23,7 @@ void main() {
       strike: 1000.0,
       isCall: true,
       expiration: expiration,
-      venues: {Venue.Deribit},
+      source: DataSource.deribit,
     );
 
     final callMarket = Market.create(
@@ -110,8 +110,8 @@ void main() {
   });
 
   test('CoveredCall with custom avgPrice and TaxProfile', () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -128,7 +128,7 @@ void main() {
       strike: 1100.0,
       isCall: true,
       expiration: expiration,
-      venues: {Venue.Deribit},
+      source: DataSource.deribit,
     );
 
     final callMarket = Market.create(
@@ -192,8 +192,8 @@ void main() {
 
   test('CoveredCall with high avgPrice (negative moneyYield) is not filtered',
       () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -210,7 +210,7 @@ void main() {
       strike: 1100.0,
       isCall: true,
       expiration: expiration,
-      venues: {Venue.Deribit},
+      source: DataSource.deribit,
     );
 
     final callMarket = Market.create(
@@ -241,8 +241,8 @@ void main() {
   });
 
   test('CoveredCall strategyURL renders OptionStrat URL with avgPrice or spotPrice', () {
-    final crwv = Commodity.fromName('CRWV', venues: {Venue.OptionStrat});
-    final usd = Commodity.fromName('USD', venues: {Venue.OptionStrat});
+    final crwv = Commodity.fromName('CRWV', source: DataSource.yfinance);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2029, 1, 19);
 
     final spotMarket = Market.create(
@@ -259,7 +259,7 @@ void main() {
       strike: 65.0,
       isCall: true,
       expiration: expiration,
-      venues: {Venue.OptionStrat},
+      source: DataSource.yfinance,
       contractLot: 100.0,
     );
 
@@ -357,8 +357,8 @@ void main() {
   });
 
   test('CoveredCall with fractional minSize (e.g. BTC 0.1) computes correct callContractPrice', () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -377,7 +377,7 @@ void main() {
       expiration: expiration,
       contractLot: 1.0,
       minSize: 0.1,
-      venues: {Venue.Deribit},
+      source: DataSource.deribit,
     );
 
     final callMarket = Market.create(
@@ -404,9 +404,9 @@ void main() {
     expect(json['minSize'], equals(0.1));
   });
 
-  test('CoveredCall strategyURL returns null for non-OptionStrat venue', () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+  test('CoveredCall strategyURL returns null for non-YFinance data source', () {
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -423,7 +423,7 @@ void main() {
       strike: 1100.0,
       isCall: true,
       expiration: expiration,
-      venues: {Venue.Deribit},
+      source: DataSource.deribit,
     );
 
     final callMarket = Market.create(
@@ -444,8 +444,8 @@ void main() {
   });
 
   test('LongCall JSON generation golden test', () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -462,7 +462,7 @@ void main() {
       strike: 1000.0,
       isCall: true,
       expiration: expiration,
-      venues: {Venue.Deribit},
+      source: DataSource.deribit,
     );
 
     final callMarket = Market.create(
@@ -514,8 +514,8 @@ void main() {
   });
 
   test('LongPut JSON generation golden test', () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -532,7 +532,7 @@ void main() {
       strike: 1000.0,
       isPut: true,
       expiration: expiration,
-      venues: {Venue.Deribit},
+      source: DataSource.deribit,
     );
 
     final putMarket = Market.create(
@@ -587,8 +587,8 @@ void main() {
   });
 
   test('VerticalSpread JSON generation golden test', () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -605,7 +605,7 @@ void main() {
       strike: 1000.0,
       isCall: true,
       expiration: expiration,
-      venues: {Venue.Deribit},
+      source: DataSource.deribit,
     );
 
     final callMarket1 = Market.create(
@@ -622,7 +622,7 @@ void main() {
       strike: 1100.0,
       isCall: true,
       expiration: expiration,
-      venues: {Venue.Deribit},
+      source: DataSource.deribit,
     );
 
     final callMarket2 = Market.create(
@@ -721,8 +721,8 @@ void main() {
   });
 
   test('Straddle JSON generation and centered selection test', () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -739,7 +739,7 @@ void main() {
         strike: 900.0,
         isCall: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final callMarket900 = Market.create(
         asset: call900, money: usd, bidPrice: 60.0, askPrice: 60.0);
     final put900 = Option('BTC-900-P',
@@ -748,7 +748,7 @@ void main() {
         strike: 900.0,
         isPut: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final putMarket900 = Market.create(
         asset: put900, money: usd, bidPrice: 60.0, askPrice: 60.0);
 
@@ -759,7 +759,7 @@ void main() {
         strike: 1000.0,
         isCall: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final callMarket1000 = Market.create(
         asset: call1000, money: usd, bidPrice: 70.0, askPrice: 70.0);
     final put1000 = Option('BTC-1000-P',
@@ -768,7 +768,7 @@ void main() {
         strike: 1000.0,
         isPut: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final putMarket1000 = Market.create(
         asset: put1000, money: usd, bidPrice: 70.0, askPrice: 70.0);
 
@@ -779,7 +779,7 @@ void main() {
         strike: 1100.0,
         isCall: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final callMarket1100 = Market.create(
         asset: call1100, money: usd, bidPrice: 60.0, askPrice: 60.0);
     final put1100 = Option('BTC-1100-P',
@@ -788,7 +788,7 @@ void main() {
         strike: 1100.0,
         isPut: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final putMarket1100 = Market.create(
         asset: put1100, money: usd, bidPrice: 60.0, askPrice: 60.0);
 
@@ -862,8 +862,8 @@ void main() {
   });
 
   test('Probabilities class test', () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -880,7 +880,7 @@ void main() {
         strike: 1000.0,
         isCall: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final callMarket1000 = Market.create(
         asset: call1000, money: usd, bidPrice: 100.0, askPrice: 100.0);
 
@@ -890,7 +890,7 @@ void main() {
         strike: 1100.0,
         isCall: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final callMarket1100 = Market.create(
         asset: call1100, money: usd, bidPrice: 30.0, askPrice: 30.0);
 
@@ -900,7 +900,7 @@ void main() {
         strike: 1200.0,
         isCall: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final callMarket1200 = Market.create(
         asset: call1200, money: usd, bidPrice: 10.0, askPrice: 10.0);
 
@@ -930,8 +930,8 @@ void main() {
   });
 
   test('CoveredCall attaches probabilities test', () {
-    final btc = Commodity.fromName('BTC', venues: {Venue.Deribit});
-    final usd = Commodity.fromName('USD', venues: {Venue.Deribit});
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
     final expiration = DateTime.utc(2026, 12, 31, 8, 0, 0);
 
     final spotMarket = Market.create(
@@ -948,7 +948,7 @@ void main() {
         strike: 1000.0,
         isCall: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final callMarket1000 = Market.create(
         asset: call1000, money: usd, bidPrice: 100.0, askPrice: 100.0);
 
@@ -958,7 +958,7 @@ void main() {
         strike: 1100.0,
         isCall: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final callMarket1100 = Market.create(
         asset: call1100, money: usd, bidPrice: 30.0, askPrice: 30.0);
 
@@ -968,7 +968,7 @@ void main() {
         strike: 1200.0,
         isCall: true,
         expiration: expiration,
-        venues: {Venue.Deribit});
+        source: DataSource.deribit);
     final callMarket1200 = Market.create(
         asset: call1200, money: usd, bidPrice: 10.0, askPrice: 10.0);
 

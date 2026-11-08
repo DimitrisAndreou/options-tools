@@ -1,4 +1,5 @@
 const URL_PARAMS = {
+  SOURCE: 'source',
   TICKER: 'ticker',
   STRATEGY: 'strategy',
   SLIPPAGE: 'slippage',

@@ -33,13 +33,8 @@ UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 5));
 
 Future<List<Market>> deribitMarkets(
     String ticker, int minDTE, int maxDTE) async {
-  final tickerToFetch = switch (ticker) {
-    'BTC' || 'ETH' => ticker,
-    'SOL' || 'AVAX' || 'XRP' || 'TRX' => 'USDC',
-    _ => throw 'Unknown ticker: $ticker',
-  };
-  return await Deribit.fetchMarkets([tickerToFetch], _urlFetcher,
-      errorListener: (instr, error) {}, minDTE: minDTE, maxDTE: maxDTE);
+  return await DataSource.deribit
+      .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
 }
 
 Future<String> deribitCoveredCalls(
@@ -50,7 +45,7 @@ Future<String> deribitCoveredCalls(
     int size = 1}) async {
   List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
   return jsonEncode(CoveredCall.generateAll(markets,
-          underlying: Commodity(ticker, venues: const {Venue.Deribit}),
+          underlying: Commodity(ticker, source: DataSource.deribit),
           money: Commodity("USD"),
           slippage: slippage,
           avgPrice: avgPrice,
@@ -65,7 +60,7 @@ Future<String> deribitCoveredCalls(
 Future<String> deribitLongOptions(
     String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
-  final underlying = Commodity(ticker, venues: const {Venue.Deribit});
+  final underlying = Commodity(ticker, source: DataSource.deribit);
   final money = Commodity("USD");
   final calls = LongCall.generateAll(markets,
           underlying: underlying, money: money, slippage: slippage)
@@ -80,7 +75,7 @@ Future<String> deribitVerticalSpreads(
     String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
   return jsonEncode(VerticalSpread.generateAll(markets,
-          underlying: Commodity(ticker, venues: const {Venue.Deribit}),
+          underlying: Commodity(ticker, source: DataSource.deribit),
           money: Commodity("USD"),
           slippage: slippage)
       .toList());
@@ -90,7 +85,7 @@ Future<String> deribitStraddles(
     String ticker, double slippage, int minDTE, int maxDTE) async {
   List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
   return jsonEncode(Straddle.generateAll(markets,
-          underlying: Commodity(ticker, venues: const {Venue.Deribit}),
+          underlying: Commodity(ticker, source: DataSource.deribit),
           money: Commodity("USD"),
           slippage: slippage)
       .toList());
@@ -102,10 +97,10 @@ Future<String> yfinanceCoveredCalls(
     double underlyingTaxRate = 0.0,
     double derivativeTaxRate = 0.0,
     int size = 1}) async {
-  List<Market> markets = await (await YFinance.openConnection(_urlFetcher))
+  List<Market> markets = await DataSource.yfinance
       .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
   return jsonEncode(CoveredCall.generateAll(markets,
-          underlying: Commodity(ticker, venues: const {Venue.OptionStrat}),
+          underlying: Commodity(ticker, source: DataSource.yfinance),
           money: Commodity("USD"),
           slippage: slippage,
           avgPrice: avgPrice,
@@ -119,9 +114,9 @@ Future<String> yfinanceCoveredCalls(
 
 Future<String> yfinanceLongOptions(
     String ticker, double slippage, int minDTE, int maxDTE) async {
-  List<Market> markets = await (await YFinance.openConnection(_urlFetcher))
+  List<Market> markets = await DataSource.yfinance
       .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
-  final underlying = Commodity(ticker, venues: const {Venue.OptionStrat});
+  final underlying = Commodity(ticker, source: DataSource.yfinance);
   final money = Commodity("USD");
   final calls = LongCall.generateAll(markets,
           underlying: underlying, money: money, slippage: slippage)
@@ -134,28 +129,37 @@ Future<String> yfinanceLongOptions(
 
 Future<String> yfinanceStraddles(
     String ticker, double slippage, int minDTE, int maxDTE) async {
-  List<Market> markets = await (await YFinance.openConnection(_urlFetcher))
+  List<Market> markets = await DataSource.yfinance
       .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
   return jsonEncode(Straddle.generateAll(markets,
-          underlying: Commodity(ticker, venues: const {Venue.OptionStrat}),
+          underlying: Commodity(ticker, source: DataSource.yfinance),
           money: Commodity("USD"),
           slippage: slippage)
       .toList());
 }
 
-JSPromise<JSString> _toJsPromise(Future<String> future) => future
-    .then(
-      (value) => value.toJS,
-      onError: (Object error, StackTrace stackTrace) {
-        print("Dart error: $error\n$stackTrace");
-        String msg = error.toString();
-        if (error is JsonUnsupportedObjectError && error.cause != null) {
-          msg = "$msg (cause: ${error.cause})";
-        }
-        throw msg;
-      },
-    )
-    .toJS;
+@JS('Error')
+external JSObject _newJsError(JSString message);
+
+JSPromise<JSString> _toJsPromise(Future<String> future) {
+  return JSPromise<JSString>(
+    (JSFunction resolve, JSFunction reject) {
+      future.then(
+        (value) {
+          resolve.callAsFunction(null, value.toJS);
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          print("Dart error: $error\n$stackTrace");
+          String msg = error.toString();
+          if (error is JsonUnsupportedObjectError && error.cause != null) {
+            msg = "$msg (cause: ${error.cause})";
+          }
+          reject.callAsFunction(null, _newJsError(msg.toJS));
+        },
+      );
+    }.toJS,
+  );
+}
 
 void setupJsInterop() {
   deribitCoveredCallsDart = (JSString ticker, JSNumber slippage,

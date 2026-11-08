@@ -4,13 +4,6 @@ e.g. BTC<->USD, turn it into USD<->BTC (thus, money is BTC),
 and then you query the "maxProfit", which would be the
 maximum amount of BTC!
 
-****
-Reimplement CoveredCall strategy; new approach.
-+X% or +Y%, whatever is least (in money).
-
-***
-YFinance + optionstrat links
-
 *******
 yield vs profit is confusing
 the need to do percentify(yield-1.0) is confusing.

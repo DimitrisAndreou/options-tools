@@ -77,7 +77,7 @@ class YFinance {
           results["quote"] ?? (throw StateError("Did not find quote"));
       final money = Commodity((quote["currency"] as String?) ?? "USD");
       final underlying =
-          Commodity(quote["symbol"], venues: {Venue.OptionStrat});
+          Commodity(quote["symbol"], source: DataSource.yfinance);
       final regularMarketPrice = (quote["regularMarketPrice"] as num).toDouble();
       // Will add this to markets last, to have the latest value.
       // Not using quote["bid"] and quote["ask"] because they tend
@@ -171,7 +171,7 @@ class YFinance {
                   isCall: isCall,
                   expiration: currentExpirationDate,
                   contractLot: 100.0,
-                  venues: {Venue.OptionStrat}),
+                  source: DataSource.yfinance),
               money: optionCurrency != null
                   ? Commodity(optionCurrency)
                   : money, // USD

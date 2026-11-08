@@ -4,41 +4,31 @@ abstract class AssetRenderer {
   String render(Asset asset);
 
   factory AssetRenderer.deribit() = _DeribitAssetRenderer;
-  factory AssetRenderer.optionStrat() = _OptionStratAssetRenderer;
+  factory AssetRenderer.optionStrat() = _YFinanceAssetRenderer;
+  factory AssetRenderer.yfinance() = _YFinanceAssetRenderer;
 
-  static AssetRenderer? forVenue(Venue venue) {
-    switch (venue) {
-      case Venue.Deribit:
-        return AssetRenderer.deribit();
-      case Venue.OptionStrat:
-        return AssetRenderer.optionStrat();
-    }
-  }
-
-  static String? tryRenderFirst(Asset asset) {
-    for (final venue in asset.venues) {
-      final renderer = forVenue(venue);
-      if (renderer != null) {
-        try {
-          return renderer.render(asset);
-        } catch (_) {
-          // Ignore and try next venue if render fails
-        }
-      }
+  static AssetRenderer? forSource(DataSource source) {
+    if (source == DataSource.deribit) {
+      return AssetRenderer.deribit();
+    } else if (source == DataSource.yfinance) {
+      return AssetRenderer.yfinance();
     }
     return null;
   }
+
+  static String? tryRenderFirst(Asset asset) => asset.url;
 }
 
-class _OptionStratAssetRenderer implements AssetRenderer {
+class _YFinanceAssetRenderer implements AssetRenderer {
   @override
   String render(Asset asset) {
-    if (!asset.venues.contains(Venue.OptionStrat)) {
-      throw ArgumentError('Asset does not support OptionStrat venue: $asset');
+    if (asset.source != DataSource.yfinance) {
+      throw ArgumentError('Asset does not support YFinance/OptionStrat source: $asset');
     }
 
-    if (asset is Commodity || asset is Option) {
-      return 'https://finance.yahoo.com/quote/${asset.name}/';
+    final url = DataSource.yfinance.assetUrl(asset);
+    if (url != null) {
+      return url;
     }
     throw ArgumentError('Asset must be a Commodity or an Option: $asset');
   }
@@ -47,38 +37,13 @@ class _OptionStratAssetRenderer implements AssetRenderer {
 class _DeribitAssetRenderer implements AssetRenderer {
   @override
   String render(Asset asset) {
-    if (!asset.venues.contains(Venue.Deribit)) {
-      throw ArgumentError('Asset does not support Deribit venue: $asset');
+    if (asset.source != DataSource.deribit) {
+      throw ArgumentError('Asset does not support Deribit source: $asset');
     }
 
-    if (asset is Commodity) {
-      return 'https://www.deribit.com/spot/${asset.name}_USDT';
-    }
-    if (asset is DatedFuture) {
-      return 'https://www.deribit.com/futures/${asset.name}';
-    }
-    if (asset is Option) {
-      final underlying = asset.underlying.name;
-      const monthNames = [
-        '',
-        'JAN',
-        'FEB',
-        'MAR',
-        'APR',
-        'MAY',
-        'JUN',
-        'JUL',
-        'AUG',
-        'SEP',
-        'OCT',
-        'NOV',
-        'DEC'
-      ];
-      final day = asset.expiration.day;
-      final month = monthNames[asset.expiration.month];
-      final year = (asset.expiration.year % 100).toString().padLeft(2, '0');
-      final date = '$day$month$year';
-      return 'https://www.deribit.com/options/$underlying/$underlying-$date/${asset.name}';
+    final url = DataSource.deribit.assetUrl(asset);
+    if (url != null) {
+      return url;
     }
     throw ArgumentError(
         'Asset must be a Commodity, DatedFuture or an Option: $asset');
@@ -90,25 +55,19 @@ abstract class PositionRenderer {
 
   factory PositionRenderer.optionStrat() = _OptionStratPositionRenderer;
 
-  static PositionRenderer? forVenue(Venue venue) {
-    switch (venue) {
-      case Venue.OptionStrat:
-        return PositionRenderer.optionStrat();
-      case Venue.Deribit:
-        return null;
+  static PositionRenderer? forSource(DataSource source) {
+    if (source == DataSource.yfinance) {
+      return PositionRenderer.optionStrat();
     }
+    return null;
   }
 
   static String? tryRenderFirst(Position position) {
-    final venues = position.decompose().expand((l) => l.asset.venues).toSet();
-    for (final venue in venues) {
-      final renderer = forVenue(venue);
-      if (renderer != null) {
-        try {
-          return renderer.render(position);
-        } catch (_) {
-          // Ignore and try next venue if render fails
-        }
+    for (final line in position.decompose()) {
+      final source = line.asset.source;
+      if (source != null) {
+        final url = source.strategyUrl(position);
+        if (url != null) return url;
       }
     }
     return null;
@@ -144,7 +103,7 @@ class _OptionStratPositionRenderer implements PositionRenderer {
     String? underlyingName;
 
     for (final line in position.decompose()) {
-      if (!line.asset.venues.contains(Venue.OptionStrat)) {
+      if (line.asset.source != DataSource.yfinance) {
         continue;
       }
 

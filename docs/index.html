@@ -47,7 +47,25 @@
   <div class="toolbar-strip mb-4" x-data>
     <div class="container-fluid px-lg-4">
       <form id="ticker-form" @submit.prevent="$store.app.submitTicker()" class="toolbar-form">
-        <!-- 1. Ticker Symbol & Load -->
+        <!-- 1. Data Source -->
+        <div class="toolbar-field">
+          <div class="toolbar-label-row">
+            <label for="source-select" class="toolbar-label">Data Source</label>
+          </div>
+          <div class="toolbar-control">
+            <div class="toolbar-affix-box">
+              <select id="source-select" name="source" x-model="$store.app.source"
+                @change="$store.app.changeSource()" class="toolbar-input" style="cursor: pointer; background: transparent;">
+                <option value="yfinance" class="bg-dark text-white">YFinance</option>
+                <option value="deribit" class="bg-dark text-white">Deribit</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <!-- 2. Ticker Symbol & Load -->
         <div class="toolbar-field">
           <div class="toolbar-label-row">
             <label for="ticker-input" class="toolbar-label">Ticker</label>
@@ -55,7 +73,7 @@
           <div class="toolbar-control">
             <div class="toolbar-joined-group">
               <input type="text" id="ticker-input" name="ticker" x-model="$store.app.tickerInput"
-                class="toolbar-input font-monospace" placeholder="BTC, GOOG..."
+                class="toolbar-input font-monospace" :placeholder="$store.app.source === 'deribit' ? 'BTC, ETH...' : 'AAPL, GOOG...'"
                 style="width: 110px; text-transform: uppercase;" required>
               <button type="submit" class="toolbar-load-btn"
                 :class="{ 'toolbar-load-btn-dirty': $store.app.hasPendingChanges }"

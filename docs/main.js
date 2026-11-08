@@ -1,5 +1,6 @@
 document.addEventListener('alpine:init', () => {
   Alpine.store('app', {
+    source: 'yfinance',
     ticker: '',
     tickerInput: '',
     strategy: 'coveredCall',
@@ -31,6 +32,7 @@ document.addEventListener('alpine:init', () => {
 
     getCurrentParamsSnapshot() {
       return {
+        source: this.source,
         ticker: (this.tickerInput || '').trim().toUpperCase(),
         minDte: Number(this.minDte),
         maxDte: Number(this.maxDte),
@@ -47,6 +49,7 @@ document.addEventListener('alpine:init', () => {
       if (!current.ticker) return false;
       if (!this.loadedParams) return true;
       if (
+        current.source !== this.loadedParams.source ||
         current.ticker !== this.loadedParams.ticker ||
         current.minDte !== this.loadedParams.minDte ||
         current.maxDte !== this.loadedParams.maxDte ||
@@ -215,6 +218,8 @@ document.addEventListener('alpine:init', () => {
         this.ticker = urlTicker.toUpperCase();
         this.tickerInput = this.ticker;
       }
+      const defaultSource = (urlTicker && ['BTC', 'ETH', 'SOL'].includes(urlTicker.toUpperCase())) ? 'deribit' : 'yfinance';
+      this.source = UrlManager.get(URL_PARAMS.SOURCE, defaultSource);
       this.strategy = UrlManager.get(URL_PARAMS.STRATEGY, 'coveredCall');
       this.slippage = parseFloat(UrlManager.get(URL_PARAMS.SLIPPAGE, '0.5'));
       this.minDte = parseInt(UrlManager.get(URL_PARAMS.MIN_DTE, '7'), 10);
@@ -246,6 +251,7 @@ document.addEventListener('alpine:init', () => {
 
       // 2. Start reactive synchronization from Store to URL
       Alpine.effect(() => {
+        const source = this.source;
         const ticker = this.ticker;
         const strategy = this.strategy;
         const slippage = this.slippage;
@@ -259,6 +265,7 @@ document.addEventListener('alpine:init', () => {
         const entryPosition = this.entryPosition;
 
         const url = UrlManager.createUrl();
+        UrlManager.setWithDefault(url, URL_PARAMS.SOURCE, source, 'yfinance');
         UrlManager.set(url, URL_PARAMS.TICKER, ticker || null);
         UrlManager.set(url, URL_PARAMS.STRATEGY, strategy || null);
         UrlManager.setWithDefault(url, URL_PARAMS.SLIPPAGE, slippage, 0.5);
@@ -297,6 +304,8 @@ document.addEventListener('alpine:init', () => {
         this.ticker = '';
         this.tickerInput = '';
       }
+      const defaultSource = (urlTicker && ['BTC', 'ETH', 'SOL'].includes(urlTicker.toUpperCase())) ? 'deribit' : 'yfinance';
+      this.source = UrlManager.get(URL_PARAMS.SOURCE, defaultSource);
       this.strategy = UrlManager.get(URL_PARAMS.STRATEGY, 'coveredCall');
       this.slippage = parseFloat(UrlManager.get(URL_PARAMS.SLIPPAGE, '0.5'));
       this.minDte = parseInt(UrlManager.get(URL_PARAMS.MIN_DTE, '7'), 10);
@@ -352,6 +361,15 @@ document.addEventListener('alpine:init', () => {
       this.reloadData();
     },
 
+    changeSource() {
+      // Clear selection & details when switching data source, but do not
+      // automatically trigger computation because the ticker is likely for the old source.
+      this.selectedId = null;
+      this.details = null;
+      this.unrealized = null;
+      this.entryPosition = null;
+    },
+
     changeStrategy() {
       // Clear selection & details when switching strategy types
       this.selectedId = null;
@@ -385,8 +403,7 @@ document.addEventListener('alpine:init', () => {
           return;
         }
 
-        const isCrypto = ["BTC", "ETH", "SOL"].includes(this.ticker);
-        const fetcherName = isCrypto ? config.deribitFetcherName : config.yfinanceFetcherName;
+        const fetcherName = this.source === 'deribit' ? config.deribitFetcherName : config.yfinanceFetcherName;
         const fetcher = window[fetcherName];
         if (!fetcher) {
           throw new Error(`Fetcher ${fetcherName} is not registered on window by Dart.`);
@@ -438,13 +455,18 @@ document.addEventListener('alpine:init', () => {
             return String(val);
           };
 
+          const rawMessage = (typeof error.message === 'string' &&
+            !error.message.includes('Dart exception thrown from converted Future'))
+            ? error.message
+            : '';
+
           errorMsg =
+            rawMessage ||
             getMsg(error.error) ||
-            getMsg(error.message) ||
             getMsg(error) ||
             "An unexpected error occurred.";
         }
-        errorMsg = errorMsg.replace(/^(Exception|StateError|Error):\s*/i, "");
+        errorMsg = errorMsg.replace(/^(Exception|StateError|Error|Invalid argument\(s\)):\s*/i, "");
 
         document.getElementById('error-message').textContent = errorMsg;
         const myModal = new bootstrap.Modal(document.getElementById('errorModal'));

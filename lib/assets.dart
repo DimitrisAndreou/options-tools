@@ -1,19 +1,13 @@
 import 'dart:collection';
+import 'data_source.dart';
 
-// In what venue we can find (and visualize) a particular asset?
-enum Venue {
-  Deribit,
-  OptionStrat,
-}
+export 'data_source.dart';
 
-// TODO: this can be something richer; e.g. an object that also has a url
-// to the tradeable instrument.
 sealed class Asset {
   final String name;
-  final Set<Venue>? _venues;
-  // Links to markets where this asset can be traded, if known.
-  // final List<MarketURL> urls;
-  const Asset(this.name, {Set<Venue>? venues}) : _venues = venues;
+  final DataSource? source;
+
+  const Asset(this.name, {this.source});
 
   Line ofSize(double size, [Line? costBasis]) => Line(this, size, costBasis);
   Line get unit => Line(this, 1.0);
@@ -31,7 +25,7 @@ sealed class Asset {
   bool get isOption => this is Option;
   Option get toOption => this as Option;
 
-  Set<Venue> get venues => _venues ?? const {};
+  String? get url => source?.assetUrl(this);
 
   @override
   String toString() => name;
@@ -214,10 +208,10 @@ class _MergedPosition extends Position {
 
 // USDC, BTC etc.
 class Commodity extends Asset implements Comparable<Commodity> {
-  static final Map<String, Commodity> _cache = {};
-  const Commodity(super.name, {super.venues});
-  factory Commodity.fromName(String name, {Set<Venue>? venues}) =>
-      _cache.putIfAbsent(name, () => Commodity(name, venues: venues));
+  static final Map<(String, DataSource?), Commodity> _cache = {};
+  const Commodity(super.name, {super.source});
+  factory Commodity.fromName(String name, {DataSource? source}) =>
+      _cache.putIfAbsent((name, source), () => Commodity(name, source: source));
 
   @override
   int compareTo(Commodity that) {
@@ -237,7 +231,7 @@ abstract class Expirable extends Asset {
       required this.expiration,
       this.contractLot = 1,
       this.minSize = 1,
-      super.venues});
+      super.source});
 }
 
 class DatedFuture extends Expirable {
@@ -246,7 +240,7 @@ class DatedFuture extends Expirable {
       required super.expiration,
       super.contractLot,
       super.minSize,
-      super.venues});
+      super.source});
 }
 
 class Option extends Expirable {
@@ -265,7 +259,7 @@ class Option extends Expirable {
       required super.expiration,
       super.contractLot,
       super.minSize,
-      super.venues}) {
+      super.source}) {
     if (isPut == isCall) {
       throw ArgumentError("Exactly one of these should be true: "
           "isPut: $isPut, isCall: $isCall");

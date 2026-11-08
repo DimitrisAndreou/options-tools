@@ -180,7 +180,7 @@ Future<int> runSmokeTestCli(List<String> args) async {
           );
 
           final underlying =
-              Commodity(ticker, venues: const {Venue.OptionStrat});
+              Commodity(ticker, source: DataSource.yfinance);
           final money = const Commodity('USD');
           final spotMarket = markets.spotMarkets.firstOrNull;
           final spotStr = spotMarket != null

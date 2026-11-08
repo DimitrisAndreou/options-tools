@@ -121,14 +121,11 @@ class CoveredCall {
 
   double get minSize => option.minSize;
 
-  String? get callURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
+  String? get callURL => optionLeg.asset.url;
 
-  String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
+  String? get underlyingURL => underlying.url;
 
   String? get strategyURL {
-    if (!underlying.venues.contains(Venue.OptionStrat)) {
-      return null;
-    }
     final costBasis = underlyingLeg.unitCostBasis?.size ?? spotPrice;
     final optionCostBasis =
         optionLeg.unitCostBasis?.size ?? callMarket.sellPrice();
@@ -136,7 +133,7 @@ class CoveredCall {
       underlying: money.ofSize(costBasis),
       option: money.ofSize(optionCostBasis),
     });
-    return PositionRenderer.tryRenderFirst(posWithCostBasis);
+    return underlying.source?.strategyUrl(posWithCostBasis);
   }
 
   List<ExecutionInstruction> get instructions => [
@@ -368,11 +365,11 @@ class LongCall {
   // This is also the hurdle.
   late final PriceInfo breakEvenVsFullMoney;
 
-  String? get callURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
+  String? get callURL => optionLeg.asset.url;
 
-  String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
+  String? get underlyingURL => underlying.url;
 
-  String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
+  String? get strategyURL => underlying.source?.strategyUrl(strategy);
 
   Map<String, dynamic> toJson() => {
         'id':
@@ -502,11 +499,11 @@ class LongPut {
   // This is also the hurdle.
   late final PriceInfo breakEvenVsFullMoney;
 
-  String? get putURL => AssetRenderer.tryRenderFirst(optionLeg.asset);
+  String? get putURL => optionLeg.asset.url;
 
-  String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
+  String? get underlyingURL => underlying.url;
 
-  String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
+  String? get strategyURL => underlying.source?.strategyUrl(strategy);
 
   Map<String, dynamic> toJson() => {
         'id':
@@ -640,10 +637,10 @@ class Straddle {
   late final PriceInfo breakEvenVsFullMoneyDown;
   late final PriceInfo breakEvenVsFullMoneyUp;
 
-  String? get callURL => AssetRenderer.tryRenderFirst(callLeg.asset);
-  String? get putURL => AssetRenderer.tryRenderFirst(putLeg.asset);
-  String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
-  String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
+  String? get callURL => callLeg.asset.url;
+  String? get putURL => putLeg.asset.url;
+  String? get underlyingURL => underlying.url;
+  String? get strategyURL => underlying.source?.strategyUrl(strategy);
 
   Map<String, dynamic> toJson() => {
         'id':
@@ -846,10 +843,10 @@ class VerticalSpread {
   late final double maxProbBelow;
   late final double maxProbAbove;
 
-  String? get shortLegURL => AssetRenderer.tryRenderFirst(shortLeg.asset);
-  String? get longLegURL => AssetRenderer.tryRenderFirst(longLeg.asset);
-  String? get underlyingURL => AssetRenderer.tryRenderFirst(underlying);
-  String? get strategyURL => PositionRenderer.tryRenderFirst(strategy);
+  String? get shortLegURL => shortLeg.asset.url;
+  String? get longLegURL => longLeg.asset.url;
+  String? get underlyingURL => underlying.url;
+  String? get strategyURL => underlying.source?.strategyUrl(strategy);
 
   Map<String, dynamic> toJson() => {
         'id':

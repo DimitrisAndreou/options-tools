@@ -665,8 +665,8 @@ void playWithCostBasis(List<Market> markets) {
 }
 
 void compareCoveredCallConfigs() {
-  final abc = Commodity.fromName('ABC', venues: {Venue.OptionStrat});
-  final usd = Commodity.fromName('USD', venues: {Venue.OptionStrat});
+  final abc = Commodity.fromName('ABC', source: DataSource.yfinance);
+  final usd = Commodity.fromName('USD');
   final expiration = DateTime.utc(2027, 1, 15, 16, 0, 0);
 
   final spotMarket = Market.create(
@@ -685,7 +685,7 @@ void compareCoveredCallConfigs() {
     isCall: true,
     expiration: expiration,
     contractLot: 100.0,
-    venues: {Venue.OptionStrat},
+    source: DataSource.yfinance,
   );
 
   final callMarket = Market.create(

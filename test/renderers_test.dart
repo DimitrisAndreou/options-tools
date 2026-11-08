@@ -12,7 +12,7 @@ void main() {
         'BTC-26JUN26',
         underlying: underlying,
         expiration: DateTime(2026, 6, 26),
-        venues: {Venue.Deribit},
+        source: DataSource.deribit,
       );
       expect(renderer.render(future),
           equals('https://www.deribit.com/futures/BTC-26JUN26'));
@@ -28,7 +28,7 @@ void main() {
         strike: 61000.0,
         isCall: true,
         expiration: DateTime(2026, 4, 24),
-        venues: {Venue.Deribit},
+        source: DataSource.deribit,
       );
       expect(
           renderer.render(option),
@@ -36,28 +36,28 @@ void main() {
               'https://www.deribit.com/options/BTC/BTC-24APR26/BTC-24APR26-61000-C'));
     });
 
-    test('fails if not Venue.Deribit', () {
+    test('fails if not Deribit source', () {
       final underlying = Commodity('BTC');
       final future = DatedFuture(
         'BTC-26JUN26',
         underlying: underlying,
         expiration: DateTime(2026, 6, 26),
-        venues: {Venue.OptionStrat},
+        source: DataSource.yfinance,
       );
       expect(() => renderer.render(future), throwsArgumentError);
     });
 
     test('renders Commodity correctly', () {
-      final comm = Commodity('BTC', venues: {Venue.Deribit});
+      final comm = Commodity('BTC', source: DataSource.deribit);
       expect(renderer.render(comm), equals('https://www.deribit.com/spot/BTC_USDT'));
     });
   });
 
-  group('AssetRenderer.optionStrat', () {
-    final renderer = AssetRenderer.optionStrat();
+  group('AssetRenderer.yfinance', () {
+    final renderer = AssetRenderer.yfinance();
 
     test('renders Commodity correctly', () {
-      final iren = Commodity('IREN', venues: {Venue.OptionStrat});
+      final iren = Commodity('IREN', source: DataSource.yfinance);
       expect(renderer.render(iren), equals('https://finance.yahoo.com/quote/IREN/'));
     });
 
@@ -70,13 +70,13 @@ void main() {
         strike: 18.0,
         isCall: true,
         expiration: DateTime(2028, 1, 21),
-        venues: {Venue.OptionStrat},
+        source: DataSource.yfinance,
       );
       expect(renderer.render(option), equals('https://finance.yahoo.com/quote/IREN280121C00018000/'));
     });
 
-    test('fails if not Venue.OptionStrat', () {
-      final iren = Commodity('IREN', venues: {Venue.Deribit});
+    test('fails if not YFinance source', () {
+      final iren = Commodity('IREN', source: DataSource.deribit);
       expect(() => renderer.render(iren), throwsArgumentError);
     });
   });
@@ -85,7 +85,7 @@ void main() {
     final renderer = PositionRenderer.optionStrat();
 
     test('renders covered call correctly', () {
-      final iren = Commodity('IREN', venues: {Venue.OptionStrat});
+      final iren = Commodity('IREN', source: DataSource.yfinance);
       final option = Option(
         'IREN280121C37',
         underlying: iren,
@@ -93,7 +93,7 @@ void main() {
         strike: 37.0,
         isCall: true,
         expiration: DateTime(2028, 1, 21),
-        venues: {Venue.OptionStrat},
+        source: DataSource.yfinance,
       );
       
       final position = iren.ofSize(100.0) + option.ofSize(-1.0);
@@ -102,7 +102,7 @@ void main() {
     });
 
     test('renders covered call with unitCostBasis correctly', () {
-      final iren = Commodity('IREN', venues: {Venue.OptionStrat});
+      final iren = Commodity('IREN', source: DataSource.yfinance);
       final option = Option(
         'IREN280121C37',
         underlying: iren,
@@ -110,7 +110,7 @@ void main() {
         strike: 37.0,
         isCall: true,
         expiration: DateTime(2028, 1, 21),
-        venues: {Venue.OptionStrat},
+        source: DataSource.yfinance,
       );
       
       final position = iren.ofSize(100.0, Commodity('USD').ofSize(35.0)) +
@@ -120,7 +120,7 @@ void main() {
     });
 
     test('renders covered call with unitCostBasis on stock and option leg', () {
-      final iren = Commodity('IREN', venues: {Venue.OptionStrat});
+      final iren = Commodity('IREN', source: DataSource.yfinance);
       final option = Option(
         'IREN280121C37',
         underlying: iren,
@@ -129,7 +129,7 @@ void main() {
         isCall: true,
         expiration: DateTime(2028, 1, 21),
         contractLot: 100.0,
-        venues: {Venue.OptionStrat},
+        source: DataSource.yfinance,
       );
       
       final position = iren.ofSize(100.0, Commodity('USD').ofSize(35.0)) +
@@ -139,7 +139,7 @@ void main() {
     });
 
     test('renders covered call correctly with 8-digit padded option names', () {
-      final iren = Commodity('IREN', venues: {Venue.OptionStrat});
+      final iren = Commodity('IREN', source: DataSource.yfinance);
       final option = Option(
         'IREN280121C00018000',
         underlying: iren,
@@ -147,7 +147,7 @@ void main() {
         strike: 18.0,
         isCall: true,
         expiration: DateTime(2028, 1, 21),
-        venues: {Venue.OptionStrat},
+        source: DataSource.yfinance,
       );
       
       final position = iren.ofSize(100.0) + option.ofSize(-1.0);
@@ -156,8 +156,8 @@ void main() {
     });
 
     test('skips non-OptionStrat assets', () {
-      final iren = Commodity('IREN', venues: {Venue.OptionStrat});
-      final other = Commodity('BTC', venues: {Venue.Deribit});
+      final iren = Commodity('IREN', source: DataSource.yfinance);
+      final other = Commodity('BTC', source: DataSource.deribit);
       
       final position = iren.ofSize(100.0) + other.ofSize(2.0);
       expect(renderer.render(position), 
@@ -165,15 +165,15 @@ void main() {
     });
 
     test('fails if multiple underlyings', () {
-      final iren = Commodity('IREN', venues: {Venue.OptionStrat});
-      final aapl = Commodity('AAPL', venues: {Venue.OptionStrat});
+      final iren = Commodity('IREN', source: DataSource.yfinance);
+      final aapl = Commodity('AAPL', source: DataSource.yfinance);
       
       final position = iren.ofSize(100.0) + aapl.ofSize(100.0);
       expect(() => renderer.render(position), throwsArgumentError);
     });
     
     test('fails if no valid OptionStrat assets', () {
-      final other = Commodity('BTC', venues: {Venue.Deribit});
+      final other = Commodity('BTC', source: DataSource.deribit);
       
       final position = other.ofSize(2.0);
       expect(() => renderer.render(position), throwsArgumentError);

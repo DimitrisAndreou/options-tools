@@ -4,9 +4,10 @@ import 'package:options_tools/oracle.dart';
 
 void main() {
   group('Asset', () {
-    test('Asset venues are stored and read correctly', () {
-      final comm = Commodity('BTC', venues: {Venue.Deribit});
-      expect(comm.venues, equals({Venue.Deribit}));
+    test('Asset data source is stored and read correctly', () {
+      final comm = Commodity('BTC', source: DataSource.deribit);
+      expect(comm.source, equals(DataSource.deribit));
+      expect(comm.url, equals('https://www.deribit.com/spot/BTC_USDT'));
 
       final opt = Option('BTC-1000-C',
           underlying: comm,
@@ -14,8 +15,9 @@ void main() {
           strike: 1000.0,
           isCall: true,
           expiration: DateTime.now(),
-          venues: {Venue.OptionStrat});
-      expect(opt.venues, equals({Venue.OptionStrat}));
+          source: DataSource.yfinance);
+      expect(opt.source, equals(DataSource.yfinance));
+      expect(opt.url, equals('https://finance.yahoo.com/quote/BTC-1000-C/'));
     });
   });
 
