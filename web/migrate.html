@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Options Tools - URL Migration Helper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/jpg" href="favicon.jpg">
+  <style>
+    body {
+      background-color: var(--bg-body, #0b0f19);
+      color: var(--text-main, #f8fafc);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .tool-card {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1.25rem;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tool-textarea {
+      background-color: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #f8fafc;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.85rem;
+      width: 100%;
+      flex: 1;
+      min-height: 220px;
+      padding: 0.75rem;
+      resize: vertical;
+      outline: none;
+    }
+
+    .tool-textarea:focus {
+      border-color: var(--primary, #38bdf8);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    .log-card {
+      background-color: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 1rem;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.8rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header py-3 mb-4 border-bottom border-secondary">
+    <div class="container d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-3">
+        <a href="index.html" class="text-decoration-none d-flex align-items-center gap-2">
+          <i class="fas fa-arrow-left text-muted"></i>
+          <span class="fs-4 fw-bold text-white">Options Tools</span>
+        </a>
+        <span class="badge bg-primary">URL Migration Helper</span>
+      </div>
+      <div>
+        <a href="index.html" class="btn btn-outline-light btn-sm">
+          <i class="fas fa-chart-line me-1"></i>Back to Visualizer
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container py-2">
+    <div class="row mb-4">
+      <div class="col-12">
+        <h2 class="fw-bold mb-2">Upgrade Legacy Strategy URLs</h2>
+        <p class="text-muted">
+          Older shared links encoded strategy positions in a flat schema. Paste an older or broken URL on the left,
+          and get an upgraded URL on the right compatible with the latest nested <code>preTax</code> / <code>postTax</code> schema.
+        </p>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Left Panel: Input URL -->
+      <div class="col-lg-6 col-12">
+        <div class="tool-card">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label for="old-url" class="fw-bold text-uppercase fs-7 text-muted">
+              <i class="fas fa-paste me-1 text-primary"></i>Old / Broken URL
+            </label>
+            <div class="d-flex gap-2">
+              <button type="button" id="btn-sample" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;">
+                Load Sample
+              </button>
+              <button type="button" id="btn-paste" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.75rem;">
+                <i class="fas fa-clipboard me-1"></i>Paste
+              </button>
+            </div>
+          </div>
+          <textarea id="old-url" class="tool-textarea mb-3" placeholder="Paste old https://... URL here..."></textarea>
+          <div class="d-flex justify-content-between align-items-center">
+            <span id="input-status" class="small text-muted">Waiting for URL input...</span>
+            <button type="button" id="btn-clear" class="btn btn-sm btn-outline-danger">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Output URL -->
+      <div class="col-lg-6 col-12">
+        <div class="tool-card">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label for="new-url" class="fw-bold text-uppercase fs-7 text-muted">
+              <i class="fas fa-check-circle me-1 text-success"></i>Migrated URL (New Schema)
+            </label>
+            <div class="d-flex gap-2">
+              <button type="button" id="btn-copy" class="btn btn-sm btn-success py-0 px-2" style="font-size: 0.75rem;">
+                <i class="fas fa-copy me-1"></i>Copy
+              </button>
+              <a id="btn-open" href="#" target="_blank" class="btn btn-sm btn-outline-info py-0 px-2 disabled" style="font-size: 0.75rem;">
+                <i class="fas fa-external-link-alt me-1"></i>Open
+              </a>
+            </div>
+          </div>
+          <textarea id="new-url" class="tool-textarea mb-3" readonly placeholder="Migrated URL will appear here..."></textarea>
+          <div class="d-flex justify-content-between align-items-center">
+            <span id="output-status" class="small text-muted">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Migration Log / Inspection -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <h5 class="fw-bold mb-2 text-muted fs-6 text-uppercase">
+          <i class="fas fa-info-circle me-1 text-info"></i>Migration Inspection Details
+        </h5>
+        <div id="migration-log" class="log-card text-muted">
+          Paste an old URL above to see decoded properties and schema adjustments.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const SAMPLE_URL = "https://dimitrisandreou.github.io/options-tools/?ticker=BTC&strategy=coveredCall&id=2027-06-25%7E74000&pos=eyJpZCI6IjIwMjctMDYtMjV-NzQwMDAiLCJzdHJhdGVneVR5cGUiOiJjb3ZlcmVkQ2FsbCIsInN0cmF0ZWd5VVJMIjpudWxsLCJtb25leVlpZWxkIjoxLjE4MzY1MTExMTczMjkxLCJ1bmRlcmx5aW5nWWllbGQiOjEuMjM2ODU5NDI4MjYyMzYzMywidW5kZXJseWluZyI6IkJUQyIsInVuZGVybHlpbmdVUkwiOiJodHRwczovL3d3dy5kZXJpYml0LmNvbS9zcG90L0JUQ19VU0RUIiwidW5kZXJseWluZ1RvQnV5IjowLjA4MDg0OTkzMTQ1OTQ2MDg2LCJwcmVtaXVtVG9SZWNlaXZlIjowLjAxOTE1MDA2ODU0MDUzOTE0NywibW9uZXkiOiJVU0QiLCJtb25leVNpemUiOi02MjUxLjg0MjIyNSwibW9uZXlQcm9maXQiOjExNDguMTU3Nzc0OTk5OTk5Nywic3BvdFByaWNlIjo3NzMyNi41LCJjYWxsIjoiQlRDLTI1SlVOMjctNzQwMDAtQyIsImNhbGxVUkwiOiJodHRwczovL3d3dy5kZXJpYml0LmNvbS9vcHRpb25zL0JUQy9CVEMtMjVKVU4yNy9CVEMtMjVKVU4yNy03NDAwMC1DIiwiY2FsbFNpemUiOi0wLjEsIkRURSI6MzA2LCJmb3JtYXR0ZWREYXRlIjoiMjUgSnVuZSAyMDI3Iiwic3RyaWtlQWJzb2x1dGUiOjc0MDAwLCJzdHJpa2VSZWxhdGl2ZSI6MC45NTY5ODExMTI1NTUyMDQyLCJicmVha0V2ZW5Wc0Z1bGxVbmRlcmx5aW5nQWJzb2x1dGUiOjkxNTI3LjU5NzY5MTQxNDg4LCJicmVha0V2ZW5Wc0Z1bGxVbmRlcmx5aW5nUmVsYXRpdmUiOjEuMTgzNjUxMTExNzMyOTEwMywiYnJlYWtFdmVuVnNGdWxsTW9uZXlBYnNvbHV0ZSI6NjI1MTguNDIyMjUsImJyZWFrRXZlblZzRnVsbE1vbmV5UmVsYXRpdmUiOjAuODA4NDk5MzE0NTk0NjA4NywibW9uZXlQcm9iYWJpbGl0eSI6MC41MjkyNDgwMDUzMDIzNzQ1LCJ1bmRlcmx5aW5nUHJvYmFiaWxpdHkiOjAuNDcwNzUxOTk0Njk3NjI1NX0&source=deribit";
+
+    const oldUrlInput = document.getElementById('old-url');
+    const newUrlInput = document.getElementById('new-url');
+    const inputStatus = document.getElementById('input-status');
+    const outputStatus = document.getElementById('output-status');
+    const migrationLog = document.getElementById('migration-log');
+    const btnCopy = document.getElementById('btn-copy');
+    const btnOpen = document.getElementById('btn-open');
+    const btnPaste = document.getElementById('btn-paste');
+    const btnSample = document.getElementById('btn-sample');
+    const btnClear = document.getElementById('btn-clear');
+
+    function utf8Atob(str) {
+      try {
+        return decodeURIComponent(escape(atob(str)));
+      } catch (_) {
+        return atob(str);
+      }
+    }
+
+    function utf8Btoa(str) {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+
+    function migrateUrl(rawInput) {
+      if (!rawInput || !rawInput.trim()) {
+        newUrlInput.value = '';
+        inputStatus.textContent = 'Waiting for URL input...';
+        inputStatus.className = 'small text-muted';
+        outputStatus.textContent = '—';
+        outputStatus.className = 'small text-muted';
+        migrationLog.textContent = 'Paste an old URL above to see decoded properties and schema adjustments.';
+        btnOpen.classList.add('disabled');
+        btnOpen.href = '#';
+        return;
+      }
+
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(rawInput.trim());
+      } catch (e) {
+        inputStatus.textContent = 'Invalid URL format';
+        inputStatus.className = 'small text-danger';
+        newUrlInput.value = '';
+        btnOpen.classList.add('disabled');
+        migrationLog.innerHTML = `<span class="text-danger">Error: Could not parse input as a valid URL.</span>`;
+        return;
+      }
+
+      inputStatus.textContent = 'Valid URL detected';
+      inputStatus.className = 'small text-success';
+
+      const posParam = parsedUrl.searchParams.get('pos');
+      if (!posParam) {
+        outputStatus.textContent = 'No "pos" parameter found in URL (nothing to migrate)';
+        outputStatus.className = 'small text-warning';
+        newUrlInput.value = parsedUrl.toString();
+        btnOpen.href = parsedUrl.toString();
+        btnOpen.classList.remove('disabled');
+        migrationLog.innerHTML = `<span class="text-warning">The URL contains no encoded 'pos' state. It does not require position schema migration.</span>`;
+        return;
+      }
+
+      let obj;
+      try {
+        const jsonStr = utf8Atob(posParam);
+        obj = JSON.parse(jsonStr);
+      } catch (err) {
+        outputStatus.textContent = 'Could not decode "pos" state';
+        outputStatus.className = 'small text-danger';
+        migrationLog.innerHTML = `<span class="text-danger">Failed to decode base64 JSON pos parameter: ${err.message}</span>`;
+        return;
+      }
+
+      const logs = [];
+      logs.push(`Detected strategy: <span class="text-info">${obj.strategyType || 'unknown'}</span> (ID: ${obj.id || 'none'})`);
+
+      let modified = false;
+
+      // Migrate Covered Call legacy flat fields to preTax
+      if (obj.strategyType === 'coveredCall' || (!obj.strategyType && obj.moneyYield != null)) {
+        if (!obj.preTax && obj.moneyYield != null) {
+          logs.push(`Found legacy flat yield/profit fields (moneyYield: ${obj.moneyYield}).`);
+          obj.preTax = {
+            moneyYield: obj.moneyYield,
+            underlyingYield: obj.underlyingYield,
+            moneyProfit: obj.moneyProfit,
+            premiumToReceive: obj.premiumToReceive,
+            breakEvenVsFullUnderlying: obj.breakEvenVsFullUnderlying ?? (
+              obj.breakEvenVsFullUnderlyingAbsolute != null ? {
+                absolute: obj.breakEvenVsFullUnderlyingAbsolute,
+                relative: obj.breakEvenVsFullUnderlyingRelative
+              } : null
+            ),
+            breakEvenVsFullMoney: obj.breakEvenVsFullMoney ?? (
+              obj.breakEvenVsFullMoneyAbsolute != null ? {
+                absolute: obj.breakEvenVsFullMoneyAbsolute,
+                relative: obj.breakEvenVsFullMoneyRelative
+              } : null
+            )
+          };
+
+          delete obj.moneyYield;
+          delete obj.underlyingYield;
+          delete obj.moneyProfit;
+          delete obj.premiumToReceive;
+          delete obj.breakEvenVsFullUnderlyingAbsolute;
+          delete obj.breakEvenVsFullUnderlyingRelative;
+          delete obj.breakEvenVsFullMoneyAbsolute;
+          delete obj.breakEvenVsFullMoneyRelative;
+
+          logs.push(`✓ Encapsulated metrics into nested <code>preTax</code> object.`);
+          modified = true;
+        }
+
+        // Fill modern schema defaults
+        if (obj.instructions === undefined) {
+          obj.instructions = [];
+          logs.push(`✓ Added default <code>instructions: []</code>`);
+          modified = true;
+        }
+        if (obj.underlyingTaxRate === undefined) {
+          obj.underlyingTaxRate = 0.0;
+          logs.push(`✓ Added default <code>underlyingTaxRate: 0.0</code>`);
+          modified = true;
+        }
+        if (obj.derivativeTaxRate === undefined) {
+          obj.derivativeTaxRate = 0.0;
+          logs.push(`✓ Added default <code>derivativeTaxRate: 0.0</code>`);
+          modified = true;
+        }
+        if (obj.unitCostBasis === undefined) {
+          obj.unitCostBasis = obj.spotPrice;
+          logs.push(`✓ Added <code>unitCostBasis: ${obj.spotPrice}</code>`);
+          modified = true;
+        }
+        if (obj.costBasis === undefined) {
+          obj.costBasis = obj.moneySize ? Math.abs(obj.moneySize) : obj.spotPrice;
+          logs.push(`✓ Added <code>costBasis: ${obj.costBasis}</code>`);
+          modified = true;
+        }
+        if (obj.contractLot === undefined) {
+          obj.contractLot = 1.0;
+          logs.push(`✓ Added default <code>contractLot: 1.0</code>`);
+          modified = true;
+        }
+        if (obj.minSize === undefined) {
+          obj.minSize = (obj.underlying === 'BTC' ? 0.1 : 1.0);
+          logs.push(`✓ Added default <code>minSize: ${obj.minSize}</code>`);
+          modified = true;
+        }
+      }
+
+      // Check URL source parameter
+      const tickerParam = parsedUrl.searchParams.get('ticker');
+      if (!parsedUrl.searchParams.has('source') && tickerParam) {
+        const isCrypto = ['BTC', 'ETH', 'SOL'].includes(tickerParam.toUpperCase());
+        const inferredSource = isCrypto ? 'deribit' : 'yfinance';
+        parsedUrl.searchParams.set('source', inferredSource);
+        logs.push(`✓ Added explicit query param <code>source=${inferredSource}</code> for ticker ${tickerParam}`);
+        modified = true;
+      }
+
+      // Re-encode
+      const updatedJson = JSON.stringify(obj);
+      const updatedEncodedPos = utf8Btoa(updatedJson);
+      parsedUrl.searchParams.set('pos', updatedEncodedPos);
+
+      const finalUrl = parsedUrl.toString();
+      newUrlInput.value = finalUrl;
+      btnOpen.href = finalUrl;
+      btnOpen.classList.remove('disabled');
+
+      if (modified) {
+        outputStatus.textContent = 'Successfully upgraded schema!';
+        outputStatus.className = 'small text-success fw-bold';
+      } else {
+        outputStatus.textContent = 'Schema was already up to date.';
+        outputStatus.className = 'small text-info';
+      }
+
+      logs.push('<span class="text-success fw-bold">✓ Ready to copy or open in visualizer!</span>');
+      migrationLog.innerHTML = logs.map(l => `<div>${l}</div>`).join('');
+    }
+
+    oldUrlInput.addEventListener('input', () => migrateUrl(oldUrlInput.value));
+
+    btnSample.addEventListener('click', () => {
+      oldUrlInput.value = SAMPLE_URL;
+      migrateUrl(SAMPLE_URL);
+    });
+
+    btnClear.addEventListener('click', () => {
+      oldUrlInput.value = '';
+      migrateUrl('');
+    });
+
+    btnPaste.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          oldUrlInput.value = text;
+          migrateUrl(text);
+        }
+      } catch (err) {
+        alert('Please allow clipboard access or paste directly into the box.');
+      }
+    });
+
+    btnCopy.addEventListener('click', async () => {
+      if (!newUrlInput.value) return;
+      try {
+        await navigator.clipboard.writeText(newUrlInput.value);
+        const originalHtml = btnCopy.innerHTML;
+        btnCopy.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+        btnCopy.classList.replace('btn-success', 'btn-light');
+        setTimeout(() => {
+          btnCopy.innerHTML = originalHtml;
+          btnCopy.classList.replace('btn-light', 'btn-success');
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy', err);
+      }
+    });
+
+    // Check for query parameter ?url=...
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialUrl = urlParams.get('url');
+    if (initialUrl) {
+      oldUrlInput.value = initialUrl;
+      migrateUrl(initialUrl);
+    }
+  </script>
+</body>
+
+</html>
+
