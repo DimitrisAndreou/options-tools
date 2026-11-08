@@ -13,7 +13,28 @@ function formatInstructionValue(amount, unit, money) {
 function prepareCCData(value) {
   const money = value.money;
   const underlying = value.underlying;
-  const preTax = value.preTax;
+  let preTax = value.preTax;
+  if (!preTax && value.moneyYield != null) {
+    preTax = {
+      moneyYield: value.moneyYield,
+      underlyingYield: value.underlyingYield,
+      moneyProfit: value.moneyProfit,
+      premiumToReceive: value.premiumToReceive,
+      breakEvenVsFullUnderlying: value.breakEvenVsFullUnderlying ?? (
+        value.breakEvenVsFullUnderlyingAbsolute != null ? {
+          absolute: value.breakEvenVsFullUnderlyingAbsolute,
+          relative: value.breakEvenVsFullUnderlyingRelative
+        } : null
+      ),
+      breakEvenVsFullMoney: value.breakEvenVsFullMoney ?? (
+        value.breakEvenVsFullMoneyAbsolute != null ? {
+          absolute: value.breakEvenVsFullMoneyAbsolute,
+          relative: value.breakEvenVsFullMoneyRelative
+        } : null
+      )
+    };
+    value.preTax = preTax;
+  }
   const active = value.postTax ?? preTax;
 
   return {
@@ -114,6 +135,37 @@ function renderTooltipCC(d) {
 StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
   prepareData = prepareCCData;
   renderTooltip = renderTooltipCC;
+  decodeEntryPosition(encoded) {
+    const pos = super.decodeEntryPosition(encoded);
+    if (pos && !pos.preTax && pos.moneyYield != null) {
+      pos.preTax = {
+        moneyYield: pos.moneyYield,
+        underlyingYield: pos.underlyingYield,
+        moneyProfit: pos.moneyProfit,
+        premiumToReceive: pos.premiumToReceive,
+        breakEvenVsFullUnderlying: pos.breakEvenVsFullUnderlying ?? (
+          pos.breakEvenVsFullUnderlyingAbsolute != null ? {
+            absolute: pos.breakEvenVsFullUnderlyingAbsolute,
+            relative: pos.breakEvenVsFullUnderlyingRelative
+          } : null
+        ),
+        breakEvenVsFullMoney: pos.breakEvenVsFullMoney ?? (
+          pos.breakEvenVsFullMoneyAbsolute != null ? {
+            absolute: pos.breakEvenVsFullMoneyAbsolute,
+            relative: pos.breakEvenVsFullMoneyRelative
+          } : null
+        )
+      };
+      if (pos.instructions === undefined) pos.instructions = [];
+      if (pos.underlyingTaxRate === undefined) pos.underlyingTaxRate = 0.0;
+      if (pos.derivativeTaxRate === undefined) pos.derivativeTaxRate = 0.0;
+      if (pos.unitCostBasis === undefined) pos.unitCostBasis = pos.spotPrice;
+      if (pos.costBasis === undefined) pos.costBasis = pos.moneySize ? Math.abs(pos.moneySize) : pos.spotPrice;
+      if (pos.contractLot === undefined) pos.contractLot = 1.0;
+      if (pos.minSize === undefined) pos.minSize = (pos.underlying === 'BTC' ? 0.1 : 1.0);
+    }
+    return pos;
+  }
   createEntryPosition(pos) {
     if (!pos || pos.id === undefined) {
       console.log("Not creating an entry position from", pos);

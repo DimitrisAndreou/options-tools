@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" type="image/jpg" href="favicon.jpg">
+  <script src="url_manager.js"></script>
   <style>
     body {
       background-color: var(--bg-body, #0b0f19);
@@ -167,16 +168,34 @@
     const btnSample = document.getElementById('btn-sample');
     const btnClear = document.getElementById('btn-clear');
 
-    function utf8Atob(str) {
+    function decodePos(str) {
+      if (!str) return null;
+      if (typeof UrlManager !== 'undefined' && UrlManager.decodeState) {
+        const decoded = UrlManager.decodeState(str);
+        if (decoded) return decoded;
+      }
       try {
-        return decodeURIComponent(escape(atob(str)));
+        let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) {
+          base64 += '=';
+        }
+        return JSON.parse(decodeURIComponent(escape(atob(base64))));
       } catch (_) {
-        return atob(str);
+        let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) {
+          base64 += '=';
+        }
+        return JSON.parse(atob(base64));
       }
     }
 
-    function utf8Btoa(str) {
-      return btoa(unescape(encodeURIComponent(str)));
+    function encodePos(obj) {
+      if (typeof UrlManager !== 'undefined' && UrlManager.encodeState) {
+        return UrlManager.encodeState(obj);
+      }
+      const str = JSON.stringify(obj);
+      const base64 = btoa(unescape(encodeURIComponent(str)));
+      return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
     function migrateUrl(rawInput) {
@@ -220,8 +239,10 @@
 
       let obj;
       try {
-        const jsonStr = utf8Atob(posParam);
-        obj = JSON.parse(jsonStr);
+        obj = decodePos(posParam);
+        if (!obj || typeof obj !== 'object') {
+          throw new Error('Could not parse decoded payload as JSON');
+        }
       } catch (err) {
         outputStatus.textContent = 'Could not decode "pos" state';
         outputStatus.className = 'small text-danger';
@@ -319,8 +340,7 @@
       }
 
       // Re-encode
-      const updatedJson = JSON.stringify(obj);
-      const updatedEncodedPos = utf8Btoa(updatedJson);
+      const updatedEncodedPos = encodePos(obj);
       parsedUrl.searchParams.set('pos', updatedEncodedPos);
 
       const finalUrl = parsedUrl.toString();

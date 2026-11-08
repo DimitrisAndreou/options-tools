@@ -469,6 +469,21 @@ document.addEventListener('alpine:init', () => {
         errorMsg = errorMsg.replace(/^(Exception|StateError|Error|Invalid argument\(s\)):\s*/i, "");
 
         document.getElementById('error-message').textContent = errorMsg;
+
+        const hasPosParam = new URLSearchParams(window.location.search).has('pos');
+        const migrateTip = document.getElementById('error-migrate-tip');
+        const migrateLink = document.getElementById('error-migrate-link');
+        if (migrateTip) {
+          if (hasPosParam || errorMsg.includes('moneyYield') || errorMsg.includes('preTax')) {
+            migrateTip.style.display = 'block';
+            if (migrateLink) {
+              migrateLink.href = `migrate.html?url=${encodeURIComponent(window.location.href)}`;
+            }
+          } else {
+            migrateTip.style.display = 'none';
+          }
+        }
+
         const myModal = new bootstrap.Modal(document.getElementById('errorModal'));
         myModal.show();
       }
