@@ -266,6 +266,35 @@
                     </th>
                     <td class="metric-val-single" x-html="$store.app.existingHolding?.costBasisHtml"></td>
                   </tr>
+                  <tr class="strategy-metric-row has-subrow">
+                    <th scope="row" class="metric-label-cell">
+                      <div class="metric-label">Current Value</div>
+                    </th>
+                    <td class="metric-val-single" x-html="$store.app.existingHolding?.currentValueHtml"></td>
+                  </tr>
+                  <tr class="strategy-metric-row strategy-subrow"
+                    :class="{ 'has-subrow': Boolean($store.app.existingHolding?.postTaxPnlHtml) }">
+                    <th scope="row" class="metric-label-cell">
+                      <div class="metric-label">Unrealized PNL:</div>
+                    </th>
+                    <td class="metric-val-single" x-html="$store.app.existingHolding?.unrealizedPnlHtml"></td>
+                  </tr>
+                  <template x-if="$store.app.existingHolding?.postTaxPnlHtml">
+                    <tr class="strategy-metric-row strategy-subrow has-subrow">
+                      <th scope="row" class="metric-label-cell">
+                        <div class="metric-label">Post-Tax:</div>
+                      </th>
+                      <td class="metric-val-single" x-html="$store.app.existingHolding?.postTaxPnlHtml"></td>
+                    </tr>
+                  </template>
+                  <template x-if="$store.app.existingHolding?.taxImpactHtml">
+                    <tr class="strategy-metric-row strategy-subrow">
+                      <th scope="row" class="metric-label-cell">
+                        <div class="metric-label">Tax Impact:</div>
+                      </th>
+                      <td class="metric-val-single" x-html="$store.app.existingHolding?.taxImpactHtml"></td>
+                    </tr>
+                  </template>
                 </tbody>
               </table>
             </div>

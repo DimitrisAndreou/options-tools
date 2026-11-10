@@ -625,5 +625,74 @@ void main() {
         expect(withoutBenefits.valueAfter(1100.0), equals(150.0));
       });
     });
+
+    group('liquidateAt', () {
+      test('realizes pre-tax and post-tax underlying PnL and preserves maxRisk',
+          () {
+        // 5,300 units bought at $88 ($466,400 cost basis), current spot $285.70
+        final position = btc.ofSize(5300.0, usd.ofSize(88.0)) -
+            usd.ofSize(5300.0 * 88.0);
+        final openAnalyzer =
+            PositionAnalyzer(position, underlying: btc, money: usd);
+
+        expect(openAnalyzer.maxRisk, closeTo(466400.0, 1e-9));
+        expect(openAnalyzer.valueAt(285.70), closeTo(1047810.0, 1e-9));
+        expect(openAnalyzer.yieldAt(285.70),
+            closeTo(1.0 + 1047810.0 / 466400.0, 1e-12));
+
+        const taxes = TaxProfile(underlyingTaxRate: 0.31);
+        final liquidatedPreTax = openAnalyzer.liquidateAt(285.70);
+        final liquidatedPostTax =
+            openAnalyzer.withTaxes(taxes).liquidateAt(285.70);
+        final liquidatedThenTaxed = liquidatedPreTax.withTaxes(taxes);
+
+        expect(liquidatedPreTax.valueAt(285.70), closeTo(1047810.0, 1e-9));
+        expect(liquidatedPreTax.deltaBefore(285.70), equals(0.0));
+        expect(liquidatedPreTax.costBasisBefore(285.70), equals(0.0));
+        expect(liquidatedPreTax.maxRisk, closeTo(466400.0, 1e-9));
+
+        // 1,047,810 * (1 - 0.31) = 722,988.90
+        expect(liquidatedPostTax.valueAt(285.70), closeTo(722988.90, 1e-6));
+        expect(liquidatedPostTax.valueAt(0.0), closeTo(722988.90, 1e-6));
+        expect(liquidatedPostTax.valueAt(1000.0), closeTo(722988.90, 1e-6));
+        expect(liquidatedPostTax.realizedPnLBefore(285.70),
+            closeTo(722988.90, 1e-6));
+        expect(liquidatedPostTax.maxRisk, closeTo(466400.0, 1e-9));
+        expect(liquidatedPostTax.yieldAt(285.70),
+            closeTo(1.0 + 722988.90 / 466400.0, 1e-12));
+
+        expect(liquidatedThenTaxed.valueAt(285.70),
+            closeTo(liquidatedPostTax.valueAt(285.70), 1e-9));
+        expect(liquidatedThenTaxed.yieldAt(285.70),
+            closeTo(liquidatedPostTax.yieldAt(285.70), 1e-12));
+      });
+
+      test('liquidateAt respects includeTaxBenefits on losses and validates price',
+          () {
+        final position = btc.ofSize(1.0, usd.ofSize(1500.0)) - usd.ofSize(1500.0);
+        final openAnalyzer =
+            PositionAnalyzer(position, underlying: btc, money: usd);
+
+        final withBenefit = openAnalyzer
+            .withTaxes(const TaxProfile(
+                underlyingTaxRate: 0.20, includeTaxBenefits: true))
+            .liquidateAt(1000.0);
+        expect(withBenefit.valueAt(1000.0), closeTo(-400.0, 1e-9));
+        expect(withBenefit.yieldAt(1000.0), closeTo(1.0 - 400.0 / 1500.0, 1e-12));
+
+        final withoutBenefit = openAnalyzer
+            .withTaxes(const TaxProfile(
+                underlyingTaxRate: 0.20, includeTaxBenefits: false))
+            .liquidateAt(1000.0);
+        expect(withoutBenefit.valueAt(1000.0), closeTo(-500.0, 1e-9));
+        expect(
+            withoutBenefit.yieldAt(1000.0), closeTo(1.0 - 500.0 / 1500.0, 1e-12));
+
+        expect(() => openAnalyzer.liquidateAt(-1.0), throwsArgumentError);
+        expect(
+            () => openAnalyzer.liquidateAt(double.infinity), throwsArgumentError);
+        expect(() => openAnalyzer.liquidateAt(double.nan), throwsArgumentError);
+      });
+    });
   });
 }

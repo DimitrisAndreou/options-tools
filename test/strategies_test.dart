@@ -188,6 +188,147 @@ void main() {
     expect(json['postTax']['unassignedTax'], closeTo(15.0, 1e-12));
     expect(json['postTax']['breakEvenVsFullMoney']['absolute'],
         closeTo(465.0, 1e-12));
+
+    // Existing position PnL & yields (1 BTC @ $500 basis, $1000 spot, 5% underlying tax):
+    expect(cc.existingPosition, isNotNull);
+    expect(cc.existingPosition!.unitsHeld, equals(1.0));
+    expect(cc.existingPosition!.costBasis, closeTo(500.0, 1e-12));
+    expect(cc.existingPosition!.currentValue, closeTo(1000.0, 1e-12));
+    expect(cc.existingPosition!.preTax.pnl, closeTo(500.0, 1e-12));
+    expect(cc.existingPosition!.preTax.yield, closeTo(2.0, 1e-12));
+    expect(cc.existingPosition!.postTax!.pnl, closeTo(475.0, 1e-12));
+    expect(
+        cc.existingPosition!.postTax!.yield, closeTo(1.0 + 475.0 / 500.0, 1e-12));
+    expect(
+      json['existingPosition'],
+      equals({
+        'unitsHeld': 1.0,
+        'costBasis': 500.0,
+        'currentValue': 1000.0,
+        'preTax': {
+          'pnl': 500.0,
+          'yield': 2.0,
+        },
+        'postTax': {
+          'pnl': 475.0,
+          'yield': 1.95,
+        },
+      }),
+    );
+  });
+
+  test('CoveredCall existingPosition matches PositionAnalyzer for multi-lot stock with tax',
+      () {
+    final goog = Commodity.fromName('GOOG', source: DataSource.yfinance);
+    final usd = Commodity.fromName('USD');
+    final expiration = DateTime.utc(2029, 1, 19);
+
+    final spotMarket = Market.create(
+      asset: goog,
+      money: usd,
+      bidPrice: 285.70,
+      askPrice: 285.70,
+    );
+
+    final callOption = Option(
+      'GOOG290119C00340000',
+      underlying: goog,
+      money: usd,
+      strike: 340.0,
+      isCall: true,
+      expiration: expiration,
+      source: DataSource.yfinance,
+      contractLot: 100.0,
+    );
+
+    final callMarket = Market.create(
+      asset: callOption,
+      money: usd,
+      bidPrice: 5180.0,
+      askPrice: 5180.0,
+    );
+
+    final cc = CoveredCall.generateAll(
+      [spotMarket, callMarket],
+      underlying: goog,
+      money: usd,
+      slippage: 0.0,
+      avgPrice: 88.0,
+      size: 53,
+      taxes: const TaxProfile(
+        underlyingTaxRate: 0.31,
+        derivativeTaxRate: 0.31,
+      ),
+    ).single;
+
+    final existing = cc.toJson()['existingPosition'];
+    expect(existing['unitsHeld'], equals(5300.0));
+    expect(existing['costBasis'], closeTo(466400.0, 1e-9));
+    expect(existing['currentValue'], closeTo(5300.0 * 285.70, 1e-6));
+    expect(existing['preTax']['pnl'], closeTo(1047810.0, 1e-6));
+    expect(existing['preTax']['yield'],
+        closeTo(1.0 + 1047810.0 / 466400.0, 1e-12));
+    expect(existing['postTax']['pnl'], closeTo(722988.90, 1e-6));
+    expect(existing['postTax']['yield'],
+        closeTo(1.0 + 722988.90 / 466400.0, 1e-12));
+  });
+
+  test('CoveredCall existingPosition applies tax credit on negative unrealized PnL',
+      () {
+    final goog = Commodity.fromName('GOOG', source: DataSource.yfinance);
+    final usd = Commodity.fromName('USD');
+    final expiration = DateTime.utc(2029, 1, 19);
+
+    final spotMarket = Market.create(
+      asset: goog,
+      money: usd,
+      bidPrice: 285.70,
+      askPrice: 285.70,
+    );
+
+    final callOption = Option(
+      'GOOG290119C00340000',
+      underlying: goog,
+      money: usd,
+      strike: 340.0,
+      isCall: true,
+      expiration: expiration,
+      source: DataSource.yfinance,
+      contractLot: 100.0,
+    );
+
+    final callMarket = Market.create(
+      asset: callOption,
+      money: usd,
+      bidPrice: 5180.0,
+      askPrice: 5180.0,
+    );
+
+    final cc = CoveredCall.generateAll(
+      [spotMarket, callMarket],
+      underlying: goog,
+      money: usd,
+      slippage: 0.0,
+      avgPrice: 400.0,
+      size: 53,
+      taxes: const TaxProfile(
+        underlyingTaxRate: 0.31,
+        derivativeTaxRate: 0.31,
+      ),
+    ).single;
+
+    final existing = cc.toJson()['existingPosition'];
+    expect(existing['unitsHeld'], equals(5300.0));
+    expect(existing['costBasis'], closeTo(2120000.0, 1e-9));
+    expect(existing['currentValue'], closeTo(1514210.0, 1e-6));
+    expect(existing['preTax']['pnl'], closeTo(-605790.0, 1e-6));
+    expect(existing['preTax']['yield'],
+        closeTo(1.0 - 605790.0 / 2120000.0, 1e-12));
+    // 31% tax credit on $605,790 loss = +$187,794.90 -> post-tax loss = -$417,995.10
+    expect(existing['postTax']['pnl'], closeTo(-417995.10, 1e-6));
+    expect(existing['postTax']['yield'],
+        closeTo(1.0 - 417995.10 / 2120000.0, 1e-12));
+    expect(existing['postTax']['pnl'], greaterThan(existing['preTax']['pnl']));
   });
 
   test('CoveredCall with high avgPrice (negative moneyYield) is not filtered',
@@ -231,6 +372,10 @@ void main() {
     expect(coveredCalls.length, equals(1));
     final cc = coveredCalls.first;
     expect(cc.toJson()['underlyingHeld'], equals(1.0));
+    expect(cc.existingPosition!.preTax.pnl, closeTo(-500.0, 1e-12));
+    expect(cc.existingPosition!.preTax.yield,
+        closeTo(1.0 - 500.0 / 1500.0, 1e-12));
+    expect(cc.existingPosition!.postTax, isNull);
 
     // Max value at expiration is 1100 + 50 - 1500 = -350 (< 0)
     expect(cc.preTax.moneyProfit, closeTo(-350.0, 1e-12));

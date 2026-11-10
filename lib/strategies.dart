@@ -64,6 +64,45 @@ class CoveredCallMetrics {
       };
 }
 
+class PositionPnL {
+  final double pnl;
+  final double yield;
+
+  const PositionPnL({
+    required this.pnl,
+    required this.yield,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'pnl': pnl,
+        'yield': yield,
+      };
+}
+
+class ExistingPosition {
+  final double unitsHeld;
+  final double costBasis;
+  final double currentValue;
+  final PositionPnL preTax;
+  final PositionPnL? postTax;
+
+  const ExistingPosition({
+    required this.unitsHeld,
+    required this.costBasis,
+    required this.currentValue,
+    required this.preTax,
+    this.postTax,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'unitsHeld': unitsHeld,
+        'costBasis': costBasis,
+        'currentValue': currentValue,
+        'preTax': preTax.toJson(),
+        if (postTax != null) 'postTax': postTax!.toJson(),
+      };
+}
+
 class CoveredCall {
   final Commodity underlying;
   final Commodity money;
@@ -93,6 +132,7 @@ class CoveredCall {
 
   late final CoveredCallMetrics preTax;
   late final CoveredCallMetrics? postTax;
+  late final ExistingPosition? existingPosition;
 
   Line get premiumToReceive => preTax.premiumToReceive;
   double get moneyProfit => preTax.moneyProfit;
@@ -189,6 +229,8 @@ class CoveredCall {
         'instructions': instructions.map((i) => i.toJson()).toList(),
         'preTax': preTax.toJson(),
         if (postTax != null) 'postTax': postTax!.toJson(),
+        if (existingPosition != null)
+          'existingPosition': existingPosition!.toJson(),
       };
 
   @override
@@ -205,10 +247,12 @@ class CoveredCall {
       this.moneyProbability,
       this.underlyingProbability,
       this.avgPrice,
-      double? maxRisk,
+      PositionAnalyzer? existingAnalyzer,
       this.taxes = TaxProfile.none})
       : analyzer = PositionAnalyzer(strategy,
-            underlying: underlying, money: money, maxRisk: maxRisk),
+            underlying: underlying,
+            money: money,
+            maxRisk: existingAnalyzer?.maxRisk),
         moneyLeg = strategy[money],
         underlyingLeg = strategy[underlying],
         optionLeg = strategy[option],
@@ -251,13 +295,44 @@ class CoveredCall {
     preTax = metricsFrom(analyzer);
     postTax = taxes.isTaxFree ? null : metricsFrom(postTaxAnalyzer);
 
+    if (existingAnalyzer == null) {
+      existingPosition = null;
+    } else {
+      PositionPnL evaluateExisting(PositionAnalyzer a) => PositionPnL(
+            pnl: a.valueAt(spotPrice),
+            yield: a.yieldAt(spotPrice),
+          );
+      final currentValue = PositionAnalyzer(
+        underlyingLeg,
+        underlying: underlying,
+        money: money,
+      ).valueAt(spotPrice);
+      existingPosition = ExistingPosition(
+        unitsHeld: underlyingLeg.size,
+        costBasis: existingAnalyzer.costBasisBefore(spotPrice),
+        currentValue: currentValue,
+        preTax: evaluateExisting(existingAnalyzer),
+        postTax: taxes.isTaxFree
+            ? null
+            : evaluateExisting(
+                existingAnalyzer.withTaxes(taxes).liquidateAt(spotPrice)),
+      );
+    }
+
     if (!preTax.moneyYield.isFinite ||
         !preTax.underlyingYield.isFinite ||
         !preTax.moneyProfit.isFinite ||
         (postTax != null &&
             (!postTax!.moneyYield.isFinite ||
                 !postTax!.underlyingYield.isFinite ||
-                !postTax!.moneyProfit.isFinite))) {
+                !postTax!.moneyProfit.isFinite)) ||
+        (existingPosition != null &&
+            (!existingPosition!.currentValue.isFinite ||
+                !existingPosition!.preTax.pnl.isFinite ||
+                !existingPosition!.preTax.yield.isFinite ||
+                (existingPosition!.postTax != null &&
+                    (!existingPosition!.postTax!.pnl.isFinite ||
+                        !existingPosition!.postTax!.yield.isFinite))))) {
       throw Exception(
           "Non-finite metrics in CoveredCall!\nStrategy: $strategy\n"
           "Analyzer: $analyzer");
@@ -313,11 +388,10 @@ class CoveredCall {
         final Position strategy =
             call.short(slippage) * option.minSize * size.toDouble() +
                 underlyingPosition;
-        final double? maxRisk = avgPrice == null
+        final PositionAnalyzer? existingAnalyzer = avgPrice == null
             ? null
             : PositionAnalyzer(underlyingPosition,
-                    underlying: underlying, money: money)
-                .maxRisk;
+                underlying: underlying, money: money);
 
         yield CoveredCall._(
           strategy,
@@ -331,7 +405,7 @@ class CoveredCall {
           moneyProbability: moneyProb,
           underlyingProbability: underlyingProb,
           avgPrice: avgPrice,
-          maxRisk: maxRisk,
+          existingAnalyzer: existingAnalyzer,
           taxes: taxes,
         );
       } catch (e) {

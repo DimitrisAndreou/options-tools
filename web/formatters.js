@@ -144,23 +144,47 @@ function formatDaysDiff(entryDTE, currentDTE) {
   return `${sign}${diffDte} days (${pctSign}${pctDte.toFixed(2)}%)`;
 }
 
-function formatExistingCostBasisHtml(costBasis, avgPrice, spotPrice) {
-  if (costBasis == null || avgPrice == null || !(avgPrice > 0)) return '—';
-  const costBasisStr = dollarFmt.format(costBasis);
-  if (!Number.isFinite(spotPrice)) {
-    return `<span class="text-neutral text-nowrap">${costBasisStr}</span>`;
+function formatSignedDollar(val) {
+  const v = val === 0 ? 0 : val;
+  return `${v >= 0 ? '+' : ''}${dollarFmt.format(v)}`;
+}
+
+function formatExistingDollarHtml(amount) {
+  if (amount == null || !Number.isFinite(Number(amount))) return '—';
+  return `<span class="text-neutral text-nowrap">${dollarFmt.format(Number(amount))}</span>`;
+}
+
+function formatExistingUnrealizedPnlHtml(pnl, totalYield) {
+  const pnlVal = Number(pnl);
+  const yieldVal = Number(totalYield);
+  if (!Number.isFinite(pnlVal) || !Number.isFinite(yieldVal)) return '—';
+  if (pnlVal === 0) {
+    return '<span class="text-neutral-alt text-nowrap">0.0%</span> <small class="text-neutral-alt text-nowrap">($0.00)</small>';
   }
-  const spotValue = costBasis * (spotPrice / avgPrice);
-  const diff = spotValue - costBasis;
-  const pct = diff / costBasis;
-  const pctStr = percentFmt.format(pct);
-  if (diff < 0) {
-    const lossAmt = dollarFmt.format(Math.abs(diff));
-    return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-bad text-nowrap">${lossAmt} (${pctStr}) loss</small>`;
-  } else if (diff > 0) {
-    const profitAmt = dollarFmt.format(diff);
-    return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-good text-nowrap">${profitAmt} (${pctStr}) profit</small>`;
-  } else {
-    return `<span class="text-neutral text-nowrap">${costBasisStr}</span><br/><small class="text-neutral-alt text-nowrap">$0.00 (0.0%)</small>`;
+  const pctStr = percentFmt.format(yieldVal - 1.0);
+  const pnlStr = formatSignedDollar(pnlVal);
+  const cls = pnlVal > 0 ? 'text-good' : 'text-bad';
+  const altCls = pnlVal > 0 ? 'text-good-alt' : 'text-bad';
+  return `<span class="${cls} text-nowrap">${pctStr}</span> <small class="${altCls} text-nowrap">(${pnlStr})</small>`;
+}
+
+function formatExistingTaxImpactHtml(preTax, postTax) {
+  if (!preTax || !postTax) return null;
+  const prePnl = Number(preTax.pnl);
+  const preYield = Number(preTax.yield);
+  const postPnl = Number(postTax.pnl);
+  const postYield = Number(postTax.yield);
+  if (
+    !Number.isFinite(prePnl) || !Number.isFinite(preYield) ||
+    !Number.isFinite(postPnl) || !Number.isFinite(postYield)
+  ) {
+    return null;
   }
+  const absImpact = postPnl - prePnl;
+  const impactCls = absImpact > 0 ? 'text-good' : (absImpact < 0 ? 'text-bad' : 'text-muted-alt');
+  if (preYield > 0) {
+    const relImpact = postYield / preYield - 1.0;
+    return `<span class="${impactCls} text-nowrap">${percentFmt.format(relImpact)}</span> <small class="${impactCls} text-nowrap">(${formatSignedDollar(absImpact)})</small>`;
+  }
+  return `<span class="${impactCls} text-nowrap">${formatSignedDollar(absImpact)}</span>`;
 }

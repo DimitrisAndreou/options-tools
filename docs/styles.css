@@ -681,8 +681,8 @@ footer {
   color: var(--text-muted);
 }
 
-.unified-strategy-table .strategy-section-body tr:last-child th,
-.unified-strategy-table .strategy-section-body tr:last-child td {
+.unified-strategy-table .strategy-section-body tr:last-of-type th,
+.unified-strategy-table .strategy-section-body tr:last-of-type td {
   border-block-end: none;
 }
 

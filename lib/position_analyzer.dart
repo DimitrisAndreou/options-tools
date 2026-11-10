@@ -136,6 +136,44 @@ class PositionAnalyzer {
     );
   }
 
+  /// Returns a [PositionAnalyzer] representing this position liquidated (closed)
+  /// at [price], realizing any open underlying unrealized PnL at [price] and
+  /// computing [taxes] on the resulting realized PnL while preserving [maxRisk].
+  PositionAnalyzer liquidateAt(double price) {
+    if (!price.isFinite || price < 0.0) {
+      throw ArgumentError.value(
+          price, 'price', 'Must be finite and non-negative');
+    }
+    final seg = _segmentBefore(price);
+    final preTaxValue =
+        seg._preTaxValueAtMinPrice + (price - seg.minPrice) * seg.delta;
+    final realizedUnderlying =
+        seg.realizedUnderlyingPnL + seg.unrealizedPnLAt(price);
+    final realizedDerivative = seg.realizedDerivativePnL;
+    final closedSegment = _PnLSegment(
+      minPrice: 0.0,
+      valueAtMinPrice: preTaxValue,
+      maxPrice: double.infinity,
+      valueAtMaxPrice: preTaxValue,
+      delta: 0.0,
+      costBasis: 0.0,
+      realizedUnderlyingPnL: realizedUnderlying,
+      realizedDerivativePnL: realizedDerivative,
+      tax: taxes.computeTax(
+        realizedUnderlyingPnL: realizedUnderlying,
+        realizedDerivativePnL: realizedDerivative,
+      ),
+    );
+    return PositionAnalyzer._(
+      position,
+      underlying: underlying,
+      money: money,
+      taxes: taxes,
+      maxRisk: maxRisk,
+      segments: [closedSegment],
+    );
+  }
+
   double get minValue => _segments.map((segment) => segment.minValue).min;
   double get maxValue => _segments.map((segment) => segment.maxValue).max;
 
