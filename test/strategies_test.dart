@@ -1060,15 +1060,22 @@ void main() {
     // Now construct Probabilities
     final probs = Probabilities(spreads, underlying: btc, money: usd);
 
-    // The strikes generated will be 1100 (from 1000-1100 pair) and 1200 (from 1100-1200 pair)
-    // Let's check interpolation
+    // The midpoints generated are 1050 (from 1000-1100 pair, p=0.70)
+    // and 1150 (from 1100-1200 pair, p=0.20).
+    final p1050 = probs.getProbabilityExpiringAbove(expiration, 1050.0);
+    expect(p1050, closeTo(0.70, 1e-9));
     final p1150 = probs.getProbabilityExpiringAbove(expiration, 1150.0);
-    expect(p1150, isNotNull);
-    expect(p1150, greaterThan(0.0));
-    expect(p1150, lessThan(1.0));
+    expect(p1150, closeTo(0.20, 1e-9));
+    // Exact interior strike 1100 is linearly interpolated between 1050 and 1150:
+    final p1100 = probs.getProbabilityExpiringAbove(expiration, 1100.0);
+    expect(p1100, closeTo(0.45, 1e-9));
 
-    // Verify extrapolation throws ArgumentError
+    // Verify extrapolation outside [1050, 1150] throws ArgumentError
     expect(() => probs.getProbabilityExpiringAbove(expiration, 900.0),
+        throwsArgumentError);
+    expect(() => probs.getProbabilityExpiringAbove(expiration, 1000.0),
+        throwsArgumentError);
+    expect(() => probs.getProbabilityExpiringAbove(expiration, 1200.0),
         throwsArgumentError);
     expect(() => probs.getProbabilityExpiringAbove(expiration, 1300.0),
         throwsArgumentError);
@@ -1124,16 +1131,99 @@ void main() {
       slippage: 0.0,
     ).toList();
 
-    // BTC-1100-C and BTC-1200-C should have computed probabilities because they are within range
+    // BTC-1100-C sits between midpoints 1050 (p=0.70) and 1150 (p=0.20),
+    // so its interpolated probability is 0.45.
     final cc1100 = coveredCalls.firstWhere((cc) => cc.option.strike == 1100.0);
-    expect(cc1100.moneyProbability, isNotNull);
-    expect(cc1100.underlyingProbability, isNotNull);
+    expect(cc1100.moneyProbability, closeTo(0.45, 1e-9));
+    expect(cc1100.underlyingProbability, closeTo(0.55, 1e-9));
     expect(cc1100.moneyProbability! + cc1100.underlyingProbability!,
         closeTo(1.0, 1e-9));
 
-    // BTC-1000-C is also within the range [1000, 1200]
+    // Boundary strikes 1000 and 1200 lie outside [1050, 1150] (would require extrapolation)
     final cc1000 = coveredCalls.firstWhere((cc) => cc.option.strike == 1000.0);
-    expect(cc1000.moneyProbability, closeTo(0.7, 1e-9));
-    expect(cc1000.underlyingProbability, closeTo(0.3, 1e-9));
+    expect(cc1000.moneyProbability, isNull);
+    expect(cc1000.underlyingProbability, isNull);
+
+    final cc1200 = coveredCalls.firstWhere((cc) => cc.option.strike == 1200.0);
+    expect(cc1200.moneyProbability, isNull);
+    expect(cc1200.underlyingProbability, isNull);
+  });
+
+  test('Probabilities un-discounts long-term options via box spread and uses PAVA', () {
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
+    final expiration = DateTime.utc(2028, 12, 31, 8, 0, 0);
+
+    final spotMarket = Market.create(
+      asset: btc,
+      money: usd,
+      bidPrice: 1000.0,
+      askPrice: 1000.0,
+    );
+
+    // Suppose 2-year interest rate gives discount factor D = 1 / 1.20 = 5/6 (~0.833333).
+    // On [1000, 1100] (width = 100, midpoint = 1050):
+    // True P(S_T > 1050) = 0.60, P(S_T <= 1050) = 0.40.
+    // Present value of bull call spread = D * 60 = 50.0 (e.g. C(1000)=110, C(1100)=60).
+    // Present value of bear put spread  = D * 40 = 33.333333 (e.g. P(1000)=20, P(1100)=53.333333).
+    // Box spread PV = 50 + 33.333333 = 83.333333 -> D = 83.333333 / 100 = 5/6.
+    const d = 5.0 / 6.0;
+    final c1000 = Option('BTC-1000-C',
+        underlying: btc, money: usd, strike: 1000.0, isCall: true, expiration: expiration);
+    final c1100 = Option('BTC-1100-C',
+        underlying: btc, money: usd, strike: 1100.0, isCall: true, expiration: expiration);
+    final p1000 = Option('BTC-1000-P',
+        underlying: btc, money: usd, strike: 1000.0, isPut: true, expiration: expiration);
+    final p1100 = Option('BTC-1100-P',
+        underlying: btc, money: usd, strike: 1100.0, isPut: true, expiration: expiration);
+
+    final mC1000 = Market.create(asset: c1000, money: usd, bidPrice: 110.0, askPrice: 110.0);
+    final mC1100 = Market.create(asset: c1100, money: usd, bidPrice: 60.0, askPrice: 60.0);
+    final mP1000 = Market.create(asset: p1000, money: usd, bidPrice: 20.0, askPrice: 20.0);
+    final mP1100 = Market.create(
+        asset: p1100, money: usd, bidPrice: 20.0 + d * 40.0, askPrice: 20.0 + d * 40.0);
+
+    final spreads = VerticalSpread.generateAll(
+      [spotMarket, mC1000, mC1100, mP1000, mP1100],
+      underlying: btc,
+      money: usd,
+      slippage: 0.5,
+    ).toList();
+
+    final probs = Probabilities(spreads, underlying: btc, money: usd);
+    expect(probs.discountFactors[expiration], closeTo(d, 1e-9));
+    // Instead of raw 50/100 = 0.50, un-discounting by D = 5/6 yields the true 0.60 probability!
+    expect(probs.getProbabilityExpiringAbove(expiration, 1050.0), closeTo(0.60, 1e-9));
+
+    // ATM crossover where C(K) == P(K):
+    // At K=1000, C - P = 110 - 20 = +90.
+    // At K=1100, C - P = 60 - 53.333333 = +6.666667 (still > 0).
+    // Let's also verify PAVA pooling when a noisy interval violates monotonicity:
+    // Suppose we have 3 intervals:
+    // [900, 1000] (midpoint 950): C(900)=180, C(1000)=100 -> p = 0.80 (tight spread)
+    // [1000, 1100] (midpoint 1050): C(1000)=100, C(1100)=60 -> p = 0.40 (tight spread)
+    // [1100, 1200] (midpoint 1150): C(1100)=60, C(1200)=10 -> p = 0.50 (inversion! p(1150) > p(1050))
+    final c900 = Option('BTC-900-C',
+        underlying: btc, money: usd, strike: 900.0, isCall: true, expiration: expiration);
+    final c1200 = Option('BTC-1200-C',
+        underlying: btc, money: usd, strike: 1200.0, isCall: true, expiration: expiration);
+    final mC900 = Market.create(asset: c900, money: usd, bidPrice: 180.0, askPrice: 180.0);
+    final mC1000Pava = Market.create(asset: c1000, money: usd, bidPrice: 100.0, askPrice: 100.0);
+    final mC1100Pava = Market.create(asset: c1100, money: usd, bidPrice: 60.0, askPrice: 60.0);
+    final mC1200Pava = Market.create(asset: c1200, money: usd, bidPrice: 10.0, askPrice: 10.0);
+
+    final pavaSpreads = VerticalSpread.generateAll(
+      [spotMarket, mC900, mC1000Pava, mC1100Pava, mC1200Pava],
+      underlying: btc,
+      money: usd,
+      slippage: 0.5,
+    ).toList();
+
+    final pavaProbs = Probabilities(pavaSpreads, underlying: btc, money: usd);
+    // Midpoint 950 is unaffected (0.80), while midpoints 1050 (0.40) and 1150 (0.50)
+    // have equal weight and are pooled by PAVA into (0.40 + 0.50) / 2 = 0.45:
+    expect(pavaProbs.getProbabilityExpiringAbove(expiration, 950.0), closeTo(0.80, 1e-9));
+    expect(pavaProbs.getProbabilityExpiringAbove(expiration, 1050.0), closeTo(0.45, 1e-9));
+    expect(pavaProbs.getProbabilityExpiringAbove(expiration, 1150.0), closeTo(0.45, 1e-9));
   });
 }

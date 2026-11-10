@@ -358,8 +358,10 @@ class CoveredCall {
             money: spotMarket.money,
             bidPrice: avgPrice,
             askPrice: avgPrice);
+    // Implied probabilities are a property of the market order book rather than
+    // the user's execution slippage, so evaluate vertical spreads at mid-price (0.5).
     final spreads = VerticalSpread.generateAll(allMarkets,
-        underlying: underlying, money: money, slippage: slippage);
+        underlying: underlying, money: money, slippage: 0.5);
     final probs = Probabilities(spreads, underlying: underlying, money: money);
 
     for (final call in allMarkets
@@ -1085,9 +1087,6 @@ class VerticalSpread {
 
         // over @ highStrike
         VerticalSpread? over = keepBestValidSpread([
-          if (lowPut != null && highPut != null)
-            makeSpread(highPut.short(slippage) + lowPut.long(slippage),
-                highPut.asset.toOption, lowPut.asset.toOption, highPut, lowPut),
           if (lowCall != null && highCall != null)
             makeSpread(
                 highCall.short(slippage) + lowCall.long(slippage),
@@ -1095,6 +1094,9 @@ class VerticalSpread {
                 lowCall.asset.toOption,
                 highCall,
                 lowCall),
+          if (lowPut != null && highPut != null)
+            makeSpread(highPut.short(slippage) + lowPut.long(slippage),
+                highPut.asset.toOption, lowPut.asset.toOption, highPut, lowPut),
         ]);
 
         yield* [under, over].nonNulls;
@@ -1163,9 +1165,21 @@ class Probabilities {
   final Map<DateTime, Map<double, List<VerticalSpread>>> _contributingSpreads =
       {};
   final Map<DateTime, double> _atmStrikes = {};
+  final Map<DateTime, double> _discountFactors = {};
 
   Map<DateTime, Map<double, double>> get distributions => _probs;
   Map<DateTime, double> get atmStrikes => _atmStrikes;
+  Map<DateTime, double> get discountFactors => _discountFactors;
+
+  static double _unitMidPrice(Market m) {
+    final lot = m.asset.toOption.contractLot;
+    return m.midPrice / (lot > 0.0 ? lot : 1.0);
+  }
+
+  static double _unitSpread(Market m) {
+    final lot = m.asset.toOption.contractLot;
+    return (m.askPrice - m.bidPrice) / (lot > 0.0 ? lot : 1.0);
+  }
 
   Probabilities(Iterable<VerticalSpread> spreads,
       {required Commodity underlying, required Commodity money}) {
@@ -1190,13 +1204,7 @@ class Probabilities {
       final expiration = entry.key;
       final expSpreads = entry.value;
 
-      // Group spreads by strike
-      final Map<double, List<VerticalSpread>> byStrike = {};
-      for (final vs in expSpreads) {
-        byStrike.putIfAbsent(vs.shortOption.strike, () => []).add(vs);
-      }
-
-      // Find all call and put options for this expiration to locate the ATM flip point
+      // Collect all call and put option markets for this expiration.
       final Map<double, Market> callMarkets = {};
       final Map<double, Market> putMarkets = {};
       for (final vs in expSpreads) {
@@ -1211,6 +1219,14 @@ class Probabilities {
         }
       }
 
+      // 2a. Put-Call Parity & Box Spreads:
+      // By European Put-Call Parity per unit of underlying:
+      //   c(K) - p(K) = D * (F - K)
+      // where F = E[S_T] is the implied forward price (where c(K) == p(K)) and
+      // D = exp(-r * T) = 1 / (1 + R) is the risk-free discount factor to expiration.
+      // Note: F is the risk-neutral MEAN, not the median (for a lognormal asset,
+      // P(S_T > F) = N(-0.5 * sigma * sqrt(T)) < 0.5), so we record F in
+      // _atmStrikes without artificially pinning P(S_T > F) = 0.5.
       final commonStrikes = callMarkets.keys
           .where((s) => putMarkets.containsKey(s))
           .toList()
@@ -1218,36 +1234,81 @@ class Probabilities {
       double? atmStrike;
 
       for (final strike in commonStrikes) {
-        final mCall = callMarkets[strike]!;
-        final mPut = putMarkets[strike]!;
-        final diff = (mCall.bidPrice + mCall.askPrice) / 2.0 -
-            (mPut.bidPrice + mPut.askPrice) / 2.0;
+        final diff = _unitMidPrice(callMarkets[strike]!) -
+            _unitMidPrice(putMarkets[strike]!);
         if (diff == 0.0) {
           atmStrike = strike;
           break;
         }
       }
 
-      if (atmStrike == null) {
-        for (int i = 0; i < commonStrikes.length - 1; i++) {
-          final k1 = commonStrikes[i];
-          final k2 = commonStrikes[i + 1];
+      double weightedDiscountSum = 0.0;
+      double discountWeightTotal = 0.0;
 
-          final mCall1 = callMarkets[k1]!;
-          final mPut1 = putMarkets[k1]!;
-          final mCall2 = callMarkets[k2]!;
-          final mPut2 = putMarkets[k2]!;
+      for (int i = 0; i < commonStrikes.length - 1; i++) {
+        final k1 = commonStrikes[i];
+        final k2 = commonStrikes[i + 1];
+        final width = k2 - k1;
+        if (width <= 0.0) continue;
 
-          final diff1 = (mCall1.bidPrice + mCall1.askPrice) / 2.0 -
-              (mPut1.bidPrice + mPut1.askPrice) / 2.0;
-          final diff2 = (mCall2.bidPrice + mCall2.askPrice) / 2.0 -
-              (mPut2.bidPrice + mPut2.askPrice) / 2.0;
+        final mCall1 = callMarkets[k1]!;
+        final mPut1 = putMarkets[k1]!;
+        final mCall2 = callMarkets[k2]!;
+        final mPut2 = putMarkets[k2]!;
 
-          if (diff1 > 0.0 && diff2 < 0.0) {
-            final t = -diff1 / (diff2 - diff1);
-            atmStrike = k1 + t * (k2 - k1);
-            break;
-          }
+        final diff1 = _unitMidPrice(mCall1) - _unitMidPrice(mPut1);
+        final diff2 = _unitMidPrice(mCall2) - _unitMidPrice(mPut2);
+
+        if (atmStrike == null && diff1 > 0.0 && diff2 < 0.0) {
+          final t = -diff1 / (diff2 - diff1);
+          atmStrike = k1 + t * width;
+        }
+
+        // Box Spread Identity on [k1, k2]:
+        // Buying the bull call spread (c(k1) - c(k2)) and the bear put spread
+        // (p(k2) - p(k1)) pays a guaranteed (k2 - k1) at expiration.
+        // Thus its present value per unit width equals the discount factor D:
+        //   D = ((c(k1) - c(k2)) + (p(k2) - p(k1))) / (k2 - k1) = (diff1 - diff2) / width
+        final boxDiscount = (diff1 - diff2) / width;
+        if (boxDiscount > 0.0) {
+          final boxSpreadNoise = (
+                  _unitSpread(mCall1) +
+                  _unitSpread(mPut1) +
+                  _unitSpread(mCall2) +
+                  _unitSpread(mPut2)) /
+              width +
+              mCall1.relativeSpread +
+              mPut1.relativeSpread +
+              mCall2.relativeSpread +
+              mPut2.relativeSpread;
+          final w = boxSpreadNoise <= 0.0 ? 1e9 : 1.0 / boxSpreadNoise;
+          weightedDiscountSum += boxDiscount * w;
+          discountWeightTotal += w;
+        }
+      }
+
+      if (atmStrike != null) {
+        _atmStrikes[expiration] = atmStrike;
+      }
+
+      final double discountFactor = discountWeightTotal > 0.0
+          ? (weightedDiscountSum / discountWeightTotal).clamp(0.1, 1.0)
+          : 1.0;
+      _discountFactors[expiration] = discountFactor;
+
+      // 2b. Group vertical spreads by their strike interval [lowStrike, highStrike].
+      // By Breeden-Litzenberger, P(S_T > K) = -(1 / D) * dC/dK.
+      // A vertical spread across [K_1, K_2] is a finite-difference secant slope
+      // that estimates the cumulative probability at the interval MIDPOINT
+      // M = (K_1 + K_2) / 2, rather than at K_1 or K_2.
+      final Map<(double, double), List<VerticalSpread>> byInterval = {};
+      for (final vs in expSpreads) {
+        final k1 = vs.shortOption.strike;
+        final k2 = vs.longOption.strike;
+        final lowStrike = min(k1, k2);
+        final highStrike = max(k1, k2);
+        if (highStrike > lowStrike) {
+          byInterval.putIfAbsent((lowStrike, highStrike), () => []).add(vs);
         }
       }
 
@@ -1255,105 +1316,98 @@ class Probabilities {
       final Map<double, List<VerticalSpread>> strikeToSpreads = {};
       final Map<double, double> strikeWeights = {};
 
-      for (final strikeEntry in byStrike.entries) {
-        final strike = strikeEntry.key;
-        final strikeSpreads = strikeEntry.value;
+      for (final intervalEntry in byInterval.entries) {
+        final (lowStrike, highStrike) = intervalEntry.key;
+        final midpoint = (lowStrike + highStrike) / 2.0;
+        final width = highStrike - lowStrike;
+        final intervalSpreads = intervalEntry.value;
 
-        VerticalSpread? overSpread;
-        VerticalSpread? underSpread;
+        double weightedProbSum = 0.0;
+        double totalWeight = 0.0;
+        final List<VerticalSpread> usedSpreads = [];
 
-        for (final vs in strikeSpreads) {
-          if (vs.type == VerticalSpreadType.over) {
-            overSpread = vs;
-          } else if (vs.type == VerticalSpreadType.under) {
-            underSpread = vs;
+        for (final vs in intervalSpreads) {
+          final isCall = vs.shortOption.isCall;
+          final lowMarket =
+              vs.shortOption.strike < vs.longOption.strike ? vs.shortMarket : vs.longMarket;
+          final highMarket =
+              vs.shortOption.strike > vs.longOption.strike ? vs.shortMarket : vs.longMarket;
+
+          // Evaluate the spread's mid-price value per unit of underlying,
+          // independent of any user execution slippage, and un-discount by D
+          // to convert present-value premium into expiration-date probability:
+          //   - Call spread: (c(K_1) - c(K_2)) / (D * width) = P(S_T > M)
+          //   - Put spread:  (p(K_2) - p(K_1)) / (D * width) = P(S_T <= M)
+          final double probAbove;
+          if (isCall) {
+            final callSpreadVal = _unitMidPrice(lowMarket) - _unitMidPrice(highMarket);
+            probAbove = (callSpreadVal / (discountFactor * width)).clamp(0.0, 1.0);
+          } else {
+            final putSpreadVal = _unitMidPrice(highMarket) - _unitMidPrice(lowMarket);
+            final probBelow = (putSpreadVal / (discountFactor * width)).clamp(0.0, 1.0);
+            probAbove = 1.0 - probBelow;
           }
+
+          // Market quality weight of this spread estimate:
+          // Combines the probability-scale bid-ask uncertainty ((ask - bid) / width,
+          // which penalizes deep ITM options with wide dollar spreads) and the
+          // leg relative spreads (which penalizes noisy 1-tick far OTM options).
+          final probUncertainty =
+              (_unitSpread(lowMarket) + _unitSpread(highMarket)) / width;
+          final relSpread = lowMarket.relativeSpread + highMarket.relativeSpread;
+          final noise = probUncertainty + relSpread;
+          final w = noise <= 0.0 ? 1e9 : 1.0 / noise;
+
+          weightedProbSum += probAbove * w;
+          totalWeight += w;
+          usedSpreads.add(vs);
         }
 
-        double prob;
-        // Represents the market quality (reliability) of the probability estimate at this strike.
-        // It is computed as the sum of the inverse relative spreads of the contributing vertical spreads.
-        // Higher weight indicates tighter bid-ask spreads (higher liquidity and accuracy).
-        double weight;
-        if (overSpread != null && underSpread != null) {
-          final maxProbAbove = overSpread.maxProbAbove;
-          final minProbAbove = 1.0 - underSpread.maxProbBelow;
-
-          final spreadOver = overSpread.shortMarket.relativeSpread +
-              overSpread.longMarket.relativeSpread;
-          final spreadUnder = underSpread.shortMarket.relativeSpread +
-              underSpread.longMarket.relativeSpread;
-
-          final weightOver = spreadOver <= 0.0 ? 1e9 : 1.0 / spreadOver;
-          final weightUnder = spreadUnder <= 0.0 ? 1e9 : 1.0 / spreadUnder;
-
-          prob = (maxProbAbove * weightOver + minProbAbove * weightUnder) /
-              (weightOver + weightUnder);
-          weight = weightOver + weightUnder;
-        } else if (overSpread != null) {
-          prob = overSpread.maxProbAbove;
-          final spreadOver = overSpread.shortMarket.relativeSpread +
-              overSpread.longMarket.relativeSpread;
-          weight = spreadOver <= 0.0 ? 1e9 : 1.0 / spreadOver;
-        } else if (underSpread != null) {
-          prob = 1.0 - underSpread.maxProbBelow;
-          final spreadUnder = underSpread.shortMarket.relativeSpread +
-              underSpread.longMarket.relativeSpread;
-          weight = spreadUnder <= 0.0 ? 1e9 : 1.0 / spreadUnder;
-        } else {
-          continue;
-        }
-
-        rawProbs[strike] = prob;
-        strikeWeights[strike] = weight;
-        if (overSpread != null || underSpread != null) {
-          strikeToSpreads[strike] = [
-            if (overSpread != null) overSpread,
-            if (underSpread != null) underSpread,
-          ];
+        if (totalWeight > 0.0) {
+          rawProbs[midpoint] = (weightedProbSum / totalWeight).clamp(0.0, 1.0);
+          strikeWeights[midpoint] = totalWeight;
+          strikeToSpreads[midpoint] = usedSpreads;
         }
       }
 
-      if (atmStrike != null) {
-        _atmStrikes[expiration] = atmStrike;
-        rawProbs[atmStrike] = 0.5;
-        strikeWeights[atmStrike] = 1e12; // Top priority anchor
+      // 2c. Enforce non-increasing monotonicity across midpoints via the
+      // weighted Pool Adjacent Violators Algorithm (PAVA) for isotonic regression.
+      // Rather than greedily deleting points that have minor quote inversions,
+      // PAVA pools adjacent violating blocks into their liquidity-weighted average,
+      // finding the exact L2-optimal non-increasing cumulative distribution.
+      final sortedMidpoints = rawProbs.keys.toList()..sort();
+      final List<({List<double> strikes, double prob, double weight})> blocks =
+          [];
+
+      for (final strike in sortedMidpoints) {
+        var currentStrikes = <double>[strike];
+        var currentProb = rawProbs[strike]!;
+        var currentWeight = strikeWeights[strike]!;
+
+        while (blocks.isNotEmpty && blocks.last.prob < currentProb) {
+          final prev = blocks.removeLast();
+          final mergedWeight = prev.weight + currentWeight;
+          currentProb =
+              (prev.prob * prev.weight + currentProb * currentWeight) /
+                  mergedWeight;
+          currentWeight = mergedWeight;
+          currentStrikes = [...prev.strikes, ...currentStrikes];
+        }
+
+        blocks.add((
+          strikes: currentStrikes,
+          prob: currentProb,
+          weight: currentWeight,
+        ));
       }
 
-      // Enforce monotonicity by prioritizing strikes with higher market quality (larger weights)
-      final sortedByWeight = rawProbs.keys.toList()
-        ..sort((a, b) {
-          final cmp = strikeWeights[b]!.compareTo(strikeWeights[a]!);
-          if (cmp == 0) return a.compareTo(b);
-          return cmp;
-        });
-
-      final Map<double, double> monotonicProbs = {};
-
-      for (final strike in sortedByWeight) {
-        final prob = rawProbs[strike]!;
-        bool isCompatible = true;
-        for (final acceptedStrike in monotonicProbs.keys) {
-          final acceptedProb = monotonicProbs[acceptedStrike]!;
-          if (strike < acceptedStrike && prob < acceptedProb) {
-            isCompatible = false;
-            break;
-          }
-          if (strike > acceptedStrike && prob > acceptedProb) {
-            isCompatible = false;
-            break;
-          }
-        }
-        if (isCompatible) {
-          monotonicProbs[strike] = prob;
+      final Map<double, double> sortedMonotonicProbs = {};
+      for (final block in blocks) {
+        final clampedProb = block.prob.clamp(0.0, 1.0);
+        for (final s in block.strikes) {
+          sortedMonotonicProbs[s] = clampedProb;
         }
       }
-
-      // Sort the final map by strike price ascending
-      final sortedStrikes = monotonicProbs.keys.toList()..sort();
-      final Map<double, double> sortedMonotonicProbs = {
-        for (final s in sortedStrikes) s: monotonicProbs[s]!
-      };
 
       _probs[expiration] = sortedMonotonicProbs;
       _contributingSpreads[expiration] = strikeToSpreads;
