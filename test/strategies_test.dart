@@ -1226,4 +1226,109 @@ void main() {
     expect(pavaProbs.getProbabilityExpiringAbove(expiration, 1050.0), closeTo(0.45, 1e-9));
     expect(pavaProbs.getProbabilityExpiringAbove(expiration, 1150.0), closeTo(0.45, 1e-9));
   });
+
+  test('TouchBet and touch probabilities test (upside & downside targets)', () {
+    final xyz = Commodity.fromName('XYZ', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
+    final expiration = DateTime.utc(2027, 6, 30, 8, 0, 0);
+
+    final spotMarket = Market.create(
+      asset: xyz,
+      money: usd,
+      bidPrice: 10.0,
+      askPrice: 10.0,
+    );
+
+    // Construct an option chain around spot = $10:
+    // - [5, 6] (midpoint 5.5): P(S_T > 5.5) = 0.85 -> downside P(S_T <= 5.5) = 0.15
+    //   -> P_touch(5.5) = 30%, P_noTouch(5.5) = 70%
+    // - [9.5, 10.5] (midpoint 10.0): P(S_T > 10.0) = 0.50 -> median = 10.0
+    //   -> P_touch(10.0) = 100%
+    // - [16, 17] (midpoint 16.5): P(S_T > 16.5) = 0.10 ($0.10 spread on $1 width)
+    //   -> P_touch(16.5) = 20% (5x yield on touch), P_noTouch(16.5) = 80% (1.25x yield)
+    Option makeCall(double k) => Option('XYZ-${k.toStringAsFixed(1)}-C',
+        underlying: xyz, money: usd, strike: k, isCall: true, expiration: expiration, source: DataSource.deribit);
+
+    // Set call prices so adjacent differences match desired probabilities:
+    // C(17) = 0.05
+    // C(16) = 0.15  -> C(16) - C(17) = 0.10 on width 1.0 -> pAbove(16.5) = 0.10
+    // C(10.5) = 1.50
+    // C(9.5)  = 2.00 -> C(9.5) - C(10.5) = 0.50 on width 1.0 -> pAbove(10.0) = 0.50
+    // C(6) = 4.60
+    // C(5) = 5.45   -> C(5) - C(6) = 0.85 on width 1.0 -> pAbove(5.5) = 0.85
+    final markets = <Market>[
+      spotMarket,
+      Market.create(asset: makeCall(5.0), money: usd, bidPrice: 5.45, askPrice: 5.45),
+      Market.create(asset: makeCall(6.0), money: usd, bidPrice: 4.60, askPrice: 4.60),
+      Market.create(asset: makeCall(9.5), money: usd, bidPrice: 2.00, askPrice: 2.00),
+      Market.create(asset: makeCall(10.5), money: usd, bidPrice: 1.50, askPrice: 1.50),
+      Market.create(asset: makeCall(16.0), money: usd, bidPrice: 0.15, askPrice: 0.15),
+      Market.create(asset: makeCall(17.0), money: usd, bidPrice: 0.05, askPrice: 0.05),
+    ];
+
+    final spreads = VerticalSpread.generateAll(
+      markets,
+      underlying: xyz,
+      money: usd,
+      slippage: 0.5,
+    ).toList();
+    final probs = Probabilities(spreads, underlying: xyz, money: usd);
+
+    expect(probs.getMedianStrike(expiration), closeTo(10.0, 1e-9));
+    expect(probs.getProbabilityOfTouch(expiration, 10.0), closeTo(1.0, 1e-9));
+    expect(probs.getProbabilityOfTouch(expiration, 16.5), closeTo(0.20, 1e-9));
+    expect(probs.getProbabilityOfNoTouch(expiration, 16.5), closeTo(0.80, 1e-9));
+    expect(probs.getProbabilityExpiringBelow(expiration, 5.5), closeTo(0.15, 1e-9));
+    expect(probs.getProbabilityOfTouch(expiration, 5.5), closeTo(0.30, 1e-9));
+    expect(probs.getProbabilityOfNoTouch(expiration, 5.5), closeTo(0.70, 1e-9));
+
+    final touchBets = TouchBet.generateAll(
+      markets,
+      underlying: xyz,
+      money: usd,
+      slippage: 0.5,
+    ).toList();
+
+    // Check the [16, 17] (midpoint 16.5) Touch and No-Touch bets:
+    final touch16_5 = touchBets.firstWhere(
+        (b) => b.targetPrice.absolute == 16.5 && b.betType == TouchBetType.touch);
+    expect(touch16_5.spread.type, equals(VerticalSpreadType.over));
+    expect(touch16_5.winProbability, closeTo(0.20, 1e-9));
+    expect(touch16_5.touchExitValue, closeTo(0.50, 1e-9));
+    expect(touch16_5.maxRisk, closeTo(0.10, 1e-9));
+    expect(touch16_5.maxProfit, closeTo(0.40, 1e-9));
+    expect(touch16_5.maxYield, closeTo(5.0, 1e-9));
+    expect(touch16_5.instructions.length, equals(3));
+    expect(touch16_5.instructions.last.action, equals('GTC Take-Profit on Touch'));
+    expect(touch16_5.instructions.last.price, closeTo(0.50, 1e-9));
+
+    final noTouch16_5 = touchBets.firstWhere(
+        (b) => b.targetPrice.absolute == 16.5 && b.betType == TouchBetType.noTouch);
+    expect(noTouch16_5.spread.type, equals(VerticalSpreadType.under));
+    expect(noTouch16_5.winProbability, closeTo(0.80, 1e-9));
+    expect(noTouch16_5.touchExitValue, closeTo(0.50, 1e-9));
+    expect(noTouch16_5.maxProfit, closeTo(0.10, 1e-9));
+    expect(noTouch16_5.maxRisk, closeTo(0.40, 1e-9));
+    expect(noTouch16_5.maxYield, closeTo(1.25, 1e-9));
+    expect(noTouch16_5.instructions.last.action, equals('Stop-Loss on Touch'));
+    expect(noTouch16_5.instructions.last.price, closeTo(0.50, 1e-9));
+
+    // Check the downside [5, 6] (midpoint 5.5) Touch and No-Touch bets:
+    final touch5_5 = touchBets.firstWhere(
+        (b) => b.targetPrice.absolute == 5.5 && b.betType == TouchBetType.touch);
+    expect(touch5_5.spread.type, equals(VerticalSpreadType.under));
+    expect(touch5_5.winProbability, closeTo(0.30, 1e-9));
+    expect(touch5_5.touchExitValue, closeTo(0.50, 1e-9));
+    expect(touch5_5.maxRisk, closeTo(0.15, 1e-9));
+    expect(touch5_5.maxProfit, closeTo(0.35, 1e-9));
+    expect(touch5_5.maxYield, closeTo(0.50 / 0.15, 1e-9));
+
+    final noTouch5_5 = touchBets.firstWhere(
+        (b) => b.targetPrice.absolute == 5.5 && b.betType == TouchBetType.noTouch);
+    expect(noTouch5_5.spread.type, equals(VerticalSpreadType.over));
+    expect(noTouch5_5.winProbability, closeTo(0.70, 1e-9));
+    expect(noTouch5_5.maxProfit, closeTo(0.15, 1e-9));
+    expect(noTouch5_5.maxRisk, closeTo(0.35, 1e-9));
+    expect(noTouch5_5.maxYield, closeTo(1.0 + 0.15 / 0.35, 1e-9));
+  });
 }
