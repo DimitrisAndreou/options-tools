@@ -717,3 +717,145 @@ footer {
 .unified-strategy-table td.metric-diff-col {
   font-weight: 700;
 }
+
+/* Over / Under (Touch & Expiration Odds) Controls */
+.odds-mode-toggle {
+  display: inline-flex;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.odds-mode-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.odds-mode-btn:hover {
+  color: var(--text-main);
+}
+
+.odds-mode-btn.active {
+  background: rgba(56, 189, 248, 0.18);
+  color: var(--primary);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.45);
+}
+
+.odds-prob-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.odds-prob-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.odds-prob-badge {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #00ffa3;
+  min-width: 36px;
+  text-align: right;
+}
+
+.odds-prob-slider {
+  width: 110px;
+  height: 5px;
+  accent-color: #00ffa3;
+  cursor: pointer;
+}
+
+.odds-prob-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: rgba(51, 65, 85, 0.45);
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.odds-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(56, 189, 248, 0.25);
+  border-radius: 999px;
+  overflow: hidden;
+  display: flex;
+  margin: 6px 0;
+}
+
+.odds-bar-yes {
+  height: 100%;
+  background: linear-gradient(90deg, #00ffa3, #fcd34d);
+  transition: width 0.25s ease;
+}
+
+.odds-side-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 420px) {
+  .odds-side-tabs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.odds-side-tab {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.odds-side-tab:hover {
+  border-color: #475569;
+  background: rgba(30, 41, 59, 0.75);
+}
+
+.odds-side-tab.active-yes {
+  border-color: var(--success);
+  background: rgba(0, 255, 163, 0.08);
+  box-shadow: 0 0 0 1px rgba(0, 255, 163, 0.25);
+}
+
+.odds-side-tab.active-no {
+  border-color: var(--primary);
+  background: rgba(56, 189, 248, 0.08);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.25);
+}
+
+.odds-side-tab-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.odds-side-tab-sub {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}

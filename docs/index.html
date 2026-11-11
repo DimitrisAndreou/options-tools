@@ -229,10 +229,36 @@
                 x-model="$store.app.strategy" @change="$store.app.changeStrategy()">
                 <option value="coveredCall">Covered Calls</option>
                 <option value="longOption">Long Options</option>
+                <option value="touchBet">Over / Under (Odds)</option>
               </select>
             </div>
           </div>
           <div class="card-body">
+            <template x-if="$store.app.strategy === 'touchBet'">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <div class="odds-mode-toggle" role="group" aria-label="Probability Mode">
+                  <button type="button" class="odds-mode-btn"
+                    :class="{ 'active': $store.app.oddsMode === 'touch' }"
+                    @click="$store.app.setOddsMode('touch')">
+                    Touch Anytime (During)
+                  </button>
+                  <button type="button" class="odds-mode-btn"
+                    :class="{ 'active': $store.app.oddsMode === 'expiration' }"
+                    @click="$store.app.setOddsMode('expiration')">
+                    At Expiration (On Date)
+                  </button>
+                </div>
+                <div class="odds-prob-filter" title="Show the price range for each expiration with at least this implied probability">
+                  <span class="odds-prob-label">Odds &ge;</span>
+                  <span class="odds-prob-badge font-monospace" x-text="`${$store.app.minProb}%`"></span>
+                  <input type="range" min="0" max="100" step="1"
+                    :value="$store.app.minProb"
+                    @input="$store.app.setMinProb($event.target.value)"
+                    class="odds-prob-slider"
+                    aria-label="Minimum probability threshold (%)">
+                </div>
+              </div>
+            </template>
             <div id="strategyChartContainer" class="chart-container"></div>
           </div>
         </div>
@@ -312,17 +338,19 @@
                 </span>
               </template>
             </h5>
-            <div class="d-flex gap-2" x-show="$store.app.strategy === 'coveredCall'">
-              <button type="button" class="btn btn-sm btn-outline-primary" x-show="$store.app.selectedId"
-                @click="$store.app.pinSelected()">
-                <i class="fas fa-thumbtack me-1"></i><span
-                  x-text="$store.app.entryPosition ? 'Pin New' : 'Pin Selected'">Pin Selected</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.entryPosition"
-                @click="$store.app.clearEntryPosition()">
-                <i class="fas fa-trash-alt me-1"></i>Clear Entry
-              </button>
-            </div>
+            <template x-if="$store.app.strategy === 'coveredCall'">
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" x-show="$store.app.selectedId"
+                  @click="$store.app.pinSelected()">
+                  <i class="fas fa-thumbtack me-1"></i><span
+                    x-text="$store.app.entryPosition ? 'Pin New' : 'Pin Selected'">Pin Selected</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" x-show="$store.app.entryPosition"
+                  @click="$store.app.clearEntryPosition()">
+                  <i class="fas fa-trash-alt me-1"></i>Clear Entry
+                </button>
+              </div>
+            </template>
           </div>
           <div class="card-body">
             <!-- Strategy Details Panel -->
@@ -637,6 +665,237 @@
                     </div>
                   </template>
                 </div>
+
+                <!-- Over / Under (Touch & Expiration Odds) Details -->
+                <div x-show="$store.app.strategy === 'touchBet'">
+                  <template x-if="$store.app.details?.id">
+                    <div>
+                      <div class="strategy-header d-flex justify-content-between align-items-center flex-wrap">
+                        <div>
+                          <i class="fas fa-bullseye me-2"></i>
+                          <template x-if="$store.app.activeTouchBetSide?.strategyURL">
+                            <a :href="$store.app.activeTouchBetSide.strategyURL" target="_blank"
+                              style="color: inherit; text-decoration: underline;"
+                              x-text="$store.app.activeTouchBetSide.spreadTypeName"></a>
+                          </template>
+                          <template x-if="!$store.app.activeTouchBetSide?.strategyURL">
+                            <span x-text="$store.app.activeTouchBetSide?.spreadTypeName || 'Vertical Spread'"></span>
+                          </template>
+                          <span> on </span>
+                          <template x-if="$store.app.details?.underlyingURL">
+                            <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank"
+                              style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
+                          </template>
+                          <template x-if="!$store.app.details?.underlyingURL">
+                            <span class="text-neutral" x-text="$store.app.details?.underlyingName"></span>
+                          </template>
+                        </div>
+                        <div class="odds-mode-toggle" role="group" aria-label="Probability Mode">
+                          <button type="button" class="odds-mode-btn"
+                            :class="{ 'active': $store.app.oddsMode === 'touch' }"
+                            @click="$store.app.setOddsMode('touch')">
+                            Touch
+                          </button>
+                          <button type="button" class="odds-mode-btn"
+                            :class="{ 'active': $store.app.oddsMode === 'expiration' }"
+                            @click="$store.app.setOddsMode('expiration')">
+                            Expiry
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Event & Market-Implied Odds Bar -->
+                      <div class="outcomes-panel mb-3">
+                        <div class="outcomes-header d-flex justify-content-between align-items-center flex-wrap gap-1">
+                          <span>Event: <span class="text-white" x-text="$store.app.activeTouchBetSide?.eventSummary || $store.app.details?.eventSummary"></span></span>
+                        </div>
+                        <div class="odds-bar-track">
+                          <div class="odds-bar-yes" :style="{ width: $store.app.details?.yesBarWidth }"></div>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                          <span>
+                            <span class="text-good" x-text="$store.app.details?.shortYesLabel"></span>:
+                            <b class="text-probs" x-text="$store.app.details?.yesProbPct"></b>
+                          </span>
+                          <span>
+                            <span class="text-neutral" x-text="$store.app.details?.shortNoLabel"></span>:
+                            <b class="text-probs" x-text="$store.app.details?.noProbPct"></b>
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- Mobile-Friendly Segmented Side Selector (Believer vs. Skeptic) -->
+                      <div class="odds-side-tabs" role="tablist">
+                        <button type="button" class="odds-side-tab"
+                          :class="{ 'active-yes': $store.app.touchBetSide !== 'no' }"
+                          @click="$store.app.setTouchBetSide('yes')">
+                          <div class="odds-side-tab-title text-good">
+                            <i class="fas fa-check-circle me-1"></i><span x-text="$store.app.details?.yesTabLabel"></span>
+                          </div>
+                          <div class="odds-side-tab-sub">
+                            Odds: <span class="text-probs" x-text="$store.app.details?.yesProbPct"></span>
+                            &bull; Yield:
+                            <span class="text-good"
+                              x-text="$store.app.details?.yesSide ? `${$store.app.details.yesSide.yieldPct} (${$store.app.details.yesSide.yieldMultiple})` : 'N/A'"></span>
+                          </div>
+                        </button>
+
+                        <button type="button" class="odds-side-tab"
+                          :class="{ 'active-no': $store.app.touchBetSide === 'no' }"
+                          @click="$store.app.setTouchBetSide('no')">
+                          <div class="odds-side-tab-title text-neutral">
+                            <i class="fas fa-shield-alt me-1"></i><span x-text="$store.app.details?.noTabLabel"></span>
+                          </div>
+                          <div class="odds-side-tab-sub">
+                            Odds: <span class="text-probs" x-text="$store.app.details?.noProbPct"></span>
+                            &bull; Yield:
+                            <span class="text-neutral"
+                              x-text="$store.app.details?.noSide ? `${$store.app.details.noSide.yieldPct} (${$store.app.details.noSide.yieldMultiple})` : 'N/A'"></span>
+                          </div>
+                        </button>
+                      </div>
+
+                      <!-- Active Side Single-Column PositionAnalyzer Breakdown -->
+                      <template x-if="$store.app.activeTouchBetSide">
+                        <div>
+                          <div tabindex="0" role="region" aria-label="Over/Under Strategy Details"
+                            class="table-wrapper unified-table-wrapper">
+                            <table class="unified-strategy-table">
+                              <tbody class="strategy-section-body">
+                                <tr class="section-header-row">
+                                  <th scope="colgroup" colspan="2">Market &amp; Implied Interest</th>
+                                </tr>
+                                <tr class="strategy-metric-row">
+                                  <th scope="row" class="metric-label-cell">
+                                    <div class="metric-label" x-text="$store.app.activeTouchBetSide?.targetRowLabel || 'Target Price'"></div>
+                                    <div class="metric-subtitle" x-text="$store.app.activeTouchBetSide?.targetRowSubtitle"></div>
+                                  </th>
+                                  <td class="metric-val-single">
+                                    <span class="text-neutral text-nowrap"
+                                      x-text="$store.app.activeTouchBetSide?.targetRowAbsolute || $store.app.details?.targetAbsolute"></span>
+                                    <small class="strike-relative text-nowrap">(<span
+                                        x-text="$store.app.activeTouchBetSide?.targetRowRelative || $store.app.details?.targetRelative"></span>)</small>
+                                  </td>
+                                </tr>
+                                <tr class="strategy-metric-row">
+                                  <th scope="row" class="metric-label-cell">
+                                    <div class="metric-label">Spot Price</div>
+                                  </th>
+                                  <td class="metric-val-single">
+                                    <span class="text-spot text-nowrap" x-text="$store.app.details?.spotPrice"></span>
+                                  </td>
+                                </tr>
+                                <tr class="strategy-metric-row">
+                                  <th scope="row" class="metric-label-cell">
+                                    <div class="metric-label">Expiration</div>
+                                  </th>
+                                  <td class="metric-val-single">
+                                    <span class="text-neutral text-nowrap"
+                                      x-text="$store.app.details?.formattedDate"></span>
+                                    <small class="text-bad text-nowrap">(<span
+                                        x-text="$store.app.details?.DTE"></span>d)</small>
+                                  </td>
+                                </tr>
+                                <tr class="strategy-metric-row">
+                                  <th scope="row" class="metric-label-cell">
+                                    <div class="metric-label">Implied Interest</div>
+                                  </th>
+                                  <td class="metric-val-single">
+                                    <span class="text-probs text-nowrap"
+                                      x-text="$store.app.details?.impliedInterestStr"></span>
+                                    <small class="text-muted-alt text-nowrap">(<span
+                                        x-text="$store.app.details?.impliedAprStr"></span>)</small>
+                                  </td>
+                                </tr>
+                              </tbody>
+
+                              <tbody class="strategy-section-body">
+                                <tr class="section-header-row">
+                                  <th scope="colgroup" colspan="2">Position &amp; Payoff</th>
+                                </tr>
+                                <tr class="strategy-metric-row">
+                                  <th scope="row" class="metric-label-cell">
+                                    <div class="metric-label">Buy</div>
+                                  </th>
+                                  <td class="metric-val-single contract-name">
+                                    <template x-if="$store.app.activeTouchBetSide?.longLegURL">
+                                      <a :href="$store.app.activeTouchBetSide.longLegURL" class="text-good"
+                                        target="_blank" style="text-decoration: underline;"
+                                        x-text="$store.app.activeTouchBetSide.longLeg"></a>
+                                    </template>
+                                    <template x-if="!$store.app.activeTouchBetSide?.longLegURL">
+                                      <span class="text-good" x-text="$store.app.activeTouchBetSide?.longLeg"></span>
+                                    </template>
+                                  </td>
+                                </tr>
+                                <tr class="strategy-metric-row">
+                                  <th scope="row" class="metric-label-cell">
+                                    <div class="metric-label">Sell</div>
+                                  </th>
+                                  <td class="metric-val-single contract-name">
+                                    <template x-if="$store.app.activeTouchBetSide?.shortLegURL">
+                                      <a :href="$store.app.activeTouchBetSide.shortLegURL" class="text-bad"
+                                        target="_blank" style="text-decoration: underline;"
+                                        x-text="$store.app.activeTouchBetSide.shortLeg"></a>
+                                    </template>
+                                    <template x-if="!$store.app.activeTouchBetSide?.shortLegURL">
+                                      <span class="text-bad" x-text="$store.app.activeTouchBetSide?.shortLeg"></span>
+                                    </template>
+                                  </td>
+                                </tr>
+                                <tr class="strategy-metric-row">
+                                  <th scope="row" class="metric-label-cell">
+                                    <div class="metric-label">Payoff</div>
+                                  </th>
+                                  <td class="metric-val-single">
+                                    <span class="text-good text-nowrap"
+                                      x-text="`${$store.app.activeTouchBetSide?.yieldPct} (${$store.app.activeTouchBetSide?.yieldMultiple})`"></span>
+                                    <br />
+                                    <small class="text-good-alt text-nowrap"
+                                      x-text="$store.app.activeTouchBetSide?.profitStr"></small>
+                                  </td>
+                                </tr>
+                                <tr class="strategy-metric-row">
+                                  <th scope="row" class="metric-label-cell">
+                                    <div class="metric-label">Minimum Capital (<span x-text="$store.app.details?.money"></span>)</div>
+                                  </th>
+                                  <td class="metric-val-single">
+                                    <span class="text-bad text-nowrap"
+                                      x-text="$store.app.activeTouchBetSide?.riskStr"></span>
+                                  </td>
+                                </tr>
+                                <tr class="strategy-metric-row">
+                                  <th scope="row" class="metric-label-cell">
+                                    <div class="metric-label">Expiry Breakeven</div>
+                                  </th>
+                                  <td class="metric-val-single">
+                                    <span class="text-neutral text-nowrap"
+                                      x-text="$store.app.activeTouchBetSide?.breakevenStr"></span>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div class="instructions-panel mt-2"
+                            x-show="$store.app.activeTouchBetSide?.instructions?.length">
+                            <div class="instructions-header">Execution Instructions</div>
+                            <div class="instructions-content">
+                              <template x-for="(inst, idx) in $store.app.activeTouchBetSide?.instructions" :key="idx">
+                                <div>
+                                  &bull; <b x-text="inst.action"></b>
+                                  <span :class="inst.targetClass" x-text="inst.target"></span>
+                                  for
+                                  <span :class="inst.considerationClass" x-text="inst.consideration"></span>
+                                </div>
+                              </template>
+                            </div>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
               </div>
             </div>
           </div>
@@ -716,6 +975,7 @@
   <script src="strategy_registry.js"></script>
   <script src="covered_calls.js"></script>
   <script src="long_options.js"></script>
+  <script src="touch_bets.js"></script>
   <script src="main.js"></script>
   <script defer src="main.dart.js"></script>
 </body>

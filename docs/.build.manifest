@@ -48,4 +48,5 @@ packages/web/fix_data.yaml
 strategy_registry.js
 styles.css
 test_cors.html
+touch_bets.js
 url_manager.js

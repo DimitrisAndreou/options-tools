@@ -188,3 +188,26 @@ function formatExistingTaxImpactHtml(preTax, postTax) {
   }
   return `<span class="${impactCls} text-nowrap">${formatSignedDollar(absImpact)}</span>`;
 }
+
+const _OCC_OPTION_REGEX = /^([A-Za-z0-9.^_-]+?)(\d{2})(\d{2})(\d{2})([CP])(\d{8})$/;
+const _OCC_MONTH_NAMES = [
+  '', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+];
+
+function formatOptionName(name) {
+  if (!name || typeof name !== 'string') return name;
+  const m = _OCC_OPTION_REGEX.exec(name.trim());
+  if (!m) return name;
+  const ticker = m[1];
+  const yy = m[2];
+  const mm = parseInt(m[3], 10);
+  const dd = parseInt(m[4], 10);
+  const cp = m[5];
+  const strikeVal = parseInt(m[6], 10) / 1000.0;
+  const monthStr = _OCC_MONTH_NAMES[mm] || m[3];
+  const strikeStr = Number.isInteger(strikeVal)
+    ? String(strikeVal)
+    : String(strikeVal);
+  return `${ticker}-${dd}${monthStr}${yy}-${strikeStr}-${cp}`;
+}
