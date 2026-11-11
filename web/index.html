@@ -229,7 +229,6 @@
                 x-model="$store.app.strategy" @change="$store.app.changeStrategy()">
                 <option value="coveredCall">Covered Calls</option>
                 <option value="longOption">Long Options</option>
-                <option value="straddle">Straddles</option>
               </select>
             </div>
           </div>
@@ -638,119 +637,6 @@
                     </div>
                   </template>
                 </div>
-
-                <!-- Straddle Details -->
-                <div x-show="$store.app.strategy === 'straddle'">
-                  <div class="strategy-header">
-                    <i class="fas fa-arrows-left-right me-2"></i>
-                    <template x-if="$store.app.details?.strategyURL">
-                      <a :href="$store.app.details.strategyURL" target="_blank"
-                        style="color: inherit; text-decoration: underline;"
-                        x-text="$store.app.details.strategyName"></a>
-                    </template>
-                    <template x-if="!$store.app.details?.strategyURL">
-                      <span x-text="$store.app.details?.strategyName"></span>
-                    </template>
-                    <span> on </span>
-                    <template x-if="$store.app.details?.underlyingURL">
-                      <a :href="$store.app.details.underlyingURL" class="text-neutral" target="_blank"
-                        style="text-decoration: underline;" x-text="$store.app.details.underlyingName"></a>
-                    </template>
-                    <template x-if="!$store.app.details?.underlyingURL">
-                      <span class="text-neutral" x-text="$store.app.details?.underlyingName"></span>
-                    </template>
-                  </div>
-
-                  <table class="strategy-table">
-                    <tr>
-                      <td><span class="text-label">Expiration</span></td>
-                      <td class="text-end">
-                        <span class="text-neutral" x-text="$store.app.details?.formattedDate"></span>
-                        <small class="text-bad">(<span x-text="$store.app.details?.DTE"></span>d)</small>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><span class="text-label">Strike Price</span></td>
-                      <td class="text-end">
-                        <span class="text-neutral" x-text="$store.app.details?.strikeAbsolute"></span>
-                        <span class="strike-relative">(<span x-text="$store.app.details?.strikeRelative"></span>)</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><span class="text-label">Contracts</span></td>
-                      <td class="text-end contract-name">
-                        <template x-if="$store.app.details?.callURL">
-                          <a :href="$store.app.details.callURL" class="text-neutral" target="_blank"
-                            style="text-decoration: underline;" x-text="$store.app.details.callName"></a>
-                        </template>
-                        <template x-if="!$store.app.details?.callURL">
-                          <span class="text-neutral" x-text="$store.app.details?.callName"></span>
-                        </template>
-                        <br />
-                        <template x-if="$store.app.details?.putURL">
-                          <a :href="$store.app.details.putURL" class="text-neutral" target="_blank"
-                            style="text-decoration: underline;" x-text="$store.app.details.putName"></a>
-                        </template>
-                        <template x-if="!$store.app.details?.putURL">
-                          <span class="text-neutral" x-text="$store.app.details?.putName"></span>
-                        </template>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><span class="text-label">Capital Required</span></td>
-                      <td class="text-end">
-                        <span class="text-neutral" x-text="$store.app.details?.costInMoney"></span>
-                        <small class="text-muted-alt">(<span x-text="$store.app.details?.costInUnderlying"></span> <span
-                            x-text="$store.app.details?.underlying"></span>)</small>
-                      </td>
-                    </tr>
-                  </table>
-
-                  <div class="outcomes-panel">
-                    <div class="outcomes-header">Profit when</div>
-                    <div class="outcome-row">
-                      <span>&le; <span class="text-good" x-text="$store.app.details?.beMoneyDownAbsolute"></span> <small
-                          class="text-neutral-alt">(<span
-                            x-text="$store.app.details?.beMoneyDownRelative"></span>)</small></span>
-                    </div>
-                    <div class="outcome-row">
-                      <span>&ge; <span class="text-good" x-text="$store.app.details?.beMoneyUpAbsolute"></span> <small
-                          class="text-neutral-alt">(<span
-                            x-text="$store.app.details?.beMoneyUpRelative"></span>)</small></span>
-                    </div>
-                    <div class="outcomes-header mt-2">Loss when</div>
-                    <div class="outcome-row mb-0">
-                      <span>Between <span class="text-bad" x-text="$store.app.details?.beMoneyDownAbsolute"></span>
-                        <small class="text-neutral-alt">(<span
-                            x-text="$store.app.details?.beMoneyDownRelative"></span>)</small> and <span class="text-bad"
-                          x-text="$store.app.details?.beMoneyUpAbsolute"></span> <small class="text-neutral-alt">(<span
-                            x-text="$store.app.details?.beMoneyUpRelative"></span>)</small></span>
-                    </div>
-                  </div>
-
-                  <div class="warnings-panel">
-                    <div class="warning-row">
-                      <i class="fas fa-exclamation-triangle me-1 text-warning-icon"></i>
-                      Maximum loss is <span class="text-bad" x-text="$store.app.details?.costInMoney"></span> <small
-                        class="text-bad">(-100%)</small> if <span x-text="$store.app.details?.underlying"></span>
-                      expires exactly at <span class="text-neutral" x-text="$store.app.details?.strikeAbsolute"></span>.
-                    </div>
-                  </div>
-
-                  <div class="instructions-panel">
-                    <div class="instructions-header">Execution Instructions</div>
-                    <div class="instructions-content">
-                      &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.callSize"></span> call(s)
-                      for <span class="text-bad" x-text="$store.app.details?.callCostInMoney"></span> <span
-                        class="text-neutral">(<span x-text="$store.app.details?.callCostInUnderlying"></span> <span
-                          x-text="$store.app.details?.underlying"></span>)</span><br />
-                      &bull; <b>Buy</b> <span class="text-good" x-text="$store.app.details?.putSize"></span> put(s) for
-                      <span class="text-bad" x-text="$store.app.details?.putCostInMoney"></span> <span
-                        class="text-neutral">(<span x-text="$store.app.details?.putCostInUnderlying"></span> <span
-                          x-text="$store.app.details?.underlying"></span>)</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -830,7 +716,6 @@
   <script src="strategy_registry.js"></script>
   <script src="covered_calls.js"></script>
   <script src="long_options.js"></script>
-  <script src="straddles.js"></script>
   <script src="main.js"></script>
   <script defer src="main.dart.js"></script>
 </body>

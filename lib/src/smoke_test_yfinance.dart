@@ -27,7 +27,7 @@ const String _usageText = '''
 Usage: ./bin/smoke_test_yfinance.sh [options] [TICKER...]
 
 Runs an end-to-end live Yahoo Finance smoke test (handshake, option chains,
-CoveredCalls, LongOptions, Straddles, and JSON serialization).
+CoveredCalls, LongOptions, and JSON serialization).
 
 If no ticker is provided, defaults to: GOOG, F
 
@@ -223,19 +223,6 @@ Future<int> runSmokeTestCli(List<String> args) async {
           stdout.writeln(
             '  ${_green("✓")} LongOptions:     ${loDecoded.length} strategies '
             '(${longCalls.length} calls, ${longPuts.length} puts) encoded cleanly',
-          );
-
-          // 3. Straddles
-          final straddleList = Straddle.generateAll(
-            markets,
-            underlying: underlying,
-            money: money,
-            slippage: options.slippage,
-          ).toList();
-          final stJson = jsonEncode(straddleList);
-          final stDecoded = jsonDecode(stJson) as List;
-          stdout.writeln(
-            '  ${_green("✓")} Straddles:       ${stDecoded.length} strategies encoded cleanly',
           );
         },
         verbose: options.verbose,

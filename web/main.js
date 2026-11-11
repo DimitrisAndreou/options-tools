@@ -579,11 +579,6 @@ const STRATEGY_CONFIGS = {
     deribitFetcherName: 'deribitLongOptionsDart',
     yfinanceFetcherName: 'yfinanceLongOptionsDart',
     renderer: renderLongOptionsChart
-  },
-  straddle: {
-    deribitFetcherName: 'deribitStraddlesDart',
-    yfinanceFetcherName: 'yfinanceStraddlesDart',
-    renderer: renderStraddlesChart
   }
 };
 

@@ -39,7 +39,6 @@ void main() async {
   // browseCoveredCalls(markets);
   // printGeometricCoveredCalls(markets);
   // browseLongCalls(markets);
-  // browseStraddles(markets);
   // coveredCallProbabilities(markets);
 
   // printOptionChain(markets);
@@ -489,25 +488,6 @@ void browseLongCalls(List<Market> allMarkets) {
         "${s.analyzer.valueAt(longCallMinusLongSpot.breakevens.last.price)} ==? ${PositionAnalyzer(spotMarket.toAsset(-s.moneyLeg), underlying: underlying, money: money).valueAt(longCallMinusLongSpot.breakevens.last.price)}");
   }
   print(spotMarket.midPrice);
-}
-
-void browseStraddles(List<Market> markets) {
-  final money = Commodity("USD");
-  final underlying = Commodity("BTC");
-
-  final spotMarket =
-      Oracle.fromMarkets(markets).marketFor(asset: underlying, money: money);
-  print(" ============== Straddles ==============");
-  for (Straddle s
-      in Straddle.generateAll(markets, underlying: underlying, money: money)
-          .toList()) {
-    print("Strike: ${s.strikePrice.absolute}, "
-        "DTE: ${s.expiration.daysLeft}, "
-        "DistanceBetweenBreakEvens: ${dollarify(s.distanceBetweenBreakEvens.absolute)} (${percentify(s.distanceBetweenBreakEvens.relative, decimals: 1, sign: false)}), "
-        "BEvsMoneyDown: ${s.breakEvenVsFullMoneyDown.absolute.toStringAsFixed(0)} (${percentify(s.breakEvenVsFullMoneyDown.relative - 1.0, decimals: 1)}), "
-        "BEvsMoneyUp: ${s.breakEvenVsFullMoneyUp.absolute.toStringAsFixed(0)} (${percentify(s.breakEvenVsFullMoneyUp.relative - 1.0, decimals: 1)})");
-  }
-  print('Spot price: ${spotMarket.midPrice}');
 }
 
 void printOptionChain(List<Market> markets) {

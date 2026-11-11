@@ -191,13 +191,31 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const header = prepareCCData(activePos);
 
+    const formatContractPrice = (price) => {
+      const isWhole = Math.abs(price - Math.round(price)) < 1e-4;
+      return isWhole ? `$${Math.round(price)}` : dollarFmt.format(price);
+    };
+
     const formatContractCell = (pos, compact) => {
       if (!pos) return '—';
       const label = compact ? pos.call.replace(/^([A-Z]+-)/, '') : pos.call;
-      if (pos.callURL) {
-        return `<a href="${pos.callURL}" class="text-neutral" target="_blank" title="${pos.call}" style="text-decoration: underline;">${label}</a>`;
+      const contractHtml = pos.callURL
+        ? `<a href="${pos.callURL}" class="text-neutral" target="_blank" title="${pos.call}" style="text-decoration: underline;">${label}</a>`
+        : `<span class="text-neutral" title="${pos.call}">${label}</span>`;
+      let callPriceLine = '';
+      if (pos.callPrice != null) {
+        const cp = Number(pos.callPrice);
+        const minSize = pos.minSize != null
+          ? Number(pos.minSize)
+          : (pos.underlying === 'BTC' ? 0.1 : 1);
+        const lot = pos.contractLot != null ? Number(pos.contractLot) : 100;
+        const contractPrice = pos.callContractPrice != null
+          ? Number(pos.callContractPrice)
+          : cp * lot * minSize;
+        const contractSizeStr = Number(minSize.toFixed(4));
+        callPriceLine = `<br/><small class="text-probs"><span class="text-nowrap">${dollarFmt.format(cp)}</span><br/><span class="text-nowrap">(${formatContractPrice(contractPrice)} per ${contractSizeStr} contract)</span></small>`;
       }
-      return `<span class="text-neutral" title="${pos.call}">${label}</span>`;
+      return `${contractHtml}${callPriceLine}`;
     };
 
     const formatExpirationCell = (pos, compact) => {
@@ -211,31 +229,13 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       return `<span class="text-spot text-nowrap">${dollarFmt.format(Number(pos.spotPrice))}</span>`;
     };
 
-    const formatContractPrice = (price) => {
-      const isWhole = Math.abs(price - Math.round(price)) < 1e-4;
-      return isWhole ? `$${Math.round(price)}` : dollarFmt.format(price);
-    };
-
     const formatStrikeCell = (pos, compact) => {
       if (!pos) return '—';
       const strike = Number(pos.strikeAbsolute);
       const spot = Number(pos.spotPrice);
       const rel = percentFmt.format(strike / spot - 1.0);
       const sep = compact ? '<br/>' : ' ';
-      let callPriceLine = '';
-      if (pos.callPrice != null) {
-        const cp = Number(pos.callPrice);
-        const minSize = pos.minSize != null
-          ? Number(pos.minSize)
-          : (pos.underlying === 'BTC' ? 0.1 : 1);
-        const lot = pos.contractLot != null ? Number(pos.contractLot) : 100;
-        const contractPrice = pos.callContractPrice != null
-          ? Number(pos.callContractPrice)
-          : cp * lot * minSize;
-        const contractSizeStr = Number(minSize.toFixed(4));
-        callPriceLine = `<br/><small class="text-probs"><span class="text-nowrap">${dollarFmt.format(cp)}</span> <span class="text-nowrap">(${formatContractPrice(contractPrice)} per ${contractSizeStr} contract)</span></small>`;
-      }
-      return `<span class="text-neutral text-nowrap">${dollarFmt.format(strike)}</span>${sep}<small class="strike-relative text-nowrap">(${rel})</small>${callPriceLine}`;
+      return `<span class="text-neutral text-nowrap">${dollarFmt.format(strike)}</span>${sep}<small class="strike-relative text-nowrap">(${rel})</small>`;
     };
 
     const formatCapitalMoneyCell = (pos) => {

@@ -83,7 +83,7 @@ function selectStrategyById(idToSelect) {
   const store = getAppStore();
   if (!store) return;
 
-  const strategy = store.strategy; // 'coveredCall', 'longOption', 'straddle'
+  const strategy = store.strategy; // 'coveredCall', 'longOption'
 
   let targetItem = null;
   if (idToSelect && store.chartData) {
