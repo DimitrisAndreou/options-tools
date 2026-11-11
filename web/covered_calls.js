@@ -49,7 +49,7 @@ function prepareCCData(value) {
     strikeAbsolute: dollarFmt.format(value.strikeAbsolute),
     strikeRelative: percentFmt.format(value.strikeAbsolute / value.spotPrice - 1.0),
     spotPrice: dollarFmt.format(value.spotPrice),
-    callName: value.call,
+    callName: formatOptionName(value.call),
     callURL: value.callURL,
     callPrice: value.callPrice,
     callContractPrice: value.callContractPrice,
@@ -116,13 +116,13 @@ function renderTooltipCC(d) {
       <div class="tooltip-breakeven">
         <span class="text-label">Even vs full ${d.money}:</span> 
         ${d.beAbsolute != null
-          ? `<span class="text-neutral">${d.beAbsolute}</span><span class="text-bad ms-1">(${d.beRelative})</span>`
-          : `<span class="text-bad">Never</span>`}
+      ? `<span class="text-neutral">${d.beAbsolute}</span><span class="text-bad ms-1">(${d.beRelative})</span>`
+      : `<span class="text-bad">Never</span>`}
         <br/>
         <span class="text-label">Even vs full ${d.underlying}:</span> 
         ${d.capAbsolute != null
-          ? `<span class="text-neutral">${d.capAbsolute}</span><span class="text-good ms-1">(${d.capRelative})</span>`
-          : `<span class="text-muted-alt">—</span>`}
+      ? `<span class="text-neutral">${d.capAbsolute}</span><span class="text-good ms-1">(${d.capRelative})</span>`
+      : `<span class="text-muted-alt">—</span>`}
       </div>
       
       <div class="tooltip-footer">
@@ -198,10 +198,11 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const formatContractCell = (pos, compact) => {
       if (!pos) return '—';
-      const label = compact ? pos.call.replace(/^([A-Z]+-)/, '') : pos.call;
+      const formattedCall = formatOptionName(pos.call);
+      const label = compact ? formattedCall.replace(/^([A-Z0-9.^_-]+-)/, '') : formattedCall;
       const contractHtml = pos.callURL
-        ? `<a href="${pos.callURL}" class="text-neutral" target="_blank" title="${pos.call}" style="text-decoration: underline;">${label}</a>`
-        : `<span class="text-neutral" title="${pos.call}">${label}</span>`;
+        ? `<a href="${pos.callURL}" class="text-neutral" target="_blank" title="${formattedCall}" style="text-decoration: underline;">${label}</a>`
+        : `<span class="text-neutral" title="${formattedCall}">${label}</span>`;
       let callPriceLine = '';
       if (pos.callPrice != null) {
         const cp = Number(pos.callPrice);
@@ -841,9 +842,9 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
 
   const selectedCoord = targetItem
     ? [
-        (targetItem.postTax ?? targetItem.preTax).moneyYield,
-        (targetItem.postTax ?? targetItem.preTax).underlyingYield
-      ]
+      (targetItem.postTax ?? targetItem.preTax).moneyYield,
+      (targetItem.postTax ?? targetItem.preTax).underlyingYield
+    ]
     : null;
   const entryCoord = overlay?.entry || null;
   const focusCoords = [selectedCoord, entryCoord].filter(

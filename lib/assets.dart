@@ -266,6 +266,38 @@ class Option extends Expirable {
     }
   }
 
+  /// Human-readable Deribit-style option code (e.g., `SNDK-16JUL27-1180-C`),
+  /// replacing opaque 21-char OCC symbols from YFinance while preserving
+  /// `name` for exchange URLs.
+  String get readableName {
+    if (source != DataSource.yfinance) {
+      return name;
+    }
+    const monthNames = [
+      '',
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC'
+    ];
+    final day = expiration.day;
+    final month = monthNames[expiration.month];
+    final year = (expiration.year % 100).toString().padLeft(2, '0');
+    final strikeStr = strike == strike.toInt()
+        ? strike.toInt().toString()
+        : strike.toString().replaceAll(RegExp(r'\.?0+$'), '');
+    final typeChar = isCall ? 'C' : 'P';
+    return '${underlying.name}-$day$month$year-$strikeStr-$typeChar';
+  }
+
   @override
   String toString() => '$name[strike=$money]';
 }

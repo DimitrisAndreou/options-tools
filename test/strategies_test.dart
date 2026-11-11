@@ -1189,5 +1189,140 @@ void main() {
     expect(noTouch5_5.maxProfit, closeTo(0.15, 1e-9));
     expect(noTouch5_5.maxRisk, closeTo(0.35, 1e-9));
     expect(noTouch5_5.maxYield, closeTo(1.0 + 0.15 / 0.35, 1e-9));
+
+    // Verify expiration metrics and PositionAnalyzer backing:
+    expect(touch16_5.analyzer.maxProfit, closeTo(0.40, 1e-9));
+    expect(touch16_5.analyzer.maxRisk, closeTo(0.10, 1e-9));
+    expect(touch16_5.expirationWinProbability, closeTo(0.10, 1e-9));
+    expect(touch16_5.expirationMaxProfit, closeTo(0.90, 1e-9));
+    expect(touch16_5.expirationMaxRisk, closeTo(0.10, 1e-9));
+    expect(touch16_5.expirationMaxYield, closeTo(10.0, 1e-9));
+    expect(touch16_5.expirationInstructions.length, equals(3));
+    expect(touch16_5.expirationInstructions.last.action,
+        equals('Hold to Expiration'));
+  });
+
+  test('TouchBet scales position size and payoffs by option minSize (e.g. 0.1 for BTC)', () {
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
+    final expiration = DateTime.now().add(Duration(days: 30));
+
+    Market makeMinSizeCallMarket(double strike, double mid,
+        {double minSize = 0.1}) {
+      final opt = Option(
+        'BTC-${strike.toStringAsFixed(0)}-C',
+        underlying: btc,
+        money: usd,
+        strike: strike,
+        isCall: true,
+        expiration: expiration,
+        minSize: minSize,
+        source: DataSource.deribit,
+      );
+      return Market.create(asset: opt, money: usd, bidPrice: mid, askPrice: mid);
+    }
+
+    final markets = <Market>[
+      Market.create(asset: btc, money: usd, bidPrice: 100000.0, askPrice: 100000.0),
+      makeMinSizeCallMarket(99000.0, 5500.0),
+      makeMinSizeCallMarket(101000.0, 4500.0),
+      makeMinSizeCallMarket(109000.0, 1000.0),
+      makeMinSizeCallMarket(111000.0, 600.0),
+    ];
+
+    final touchBets = TouchBet.generateAll(
+      markets,
+      underlying: btc,
+      money: usd,
+      slippage: 0.5,
+    ).toList();
+
+    final touch110k = touchBets.firstWhere(
+        (b) => b.targetPrice.absolute == 110000.0 && b.betType == TouchBetType.touch);
+
+    // Legs should have size 0.1 (long) and -0.1 (short)
+    expect(touch110k.spread.longLeg.size, closeTo(0.1, 1e-9));
+    expect(touch110k.spread.shortLeg.size, closeTo(-0.1, 1e-9));
+
+    // Width of 2000 scaled by 0.1 = 200; 50% exit value = 100
+    expect(touch110k.spreadPayoffWidth, closeTo(200.0, 1e-9));
+    expect(touch110k.touchExitValue, closeTo(100.0, 1e-9));
+
+    // Entry cost: (1000 - 600) * 0.1 = 40
+    expect(touch110k.maxRisk, closeTo(40.0, 1e-9));
+    expect(touch110k.maxProfit, closeTo(60.0, 1e-9));
+    expect(touch110k.maxYield, closeTo(2.5, 1e-9));
+
+    // Execution instructions should all show size 0.1
+    for (final inst in touch110k.instructions) {
+      expect(inst.size, closeTo(0.1, 1e-9));
+    }
+    for (final inst in touch110k.expirationInstructions) {
+      expect(inst.size, closeTo(0.1, 1e-9));
+    }
+  });
+
+  test('YFinance options use Deribit-style readableName while preserving Yahoo URLs', () {
+    final sndk = Commodity.fromName('SNDK', source: DataSource.yfinance);
+    final usd = Commodity.fromName('USD');
+    final expiration = DateTime.utc(2027, 7, 16);
+
+    final call1180 = Option(
+      'SNDK270716C01180000',
+      underlying: sndk,
+      money: usd,
+      strike: 1180.0,
+      isCall: true,
+      expiration: expiration,
+      contractLot: 100.0,
+      source: DataSource.yfinance,
+    );
+    final call1200 = Option(
+      'SNDK270716C01200000',
+      underlying: sndk,
+      money: usd,
+      strike: 1200.0,
+      isCall: true,
+      expiration: expiration,
+      contractLot: 100.0,
+      source: DataSource.yfinance,
+    );
+
+    expect(call1180.readableName, equals('SNDK-16JUL27-1180-C'));
+    expect(call1200.readableName, equals('SNDK-16JUL27-1200-C'));
+    expect(call1180.url, equals('https://finance.yahoo.com/quote/SNDK270716C01180000/'));
+
+    final markets = <Market>[
+      Market.create(asset: sndk, money: usd, bidPrice: 1000.0, askPrice: 1000.0),
+      Market.create(asset: call1180, money: usd, bidPrice: 19865.0, askPrice: 19865.0),
+      Market.create(asset: call1200, money: usd, bidPrice: 19185.0, askPrice: 19185.0),
+    ];
+
+    final touchBets = TouchBet.generateAll(
+      markets,
+      underlying: sndk,
+      money: usd,
+      slippage: 0.5,
+    ).toList();
+
+    final touchBet = touchBets.firstWhere((b) => b.betType == TouchBetType.touch);
+    final json = touchBet.toJson();
+    expect(json['longLeg'], equals('SNDK-16JUL27-1180-C'));
+    expect(json['shortLeg'], equals('SNDK-16JUL27-1200-C'));
+    expect(json['longLegURL'], equals('https://finance.yahoo.com/quote/SNDK270716C01180000/'));
+    expect(json['shortLegURL'], equals('https://finance.yahoo.com/quote/SNDK270716C01200000/'));
+    expect(touchBet.instructions[0].unit, equals('SNDK-16JUL27-1180-C'));
+    expect(touchBet.instructions[1].unit, equals('SNDK-16JUL27-1200-C'));
+    expect(touchBet.instructions[2].unit, equals('spread @ 1190'));
+    expect(touchBet.expirationInstructions[2].unit,
+        equals('payout if SNDK >= 1200'));
+    expect(json['maxYieldAtAbsolute'], closeTo(1200.0, 1e-9));
+
+    final noTouchBet =
+        touchBets.firstWhere((b) => b.betType == TouchBetType.noTouch);
+    expect(noTouchBet.instructions[2].unit, equals('spread @ 1190'));
+    expect(noTouchBet.expirationInstructions[2].unit,
+        equals('payout if SNDK <= 1180'));
+    expect(noTouchBet.toJson()['maxYieldAtAbsolute'], closeTo(1180.0, 1e-9));
   });
 }

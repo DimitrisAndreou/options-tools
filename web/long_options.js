@@ -11,7 +11,7 @@ function prepareLongCallData(value) {
     strategyURL: value.strategyURL,
     formattedDate: value.formattedDate,
     DTE: value.DTE,
-    callName: value.call,
+    callName: formatOptionName(value.call),
     callURL: value.callURL,
     callSize: value.callSize,
 
@@ -81,7 +81,7 @@ function prepareLongPutData(value) {
     strategyURL: value.strategyURL,
     formattedDate: value.formattedDate,
     DTE: value.DTE,
-    putName: value.put,
+    putName: formatOptionName(value.put),
     putURL: value.putURL,
     putSize: value.putSize,
 

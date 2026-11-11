@@ -18,6 +18,49 @@ document.addEventListener('alpine:init', () => {
     chartData: null,
     entryPosition: null,
     loadedParams: null,
+    oddsMode: 'touch',
+    touchBetSide: 'yes',
+    minProb: 25,
+
+    get activeTouchBetSide() {
+      if (!this.details) return null;
+      if (this.touchBetSide === 'no') {
+        return this.details.noSide || this.details.yesSide || null;
+      }
+      return this.details.yesSide || this.details.noSide || null;
+    },
+
+    setOddsMode(mode) {
+      if (mode !== 'touch' && mode !== 'expiration') return;
+      if (this.oddsMode === mode) return;
+      this.oddsMode = mode;
+      if (this.strategy === 'touchBet' && this.chartData) {
+        const config = StrategyRegistry['touchBet'];
+        if (config && config.updateProbabilityFilter) {
+          config.updateProbabilityFilter();
+        }
+        if (this.selectedItem && config && config.prepareData) {
+          this.details = config.prepareData(this.selectedItem);
+        }
+      }
+    },
+
+    setMinProb(val) {
+      const n = Number(val);
+      const clamped = Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : 25;
+      this.minProb = clamped;
+      if (this.strategy === 'touchBet' && this.chartData) {
+        const config = StrategyRegistry['touchBet'];
+        if (config && config.updateProbabilityFilter) {
+          config.updateProbabilityFilter();
+        }
+      }
+    },
+
+    setTouchBetSide(side) {
+      if (side !== 'yes' && side !== 'no') return;
+      this.touchBetSide = side;
+    },
 
     normalizeAvgPrice(val) {
       if (val === '' || val === null || val === undefined) return null;
@@ -579,6 +622,11 @@ const STRATEGY_CONFIGS = {
     deribitFetcherName: 'deribitLongOptionsDart',
     yfinanceFetcherName: 'yfinanceLongOptionsDart',
     renderer: renderLongOptionsChart
+  },
+  touchBet: {
+    deribitFetcherName: 'deribitTouchBetsDart',
+    yfinanceFetcherName: 'yfinanceTouchBetsDart',
+    renderer: renderTouchBetsChart
   }
 };
 

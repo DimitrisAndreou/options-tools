@@ -207,7 +207,7 @@ class CoveredCall {
         'money': money.name,
         'moneySize': moneyLeg.size,
         'spotPrice': spotPrice,
-        'call': optionLeg.asset.name,
+        'call': option.readableName,
         'callURL': callURL,
         'callSize': optionLeg.size,
         'callPrice': callPrice,
@@ -460,7 +460,7 @@ class LongCall {
         'moneySize': moneyLeg.size,
         'money': money.name,
         'spotPrice': spotPrice,
-        'call': optionLeg.asset.name,
+        'call': option.readableName,
         'callURL': callURL,
         'callSize': optionLeg.size,
         'DTE': expiration.daysLeft,
@@ -595,7 +595,7 @@ class LongPut {
         'moneySize': moneyLeg.size,
         'money': money.name,
         'spotPrice': spotPrice,
-        'put': optionLeg.asset.name,
+        'put': option.readableName,
         'putURL': putURL,
         'putSize': optionLeg.size,
         'DTE': expiration.daysLeft,
@@ -734,9 +734,9 @@ class VerticalSpread {
         'money': money.name,
         'moneySize': moneyLeg.size,
         'spotPrice': spotPrice,
-        'shortLeg': shortLeg.asset.name,
+        'shortLeg': shortOption.readableName,
         'shortLegURL': shortLegURL,
-        'longLeg': longLeg.asset.name,
+        'longLeg': longOption.readableName,
         'longLegURL': longLegURL,
         'type': type.name,
         'DTE': expiration.daysLeft,
@@ -856,7 +856,7 @@ class VerticalSpread {
           strikeToOptions = expirationToStrike.value;
       VerticalSpread makeSpread(Position position, Option shortOption,
               Option longOption, Market shortMarket, Market longMarket) =>
-          VerticalSpread._(position,
+          VerticalSpread._(position * shortOption.minSize,
               underlying: underlying,
               money: money,
               shortOption: shortOption,
@@ -1302,26 +1302,32 @@ enum TouchBetType { touch, noTouch }
 
 /// A binary-style "Touch" or "No-Touch" bet constructed from an adjacent-strike
 /// [VerticalSpread] centered at [targetPrice] = (lowStrike + highStrike) / 2,
-/// combined with a rule to close the spread at 50% of its discounted box width
+/// combined with a rule to close the spread at 50% of its nominal width
 /// ([touchExitValue]) if the underlying touches [targetPrice] before expiration.
 ///
+/// All PnL, risk, and yield metrics are computed via [PositionAnalyzer]:
 /// - [TouchBetType.touch]: Uses the OTM vertical spread (`over` above the median,
-///   `under` below the median) and places a GTC take-profit order at [touchExitValue].
+///   `under` below the median) liquidated at [targetPrice] via
+///   `spread.analyzer.liquidateAt(midpoint)`.
 /// - [TouchBetType.noTouch]: Uses the ITM vertical spread (`under` above the median,
-///   `over` below the median), holding to expiration for full profit if untouched,
-///   or closing at [touchExitValue] as a stop-loss if [targetPrice] is touched.
+///   `over` below the median) analyzed with `maxRisk: -spread.analyzer.valueAt(midpoint)`
+///   to reflect the stop-loss at [targetPrice] while holding to expiration if untouched.
 class TouchBet {
   final VerticalSpread spread;
+  final PositionAnalyzer analyzer;
   final TouchBetType betType;
+  final bool isUpsideTarget;
   final PriceInfo targetPrice;
   final double lowStrike;
   final double highStrike;
   final double discountFactor;
+  final double impliedInterestRate;
+  final double impliedApr;
+  final double spreadPayoffWidth;
+  final double boxPresentValue;
   final double winProbability;
+  final double expirationWinProbability;
   final double touchExitValue;
-  final double maxProfit;
-  final double maxRisk;
-  final double maxYield;
 
   Commodity get underlying => spread.underlying;
   Commodity get money => spread.money;
@@ -1329,51 +1335,85 @@ class TouchBet {
   double get spotPrice => spread.spotPrice;
   String? get strategyURL => spread.strategyURL;
 
+  double get maxProfit => analyzer.maxProfit;
+  double get maxRisk => analyzer.maxRisk;
+  double get maxYield => analyzer.maxYield;
+
+  double get expirationMaxProfit => spread.analyzer.maxProfit;
+  double get expirationMaxRisk => spread.analyzer.maxRisk;
+  double get expirationMaxYield => spread.analyzer.maxYield;
+  PriceInfo? get breakEvenVsFullMoney => spread.breakEvenVsFullMoney;
+
   TouchBet._({
     required this.spread,
+    required this.analyzer,
     required this.betType,
+    required this.isUpsideTarget,
     required this.targetPrice,
     required this.lowStrike,
     required this.highStrike,
     required this.discountFactor,
+    required this.impliedInterestRate,
+    required this.impliedApr,
+    required this.spreadPayoffWidth,
+    required this.boxPresentValue,
     required this.winProbability,
+    required this.expirationWinProbability,
     required this.touchExitValue,
-    required this.maxProfit,
-    required this.maxRisk,
-    required this.maxYield,
   });
 
-  List<ExecutionInstruction> get instructions {
+  List<ExecutionInstruction> _entryInstructions() {
     final longCost =
         spread.longLeg.costBasisSingle(spread.money)?.size.abs() ??
             (spread.longMarket.buyPrice() * spread.longLeg.size.abs());
     final shortProceeds =
         spread.shortLeg.costBasisSingle(spread.money)?.size.abs() ??
             (spread.shortMarket.sellPrice() * spread.shortLeg.size.abs());
-    final exitAction = betType == TouchBetType.touch
-        ? 'GTC Take-Profit on Touch'
-        : 'Stop-Loss on Touch';
-
     return [
       ExecutionInstruction(
         action: 'Buy',
         size: spread.longLeg.size.abs(),
-        unit: spread.longOption.name,
+        unit: spread.longOption.readableName,
         price: longCost,
         priceUnit: money.name,
       ),
       ExecutionInstruction(
         action: 'Sell',
         size: spread.shortLeg.size.abs(),
-        unit: spread.shortOption.name,
+        unit: spread.shortOption.readableName,
         price: shortProceeds,
         priceUnit: money.name,
       ),
+    ];
+  }
+
+  List<ExecutionInstruction> get instructions {
+    final exitAction = betType == TouchBetType.touch
+        ? 'GTC Take-Profit on Touch'
+        : 'Stop-Loss on Touch';
+
+    return [
+      ..._entryInstructions(),
       ExecutionInstruction(
         action: exitAction,
-        size: 1.0,
+        size: spread.longLeg.size.abs(),
         unit: 'spread @ ${_formatDouble(targetPrice.absolute)}',
         price: touchExitValue,
+        priceUnit: money.name,
+      ),
+    ];
+  }
+
+  List<ExecutionInstruction> get expirationInstructions {
+    final cmp = spread.type == VerticalSpreadType.over ? '>=' : '<=';
+    return [
+      ..._entryInstructions(),
+      ExecutionInstruction(
+        action: 'Hold to Expiration',
+        size: spread.longLeg.size.abs(),
+        unit:
+            'payout if ${underlying.name} $cmp ${_formatDouble(spread.maxYieldAt.absolute)}',
+        price: spreadPayoffWidth,
         priceUnit: money.name,
       ),
     ];
@@ -1385,29 +1425,46 @@ class TouchBet {
         'strategyType': 'touchBet',
         'betType': betType.name,
         'spreadType': spread.type.name,
+        'isUpsideTarget': isUpsideTarget,
         'strategyURL': strategyURL,
         'underlying': underlying.name,
         'underlyingURL': spread.underlyingURL,
         'money': money.name,
         'moneySize': spread.moneyLeg.size,
         'spotPrice': spotPrice,
-        'shortLeg': spread.shortLeg.asset.name,
+        'shortLeg': spread.shortOption.readableName,
         'shortLegURL': spread.shortLegURL,
-        'longLeg': spread.longLeg.asset.name,
+        'longLeg': spread.longOption.readableName,
         'longLegURL': spread.longLegURL,
         'lowStrike': lowStrike,
         'highStrike': highStrike,
         'targetPriceAbsolute': targetPrice.absolute,
         'targetPriceRelative': targetPrice.relative,
+        'maxYieldAtAbsolute': spread.maxYieldAt.absolute,
+        'maxYieldAtRelative': spread.maxYieldAt.relative,
+        'maxRiskAtAbsolute': spread.maxRiskAt.absolute,
+        'maxRiskAtRelative': spread.maxRiskAt.relative,
         'discountFactor': discountFactor,
+        'impliedInterestRate': impliedInterestRate,
+        'impliedApr': impliedApr,
+        'spreadPayoffWidth': spreadPayoffWidth,
+        'boxPresentValue': boxPresentValue,
         'winProbability': winProbability,
         'touchExitValue': touchExitValue,
         'maxProfit': maxProfit,
         'maxRisk': maxRisk,
         'maxYield': maxYield,
+        'expirationWinProbability': expirationWinProbability,
+        'expirationMaxProfit': expirationMaxProfit,
+        'expirationMaxRisk': expirationMaxRisk,
+        'expirationMaxYield': expirationMaxYield,
+        'breakEvenVsFullMoneyAbsolute': breakEvenVsFullMoney?.absolute,
+        'breakEvenVsFullMoneyRelative': breakEvenVsFullMoney?.relative,
         'DTE': expiration.daysLeft,
         'formattedDate': expiration.formattedDate,
         'instructions': instructions.map((i) => i.toJson()).toList(),
+        'expirationInstructions':
+            expirationInstructions.map((i) => i.toJson()).toList(),
       };
 
   @override
@@ -1479,58 +1536,66 @@ class TouchBet {
 
       final winProb =
           betType == TouchBetType.touch ? pTouch : (1.0 - pTouch);
+      final expirationWinProb =
+          vs.type == VerticalSpreadType.over ? pAbove : (1.0 - pAbove);
       final discountFactor = probs.discountFactors[expiration] ?? 1.0;
 
       // Full expiration payoff range of the spread in money (width * contractLot):
       final spreadPayoffWidth = vs.analyzer.maxValue - vs.analyzer.minValue;
       if (spreadPayoffWidth <= 0.0) continue;
 
-      // At the moment the underlying touches the midpoint, the spread is ATM
-      // and valued at 50% of its discounted box width:
-      final touchExitValue = 0.5 * discountFactor * spreadPayoffWidth;
-      final netCashEntry = vs.moneyLeg.size; // negative for debit, positive for credit
+      final boxPresentValue = discountFactor * spreadPayoffWidth;
+      final impliedInterestRate = (1.0 / discountFactor) - 1.0;
+      final impliedApr = expiration.minutesLeft > 0
+          ? expiration.rateToAnnualRate(impliedInterestRate)
+          : 0.0;
 
-      final double maxProfit;
-      final double maxRisk;
+      // In PositionAnalyzer, a vertical spread's intrinsic payoff is linear
+      // between lowStrike and highStrike, so at midpoint = (lowStrike + highStrike) / 2
+      // the option legs settle at 50% of spreadPayoffWidth (touchExitValue).
+      final touchExitValue = 0.5 * spreadPayoffWidth;
+
+      final PositionAnalyzer betAnalyzer;
       if (betType == TouchBetType.touch) {
-        // Touch bet: wins when closed at touchExitValue, loses entry risk if never touched.
-        if (netCashEntry < 0.0) {
-          final debitPaid = -netCashEntry;
-          maxProfit = touchExitValue - debitPaid;
-          maxRisk = debitPaid;
-        } else {
-          // Credit representation of an OTM touch bet:
-          maxProfit = netCashEntry - touchExitValue;
-          maxRisk = vs.analyzer.maxRisk;
-        }
+        // Touch bet: liquidate the OTM spread at the midpoint price.
+        // PositionAnalyzer.liquidateAt(midpoint) realizes the 50%-width value
+        // while preserving vs.analyzer.maxRisk as the max loss if never touched.
+        betAnalyzer = vs.analyzer.liquidateAt(midpoint);
       } else {
-        // No-Touch bet: wins full expiration maxProfit if never touched;
-        // stops out at touchExitValue if touched.
-        maxProfit = vs.analyzer.maxProfit;
-        if (netCashEntry < 0.0) {
-          final debitPaid = -netCashEntry;
-          maxRisk = debitPaid - touchExitValue;
-        } else {
-          maxRisk = touchExitValue - netCashEntry;
-        }
+        // No-Touch bet: hold the ITM spread to expiration for vs.analyzer.maxProfit
+        // if untouched, or stop out at the midpoint price (limiting maxRisk to
+        // -vs.analyzer.valueAt(midpoint)) if touched.
+        final stopLossRisk = -vs.analyzer.valueAt(midpoint);
+        if (stopLossRisk <= 0.0) continue;
+        betAnalyzer = PositionAnalyzer(
+          vs.strategy,
+          underlying: underlying,
+          money: money,
+          maxRisk: stopLossRisk,
+        );
       }
 
-      if (maxProfit <= 0.0 || maxRisk <= 0.0) continue;
-      final maxYield = 1.0 + maxProfit / maxRisk;
-      if (!maxYield.isFinite) continue;
+      if (betAnalyzer.maxProfit <= 0.0 || betAnalyzer.maxRisk <= 0.0) continue;
+      if (!betAnalyzer.maxYield.isFinite || betAnalyzer.maxYield <= 1.0) {
+        continue;
+      }
 
       yield TouchBet._(
         spread: vs,
+        analyzer: betAnalyzer,
         betType: betType,
+        isUpsideTarget: isUpsideTarget,
         targetPrice: PriceInfo.fromAbsolute(midpoint, vs.spotPrice),
         lowStrike: lowStrike,
         highStrike: highStrike,
         discountFactor: discountFactor,
+        impliedInterestRate: impliedInterestRate,
+        impliedApr: impliedApr,
+        spreadPayoffWidth: spreadPayoffWidth,
+        boxPresentValue: boxPresentValue,
         winProbability: winProb,
+        expirationWinProbability: expirationWinProb,
         touchExitValue: touchExitValue,
-        maxProfit: maxProfit,
-        maxRisk: maxRisk,
-        maxYield: maxYield,
       );
     }
   }

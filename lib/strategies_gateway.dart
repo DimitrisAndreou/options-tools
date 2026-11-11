@@ -15,6 +15,15 @@ external set deribitCoveredCallsDart(JSFunction value);
 external set deribitVerticalSpreadsDart(JSFunction value);
 
 @JS()
+external set yfinanceVerticalSpreadsDart(JSFunction value);
+
+@JS()
+external set deribitTouchBetsDart(JSFunction value);
+
+@JS()
+external set yfinanceTouchBetsDart(JSFunction value);
+
+@JS()
 external set yfinanceCoveredCallsDart(JSFunction value);
 
 @JS()
@@ -75,6 +84,16 @@ Future<String> deribitVerticalSpreads(
       .toList());
 }
 
+Future<String> deribitTouchBets(
+    String ticker, double slippage, int minDTE, int maxDTE) async {
+  List<Market> markets = await deribitMarkets(ticker, minDTE, maxDTE);
+  return jsonEncode(TouchBet.generateAll(markets,
+          underlying: Commodity(ticker, source: DataSource.deribit),
+          money: Commodity("USD"),
+          slippage: slippage)
+      .toList());
+}
+
 Future<String> yfinanceCoveredCalls(
     String ticker, double slippage, int minDTE, int maxDTE,
     {double? avgPrice,
@@ -109,6 +128,28 @@ Future<String> yfinanceLongOptions(
           underlying: underlying, money: money, slippage: slippage)
       .map((e) => e.toJson());
   return jsonEncode([...calls, ...puts]);
+}
+
+Future<String> yfinanceVerticalSpreads(
+    String ticker, double slippage, int minDTE, int maxDTE) async {
+  List<Market> markets = await DataSource.yfinance
+      .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
+  return jsonEncode(VerticalSpread.generateAll(markets,
+          underlying: Commodity(ticker, source: DataSource.yfinance),
+          money: Commodity("USD"),
+          slippage: slippage)
+      .toList());
+}
+
+Future<String> yfinanceTouchBets(
+    String ticker, double slippage, int minDTE, int maxDTE) async {
+  List<Market> markets = await DataSource.yfinance
+      .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
+  return jsonEncode(TouchBet.generateAll(markets,
+          underlying: Commodity(ticker, source: DataSource.yfinance),
+          money: Commodity("USD"),
+          slippage: slippage)
+      .toList());
 }
 
 @JS('Error')
@@ -156,6 +197,21 @@ void setupJsInterop() {
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
     return _toJsPromise(deribitVerticalSpreads(ticker.toDart,
         slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
+  }.toJS;
+  yfinanceVerticalSpreadsDart =
+      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return _toJsPromise(yfinanceVerticalSpreads(ticker.toDart,
+        slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
+  }.toJS;
+  deribitTouchBetsDart =
+      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return _toJsPromise(deribitTouchBets(ticker.toDart, slippage.toDartDouble,
+        minDTE.toDartInt, maxDTE.toDartInt));
+  }.toJS;
+  yfinanceTouchBetsDart =
+      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return _toJsPromise(yfinanceTouchBets(ticker.toDart, slippage.toDartDouble,
+        minDTE.toDartInt, maxDTE.toDartInt));
   }.toJS;
   yfinanceCoveredCallsDart = (JSString ticker, JSNumber slippage,
       JSNumber minDTE, JSNumber maxDTE,
