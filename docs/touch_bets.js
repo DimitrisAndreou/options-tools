@@ -504,17 +504,355 @@ function buildTouchBetDteSeries(uniqueDTEs, normalizedSelectedId) {
   }));
 }
 
+let _touchBetTableNodesById = new Map();
+let _touchBetTableRenderedMode = null;
+
+function escapeTouchBetHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatCompactDteDate(formattedDate) {
+  if (!formattedDate || typeof formattedDate !== 'string') return '';
+  const parts = formattedDate.trim().split(/\s+/);
+  if (parts.length === 3) {
+    const day = parts[0];
+    const mon = parts[1].slice(0, 3);
+    const yr = parts[2].slice(-2);
+    return `${day} ${mon} '${yr}`;
+  }
+  return formattedDate;
+}
+
+function canonicalTouchPriceKey(price) {
+  const n = Number(price);
+  return Number.isFinite(n) ? Number(n.toFixed(6)) : 0;
+}
+
+function getTouchBetProbTierClass(probRaw) {
+  const p = Number(probRaw ?? 0);
+  if (p >= 0.50) return 'tier-high';
+  if (p >= 0.25) return 'tier-mid-high';
+  if (p >= 0.10) return 'tier-mid';
+  if (p >= 0.04) return 'tier-low';
+  return 'tier-tail';
+}
+
+function formatTouchBetCellText(node, isTouchMode, metric) {
+  const group = getTouchBetGroupForItem(node);
+  const yesSide = buildTouchBetSideData(group.touch, isTouchMode, true);
+  const probRaw = Number(node.activeWinProb ?? 0);
+  const yieldRaw = yesSide ? yesSide.yieldRaw : null;
+
+  if (metric === 'odds') {
+    return unsignedPercentFmt.format(probRaw);
+  }
+  if (metric === 'return') {
+    return yieldRaw != null ? percentFmt.format(yieldRaw - 1.0) : '—';
+  }
+  if (metric === 'both') {
+    const pct = (probRaw > 0 && probRaw < 0.01)
+      ? `${(probRaw * 100).toFixed(1)}%`
+      : `${Math.round(probRaw * 100)}%`;
+    return yieldRaw != null ? `${yieldRaw.toFixed(2)}x (${pct})` : unsignedPercentFmt.format(probRaw);
+  }
+  // Default: 'yield'
+  return yieldRaw != null ? `${yieldRaw.toFixed(2)}x` : '—';
+}
+
+function hideTouchBetTableTooltip() {
+  const tip = document.getElementById('touchBetTableTooltip');
+  if (tip) {
+    tip.style.display = 'none';
+  }
+}
+
+function showTouchBetTableTooltip(cellEl, node) {
+  const container = document.getElementById('touchBetTableContainer');
+  if (!container || !cellEl || !node) return;
+  let tip = document.getElementById('touchBetTableTooltip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'touchBetTableTooltip';
+    tip.className = 'touch-bet-table-tooltip';
+    container.appendChild(tip);
+  }
+  const prepared = prepareTouchBetData(node);
+  if (!prepared) return;
+  tip.innerHTML = renderTooltipTouchBet(prepared);
+  tip.style.display = 'block';
+
+  const rect = cellEl.getBoundingClientRect();
+  const tipRect = tip.getBoundingClientRect();
+  const margin = 10;
+
+  let left = rect.right + margin;
+  if (left + tipRect.width > window.innerWidth - margin) {
+    left = rect.left - tipRect.width - margin;
+  }
+  if (left < margin) {
+    left = Math.max(margin, Math.min(window.innerWidth - tipRect.width - margin, rect.left));
+  }
+
+  let top = rect.top + (rect.height / 2) - (tipRect.height / 2);
+  top = Math.max(margin, Math.min(window.innerHeight - tipRect.height - margin, top));
+
+  tip.style.left = `${Math.round(left)}px`;
+  tip.style.top = `${Math.round(top)}px`;
+}
+
+function bindTouchBetTableEvents(container) {
+  if (!container || container._touchBetListenersBound) return;
+  container._touchBetListenersBound = true;
+
+  container.addEventListener('click', function (e) {
+    const cell = e.target.closest('td.touch-bet-cell[data-bet-id]');
+    if (!cell || !container.contains(cell)) return;
+    const betId = cell.getAttribute('data-bet-id');
+    if (betId) {
+      selectStrategyById(betId);
+    }
+  });
+
+  container.addEventListener('mouseover', function (e) {
+    const cell = e.target.closest('td.touch-bet-cell[data-bet-id]');
+    if (!cell || !container.contains(cell)) return;
+    const betId = cell.getAttribute('data-bet-id');
+    const node = _touchBetTableNodesById.get(betId);
+    if (node) {
+      showTouchBetTableTooltip(cell, node);
+    }
+  });
+
+  container.addEventListener('mouseout', function (e) {
+    const cell = e.target.closest('td.touch-bet-cell[data-bet-id]');
+    if (!cell) return;
+    if (e.relatedTarget && cell.contains(e.relatedTarget)) return;
+    hideTouchBetTableTooltip();
+  });
+
+  container.addEventListener('mouseleave', hideTouchBetTableTooltip);
+  container.addEventListener('scroll', hideTouchBetTableTooltip, true);
+}
+
+function updateTouchBetTableSelection(normalizedId) {
+  const container = document.getElementById('touchBetTableContainer');
+  if (!container) return;
+  const prev = container.querySelectorAll('td.touch-bet-cell.selected');
+  for (const el of prev) {
+    el.classList.remove('selected');
+  }
+  if (!normalizedId) return;
+  const cells = container.querySelectorAll('td.touch-bet-cell[data-bet-id]');
+  for (const cell of cells) {
+    if (cell.getAttribute('data-bet-id') === normalizedId) {
+      cell.classList.add('selected');
+      break;
+    }
+  }
+}
+
+function updateTouchBetTableProbFilter(minProbPct) {
+  const container = document.getElementById('touchBetTableContainer');
+  if (!container) return;
+  const minProbDecimal = Math.max(0.0, Math.min(1.0, Number(minProbPct) / 100.0));
+  const cells = container.querySelectorAll('td.touch-bet-cell[data-prob]');
+  for (const cell of cells) {
+    const p = Number(cell.getAttribute('data-prob') ?? 0);
+    if (p + 1e-9 < minProbDecimal) {
+      cell.classList.add('below-min-prob');
+    } else {
+      cell.classList.remove('below-min-prob');
+    }
+  }
+}
+
+function renderTouchBetsTable(rawData, idToSelect, options = {}) {
+  const container = document.getElementById('touchBetTableContainer');
+  if (!container) return;
+
+  const { centerOnSpot = true } = options;
+  const store = getAppStore();
+  const isTouchMode = (store?.oddsMode || 'touch') === 'touch';
+  const minProbPct = Number(store?.minProb ?? 25);
+  const minProbDecimal = Math.max(0.0, Math.min(1.0, minProbPct / 100.0));
+  const metric = store?.touchBetMetric || 'yield';
+
+  let nodes = _touchBetNodesCache;
+  if ((!nodes || nodes.length === 0) && Array.isArray(rawData) && rawData.length > 0) {
+    nodes = pairTouchBetNodes(rawData);
+    _touchBetNodesCache = nodes;
+  }
+
+  if (!nodes || nodes.length === 0) {
+    container.innerHTML = '<div class="touch-bet-table-empty">No Over / Under bets available for the selected filters.</div>';
+    _touchBetTableNodesById = new Map();
+    _touchBetTableRenderedMode = isTouchMode ? 'touch' : 'expiration';
+    return;
+  }
+
+  const prevScrollEl = container.querySelector('.touch-bet-table-scroll');
+  const prevScrollTop = prevScrollEl ? prevScrollEl.scrollTop : 0;
+  const prevScrollLeft = prevScrollEl ? prevScrollEl.scrollLeft : 0;
+
+  updateTouchBetNodesActiveProb(nodes, isTouchMode);
+  const normalizedSelectedId = normalizeTouchBetSelectedId(idToSelect, rawData || store?.chartData);
+  const spotPrice = Number(extractSpotPrice(nodes)) || 0;
+
+  // Build sorted DTE columns (ascending by DTE)
+  const colMap = new Map();
+  for (const node of nodes) {
+    const colKey = `${node.DTE}~${node.formattedDate}`;
+    if (!colMap.has(colKey)) {
+      colMap.set(colKey, {
+        key: colKey,
+        dte: Number(node.DTE),
+        formattedDate: node.formattedDate,
+        shortDate: formatCompactDteDate(node.formattedDate)
+      });
+    }
+  }
+  const cols = [...colMap.values()].sort((a, b) => a.dte - b.dte || a.formattedDate.localeCompare(b.formattedDate));
+
+  // Build rows sorted DESCENDING (higher targets at top, lower targets at bottom)
+  const rowCells = new Map();
+  _touchBetTableNodesById = new Map();
+  for (const node of nodes) {
+    const pKey = canonicalTouchPriceKey(node.activeTargetPrice);
+    const colKey = `${node.DTE}~${node.formattedDate}`;
+    if (!rowCells.has(pKey)) {
+      rowCells.set(pKey, new Map());
+    }
+    const colCells = rowCells.get(pKey);
+    if (!colCells.has(colKey)) {
+      colCells.set(colKey, node);
+      _touchBetTableNodesById.set(node.id, node);
+    }
+  }
+  const sortedPrices = [...rowCells.keys()].sort((a, b) => b - a);
+
+  const theadColsHtml = cols.map(col => `
+    <th class="touch-bet-dte-th" title="${escapeTouchBetHtml(col.formattedDate)} (${col.dte}d)">
+      <div class="touch-bet-th-dte">${col.dte}d</div>
+      <div class="touch-bet-th-sub">${escapeTouchBetHtml(col.shortDate)}</div>
+    </th>
+  `).join('');
+
+  const spotRowHtml = spotPrice > 0 ? `
+    <tr class="touch-bet-spot-row">
+      <th class="touch-bet-spot-label">
+        <span class="touch-bet-spot-badge">SPOT</span>
+        <span class="touch-bet-spot-val">${escapeTouchBetHtml(dollarFmt.format(spotPrice))}</span>
+      </th>
+      <td class="touch-bet-spot-line" colspan="${cols.length}"></td>
+    </tr>
+  ` : '';
+
+  let spotInserted = false;
+  const bodyRows = [];
+
+  for (const price of sortedPrices) {
+    if (spotRowHtml && !spotInserted && price < spotPrice) {
+      bodyRows.push(spotRowHtml);
+      spotInserted = true;
+    }
+
+    const relStr = spotPrice > 0 ? percentFmt.format(price / spotPrice - 1.0) : '';
+    const relCls = spotPrice > 0
+      ? (price > spotPrice ? 'text-good' : (price < spotPrice ? 'text-bad' : 'text-neutral'))
+      : 'text-muted';
+    const colCells = rowCells.get(price);
+
+    const cellsHtml = cols.map(col => {
+      const node = colCells.get(col.key);
+      if (!node) {
+        return '<td class="touch-bet-empty"></td>';
+      }
+      const probRaw = Number(node.activeWinProb ?? 0);
+      const tierCls = getTouchBetProbTierClass(probRaw);
+      const belowCls = (probRaw + 1e-9 < minProbDecimal) ? ' below-min-prob' : '';
+      const selectedCls = (normalizedSelectedId && node.id === normalizedSelectedId) ? ' selected' : '';
+      const cellText = formatTouchBetCellText(node, isTouchMode, metric);
+      return `<td class="touch-bet-cell ${tierCls}${belowCls}${selectedCls}" data-bet-id="${escapeTouchBetHtml(node.id)}" data-prob="${probRaw}">${escapeTouchBetHtml(cellText)}</td>`;
+    }).join('');
+
+    bodyRows.push(`
+      <tr>
+        <th class="touch-bet-price-th">
+          <span class="touch-bet-price-abs">${escapeTouchBetHtml(formatRangeCapPrice(price))}</span>
+          ${relStr ? `<span class="touch-bet-price-rel ${relCls}">${escapeTouchBetHtml(relStr)}</span>` : ''}
+        </th>
+        ${cellsHtml}
+      </tr>
+    `);
+  }
+
+  if (spotRowHtml && !spotInserted) {
+    bodyRows.push(spotRowHtml);
+  }
+
+  container.innerHTML = `
+    <div class="touch-bet-table-scroll">
+      <table class="touch-bet-matrix">
+        <thead>
+          <tr>
+            <th class="touch-bet-corner-th">
+              <div>Target</div>
+              <div class="touch-bet-th-sub">Price / Move</div>
+            </th>
+            ${theadColsHtml}
+          </tr>
+        </thead>
+        <tbody>
+          ${bodyRows.join('')}
+        </tbody>
+      </table>
+    </div>
+    <div id="touchBetTableTooltip" class="touch-bet-table-tooltip"></div>
+  `;
+
+  bindTouchBetTableEvents(container);
+  _touchBetTableRenderedMode = isTouchMode ? 'touch' : 'expiration';
+
+  const scrollEl = container.querySelector('.touch-bet-table-scroll');
+  if (scrollEl) {
+    if (centerOnSpot) {
+      const spotEl = scrollEl.querySelector('.touch-bet-spot-row');
+      const theadEl = scrollEl.querySelector('thead');
+      const theadHeight = theadEl ? theadEl.offsetHeight : 0;
+      if (spotEl) {
+        const visibleHeight = Math.max(0, scrollEl.clientHeight - theadHeight);
+        const targetTop = spotEl.offsetTop - theadHeight - (visibleHeight / 2) + (spotEl.offsetHeight / 2);
+        scrollEl.scrollTop = Math.max(0, targetTop);
+      } else {
+        const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+        scrollEl.scrollTop = maxScroll / 2;
+      }
+    } else {
+      scrollEl.scrollTop = prevScrollTop;
+      scrollEl.scrollLeft = prevScrollLeft;
+    }
+  }
+}
+
 StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
   prepareData = prepareTouchBetData;
   renderTooltip = renderTooltipTouchBet;
+  renderTable = renderTouchBetsTable;
 
   updateSelection(idToSelect) {
+    const store = getAppStore();
+    const normalizedId = normalizeTouchBetSelectedId(idToSelect, store?.chartData);
+
+    updateTouchBetTableSelection(normalizedId);
+
     const chartDom = document.getElementById("strategyChartContainer");
     const chart = echarts.getInstanceByDom(chartDom);
     if (!chart) return;
-
-    const store = getAppStore();
-    const normalizedId = normalizeTouchBetSelectedId(idToSelect, store?.chartData);
 
     chart.setOption({
       dataset: [{
@@ -526,16 +864,25 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
   }
 
   updateProbabilityFilter() {
-    const chartDom = document.getElementById("strategyChartContainer");
-    const chart = echarts.getInstanceByDom(chartDom);
-    if (!chart) return;
-
     const store = getAppStore();
     const isTouchMode = (store?.oddsMode || 'touch') === 'touch';
     const minProbPct = Number(store?.minProb ?? 25);
     const normalizedId = normalizeTouchBetSelectedId(store?.selectedId, store?.chartData);
 
     updateTouchBetNodesActiveProb(_touchBetNodesCache, isTouchMode);
+
+    if (store?.touchBetView === 'table') {
+      const desiredMode = isTouchMode ? 'touch' : 'expiration';
+      if (_touchBetTableRenderedMode !== desiredMode) {
+        renderTouchBetsTable(store?.chartData, normalizedId, { centerOnSpot: true });
+      } else {
+        updateTouchBetTableProbFilter(minProbPct);
+      }
+    }
+
+    const chartDom = document.getElementById("strategyChartContainer");
+    const chart = echarts.getInstanceByDom(chartDom);
+    if (!chart) return;
 
     chart.setOption({
       dataset: [
@@ -793,6 +1140,11 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
   });
 
   selectStrategyById(normalizedSelectedId || null);
+  if (store?.touchBetView === 'table') {
+    requestAnimationFrame(() => {
+      renderTouchBetsTable(data, normalizedSelectedId, { centerOnSpot: true });
+    });
+  }
   return chart;
 }
 

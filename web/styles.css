@@ -859,3 +859,240 @@ footer {
   font-size: 0.76rem;
   color: var(--text-muted);
 }
+
+.odds-table-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Over / Under Matrix Table View */
+.touch-bet-table-container {
+  position: relative;
+  height: 500px;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.touch-bet-table-scroll {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  scrollbar-color: #475569 #0f172a;
+  scrollbar-width: thin;
+}
+
+.touch-bet-table-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.touch-bet-matrix {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  line-height: 1.2;
+}
+
+.touch-bet-corner-th {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  background: #0f172a;
+  color: var(--accent);
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid #334155;
+  border-right: 1px solid #334155;
+  min-width: 132px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.touch-bet-dte-th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: #0f172a;
+  color: var(--text-main);
+  text-align: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid #334155;
+  min-width: 64px;
+  white-space: nowrap;
+}
+
+.touch-bet-th-dte {
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--primary);
+}
+
+.touch-bet-th-sub {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.touch-bet-price-th {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #131c2e;
+  border-right: 1px solid #334155;
+  padding: 4px 10px;
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.touch-bet-price-abs {
+  color: var(--text-main);
+  font-size: 0.77rem;
+}
+
+.touch-bet-price-rel {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.69rem;
+  min-width: 48px;
+  text-align: right;
+}
+
+.touch-bet-empty {
+  background: rgba(15, 23, 42, 0.25);
+  border-radius: 4px;
+}
+
+.touch-bet-cell {
+  text-align: center;
+  padding: 5px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 600;
+  user-select: none;
+  border: 1px solid transparent;
+  transition: transform 0.08s ease, box-shadow 0.12s ease, opacity 0.15s ease, border-color 0.12s ease;
+}
+
+.touch-bet-cell:hover {
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+  position: relative;
+  z-index: 1;
+}
+
+.touch-bet-cell.selected {
+  border-color: var(--accent) !important;
+  box-shadow: inset 0 0 0 1px var(--accent), 0 0 10px rgba(252, 211, 77, 0.55);
+  opacity: 1 !important;
+  position: relative;
+  z-index: 1;
+}
+
+.touch-bet-cell.below-min-prob {
+  opacity: 0.28;
+}
+
+.touch-bet-cell.below-min-prob:hover {
+  opacity: 0.85;
+}
+
+.touch-bet-cell.tier-high {
+  background: rgba(0, 255, 163, 0.18);
+  color: #6ee7b7;
+}
+
+.touch-bet-cell.tier-mid-high {
+  background: rgba(56, 189, 248, 0.17);
+  color: #7dd3fc;
+}
+
+.touch-bet-cell.tier-mid {
+  background: rgba(252, 211, 77, 0.16);
+  color: #fde68a;
+}
+
+.touch-bet-cell.tier-low {
+  background: rgba(249, 115, 22, 0.18);
+  color: #fdba74;
+}
+
+.touch-bet-cell.tier-tail {
+  background: rgba(244, 63, 94, 0.18);
+  color: #fda4af;
+}
+
+.touch-bet-spot-row th,
+.touch-bet-spot-row td {
+  padding: 0;
+  height: 24px;
+  vertical-align: middle;
+}
+
+.touch-bet-spot-label {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: rgba(0, 255, 0, 0.12);
+  border-top: 1px dashed rgba(0, 255, 0, 0.7);
+  border-bottom: 1px dashed rgba(0, 255, 0, 0.7);
+  border-right: 1px solid #334155;
+  padding: 2px 10px !important;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.touch-bet-spot-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: #00ff00;
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin-right: 5px;
+}
+
+.touch-bet-spot-val {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #00ff00;
+}
+
+.touch-bet-spot-line {
+  background: linear-gradient(
+    to bottom,
+    transparent calc(50% - 1px),
+    rgba(0, 255, 0, 0.65) calc(50% - 1px),
+    rgba(0, 255, 0, 0.65) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+}
+
+.touch-bet-table-tooltip {
+  position: fixed;
+  z-index: 1080;
+  pointer-events: none;
+  display: none;
+  background: #1e293b;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  color: #f8fafc;
+  font-family: Inter, sans-serif;
+}

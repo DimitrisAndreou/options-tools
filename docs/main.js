@@ -21,6 +21,8 @@ document.addEventListener('alpine:init', () => {
     oddsMode: 'touch',
     touchBetSide: 'yes',
     minProb: 25,
+    touchBetView: 'chart',
+    touchBetMetric: 'yield',
 
     get activeTouchBetSide() {
       if (!this.details) return null;
@@ -28,6 +30,43 @@ document.addEventListener('alpine:init', () => {
         return this.details.noSide || this.details.yesSide || null;
       }
       return this.details.yesSide || this.details.noSide || null;
+    },
+
+    setTouchBetView(view) {
+      if (view !== 'chart' && view !== 'table') return;
+      if (this.touchBetView === view) return;
+      this.touchBetView = view;
+      if (this.strategy === 'touchBet' && this.chartData) {
+        const config = StrategyRegistry['touchBet'];
+        requestAnimationFrame(() => {
+          if (view === 'table') {
+            if (config && config.renderTable) {
+              config.renderTable(this.chartData, this.selectedId, { centerOnSpot: true });
+            }
+          } else {
+            const chartDom = document.getElementById("strategyChartContainer");
+            const chart = chartDom ? echarts.getInstanceByDom(chartDom) : null;
+            if (chart) {
+              chart.resize();
+            }
+            if (config && config.updateSelection) {
+              config.updateSelection(this.selectedId);
+            }
+          }
+        });
+      }
+    },
+
+    setTouchBetMetric(metric) {
+      if (!['yield', 'return', 'odds', 'both'].includes(metric)) return;
+      if (this.touchBetMetric === metric) return;
+      this.touchBetMetric = metric;
+      if (this.strategy === 'touchBet' && this.touchBetView === 'table' && this.chartData) {
+        const config = StrategyRegistry['touchBet'];
+        if (config && config.renderTable) {
+          config.renderTable(this.chartData, this.selectedId, { centerOnSpot: false });
+        }
+      }
     },
 
     setOddsMode(mode) {
