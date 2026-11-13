@@ -786,7 +786,7 @@
                           :class="{ 'active-yes': $store.app.touchBetSide !== 'no' }"
                           @click="$store.app.setTouchBetSide('yes')">
                           <div class="odds-side-tab-title text-good">
-                            <i class="fas fa-check-circle me-1"></i><span x-text="$store.app.details?.yesTabLabel"></span>
+                            <span x-text="$store.app.details?.yesTabLabel"></span>
                           </div>
                           <div class="odds-side-tab-sub">
                             Odds: <span class="text-probs" x-text="$store.app.details?.yesProbPct"></span>
@@ -800,7 +800,7 @@
                           :class="{ 'active-no': $store.app.touchBetSide === 'no' }"
                           @click="$store.app.setTouchBetSide('no')">
                           <div class="odds-side-tab-title text-neutral">
-                            <i class="fas fa-shield-alt me-1"></i><span x-text="$store.app.details?.noTabLabel"></span>
+                            <span x-text="$store.app.details?.noTabLabel"></span>
                           </div>
                           <div class="odds-side-tab-sub">
                             Odds: <span class="text-probs" x-text="$store.app.details?.noProbPct"></span>

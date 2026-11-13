@@ -75,8 +75,8 @@ function buildTouchBetSideData(item, isTouchMode, isYesSide) {
     : `${item.underlying} expires ${expiryCmp} ${expiryTargetAbsStr} (${expiryTargetRelStr}) in ${item.DTE}d`;
 
   const tabLabel = isTouchMode
-    ? (isYesSide ? `Bet YES: Touches ${midpointAbsStr}` : `Bet NO: Never touches ${midpointAbsStr}`)
-    : `Bet ${isYesSide ? 'YES' : 'NO'}: Expires ${expiryCmp} ${expiryTargetAbsStr}`;
+    ? (isYesSide ? `Touches ${midpointAbsStr}` : `Never touches ${midpointAbsStr}`)
+    : `Expires ${expiryCmp} ${expiryTargetAbsStr}`;
 
   const shortLabel = isTouchMode
     ? (isYesSide ? 'Touch' : 'No-Touch')
@@ -237,11 +237,11 @@ function prepareTouchBetData(value) {
     : (noSide?.shortLabel || `${noExpiryCmp} ${noExpiryAbsStr}`);
 
   const yesTabLabel = isTouchMode
-    ? `Bet YES: Touches ${targetAbsolute}`
-    : (yesSide?.tabLabel || `Bet YES: Expires ${yesExpiryCmp} ${yesExpiryAbsStr}`);
+    ? `Touches ${targetAbsolute}`
+    : (yesSide?.tabLabel || `Expires ${yesExpiryCmp} ${yesExpiryAbsStr}`);
   const noTabLabel = isTouchMode
-    ? `Bet NO: Never touches ${targetAbsolute}`
-    : (noSide?.tabLabel || `Bet NO: Expires ${noExpiryCmp} ${noExpiryAbsStr}`);
+    ? `Never touches ${targetAbsolute}`
+    : (noSide?.tabLabel || `Expires ${noExpiryCmp} ${noExpiryAbsStr}`);
 
   const activeTargetBadge = isTouchMode
     ? targetAbsolute
