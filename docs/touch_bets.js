@@ -533,13 +533,27 @@ function canonicalTouchPriceKey(price) {
   return Number.isFinite(n) ? Number(n.toFixed(6)) : 0;
 }
 
-function getTouchBetProbTierClass(probRaw) {
-  const p = Number(probRaw ?? 0);
-  if (p >= 0.50) return 'tier-high';
-  if (p >= 0.25) return 'tier-mid-high';
-  if (p >= 0.10) return 'tier-mid';
-  if (p >= 0.04) return 'tier-low';
-  return 'tier-tail';
+// Gradient constants for TouchBet table cells (HSL color space)
+const TOUCH_BET_CELL_GRADIENT = {
+  hueAt0Pct: 0,      // Red
+  hueAtMidPct: 38,   // Warm orange / amber
+  hueAt100Pct: 152,  // Emerald green
+  midProb: 0.5,      // Probability where hueAtMidPct sits
+  bgSaturation: 82,  // %
+  bgLightness: 46,   // %
+  bgAlpha: 0.26,     // 0..1
+  textSaturation: 92, // %
+  textLightness: 78,  // % (higher = brighter, easier to read on dark bg)
+};
+
+function getTouchBetCellColorStyle(probRaw) {
+  const c = TOUCH_BET_CELL_GRADIENT;
+  const p = Math.max(0, Math.min(1, Number(probRaw) || 0));
+  const hue = p <= c.midProb
+    ? c.hueAt0Pct + (p / c.midProb) * (c.hueAtMidPct - c.hueAt0Pct)
+    : c.hueAtMidPct + ((p - c.midProb) / (1 - c.midProb)) * (c.hueAt100Pct - c.hueAtMidPct);
+  const h = hue.toFixed(1);
+  return `background-color: hsla(${h}, ${c.bgSaturation}%, ${c.bgLightness}%, ${c.bgAlpha}); color: hsl(${h}, ${c.textSaturation}%, ${c.textLightness}%);`;
 }
 
 function formatTouchBetCellText(node, isTouchMode, metric) {
@@ -656,21 +670,6 @@ function updateTouchBetTableSelection(normalizedId) {
   }
 }
 
-function updateTouchBetTableProbFilter(minProbPct) {
-  const container = document.getElementById('touchBetTableContainer');
-  if (!container) return;
-  const minProbDecimal = Math.max(0.0, Math.min(1.0, Number(minProbPct) / 100.0));
-  const cells = container.querySelectorAll('td.touch-bet-cell[data-prob]');
-  for (const cell of cells) {
-    const p = Number(cell.getAttribute('data-prob') ?? 0);
-    if (p + 1e-9 < minProbDecimal) {
-      cell.classList.add('below-min-prob');
-    } else {
-      cell.classList.remove('below-min-prob');
-    }
-  }
-}
-
 function renderTouchBetsTable(rawData, idToSelect, options = {}) {
   const container = document.getElementById('touchBetTableContainer');
   if (!container) return;
@@ -678,8 +677,6 @@ function renderTouchBetsTable(rawData, idToSelect, options = {}) {
   const { centerOnSpot = true } = options;
   const store = getAppStore();
   const isTouchMode = (store?.oddsMode || 'touch') === 'touch';
-  const minProbPct = Number(store?.minProb ?? 25);
-  const minProbDecimal = Math.max(0.0, Math.min(1.0, minProbPct / 100.0));
   const metric = store?.touchBetMetric || 'yield';
 
   let nodes = _touchBetNodesCache;
@@ -773,11 +770,10 @@ function renderTouchBetsTable(rawData, idToSelect, options = {}) {
         return '<td class="touch-bet-empty"></td>';
       }
       const probRaw = Number(node.activeWinProb ?? 0);
-      const tierCls = getTouchBetProbTierClass(probRaw);
-      const belowCls = (probRaw + 1e-9 < minProbDecimal) ? ' below-min-prob' : '';
+      const colorStyle = getTouchBetCellColorStyle(probRaw);
       const selectedCls = (normalizedSelectedId && node.id === normalizedSelectedId) ? ' selected' : '';
       const cellText = formatTouchBetCellText(node, isTouchMode, metric);
-      return `<td class="touch-bet-cell ${tierCls}${belowCls}${selectedCls}" data-bet-id="${escapeTouchBetHtml(node.id)}" data-prob="${probRaw}">${escapeTouchBetHtml(cellText)}</td>`;
+      return `<td class="touch-bet-cell${selectedCls}" style="${colorStyle}" data-bet-id="${escapeTouchBetHtml(node.id)}">${escapeTouchBetHtml(cellText)}</td>`;
     }).join('');
 
     bodyRows.push(`
@@ -875,8 +871,6 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
       const desiredMode = isTouchMode ? 'touch' : 'expiration';
       if (_touchBetTableRenderedMode !== desiredMode) {
         renderTouchBetsTable(store?.chartData, normalizedId, { centerOnSpot: true });
-      } else {
-        updateTouchBetTableProbFilter(minProbPct);
       }
     }
 
@@ -971,9 +965,20 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
   }));
 
   const chart = echarts.init(chartDom);
-  window.addEventListener('resize', function () {
-    chart.resize();
-  });
+  const resizeChartIfVisible = () => {
+    const inst = echarts.getInstanceByDom(chartDom);
+    if (inst && chartDom.clientWidth > 0 && chartDom.clientHeight > 0) {
+      inst.resize({ width: chartDom.clientWidth, height: chartDom.clientHeight });
+    }
+  };
+  if (!chartDom._touchBetResizeBound) {
+    chartDom._touchBetResizeBound = true;
+    window.addEventListener('resize', resizeChartIfVisible);
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(resizeChartIfVisible);
+      ro.observe(chartDom);
+    }
+  }
 
   chart.setOption({
     dataset: [dataset, highlightDataset, ...datasetPerDTE],

@@ -38,7 +38,14 @@ document.addEventListener('alpine:init', () => {
       this.touchBetView = view;
       if (this.strategy === 'touchBet' && this.chartData) {
         const config = StrategyRegistry['touchBet'];
-        requestAnimationFrame(() => {
+        const afterDomUpdate = (fn) => {
+          if (typeof Alpine !== 'undefined' && Alpine.nextTick) {
+            Alpine.nextTick(() => requestAnimationFrame(fn));
+          } else {
+            requestAnimationFrame(fn);
+          }
+        };
+        afterDomUpdate(() => {
           if (view === 'table') {
             if (config && config.renderTable) {
               config.renderTable(this.chartData, this.selectedId, { centerOnSpot: true });
@@ -46,8 +53,8 @@ document.addEventListener('alpine:init', () => {
           } else {
             const chartDom = document.getElementById("strategyChartContainer");
             const chart = chartDom ? echarts.getInstanceByDom(chartDom) : null;
-            if (chart) {
-              chart.resize();
+            if (chart && chartDom.clientWidth > 0 && chartDom.clientHeight > 0) {
+              chart.resize({ width: chartDom.clientWidth, height: chartDom.clientHeight });
             }
             if (config && config.updateSelection) {
               config.updateSelection(this.selectedId);

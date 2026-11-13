@@ -250,15 +250,17 @@
                     </button>
                   </div>
                   <div class="d-flex align-items-center flex-wrap gap-2">
-                    <div class="odds-prob-filter" title="Highlight bets with at least this implied probability">
-                      <span class="odds-prob-label">Odds &ge;</span>
-                      <span class="odds-prob-badge font-monospace" x-text="`${$store.app.minProb}%`"></span>
-                      <input type="range" min="0" max="100" step="1"
-                        :value="$store.app.minProb"
-                        @input="$store.app.setMinProb($event.target.value)"
-                        class="odds-prob-slider"
-                        aria-label="Minimum probability threshold (%)">
-                    </div>
+                    <template x-if="$store.app.touchBetView === 'chart'">
+                      <div class="odds-prob-filter" title="Highlight implied probability threshold on chart">
+                        <span class="odds-prob-label">Odds &ge;</span>
+                        <span class="odds-prob-badge font-monospace" x-text="`${$store.app.minProb}%`"></span>
+                        <input type="range" min="0" max="100" step="1"
+                          :value="$store.app.minProb"
+                          @input="$store.app.setMinProb($event.target.value)"
+                          class="odds-prob-slider"
+                          aria-label="Minimum probability threshold (%)">
+                      </div>
+                    </template>
                     <div class="odds-mode-toggle" role="group" aria-label="Visualization View">
                       <button type="button" class="odds-mode-btn"
                         :class="{ 'active': $store.app.touchBetView === 'chart' }"
@@ -273,39 +275,40 @@
                     </div>
                   </div>
                 </div>
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2"
-                  x-show="$store.app.touchBetView === 'table'">
-                  <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <span class="odds-prob-label">Cells:</span>
-                    <div class="odds-mode-toggle" role="group" aria-label="Table Cell Metric">
-                      <button type="button" class="odds-mode-btn"
-                        :class="{ 'active': $store.app.touchBetMetric === 'yield' }"
-                        @click="$store.app.setTouchBetMetric('yield')"
-                        title="Payoff multiple (e.g. 2.50x)">
-                        Yield (2.5x)
-                      </button>
-                      <button type="button" class="odds-mode-btn"
-                        :class="{ 'active': $store.app.touchBetMetric === 'return' }"
-                        @click="$store.app.setTouchBetMetric('return')"
-                        title="Percentage return (e.g. +150%)">
-                        Return (+150%)
-                      </button>
-                      <button type="button" class="odds-mode-btn"
-                        :class="{ 'active': $store.app.touchBetMetric === 'odds' }"
-                        @click="$store.app.setTouchBetMetric('odds')"
-                        title="Implied probability (e.g. 40.0%)">
-                        Odds (40%)
-                      </button>
-                      <button type="button" class="odds-mode-btn"
-                        :class="{ 'active': $store.app.touchBetMetric === 'both' }"
-                        @click="$store.app.setTouchBetMetric('both')"
-                        title="Yield multiple and probability (e.g. 2.50x (40%))">
-                        Yield (Odds)
-                      </button>
+                <template x-if="$store.app.touchBetView === 'table'">
+                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <span class="odds-prob-label">Cells:</span>
+                      <div class="odds-mode-toggle" role="group" aria-label="Table Cell Metric">
+                        <button type="button" class="odds-mode-btn"
+                          :class="{ 'active': $store.app.touchBetMetric === 'yield' }"
+                          @click="$store.app.setTouchBetMetric('yield')"
+                          title="Payoff multiple (e.g. 2.50x)">
+                          Yield (2.5x)
+                        </button>
+                        <button type="button" class="odds-mode-btn"
+                          :class="{ 'active': $store.app.touchBetMetric === 'return' }"
+                          @click="$store.app.setTouchBetMetric('return')"
+                          title="Percentage return (e.g. +150%)">
+                          Return (+150%)
+                        </button>
+                        <button type="button" class="odds-mode-btn"
+                          :class="{ 'active': $store.app.touchBetMetric === 'odds' }"
+                          @click="$store.app.setTouchBetMetric('odds')"
+                          title="Implied probability (e.g. 40.0%)">
+                          Odds (40%)
+                        </button>
+                        <button type="button" class="odds-mode-btn"
+                          :class="{ 'active': $store.app.touchBetMetric === 'both' }"
+                          @click="$store.app.setTouchBetMetric('both')"
+                          title="Yield multiple and probability (e.g. 2.50x (40%))">
+                          Yield (Odds)
+                        </button>
+                      </div>
                     </div>
+                    <span class="odds-table-hint">Click any cell for details &bull; Hover for quick preview</span>
                   </div>
-                  <span class="odds-table-hint">Click any cell for details &bull; Hover for quick preview</span>
-                </div>
+                </template>
               </div>
             </template>
             <div id="strategyChartContainer" class="chart-container"
