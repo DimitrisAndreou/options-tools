@@ -337,60 +337,13 @@ function formatRangeCapPrice(val) {
   return dollarFmt.format(n);
 }
 
-function renderTouchBetRangeTooltip(seg) {
-  if (!seg) return '';
-  const modeTitle = seg.isTouchMode
-    ? `&ge; ${seg.minProbPct}% Touch Range`
-    : `&ge; ${seg.minProbPct}% Expiration Range`;
-  const topAbs = dollarFmt.format(seg.topPrice);
-  const topRel = percentFmt.format(seg.topRelative - 1.0);
-  const topProb = unsignedPercentFmt.format(seg.topProb);
-  const botAbs = dollarFmt.format(seg.bottomPrice);
-  const botRel = percentFmt.format(seg.bottomRelative - 1.0);
-  const botProb = unsignedPercentFmt.format(seg.bottomProb);
-
-  const explanation = seg.isTouchMode
-    ? `Each target inside this band has at least a <b class="text-probs">${seg.minProbPct}%</b> market-implied chance of being touched by <b>${seg.underlying}</b> before expiration.`
-    : `Each target inside this band has at least a <b class="text-probs">${seg.minProbPct}%</b> market-implied chance of <b>${seg.underlying}</b> expiring beyond it on expiration day.`;
-
-  return `
-    <div class="tooltip-container" style="min-width: 235px; max-width: 285px;">
-      <div class="tooltip-header" style="margin-bottom: 8px;">
-        <span class="tooltip-date">${seg.formattedDate}</span>
-        <span class="text-bad">${seg.dte}d</span>
-      </div>
-      <div class="tooltip-body" style="gap: 6px;">
-        <div class="tooltip-strike-badge" style="font-size: 0.92em; color: #00ffa3;">
-          ${modeTitle}
-        </div>
-        <div class="w-100 mt-1" style="font-size: 0.85em;">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="text-light-alt">Top: <span class="text-neutral">${topAbs}</span> <small class="strike-relative">(${topRel})</small></span>
-            <span class="text-probs ms-2">${topProb}</span>
-          </div>
-          <div class="d-flex justify-content-between align-items-center">
-            <span class="text-light-alt">Bottom: <span class="text-neutral">${botAbs}</span> <small class="strike-relative">(${botRel})</small></span>
-            <span class="text-probs ms-2">${botProb}</span>
-          </div>
-        </div>
-      </div>
-      <div class="tooltip-footer" style="margin-top: 6px; padding-top: 6px; white-space: normal; line-height: 1.35;">
-        ${explanation}
-      </div>
-    </div>
-  `;
-}
-
 function touchBetTooltipFormatter(params) {
-  if (!params) return '';
-  if (params.data && params.data.isProbRangeSegment) {
-    return renderTouchBetRangeTooltip(params.data);
-  }
   return strategyTooltipFormatter(params);
 }
 
 let _touchBetNodesCache = [];
 let _touchBetUniqueDTEsCache = [];
+let _touchBetAxisRangeCache = { minX: 0, maxX: 100 };
 
 function normalizeTouchBetSelectedId(idToSelect, rawData) {
   let normalizedId = idToSelect || '';
@@ -425,153 +378,88 @@ function updateTouchBetNodesActiveProb(nodes, isTouchMode) {
       node.activeTargetRelative = spotVal > 0 ? expiryStrike / spotVal : Number(node.targetPriceRelative);
     }
   }
+  nodes.sort((a, b) => Number(a.activeTargetPrice) - Number(b.activeTargetPrice));
 }
 
-function buildTouchBetRangeSegments(nodes, isTouchMode, minProbPct) {
-  const minProbDecimal = Math.max(0.0, Math.min(1.0, Number(minProbPct) / 100.0));
-  const byDte = new Map();
-  for (const node of nodes) {
-    const p = Number(node.activeWinProb ?? 0.0);
-    if (p + 1e-9 < minProbDecimal) continue;
-    const dte = Number(node.DTE);
-    if (!byDte.has(dte)) {
-      byDte.set(dte, []);
-    }
-    byDte.get(dte).push(node);
-  }
-
-  const segments = [];
-  const sortedDtes = [...byDte.keys()].sort((a, b) => a - b);
-  for (const dte of sortedDtes) {
-    const matching = byDte.get(dte);
-    if (!matching || matching.length === 0) continue;
-    matching.sort((a, b) => Number(a.activeTargetPrice) - Number(b.activeTargetPrice));
-    const bottomNode = matching[0];
-    const topNode = matching[matching.length - 1];
-    const bottomPrice = Number(bottomNode.activeTargetPrice);
-    const topPrice = Number(topNode.activeTargetPrice);
-
-    segments.push({
-      value: [dte, bottomPrice, topPrice],
-      isProbRangeSegment: true,
-      dte,
-      formattedDate: bottomNode.formattedDate,
-      underlying: bottomNode.underlying,
-      money: bottomNode.money,
-      spotPrice: Number(bottomNode.spotPrice),
-      minProbPct: Math.round(Number(minProbPct)),
-      isTouchMode: Boolean(isTouchMode),
-      bottomPrice,
-      topPrice,
-      bottomRelative: Number(bottomNode.activeTargetRelative),
-      topRelative: Number(topNode.activeTargetRelative),
-      bottomProb: Number(bottomNode.activeWinProb),
-      topProb: Number(topNode.activeWinProb),
-      count: matching.length
-    });
-  }
-  return segments;
-}
-
-function buildTouchBetRangeSeries(rangeSegments) {
+function buildTouchBetThresholdSeries(axisMinX, axisMaxX, minProbPct) {
+  const clampedPct = Math.max(0, Math.min(100, Math.round(Number(minProbPct))));
+  const minProbDecimal = clampedPct / 100.0;
   return {
     id: 'probRangeSegmentsSeries',
     type: 'custom',
     name: 'Odds Range',
-    data: rangeSegments,
+    data: [{
+      value: [axisMinX, axisMaxX, minProbDecimal],
+      minProbPct: clampedPct
+    }],
     itemStyle: {
-      color: 'rgba(0, 255, 163, 0.45)',
+      color: 'rgba(0, 255, 163, 0.35)',
       borderColor: '#00ffa3',
       borderWidth: 1
     },
     encode: {
-      x: 0,
-      y: [1, 2]
+      x: -1,
+      y: -1
     },
+    silent: true,
     clip: true,
-    z: 2,
+    z: 1,
     renderItem: function (params, api) {
-      const dte = api.value(0);
-      const bottomPrice = api.value(1);
-      const topPrice = api.value(2);
-      const topCoord = api.coord([dte, topPrice]);
-      const bottomCoord = api.coord([dte, bottomPrice]);
-      if (!topCoord || !bottomCoord) return null;
+      const sys = params.coordSys;
+      const prob = api.value(2);
+      const coord = api.coord([axisMinX, prob]);
+      if (!coord || !sys) return null;
 
-      const cx = topCoord[0];
-      const yTop = Math.min(topCoord[1], bottomCoord[1]);
-      const yBottom = Math.max(topCoord[1], bottomCoord[1]);
-
-      const barWidth = 25;
-      const padY = 9;
-      const rectX = cx - barWidth / 2;
-      const rectY = yTop - padY;
-      const rectH = Math.max(barWidth, (yBottom - yTop) + padY * 2);
-
-      const topLabel = formatRangeCapPrice(topPrice);
-      const bottomLabel = formatRangeCapPrice(bottomPrice);
-
-      const children = [
-        {
-          type: 'rect',
-          shape: {
-            x: rectX,
-            y: rectY,
-            width: barWidth,
-            height: rectH,
-            r: 9
-          },
-          style: {
-            fill: 'rgba(0, 255, 163, 0.14)',
-            stroke: 'rgba(0, 255, 163, 0.55)',
-            lineWidth: 1.5
-          },
-          styleEmphasis: {
-            fill: 'rgba(0, 255, 163, 0.26)',
-            stroke: '#00ffa3',
-            lineWidth: 2,
-            shadowBlur: 12,
-            shadowColor: 'rgba(0, 255, 163, 0.45)'
-          }
-        },
-        {
-          type: 'text',
-          silent: true,
-          style: {
-            x: cx,
-            y: rectY - 4,
-            text: topLabel,
-            textAlign: 'center',
-            textVerticalAlign: 'bottom',
-            fill: '#a7f3d0',
-            font: '600 11px "Roboto Mono", monospace',
-            stroke: '#0f172a',
-            lineWidth: 3
-          }
-        }
-      ];
-
-      if (Math.abs(topPrice - bottomPrice) > 1e-6) {
-        children.push({
-          type: 'text',
-          silent: true,
-          style: {
-            x: cx,
-            y: rectY + rectH + 4,
-            text: bottomLabel,
-            textAlign: 'center',
-            textVerticalAlign: 'top',
-            fill: '#a7f3d0',
-            font: '600 11px "Roboto Mono", monospace',
-            stroke: '#0f172a',
-            lineWidth: 3
-          }
-        });
-      }
+      const topY = sys.y;
+      const bottomY = sys.y + sys.height;
+      const clampedY = Math.max(topY, Math.min(bottomY, coord[1]));
+      const bandHeight = Math.max(0, clampedY - topY);
+      const labelAbove = clampedY - topY >= 20;
 
       return {
         type: 'group',
-        children
+        children: [
+          {
+            type: 'rect',
+            shape: {
+              x: sys.x,
+              y: topY,
+              width: sys.width,
+              height: bandHeight
+            },
+            style: {
+              fill: 'rgba(0, 255, 163, 0.06)'
+            }
+          },
+          {
+            type: 'line',
+            shape: {
+              x1: sys.x,
+              y1: clampedY,
+              x2: sys.x + sys.width,
+              y2: clampedY
+            },
+            style: {
+              stroke: 'rgba(0, 255, 163, 0.65)',
+              lineWidth: 1.5,
+              lineDash: [6, 4]
+            }
+          },
+          {
+            type: 'text',
+            style: {
+              x: sys.x + 8,
+              y: labelAbove ? clampedY - 5 : clampedY + 5,
+              text: `Odds ≥ ${clampedPct}%`,
+              textAlign: 'left',
+              textVerticalAlign: labelAbove ? 'bottom' : 'top',
+              fill: '#a7f3d0',
+              font: '600 11px "Roboto Mono", monospace',
+              stroke: '#0f172a',
+              lineWidth: 3
+            }
+          }
+        ]
       };
     }
   };
@@ -584,28 +472,21 @@ function buildTouchBetDteSeries(uniqueDTEs, normalizedSelectedId) {
     name: `${dte}d`,
     datasetId: `dte_${dte}`,
     encode: {
-      x: 'DTE',
-      y: 'activeTargetPrice'
+      x: 'activeTargetPrice',
+      y: 'activeWinProb'
     },
     lineStyle: {
-      width: 1.5,
-      opacity: 0.3
+      width: 2,
+      opacity: 0.85
     },
-    symbol: 'triangle',
-    symbolRotate: function (value, params) {
-      if (params && params.data && !params.data.isUpsideTarget) {
-        return 180;
-      }
-      return 0;
-    },
+    symbol: 'circle',
     symbolSize: function (value, params) {
       const d = params?.data;
-      if (!d) return 8;
+      if (!d) return 7;
       if (normalizedSelectedId && d.id === normalizedSelectedId) {
-        return 22;
+        return 16;
       }
-      const p = Number(d.activeWinProb ?? 0.25);
-      return Math.round(7 + 5 * Math.min(1.0, Math.max(0.0, p)));
+      return 7;
     },
     emphasis: {
       scale: 1.7,
@@ -655,13 +536,12 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
     const normalizedId = normalizeTouchBetSelectedId(store?.selectedId, store?.chartData);
 
     updateTouchBetNodesActiveProb(_touchBetNodesCache, isTouchMode);
-    const rangeSegments = buildTouchBetRangeSegments(_touchBetNodesCache, isTouchMode, minProbPct);
 
     chart.setOption({
       dataset: [
         {
           id: 'original',
-          dimensions: ['DTE', 'activeTargetPrice', 'activeWinProb', 'id'],
+          dimensions: ['activeTargetPrice', 'activeWinProb', 'DTE', 'id'],
           source: _touchBetNodesCache
         },
         {
@@ -671,7 +551,7 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
         }
       ],
       series: [
-        buildTouchBetRangeSeries(rangeSegments),
+        buildTouchBetThresholdSeries(_touchBetAxisRangeCache.minX, _touchBetAxisRangeCache.maxX, minProbPct),
         ...buildTouchBetDteSeries(_touchBetUniqueDTEsCache, normalizedId)
       ]
     });
@@ -687,46 +567,40 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
   const minProbPct = Number(store?.minProb ?? 25);
 
   updateTouchBetNodesActiveProb(nodes, isTouchMode);
-  const rangeSegments = buildTouchBetRangeSegments(nodes, isTouchMode, minProbPct);
 
   const normalizedSelectedId = normalizeTouchBetSelectedId(idToSelect, data);
 
-  const allDTEs = nodes.map(n => Number(n.DTE)).filter(Number.isFinite);
   const allTargets = nodes.flatMap(n => [Number(n.lowStrike), Number(n.highStrike), Number(n.targetPriceAbsolute)]).filter(Number.isFinite);
-
-  const maxDTE = allDTEs.length ? Math.max(...allDTEs) : 90;
   const minTarget = allTargets.length ? Math.min(...allTargets) : spotPrice * 0.7;
   const maxTarget = allTargets.length ? Math.max(...allTargets) : spotPrice * 1.3;
 
-  const axisMinX = 0;
-  const axisMaxX = Math.max(7, Math.ceil(maxDTE * 1.06));
+  const rawMinX = Math.min(spotPrice > 0 ? spotPrice * 0.9 : minTarget, minTarget);
+  const rawMaxX = Math.max(spotPrice > 0 ? spotPrice * 1.1 : maxTarget, maxTarget);
+  const xPad = Math.max(1.0, (rawMaxX - rawMinX) * 0.04);
+  const axisMinX = Math.max(0, rawMinX - xPad);
+  const axisMaxX = rawMaxX + xPad;
+  _touchBetAxisRangeCache = { minX: axisMinX, maxX: axisMaxX };
 
-  const rawMinY = Math.min(spotPrice > 0 ? spotPrice * 0.9 : minTarget, minTarget);
-  const rawMaxY = Math.max(spotPrice > 0 ? spotPrice * 1.1 : maxTarget, maxTarget);
-  const yPad = Math.max(1.0, (rawMaxY - rawMinY) * 0.06);
-  const axisMinY = Math.max(0, rawMinY - yPad);
-  const axisMaxY = rawMaxY + yPad;
-
-  // Default zoom window around Spot (+/- 35%) so dense chains stay readable initially
-  let yStart = spotPrice > 0 ? Math.max(axisMinY, spotPrice * 0.65) : axisMinY;
-  let yEnd = spotPrice > 0 ? Math.min(axisMaxY, spotPrice * 1.35) : axisMaxY;
-  if (yEnd <= yStart) {
-    yStart = axisMinY;
-    yEnd = axisMaxY;
+  // Default zoom window around Spot (+/- 45%) so probability curves stay readable initially
+  let xStart = spotPrice > 0 ? Math.max(axisMinX, spotPrice * 0.55) : axisMinX;
+  let xEnd = spotPrice > 0 ? Math.min(axisMaxX, spotPrice * 1.45) : axisMaxX;
+  if (xEnd <= xStart) {
+    xStart = axisMinX;
+    xEnd = axisMaxX;
   }
 
   const targetItem = nodes.find(n => n.id === normalizedSelectedId);
   if (targetItem) {
-    const ty = Number(targetItem.activeTargetPrice);
-    if (Number.isFinite(ty)) {
-      yStart = Math.min(yStart, Math.max(axisMinY, ty - yPad));
-      yEnd = Math.max(yEnd, Math.min(axisMaxY, ty + yPad));
+    const tx = Number(targetItem.activeTargetPrice);
+    if (Number.isFinite(tx)) {
+      xStart = Math.min(xStart, Math.max(axisMinX, tx - xPad));
+      xEnd = Math.max(xEnd, Math.min(axisMaxX, tx + xPad));
     }
   }
 
   const dataset = {
     id: 'original',
-    dimensions: ['DTE', 'activeTargetPrice', 'activeWinProb', 'id'],
+    dimensions: ['activeTargetPrice', 'activeWinProb', 'DTE', 'id'],
     source: nodes
   };
   const highlightDataset = {
@@ -757,15 +631,15 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
   chart.setOption({
     dataset: [dataset, highlightDataset, ...datasetPerDTE],
     grid: {
-      left: '6%',
-      right: '8%',
+      left: '5%',
+      right: '6%',
       top: '10%',
       bottom: '16%',
       containLabel: true
     },
     xAxis: {
       type: 'value',
-      name: 'DTE ➡',
+      name: 'Target Price ➡',
       nameLocation: 'end',
       nameGap: 0,
       nameTextStyle: {
@@ -776,64 +650,61 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
       },
       axisLabel: {
         ...axisXValuesNameTextStyle,
+        hideOverlap: true,
         formatter: function (value) {
-          return `${Math.round(value)}d`;
+          const priceStr = formatRangeCapPrice(value);
+          if (spotPrice > 0) {
+            return `${priceStr} (${percentFmt.format(value / spotPrice - 1.0)})`;
+          }
+          return priceStr;
         }
       },
       axisLine,
+      splitLine: {
+        show: true,
+        lineStyle: {
+          color: 'rgba(148, 163, 184, 0.14)',
+          type: 'dashed'
+        }
+      },
       min: axisMinX,
       max: axisMaxX,
       position: 'bottom'
     },
-    yAxis: [
-      {
-        type: 'value',
-        name: '⇳ Target Price',
-        nameLocation: 'end',
-        nameTextStyle: yAxisTitleNameTextStyle,
-        axisLabel: {
-          ...axisYValuesNameTextStyle,
-          formatter: function (value) {
-            return dollarFmt.format(value);
-          }
-        },
-        axisLine,
-        min: axisMinY,
-        max: axisMaxY
+    yAxis: {
+      type: 'value',
+      name: '⇳ Probability',
+      nameLocation: 'end',
+      nameTextStyle: yAxisTitleNameTextStyle,
+      axisLabel: {
+        ...axisYValuesNameTextStyle,
+        formatter: function (value) {
+          return unsignedPercentFmt.format(value);
+        }
       },
-      {
-        type: 'value',
-        name: 'Move %',
-        nameLocation: 'end',
-        nameTextStyle: {
-          ...axisTitleNameTextStyle,
-          align: 'right'
-        },
-        axisLabel: {
-          ...axisYValuesNameTextStyle,
-          formatter: function (value) {
-            if (spotPrice <= 0) return '';
-            return percentFmt.format(value / spotPrice - 1.0);
-          }
-        },
-        axisLine,
-        splitLine: { show: false },
-        min: axisMinY,
-        max: axisMaxY
-      }
-    ],
+      axisLine,
+      splitLine: {
+        show: true,
+        lineStyle: {
+          color: 'rgba(148, 163, 184, 0.14)',
+          type: 'dashed'
+        }
+      },
+      min: 0,
+      max: 1
+    },
     tooltip: {
       ...tooltipStyle,
       formatter: touchBetTooltipFormatter
     },
     series: [
-      buildTouchBetRangeSeries(rangeSegments),
+      buildTouchBetThresholdSeries(axisMinX, axisMaxX, minProbPct),
       ...buildTouchBetDteSeries(uniqueDTEs, normalizedSelectedId),
       {
         id: 'selectedPointGlow',
         type: 'scatter',
         datasetId: 'highlightDataset',
-        encode: { x: 'DTE', y: 'activeTargetPrice' },
+        encode: { x: 'activeTargetPrice', y: 'activeWinProb' },
         symbol: 'circle',
         symbolSize: 34,
         itemStyle: {
@@ -848,16 +719,33 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
       },
       {
         ...selectionHighlightSeries,
-        encode: { x: 'DTE', y: 'activeTargetPrice' }
+        encode: { x: 'activeTargetPrice', y: 'activeWinProb' }
       },
       ...(spotPrice > 0 ? [{
         id: 'spotReferenceSeries',
         type: 'line',
         name: 'Spot',
-        data: [[0, spotPrice], [axisMaxX, spotPrice]],
+        data: [
+          [spotPrice, 0],
+          {
+            value: [spotPrice, 1],
+            symbolSize: 1,
+            itemStyle: { opacity: 0 },
+            label: {
+              show: true,
+              position: 'top',
+              distance: 6,
+              formatter: `SPOT ${dollarFmt.format(spotPrice)}`,
+              color: '#00ff00',
+              fontFamily: 'Roboto Mono, monospace',
+              fontWeight: 'bold',
+              fontSize: 12
+            }
+          }
+        ],
         symbol: 'circle',
         symbolSize: function (value) {
-          return value && value[0] === 0 ? 10 : 0;
+          return value && value[1] === 0 ? 10 : 1;
         },
         silent: true,
         animation: false,
@@ -880,15 +768,15 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
         type: 'inside',
         xAxisIndex: 0,
         filterMode: 'none',
-        startValue: axisMinX,
-        endValue: axisMaxX
+        startValue: xStart,
+        endValue: xEnd
       },
       {
         type: 'inside',
-        yAxisIndex: [0, 1],
+        yAxisIndex: 0,
         filterMode: 'none',
-        startValue: yStart,
-        endValue: yEnd
+        startValue: 0,
+        endValue: 1
       }
     ]
   }, true);
