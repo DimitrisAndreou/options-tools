@@ -533,17 +533,16 @@ function canonicalTouchPriceKey(price) {
   return Number.isFinite(n) ? Number(n.toFixed(6)) : 0;
 }
 
-// Gradient constants for TouchBet table cells (HSL color space)
+// Gradient constants for TouchBet table cells (HSL color space on soft-light matrix)
 const TOUCH_BET_CELL_GRADIENT = {
-  hueAt0Pct: 0,      // Red
-  hueAtMidPct: 38,   // Warm orange / amber
-  hueAt100Pct: 152,  // Emerald green
-  midProb: 0.5,      // Probability where hueAtMidPct sits
-  bgSaturation: 82,  // %
-  bgLightness: 46,   // %
-  bgAlpha: 0.26,     // 0..1
-  textSaturation: 92, // %
-  textLightness: 78,  // % (higher = brighter, easier to read on dark bg)
+  hueAt0Pct: 0,       // Coral red
+  hueAtMidPct: 38,    // Warm amber / orange
+  hueAt100Pct: 148,   // Bright mint green
+  midProb: 0.5,       // Probability where hueAtMidPct sits
+  bgSaturation: 80,   // %
+  bgLightness: 76,    // % (high lightness for cheerful pastel cells)
+  bgAlpha: 1.0,       // 0..1
+  textColor: '#0f172a', // Deep slate text for crisp contrast on pastel cells
 };
 
 function getTouchBetCellColorStyle(probRaw) {
@@ -553,7 +552,7 @@ function getTouchBetCellColorStyle(probRaw) {
     ? c.hueAt0Pct + (p / c.midProb) * (c.hueAtMidPct - c.hueAt0Pct)
     : c.hueAtMidPct + ((p - c.midProb) / (1 - c.midProb)) * (c.hueAt100Pct - c.hueAtMidPct);
   const h = hue.toFixed(1);
-  return `background-color: hsla(${h}, ${c.bgSaturation}%, ${c.bgLightness}%, ${c.bgAlpha}); color: hsl(${h}, ${c.textSaturation}%, ${c.textLightness}%);`;
+  return `background-color: hsla(${h}, ${c.bgSaturation}%, ${c.bgLightness}%, ${c.bgAlpha}); color: ${c.textColor};`;
 }
 
 function formatTouchBetCellText(node, isTouchMode, metric) {
@@ -572,10 +571,10 @@ function formatTouchBetCellText(node, isTouchMode, metric) {
     const pct = (probRaw > 0 && probRaw < 0.01)
       ? `${(probRaw * 100).toFixed(1)}%`
       : `${Math.round(probRaw * 100)}%`;
-    return yieldRaw != null ? `${yieldRaw.toFixed(2)}x (${pct})` : unsignedPercentFmt.format(probRaw);
+    return yieldRaw != null ? `${yieldRaw.toFixed(2)} (${pct})` : unsignedPercentFmt.format(probRaw);
   }
   // Default: 'yield'
-  return yieldRaw != null ? `${yieldRaw.toFixed(2)}x` : '—';
+  return yieldRaw != null ? yieldRaw.toFixed(2) : '—';
 }
 
 function hideTouchBetTableTooltip() {

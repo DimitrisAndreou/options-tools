@@ -907,13 +907,13 @@ footer {
   white-space: nowrap;
 }
 
-/* Over / Under Matrix Table View */
+/* Over / Under Matrix Table View (soft-light surface for vibrant pastel heatmap) */
 .touch-bet-table-container {
   position: relative;
   height: 500px;
   width: 100%;
-  background: rgba(15, 23, 42, 0.45);
-  border: 1px solid #334155;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -922,7 +922,7 @@ footer {
   width: 100%;
   height: 100%;
   overflow: auto;
-  scrollbar-color: #475569 #0f172a;
+  scrollbar-color: #94a3b8 #e2e8f0;
   scrollbar-width: thin;
 }
 
@@ -931,7 +931,7 @@ footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
+  color: #475569;
   font-size: 0.9rem;
   padding: 1rem;
   text-align: center;
@@ -952,12 +952,12 @@ footer {
   top: 0;
   left: 0;
   z-index: 5;
-  background: #0f172a;
-  color: var(--accent);
+  background: #e2e8f0;
+  color: #0f172a;
   text-align: left;
   padding: 6px 10px;
-  border-bottom: 1px solid #334155;
-  border-right: 1px solid #334155;
+  border-bottom: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
   min-width: 132px;
   font-size: 0.75rem;
   font-weight: 700;
@@ -967,11 +967,11 @@ footer {
   position: sticky;
   top: 0;
   z-index: 4;
-  background: #0f172a;
-  color: var(--text-main);
+  background: #e2e8f0;
+  color: #0f172a;
   text-align: center;
   padding: 6px 8px;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid #cbd5e1;
   min-width: 64px;
   white-space: nowrap;
 }
@@ -979,13 +979,13 @@ footer {
 .touch-bet-th-dte {
   font-weight: 700;
   font-size: 0.78rem;
-  color: var(--primary);
+  color: #0369a1;
 }
 
 .touch-bet-th-sub {
   font-size: 0.65rem;
   font-weight: 500;
-  color: var(--text-muted);
+  color: #475569;
   margin-top: 1px;
 }
 
@@ -993,8 +993,8 @@ footer {
   position: sticky;
   left: 0;
   z-index: 2;
-  background: #131c2e;
-  border-right: 1px solid #334155;
+  background: #f8fafc;
+  border-right: 1px solid #cbd5e1;
   padding: 4px 10px;
   text-align: right;
   white-space: nowrap;
@@ -1002,7 +1002,7 @@ footer {
 }
 
 .touch-bet-price-abs {
-  color: var(--text-main);
+  color: #0f172a;
   font-size: 0.77rem;
 }
 
@@ -1014,8 +1014,20 @@ footer {
   text-align: right;
 }
 
+.touch-bet-price-th .text-good {
+  color: #059669 !important;
+}
+
+.touch-bet-price-th .text-bad {
+  color: #dc2626 !important;
+}
+
+.touch-bet-price-th .text-neutral {
+  color: #0284c7 !important;
+}
+
 .touch-bet-empty {
-  background: rgba(15, 23, 42, 0.25);
+  background: #f8fafc;
   border-radius: 4px;
 }
 
@@ -1025,23 +1037,22 @@ footer {
   border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 700;
   user-select: none;
-  border: 1px solid transparent;
-  transition: transform 0.08s ease, box-shadow 0.12s ease, opacity 0.15s ease, border-color 0.12s ease;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  transition: transform 0.08s ease, box-shadow 0.12s ease, border-color 0.12s ease;
 }
 
 .touch-bet-cell:hover {
-  border-color: rgba(255, 255, 255, 0.65);
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+  border-color: rgba(15, 23, 42, 0.65);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
   position: relative;
   z-index: 1;
 }
 
 .touch-bet-cell.selected {
-  border-color: var(--accent) !important;
-  box-shadow: inset 0 0 0 1px var(--accent), 0 0 10px rgba(252, 211, 77, 0.55);
-  opacity: 1 !important;
+  border-color: #0f172a !important;
+  box-shadow: inset 0 0 0 1px #0f172a, 0 0 0 2px #f59e0b;
   position: relative;
   z-index: 1;
 }
@@ -1057,10 +1068,10 @@ footer {
   position: sticky;
   left: 0;
   z-index: 3;
-  background: rgba(0, 255, 0, 0.12);
-  border-top: 1px dashed rgba(0, 255, 0, 0.7);
-  border-bottom: 1px dashed rgba(0, 255, 0, 0.7);
-  border-right: 1px solid #334155;
+  background: #dcfce7;
+  border-top: 1px dashed #16a34a;
+  border-bottom: 1px dashed #16a34a;
+  border-right: 1px solid #cbd5e1;
   padding: 2px 10px !important;
   text-align: right;
   white-space: nowrap;
@@ -1069,8 +1080,8 @@ footer {
 .touch-bet-spot-badge {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #0f172a;
-  background: #00ff00;
+  color: #ffffff;
+  background: #16a34a;
   border-radius: 3px;
   padding: 1px 4px;
   margin-right: 5px;
@@ -1079,14 +1090,14 @@ footer {
 .touch-bet-spot-val {
   font-size: 0.74rem;
   font-weight: 700;
-  color: #00ff00;
+  color: #15803d;
 }
 
 .touch-bet-spot-line {
   background: linear-gradient(to bottom,
       transparent calc(50% - 1px),
-      rgba(0, 255, 0, 0.65) calc(50% - 1px),
-      rgba(0, 255, 0, 0.65) calc(50% + 1px),
+      #16a34a calc(50% - 1px),
+      #16a34a calc(50% + 1px),
       transparent calc(50% + 1px));
 }
 
