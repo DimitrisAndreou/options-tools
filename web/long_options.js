@@ -197,6 +197,9 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
     }
   }
 
+  const defaultZoom = [xStart, xEnd, yStart, yEnd];
+  [xStart, xEnd, yStart, yEnd] = resolveInitialChartZoom(defaultZoom);
+
   const dataset = {
     id: "original",
     dimensions: ["maxLeverage", "breakEvenVsFullUnderlyingRelative", "DTE", "id"],
@@ -336,6 +339,7 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
       type: 'hideTip'
     });
   });
+  bindChartZoomSync(chart, defaultZoom);
 
   selectStrategyById(idToSelect);
   return chart;

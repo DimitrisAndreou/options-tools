@@ -1013,6 +1013,9 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
   const minY = allY.length ? Math.min(...allY) : 1.0;
   const maxY = allY.length ? Math.max(...allY) : 1.5;
 
+  const defaultZoom = [xStart, xEnd, yStart, yEnd];
+  [xStart, xEnd, yStart, yEnd] = resolveInitialChartZoom(defaultZoom);
+
   const axisMinX = Math.min(xStart, minX < 1.0 ? snapDown(minX - 0.1) : 1.0);
   const axisMaxX = Math.max(xEnd, maxX + 0.5);
   const axisMinY = Math.min(yStart, minY < 1.0 ? snapDown(minY - 0.1) : 1.0);
@@ -1194,6 +1197,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
       type: 'hideTip'
     });
   });
+  bindChartZoomSync(chart, defaultZoom, [axisMinX, axisMaxX, axisMinY, axisMaxY]);
 
   selectStrategyById(idToSelect);
   return chart;

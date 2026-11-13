@@ -25,6 +25,8 @@ document.addEventListener('alpine:init', () => {
     touchBetMetric: 'yield',
     ccBiasStep: 0,
     ccTolerancePct: 5,
+    chartZoom: null,
+    tableScroll: null,
 
     get ccBiasFactor() {
       const s = Number(this.ccBiasStep) || 0;
@@ -150,6 +152,103 @@ document.addEventListener('alpine:init', () => {
     setTouchBetSide(side) {
       if (side !== 'yes' && side !== 'no') return;
       this.touchBetSide = side;
+    },
+
+    setChartZoom(zoomArr) {
+      if (
+        Array.isArray(zoomArr) &&
+        zoomArr.length === 4 &&
+        zoomArr.map(Number).every(Number.isFinite)
+      ) {
+        this.chartZoom = zoomArr.map(v => Number(Number(v).toFixed(4)));
+      } else {
+        this.chartZoom = null;
+      }
+    },
+
+    setTableScroll(scrollArr) {
+      if (
+        Array.isArray(scrollArr) &&
+        scrollArr.length === 2 &&
+        scrollArr.map(Number).every(Number.isFinite)
+      ) {
+        this.tableScroll = [
+          Math.max(0, Math.round(Number(scrollArr[0]))),
+          Math.max(0, Math.round(Number(scrollArr[1])))
+        ];
+      } else {
+        this.tableScroll = null;
+      }
+    },
+
+    encodeUiState() {
+      const ui = {};
+      if (this.strategy === 'coveredCall') {
+        if (this.ccBiasStep !== 0) ui.bias = this.ccBiasStep;
+        if (this.ccTolerancePct !== 5) ui.tol = this.ccTolerancePct;
+        if (this.chartZoom) ui.z = this.chartZoom;
+      } else if (this.strategy === 'longOption') {
+        if (this.chartZoom) ui.z = this.chartZoom;
+      } else if (this.strategy === 'touchBet') {
+        if (this.oddsMode !== 'touch') ui.mode = this.oddsMode;
+        if (this.minProb !== 25) ui.prob = this.minProb;
+        if (this.touchBetView !== 'chart') ui.view = this.touchBetView;
+        if (this.touchBetMetric !== 'yield') ui.metric = this.touchBetMetric;
+        if (this.touchBetSide !== 'yes') ui.side = this.touchBetSide;
+        if (this.chartZoom) ui.z = this.chartZoom;
+        if (this.tableScroll) ui.ts = this.tableScroll;
+      }
+      return Object.keys(ui).length > 0 ? UrlManager.encodeState(ui) : null;
+    },
+
+    applyUiStateFromUrl() {
+      const encodedUi = UrlManager.get(URL_PARAMS.UI);
+      const ui = (encodedUi && typeof UrlManager.decodeState === 'function')
+        ? UrlManager.decodeState(encodedUi)
+        : null;
+
+      const rawBias = ui && Number(ui.bias);
+      this.ccBiasStep = Number.isFinite(rawBias)
+        ? Math.max(-400, Math.min(400, Math.round(rawBias / 25) * 25))
+        : 0;
+
+      const rawTol = ui && Number(ui.tol);
+      this.ccTolerancePct = Number.isFinite(rawTol)
+        ? Math.max(0, Math.min(30, Math.round(rawTol)))
+        : 5;
+
+      this.oddsMode = (ui && (ui.mode === 'touch' || ui.mode === 'expiration'))
+        ? ui.mode
+        : 'touch';
+
+      const rawProb = ui && Number(ui.prob);
+      this.minProb = Number.isFinite(rawProb)
+        ? Math.max(0, Math.min(100, Math.round(rawProb)))
+        : 25;
+
+      this.touchBetView = (ui && (ui.view === 'chart' || ui.view === 'table'))
+        ? ui.view
+        : 'chart';
+
+      this.touchBetMetric = (ui && ['yield', 'return', 'odds', 'both'].includes(ui.metric))
+        ? ui.metric
+        : 'yield';
+
+      this.touchBetSide = (ui && (ui.side === 'yes' || ui.side === 'no'))
+        ? ui.side
+        : 'yes';
+
+      if (ui && Array.isArray(ui.z)) {
+        this.setChartZoom(ui.z);
+      } else {
+        this.chartZoom = null;
+      }
+
+      if (ui && Array.isArray(ui.ts)) {
+        this.setTableScroll(ui.ts);
+      } else {
+        this.tableScroll = null;
+      }
     },
 
     normalizeAvgPrice(val) {
@@ -372,6 +471,7 @@ document.addEventListener('alpine:init', () => {
       this.underlyingTax = parseFloat(UrlManager.get(URL_PARAMS.UND_TAX, '0')) || 0;
       this.derivativeTax = parseFloat(UrlManager.get(URL_PARAMS.DERIV_TAX, '0')) || 0;
       this.selectedId = UrlManager.get(URL_PARAMS.ID);
+      this.applyUiStateFromUrl();
 
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
       if (this.strategy === 'coveredCall' && encodedPos) {
@@ -406,6 +506,16 @@ document.addEventListener('alpine:init', () => {
         const derivativeTax = this.derivativeTax;
         const selectedId = this.selectedId;
         const entryPosition = this.entryPosition;
+        // Track UI state dependencies so the URL updates whenever any widget changes
+        void this.ccBiasStep;
+        void this.ccTolerancePct;
+        void this.oddsMode;
+        void this.minProb;
+        void this.touchBetView;
+        void this.touchBetMetric;
+        void this.touchBetSide;
+        void this.chartZoom;
+        void this.tableScroll;
 
         const url = UrlManager.createUrl();
         UrlManager.setWithDefault(url, URL_PARAMS.SOURCE, source, 'yfinance');
@@ -419,6 +529,7 @@ document.addEventListener('alpine:init', () => {
         UrlManager.setWithDefault(url, URL_PARAMS.UND_TAX, Number(underlyingTax) || 0, 0);
         UrlManager.setWithDefault(url, URL_PARAMS.DERIV_TAX, Number(derivativeTax) || 0, 0);
         UrlManager.set(url, URL_PARAMS.ID, selectedId || null);
+        UrlManager.set(url, URL_PARAMS.UI, this.encodeUiState());
 
         if (entryPosition) {
           const strategyType = entryPosition.strategyType || strategy;
@@ -457,6 +568,7 @@ document.addEventListener('alpine:init', () => {
       this.size = this.normalizeSize(UrlManager.get(URL_PARAMS.SIZE, '1'));
       this.underlyingTax = parseFloat(UrlManager.get(URL_PARAMS.UND_TAX, '0')) || 0;
       this.derivativeTax = parseFloat(UrlManager.get(URL_PARAMS.DERIV_TAX, '0')) || 0;
+      this.applyUiStateFromUrl();
 
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
       if (this.strategy === 'coveredCall' && encodedPos) {
@@ -480,7 +592,7 @@ document.addEventListener('alpine:init', () => {
 
     clearAllStrategyParams(url) {
       UrlManager.set(url, URL_PARAMS.ID, null);
-      UrlManager.clearParams(url, [URL_PARAMS.POS, URL_PARAMS.AVG_PRICE, URL_PARAMS.SIZE]);
+      UrlManager.clearParams(url, [URL_PARAMS.POS, URL_PARAMS.UI, URL_PARAMS.AVG_PRICE, URL_PARAMS.SIZE]);
     },
 
     submitTicker() {
@@ -497,6 +609,8 @@ document.addEventListener('alpine:init', () => {
         this.entryPosition = null;
         this.details = null;
         this.unrealized = null;
+        this.chartZoom = null;
+        this.tableScroll = null;
         if (!avgPriceWasModified) {
           this.avgPrice = '';
         }
@@ -511,6 +625,8 @@ document.addEventListener('alpine:init', () => {
       this.details = null;
       this.unrealized = null;
       this.entryPosition = null;
+      this.chartZoom = null;
+      this.tableScroll = null;
     },
 
     changeStrategy() {
@@ -519,6 +635,8 @@ document.addEventListener('alpine:init', () => {
       this.details = null;
       this.unrealized = null;
       this.entryPosition = null;
+      this.chartZoom = null;
+      this.tableScroll = null;
 
       this.loadData();
     },

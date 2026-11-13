@@ -132,3 +132,59 @@ function getRegistryTypesForStrategy(strategy) {
   }
   return [strategy];
 }
+
+function resolveInitialChartZoom(defaultZoom) {
+  const store = getAppStore();
+  const z = store?.chartZoom;
+  if (
+    Array.isArray(z) &&
+    z.length === 4 &&
+    z.map(Number).every(Number.isFinite) &&
+    Number(z[1]) > Number(z[0]) &&
+    Number(z[3]) > Number(z[2])
+  ) {
+    return [Number(z[0]), Number(z[1]), Number(z[2]), Number(z[3])];
+  }
+  return defaultZoom;
+}
+
+function extractZoomAxisRange(dzEntry, fallbackStart, fallbackEnd, axisMin, axisMax) {
+  if (dzEntry && Number.isFinite(Number(dzEntry.startValue)) && Number.isFinite(Number(dzEntry.endValue))) {
+    return [Number(dzEntry.startValue), Number(dzEntry.endValue)];
+  }
+  if (
+    dzEntry &&
+    Number.isFinite(Number(dzEntry.start)) &&
+    Number.isFinite(Number(dzEntry.end)) &&
+    Number.isFinite(axisMin) &&
+    Number.isFinite(axisMax)
+  ) {
+    const span = axisMax - axisMin;
+    return [
+      axisMin + (Number(dzEntry.start) / 100) * span,
+      axisMin + (Number(dzEntry.end) / 100) * span
+    ];
+  }
+  return [fallbackStart, fallbackEnd];
+}
+
+function bindChartZoomSync(chart, defaultZoom, axisBounds = []) {
+  if (!chart || typeof chart.on !== 'function') return;
+  const [axisMinX, axisMaxX, axisMinY, axisMaxY] = axisBounds;
+  let debounceTimer = null;
+
+  chart.on('datazoom', function () {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      const store = getAppStore();
+      if (!store || typeof store.setChartZoom !== 'function') return;
+      const opt = typeof chart.getOption === 'function' ? chart.getOption() : null;
+      const dz = Array.isArray(opt?.dataZoom) ? opt.dataZoom : [];
+      const [x0, x1] = extractZoomAxisRange(dz[0], defaultZoom[0], defaultZoom[1], axisMinX, axisMaxX);
+      const [y0, y1] = extractZoomAxisRange(dz[1], defaultZoom[2], defaultZoom[3], axisMinY, axisMaxY);
+      const cur = [x0, x1, y0, y1];
+      const isDefault = defaultZoom.every((dv, i) => Math.abs(cur[i] - dv) <= Math.max(1e-4, Math.abs(dv) * 1e-4));
+      store.setChartZoom(isDefault ? null : cur);
+    }, 100);
+  });
+}

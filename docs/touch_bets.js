@@ -815,22 +815,63 @@ function renderTouchBetsTable(rawData, idToSelect, options = {}) {
 
   const scrollEl = container.querySelector('.touch-bet-table-scroll');
   if (scrollEl) {
-    if (centerOnSpot) {
+    const computeDefaultSpotTop = () => {
       const spotEl = scrollEl.querySelector('.touch-bet-spot-row');
       const theadEl = scrollEl.querySelector('thead');
       const theadHeight = theadEl ? theadEl.offsetHeight : 0;
       if (spotEl) {
         const visibleHeight = Math.max(0, scrollEl.clientHeight - theadHeight);
         const targetTop = spotEl.offsetTop - theadHeight - (visibleHeight / 2) + (spotEl.offsetHeight / 2);
-        scrollEl.scrollTop = Math.max(0, targetTop);
-      } else {
-        const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
-        scrollEl.scrollTop = maxScroll / 2;
+        return Math.max(0, targetTop);
       }
-    } else {
-      scrollEl.scrollTop = prevScrollTop;
-      scrollEl.scrollLeft = prevScrollLeft;
+      const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+      return maxScroll / 2;
+    };
+
+    const applyInitialScroll = () => {
+      scrollEl._suppressScrollSync = true;
+      const defaultTop = computeDefaultSpotTop();
+      scrollEl._defaultScrollTop = defaultTop;
+      const savedScroll = store?.tableScroll;
+      if (centerOnSpot) {
+        if (Array.isArray(savedScroll) && savedScroll.length === 2) {
+          scrollEl.scrollTop = savedScroll[0];
+          scrollEl.scrollLeft = savedScroll[1];
+        } else {
+          scrollEl.scrollTop = defaultTop;
+          scrollEl.scrollLeft = 0;
+        }
+      } else {
+        scrollEl.scrollTop = prevScrollTop;
+        scrollEl.scrollLeft = prevScrollLeft;
+      }
+      setTimeout(() => {
+        scrollEl._suppressScrollSync = false;
+      }, 50);
+    };
+
+    applyInitialScroll();
+    if (centerOnSpot && scrollEl.clientHeight === 0 && typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(applyInitialScroll);
     }
+
+    let scrollDebounce = null;
+    scrollEl.addEventListener('scroll', function () {
+      if (scrollEl._suppressScrollSync) return;
+      if (scrollDebounce) clearTimeout(scrollDebounce);
+      scrollDebounce = setTimeout(() => {
+        const appStore = getAppStore();
+        if (!appStore || typeof appStore.setTableScroll !== 'function') return;
+        const top = Math.round(scrollEl.scrollTop);
+        const left = Math.round(scrollEl.scrollLeft);
+        const defTop = Math.round(scrollEl._defaultScrollTop ?? 0);
+        if (Math.abs(top - defTop) <= 2 && left <= 2) {
+          appStore.setTableScroll(null);
+        } else {
+          appStore.setTableScroll([top, left]);
+        }
+      }, 100);
+    });
   }
 }
 
@@ -937,6 +978,11 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
       xEnd = Math.max(xEnd, Math.min(axisMaxX, tx + xPad));
     }
   }
+
+  let yStart = 0;
+  let yEnd = 1;
+  const defaultZoom = [xStart, xEnd, yStart, yEnd];
+  [xStart, xEnd, yStart, yEnd] = resolveInitialChartZoom(defaultZoom);
 
   const dataset = {
     id: 'original',
@@ -1126,8 +1172,8 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
         type: 'inside',
         yAxisIndex: 0,
         filterMode: 'none',
-        startValue: 0,
-        endValue: 1
+        startValue: yStart,
+        endValue: yEnd
       }
     ]
   }, true);
@@ -1142,6 +1188,7 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
       type: 'hideTip'
     });
   });
+  bindChartZoomSync(chart, defaultZoom, [axisMinX, axisMaxX, 0, 1]);
 
   selectStrategyById(normalizedSelectedId || null);
   if (store?.touchBetView === 'table') {

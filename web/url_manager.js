@@ -10,7 +10,8 @@ const URL_PARAMS = {
   UND_TAX: 'undTax',
   DERIV_TAX: 'derivTax',
   ID: 'id',
-  POS: 'pos'
+  POS: 'pos',
+  UI: 'ui'
 };
 
 const UrlManager = {
