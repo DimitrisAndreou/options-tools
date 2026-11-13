@@ -234,6 +234,51 @@
             </div>
           </div>
           <div class="card-body">
+            <template x-if="$store.app.strategy === 'coveredCall'">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <div class="odds-prob-filter">
+                  <span class="odds-prob-label">Bias</span>
+                  <span class="cc-info-popover" tabindex="0" aria-label="About Target Bias">
+                    <i class="fas fa-info-circle toolbar-info-icon"></i>
+                    <span class="cc-info-tooltip">
+                      <b>Target Bias</b> rotates the center ray around your hold benchmark (<code>(Y_hold, 1.0)</code>, where <code>Y_hold</code> is <code>1.00</code> when Avg Price is blank, or your holding yield when Avg Price is set).<br>
+                      &bull; <b>1.00 (Neutral)</b>: Equal relative gain above holding (<code>45&deg;</code> at spot).<br>
+                      &bull; <b>Slide right (&times;M)</b>: Tilts toward money yield per unit of underlying gain (OTM calls).<br>
+                      &bull; <b>Slide left (&times;M)</b>: Tilts toward underlying yield per unit of money gain (ITM calls).<br>
+                      <small class="text-muted">Double-click the value to reset to 1.00.</small>
+                    </span>
+                  </span>
+                  <span class="odds-prob-badge cc-band-badge font-monospace"
+                    x-text="$store.app.ccBiasDisplay"
+                    @dblclick="$store.app.setCcBiasStep(0)"
+                    title="Double-click to reset to 1.00 (Neutral)"></span>
+                  <input type="range" min="-400" max="400" step="25"
+                    :value="$store.app.ccBiasStep"
+                    @input="$store.app.setCcBiasStep($event.target.value)"
+                    @dblclick="$store.app.setCcBiasStep(0)"
+                    class="odds-prob-slider cc-band-slider"
+                    aria-label="Target Bias">
+                </div>
+                <div class="odds-prob-filter">
+                  <span class="odds-prob-label">Tolerance</span>
+                  <span class="cc-info-popover" tabindex="0" aria-label="About Multiplicative Tolerance">
+                    <i class="fas fa-info-circle toolbar-info-icon"></i>
+                    <span class="cc-info-tooltip cc-info-tooltip-end">
+                      <b>Multiplicative Tolerance</b> sets the width of the shaded band around the center line.<br>
+                      &bull; <b>&times;/&divide; M</b> (e.g. <code>&times;/&divide; 1.05</code>) highlights calls whose ratio stays between <code>Center &divide; M</code> and <code>Center &times; M</code>.<br>
+                      &bull; <b>1.00 (Line)</b> collapses the band to just the center line.
+                    </span>
+                  </span>
+                  <span class="odds-prob-badge cc-band-badge font-monospace"
+                    x-text="$store.app.ccToleranceDisplay"></span>
+                  <input type="range" min="0" max="30" step="1"
+                    :value="$store.app.ccTolerancePct"
+                    @input="$store.app.setCcTolerancePct($event.target.value)"
+                    class="odds-prob-slider cc-band-slider"
+                    aria-label="Band Tolerance">
+                </div>
+              </div>
+            </template>
             <template x-if="$store.app.strategy === 'touchBet'">
               <div class="d-flex flex-column gap-2 mb-2">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">

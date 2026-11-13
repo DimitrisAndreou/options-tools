@@ -23,6 +23,50 @@ document.addEventListener('alpine:init', () => {
     minProb: 25,
     touchBetView: 'chart',
     touchBetMetric: 'yield',
+    ccBiasStep: 0,
+    ccTolerancePct: 5,
+
+    get ccBiasFactor() {
+      const s = Number(this.ccBiasStep) || 0;
+      return s >= 0 ? (1 + s / 100) : (1 / (1 + Math.abs(s) / 100));
+    },
+
+    get ccToleranceFactor() {
+      const t = Math.max(0, Number(this.ccTolerancePct) || 0);
+      return 1 + t / 100;
+    },
+
+    get ccBiasDisplay() {
+      const s = Number(this.ccBiasStep) || 0;
+      if (s === 0) return '1.00 (Neutral)';
+      const money = this.chartData?.[0]?.money || 'USD';
+      const und = this.chartData?.[0]?.underlying || this.ticker || 'Asset';
+      const mult = (1 + Math.abs(s) / 100).toFixed(2);
+      return s > 0 ? `${money} ×${mult}` : `${und} ×${mult}`;
+    },
+
+    get ccToleranceDisplay() {
+      const t = Math.max(0, Number(this.ccTolerancePct) || 0);
+      if (t === 0) return '1.00 (Line)';
+      return `×/÷ ${(1 + t / 100).toFixed(2)}`;
+    },
+
+    setCcBiasStep(val) {
+      const n = Number(val);
+      const snapped = Number.isFinite(n) ? Math.round(n / 25) * 25 : 0;
+      this.ccBiasStep = Math.max(-400, Math.min(400, snapped));
+      if (this.strategy === 'coveredCall' && this.chartData) {
+        StrategyRegistry['coveredCall']?.updateYieldBand?.();
+      }
+    },
+
+    setCcTolerancePct(val) {
+      const n = Number(val);
+      this.ccTolerancePct = Number.isFinite(n) ? Math.max(0, Math.min(30, Math.round(n))) : 5;
+      if (this.strategy === 'coveredCall' && this.chartData) {
+        StrategyRegistry['coveredCall']?.updateYieldBand?.();
+      }
+    },
 
     get activeTouchBetSide() {
       if (!this.details) return null;
@@ -413,7 +457,7 @@ document.addEventListener('alpine:init', () => {
       this.size = this.normalizeSize(UrlManager.get(URL_PARAMS.SIZE, '1'));
       this.underlyingTax = parseFloat(UrlManager.get(URL_PARAMS.UND_TAX, '0')) || 0;
       this.derivativeTax = parseFloat(UrlManager.get(URL_PARAMS.DERIV_TAX, '0')) || 0;
-      
+
       const encodedPos = UrlManager.get(URL_PARAMS.POS);
       if (this.strategy === 'coveredCall' && encodedPos) {
         this.entryPosition = UrlManager.decodeState(encodedPos);
@@ -529,7 +573,7 @@ document.addEventListener('alpine:init', () => {
 
       } catch (error) {
         console.error("JavaScript caught Dart error:", error.error || error, error.stack || "");
-        
+
         let errorMsg = "An unexpected error occurred.";
         if (error) {
           const getMsg = (val) => {
@@ -612,7 +656,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const target = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`;
         const proxyUrl = `https://yahoo-proxy-v2.jim-andreou.workers.dev/?target=${encodeURIComponent(target)}`;
-        
+
         const res = await fetch(proxyUrl);
         if (!res.ok) {
           throw new Error(`Proxy returned status ${res.status}`);
@@ -642,10 +686,10 @@ document.addEventListener('alpine:init', () => {
         .then(() => {
           const copyBtnText = document.getElementById('copy-btn-text');
           const copyIcon = document.getElementById('copy-icon');
-          
+
           copyBtnText.textContent = 'Copied!';
           copyIcon.className = 'fas fa-check me-1';
-          
+
           setTimeout(() => {
             copyBtnText.textContent = 'Copy';
             copyIcon.className = 'fas fa-copy me-1';
@@ -676,7 +720,7 @@ const STRATEGY_CONFIGS = {
   }
 };
 
-window.jsMain = function() {
+window.jsMain = function () {
   const store = getAppStore();
   if (store && store.ticker) {
     store.loadData();

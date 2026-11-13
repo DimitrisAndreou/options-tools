@@ -1113,3 +1113,73 @@ footer {
   color: #f8fafc;
   font-family: Inter, sans-serif;
 }
+
+/* Covered Calls Yield Band Controls & Info Popover */
+.cc-band-badge {
+  color: #fcd34d;
+  min-width: 92px;
+  text-align: center;
+  font-size: 0.78rem;
+}
+
+.cc-band-slider {
+  width: 95px;
+  accent-color: #fcd34d;
+}
+
+.cc-info-popover {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  outline: none;
+}
+
+.cc-info-popover .toolbar-info-icon {
+  margin-left: 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  transition: color 0.15s ease;
+}
+
+.cc-info-popover:hover .toolbar-info-icon,
+.cc-info-popover:focus .toolbar-info-icon {
+  color: #fcd34d;
+}
+
+.cc-info-tooltip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: -12px;
+  z-index: 1070;
+  width: min(300px, 80vw);
+  padding: 10px 12px;
+  background: #1e293b;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55);
+  color: #e2e8f0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+}
+
+.cc-info-tooltip-end {
+  left: auto;
+  right: -90px;
+}
+
+.cc-info-tooltip code {
+  color: #fcd34d;
+  background: rgba(15, 23, 42, 0.65);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.cc-info-popover:hover .cc-info-tooltip,
+.cc-info-popover:focus .cc-info-tooltip {
+  display: block;
+}

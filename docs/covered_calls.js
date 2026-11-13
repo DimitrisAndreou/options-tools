@@ -783,7 +783,125 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       }]
     });
   }
+
+  updateYieldBand() {
+    const store = getAppStore();
+    const chartDom = document.getElementById("strategyChartContainer");
+    const chart = typeof echarts !== 'undefined' && chartDom ? echarts.getInstanceByDom(chartDom) : null;
+    if (!chart || !store) return;
+
+    chart.setOption({
+      series: [buildCoveredCallBandSeries(_ccBandCache, store.ccBiasFactor, store.ccToleranceFactor)]
+    });
+  }
 };
+
+let _ccBandCache = { yHold: 1.0, axisMaxX: 2.0, axisMaxY: 2.0 };
+
+function extractCoveredCallHoldYield(data) {
+  if (!Array.isArray(data)) return 1.0;
+  for (const item of data) {
+    const ep = item?.existingPosition;
+    if (!ep) continue;
+    const y = ep.postTax?.yield ?? ep.preTax?.yield;
+    if (Number.isFinite(y) && y > 0) return y;
+  }
+  return 1.0;
+}
+
+function buildCoveredCallBandSeries(bandCache, biasFactor, tolFactor) {
+  const yHold = bandCache?.yHold ?? 1.0;
+  const b = Number.isFinite(biasFactor) && biasFactor > 0 ? biasFactor : 1.0;
+  const t = Number.isFinite(tolFactor) && tolFactor >= 1.0 ? tolFactor : 1.0;
+  const hasBand = t > 1.0001;
+  const axisMaxX = bandCache?.axisMaxX ?? 2.0;
+  const axisMaxY = bandCache?.axisMaxY ?? 2.0;
+  // Pivot around the hold benchmark (yHold, 1.0): xCenter(y) = yHold * (1 + b * (y - 1)).
+  // Extending from its x = 0 apex yZero = 1 - 1/b guarantees x(y) = xCenter(y) * ratio at every y >= yZero.
+  const yZero = 1.0 - 1.0 / b;
+  const yForMaxX = 1.0 + (axisMaxX / Math.max(0.05, yHold) - 1.0) / b;
+  const yFar = Math.max(axisMaxY, yForMaxX, 2.0) * 2.0;
+  const xCenterFar = yHold * (1.0 + b * (yFar - 1.0));
+  const xLowFar = xCenterFar / t;
+  const xHighFar = xCenterFar * t;
+
+  return {
+    id: 'ccBiasBandSeries',
+    name: 'Target Band',
+    type: 'custom',
+    coordinateSystem: 'cartesian2d',
+    silent: true,
+    clip: true,
+    animation: false,
+    z: 2,
+    itemStyle: {
+      color: '#fcd34d'
+    },
+    data: [0],
+    renderItem: function (params, api) {
+      const pApex = api.coord([0, yZero]);
+      const pCenterFar = api.coord([xCenterFar, yFar]);
+      const children = [];
+
+      if (hasBand) {
+        const pLowFar = api.coord([xLowFar, yFar]);
+        const pHighFar = api.coord([xHighFar, yFar]);
+        children.push({
+          type: 'polygon',
+          shape: {
+            points: [pApex, pLowFar, pHighFar]
+          },
+          style: {
+            fill: 'rgba(252, 211, 77, 0.13)'
+          }
+        });
+        children.push({
+          type: 'line',
+          shape: {
+            x1: pApex[0], y1: pApex[1],
+            x2: pLowFar[0], y2: pLowFar[1]
+          },
+          style: {
+            stroke: 'rgba(252, 211, 77, 0.45)',
+            lineWidth: 1.5,
+            lineDash: [4, 4]
+          }
+        });
+        children.push({
+          type: 'line',
+          shape: {
+            x1: pApex[0], y1: pApex[1],
+            x2: pHighFar[0], y2: pHighFar[1]
+          },
+          style: {
+            stroke: 'rgba(252, 211, 77, 0.45)',
+            lineWidth: 1.5,
+            lineDash: [4, 4]
+          }
+        });
+      }
+
+      children.push({
+        type: 'line',
+        shape: {
+          x1: pApex[0], y1: pApex[1],
+          x2: pCenterFar[0], y2: pCenterFar[1]
+        },
+        style: {
+          stroke: '#fcd34d',
+          lineWidth: 2.0,
+          lineDash: [6, 5],
+          opacity: 0.85
+        }
+      });
+
+      return {
+        type: 'group',
+        children
+      };
+    }
+  };
+}
 
 function calculateOverlay(target) {
   const store = getAppStore();
@@ -819,11 +937,6 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
   const underlying = data.at(0)?.underlying || '';
 
   const store = getAppStore();
-  const hasAvgPrice = Boolean(
-    data.some(d => d.avgPrice != null) ||
-    store?.entryPosition?.avgPrice != null ||
-    (store && store.avgPrice !== '' && store.avgPrice != null && !isNaN(parseFloat(store.avgPrice)) && parseFloat(store.avgPrice) >= 0)
-  );
 
   const targetItem = data.find(item => item.id === idToSelect);
   const overlay = calculateOverlay(targetItem);
@@ -905,8 +1018,11 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
   const axisMinY = Math.min(yStart, minY < 1.0 ? snapDown(minY - 0.1) : 1.0);
   const axisMaxY = Math.max(yEnd, maxY + 0.5);
 
-  const diagMin = Math.min(1.0, axisMinX, axisMinY);
-  const diagMax = Math.max(5.0, axisMaxX, axisMaxY);
+  _ccBandCache = {
+    yHold: extractCoveredCallHoldYield(data),
+    axisMaxX,
+    axisMaxY
+  };
 
   const dataset = {
     id: "original",
@@ -1037,29 +1153,11 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
           data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
         }
       },
-      ...(!hasAvgPrice ? [{
-        type: 'line',
-        name: '45°',
-        data: [[diagMin, diagMin], [diagMax, diagMax]],
-        symbol: 'none',
-        silent: true,
-        animation: false,
-        lineStyle: {
-          color: '#fcd34d',
-          type: 'dashed',
-          width: 2.0,
-          opacity: 0.75
-        },
-        emphasis: {
-          focus: 'series',
-          lineStyle: {
-            width: 3.0,
-            opacity: 1,
-            type: 'solid'
-          }
-        },
-        showSymbol: false
-      }] : [])
+      buildCoveredCallBandSeries(
+        _ccBandCache,
+        store?.ccBiasFactor ?? 1.0,
+        store?.ccToleranceFactor ?? 1.05
+      )
     ],
     legend: legend,
     animationDurationUpdate: 800,
