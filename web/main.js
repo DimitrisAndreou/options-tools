@@ -20,6 +20,7 @@ document.addEventListener('alpine:init', () => {
     loadedParams: null,
     oddsMode: 'touch',
     touchBetSide: 'yes',
+    _urlHasTouchBetSide: false,
     minProb: 25,
     touchBetView: 'chart',
     touchBetMetric: 'yield',
@@ -131,9 +132,11 @@ document.addEventListener('alpine:init', () => {
         if (config && config.updateProbabilityFilter) {
           config.updateProbabilityFilter();
         }
-        if (this.selectedItem && config && config.prepareData) {
-          this.details = config.prepareData(this.selectedItem);
+        const activeItem = this.selectedItem || this.entryPosition;
+        if (activeItem && config && config.prepareData) {
+          this.details = config.prepareData(activeItem);
         }
+        this.updateUnrealized();
       }
     },
 
@@ -152,6 +155,9 @@ document.addEventListener('alpine:init', () => {
     setTouchBetSide(side) {
       if (side !== 'yes' && side !== 'no') return;
       this.touchBetSide = side;
+      if (this.strategy === 'touchBet') {
+        this.updateUnrealized();
+      }
     },
 
     setChartZoom(zoomArr) {
@@ -234,9 +240,9 @@ document.addEventListener('alpine:init', () => {
         ? ui.metric
         : 'yield';
 
-      this.touchBetSide = (ui && (ui.side === 'yes' || ui.side === 'no'))
-        ? ui.side
-        : 'yes';
+      const hasUrlSide = Boolean(ui && (ui.side === 'yes' || ui.side === 'no'));
+      this._urlHasTouchBetSide = hasUrlSide;
+      this.touchBetSide = hasUrlSide ? ui.side : 'yes';
 
       if (ui && Array.isArray(ui.z)) {
         this.setChartZoom(ui.z);
@@ -385,7 +391,14 @@ document.addEventListener('alpine:init', () => {
 
     get selectedItem() {
       if (!this.selectedId || !this.chartData) return null;
-      return this.chartData.find(item => item.id === this.selectedId);
+      let item = this.chartData.find(item => item.id === this.selectedId);
+      if (!item && this.strategy === 'touchBet' && typeof normalizeTouchBetSelectedId === 'function') {
+        const normalized = normalizeTouchBetSelectedId(this.selectedId, this.chartData);
+        if (normalized) {
+          item = this.chartData.find(x => x.id === normalized);
+        }
+      }
+      return item || null;
     },
 
     get entryDetails() {
@@ -442,15 +455,63 @@ document.addEventListener('alpine:init', () => {
         const entryPos = config.createEntryPosition(item);
         if (entryPos) {
           this.entryPosition = entryPos;
+          if (this.strategy === 'touchBet' && entryPos.id) {
+            this.selectedId = entryPos.id;
+          }
           this.updateEntryPosition();
         }
       }
     },
 
+    syncTouchBetSideToEntry(nodeOrId) {
+      if (this.strategy !== 'touchBet' || !this.entryPosition || !this.chartData) return;
+      let targetNode = nodeOrId;
+      if (typeof nodeOrId === 'string') {
+        const normalizedId = typeof normalizeTouchBetSelectedId === 'function'
+          ? normalizeTouchBetSelectedId(nodeOrId, this.chartData)
+          : nodeOrId;
+        targetNode = this.chartData.find(item => item.id === (normalizedId || nodeOrId));
+      }
+      if (!targetNode || typeof resolveTouchBetSideItem !== 'function') return;
+      const yesItem = resolveTouchBetSideItem(targetNode, 'yes');
+      const noItem = resolveTouchBetSideItem(targetNode, 'no');
+      const matchesEntry = (candidate) => candidate && (
+        (this.entryPosition.longLeg && candidate.longLeg === this.entryPosition.longLeg && candidate.shortLeg === this.entryPosition.shortLeg) ||
+        candidate.spreadType === this.entryPosition.spreadType
+      );
+      if (matchesEntry(noItem)) {
+        this.touchBetSide = 'no';
+      } else if (matchesEntry(yesItem)) {
+        this.touchBetSide = 'yes';
+      }
+    },
+
     selectEntryPosition() {
       if (this.entryPosition && this.entryPosition.id) {
+        this.syncTouchBetSideToEntry(this.entryPosition.id);
         selectStrategyById(this.entryPosition.id);
       }
+    },
+
+    restoreEntryPositionFromUrl() {
+      const encodedPos = UrlManager.get(URL_PARAMS.POS);
+      if (!encodedPos) {
+        return null;
+      }
+      const rawDecoded = UrlManager.decodeState(encodedPos);
+      if (!rawDecoded) {
+        return null;
+      }
+      const posType = rawDecoded.strategyType || this.strategy;
+      const isMatchingStrategy = (posType === this.strategy) ||
+        (this.strategy === 'longOption' && (posType === 'longCall' || posType === 'longPut'));
+      if (!isMatchingStrategy) {
+        return null;
+      }
+      const config = StrategyRegistry[posType];
+      return (config && typeof config.decodeEntryPosition === 'function')
+        ? config.decodeEntryPosition(encodedPos)
+        : rawDecoded;
     },
 
     init() {
@@ -473,14 +534,12 @@ document.addEventListener('alpine:init', () => {
       this.selectedId = UrlManager.get(URL_PARAMS.ID);
       this.applyUiStateFromUrl();
 
-      const encodedPos = UrlManager.get(URL_PARAMS.POS);
-      if (this.strategy === 'coveredCall' && encodedPos) {
-        this.entryPosition = UrlManager.decodeState(encodedPos);
-        if (!this.selectedId && this.entryPosition?.id) {
-          this.selectedId = this.entryPosition.id;
-        }
-      } else {
-        this.entryPosition = null;
+      this.entryPosition = this.restoreEntryPositionFromUrl();
+      if (!this.selectedId && this.entryPosition?.id) {
+        this.selectedId = this.entryPosition.id;
+      }
+      if (this.strategy === 'touchBet' && !this._urlHasTouchBetSide && this.entryPosition) {
+        this.touchBetSide = this.entryPosition.betType === 'noTouch' ? 'no' : 'yes';
       }
 
       if (this.ticker) {
@@ -570,11 +629,9 @@ document.addEventListener('alpine:init', () => {
       this.derivativeTax = parseFloat(UrlManager.get(URL_PARAMS.DERIV_TAX, '0')) || 0;
       this.applyUiStateFromUrl();
 
-      const encodedPos = UrlManager.get(URL_PARAMS.POS);
-      if (this.strategy === 'coveredCall' && encodedPos) {
-        this.entryPosition = UrlManager.decodeState(encodedPos);
-      } else {
-        this.entryPosition = null;
+      this.entryPosition = this.restoreEntryPositionFromUrl();
+      if (this.strategy === 'touchBet' && !this._urlHasTouchBetSide && this.entryPosition) {
+        this.touchBetSide = this.entryPosition.betType === 'noTouch' ? 'no' : 'yes';
       }
 
       const newSelectedId = UrlManager.get(URL_PARAMS.ID) || (this.entryPosition?.id ?? null);
@@ -611,6 +668,7 @@ document.addEventListener('alpine:init', () => {
         this.unrealized = null;
         this.chartZoom = null;
         this.tableScroll = null;
+        this._urlHasTouchBetSide = false;
         if (!avgPriceWasModified) {
           this.avgPrice = '';
         }
@@ -627,6 +685,7 @@ document.addEventListener('alpine:init', () => {
       this.entryPosition = null;
       this.chartZoom = null;
       this.tableScroll = null;
+      this._urlHasTouchBetSide = false;
     },
 
     changeStrategy() {
@@ -637,6 +696,7 @@ document.addEventListener('alpine:init', () => {
       this.entryPosition = null;
       this.chartZoom = null;
       this.tableScroll = null;
+      this._urlHasTouchBetSide = false;
 
       this.loadData();
     },
@@ -686,6 +746,18 @@ document.addEventListener('alpine:init', () => {
 
         this.chartData = dataJson;
         this.spotPrice = extractSpotPrice(dataJson);
+
+        if (this.strategy === 'touchBet' && !this._urlHasTouchBetSide && this.entryPosition && this.selectedId) {
+          const normalizedEntry = typeof normalizeTouchBetSelectedId === 'function'
+            ? normalizeTouchBetSelectedId(this.entryPosition.id, dataJson)
+            : this.entryPosition.id;
+          const normalizedSel = typeof normalizeTouchBetSelectedId === 'function'
+            ? normalizeTouchBetSelectedId(this.selectedId, dataJson)
+            : this.selectedId;
+          if (normalizedEntry && normalizedSel && normalizedEntry === normalizedSel) {
+            this.syncTouchBetSideToEntry(normalizedSel);
+          }
+        }
 
         config.renderer(dataJson, chartDom, this.selectedId);
 

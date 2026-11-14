@@ -1057,6 +1057,19 @@ footer {
   z-index: 1;
 }
 
+.touch-bet-cell.pinned {
+  outline: 2px dashed #ff5c5c;
+  outline-offset: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+.touch-bet-cell.pinned.selected {
+  outline: 2px dashed #ff5c5c;
+  outline-offset: -4px;
+  z-index: 2;
+}
+
 .touch-bet-spot-row th,
 .touch-bet-spot-row td {
   padding: 0;

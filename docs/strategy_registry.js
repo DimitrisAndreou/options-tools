@@ -85,12 +85,20 @@ function selectStrategyById(idToSelect) {
 
   const strategy = store.strategy; // 'coveredCall', 'longOption'
 
+  let resolvedId = idToSelect;
   let targetItem = null;
-  if (idToSelect && store.chartData) {
-    targetItem = store.chartData.find(item => item.id === idToSelect);
+  if (resolvedId && store.chartData) {
+    targetItem = store.chartData.find(item => item.id === resolvedId);
+    if (!targetItem && strategy === 'touchBet' && typeof normalizeTouchBetSelectedId === 'function') {
+      const normalized = normalizeTouchBetSelectedId(resolvedId, store.chartData);
+      if (normalized) {
+        resolvedId = normalized;
+        targetItem = store.chartData.find(item => item.id === resolvedId);
+      }
+    }
   }
 
-  if (!idToSelect || !targetItem) {
+  if (!resolvedId || !targetItem) {
     store.selectedId = null;
 
     if (store.entryPosition) {
@@ -112,7 +120,7 @@ function selectStrategyById(idToSelect) {
     return;
   }
 
-  store.selectedId = idToSelect;
+  store.selectedId = resolvedId;
 
   const config = StrategyRegistry[targetItem.strategyType];
   if (config) {
@@ -121,7 +129,7 @@ function selectStrategyById(idToSelect) {
     store.updateUnrealized();
 
     if (config.updateSelection) {
-      config.updateSelection(idToSelect);
+      config.updateSelection(resolvedId);
     }
   }
 }

@@ -348,13 +348,72 @@ let _touchBetAxisRangeCache = { minX: 0, maxX: 100 };
 function normalizeTouchBetSelectedId(idToSelect, rawData) {
   let normalizedId = idToSelect || '';
   if (normalizedId && Array.isArray(rawData)) {
-    const found = rawData.find(item => item.id === normalizedId);
-    const group = getTouchBetGroupForItem(found);
-    if (group && group.primary) {
-      normalizedId = group.primary.id;
+    let found = rawData.find(item => item.id === normalizedId);
+    if (!found) {
+      const basePrefix = normalizedId.replace(/~(touch|noTouch)$/, '');
+      if (basePrefix !== normalizedId) {
+        found = rawData.find(item =>
+          typeof item.id === 'string' &&
+          item.id.replace(/~(touch|noTouch)$/, '') === basePrefix
+        );
+      }
+    }
+    if (found) {
+      const group = getTouchBetGroupForItem(found);
+      if (group && group.primary) {
+        normalizedId = group.primary.id;
+      }
     }
   }
   return normalizedId;
+}
+
+function resolveTouchBetSideItem(nodeOrItem, side) {
+  if (!nodeOrItem) return null;
+  const group = getTouchBetGroupForItem(nodeOrItem);
+  if (side === 'no') {
+    return group.noTouch || group.touch || nodeOrItem;
+  }
+  return group.touch || group.noTouch || nodeOrItem;
+}
+
+function calculateTouchBetOverlay(targetNode, isTouchMode) {
+  const store = getAppStore();
+  const entryPos = store ? store.entryPosition : null;
+  if (!entryPos || entryPos.strategyType !== 'touchBet') return null;
+
+  const entryX = isTouchMode
+    ? Number(entryPos.targetPriceAbsolute)
+    : Number(entryPos.isUpsideTarget ? entryPos.highStrike : entryPos.lowStrike);
+  const entryY = isTouchMode
+    ? (entryPos.betType === 'touch' ? Number(entryPos.winProbability) : 1.0 - Number(entryPos.winProbability))
+    : (entryPos.betType === 'touch' ? Number(entryPos.expirationWinProbability) : 1.0 - Number(entryPos.expirationWinProbability));
+
+  if (!Number.isFinite(entryX) || !Number.isFinite(entryY)) return null;
+
+  if (!targetNode) {
+    return {
+      entry: [entryX, entryY],
+      current: null
+    };
+  }
+
+  const targetX = Number(targetNode.activeTargetPrice);
+  const targetY = Number(targetNode.activeWinProb);
+  if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
+    return {
+      entry: [entryX, entryY],
+      current: null
+    };
+  }
+
+  const xDiffers = Math.abs(entryX - targetX) > 1e-4;
+  const yDiffers = Math.abs(entryY - targetY) > 1e-4;
+
+  return {
+    entry: [entryX, entryY],
+    current: (xDiffers || yDiffers) ? [targetX, targetY] : null
+  };
 }
 
 function updateTouchBetNodesActiveProb(nodes, isTouchMode) {
@@ -655,16 +714,26 @@ function bindTouchBetTableEvents(container) {
 function updateTouchBetTableSelection(normalizedId) {
   const container = document.getElementById('touchBetTableContainer');
   if (!container) return;
-  const prev = container.querySelectorAll('td.touch-bet-cell.selected');
-  for (const el of prev) {
+  const store = getAppStore();
+  const normalizedEntryId = normalizeTouchBetSelectedId(store?.entryPosition?.id, store?.chartData);
+
+  const prevSelected = container.querySelectorAll('td.touch-bet-cell.selected');
+  for (const el of prevSelected) {
     el.classList.remove('selected');
   }
-  if (!normalizedId) return;
+  const prevPinned = container.querySelectorAll('td.touch-bet-cell.pinned');
+  for (const el of prevPinned) {
+    el.classList.remove('pinned');
+  }
+
   const cells = container.querySelectorAll('td.touch-bet-cell[data-bet-id]');
   for (const cell of cells) {
-    if (cell.getAttribute('data-bet-id') === normalizedId) {
+    const betId = cell.getAttribute('data-bet-id');
+    if (normalizedId && betId === normalizedId) {
       cell.classList.add('selected');
-      break;
+    }
+    if (normalizedEntryId && betId === normalizedEntryId) {
+      cell.classList.add('pinned');
     }
   }
 }
@@ -697,6 +766,7 @@ function renderTouchBetsTable(rawData, idToSelect, options = {}) {
 
   updateTouchBetNodesActiveProb(nodes, isTouchMode);
   const normalizedSelectedId = normalizeTouchBetSelectedId(idToSelect, rawData || store?.chartData);
+  const normalizedEntryId = normalizeTouchBetSelectedId(store?.entryPosition?.id, rawData || store?.chartData);
   const spotPrice = Number(extractSpotPrice(nodes)) || 0;
 
   // Build sorted DTE columns (ascending by DTE)
@@ -771,8 +841,9 @@ function renderTouchBetsTable(rawData, idToSelect, options = {}) {
       const probRaw = Number(node.activeWinProb ?? 0);
       const colorStyle = getTouchBetCellColorStyle(probRaw);
       const selectedCls = (normalizedSelectedId && node.id === normalizedSelectedId) ? ' selected' : '';
+      const pinnedCls = (normalizedEntryId && node.id === normalizedEntryId) ? ' pinned' : '';
       const cellText = formatTouchBetCellText(node, isTouchMode, metric);
-      return `<td class="touch-bet-cell${selectedCls}" style="${colorStyle}" data-bet-id="${escapeTouchBetHtml(node.id)}">${escapeTouchBetHtml(cellText)}</td>`;
+      return `<td class="touch-bet-cell${selectedCls}${pinnedCls}" style="${colorStyle}" data-bet-id="${escapeTouchBetHtml(node.id)}">${escapeTouchBetHtml(cellText)}</td>`;
     }).join('');
 
     bodyRows.push(`
@@ -880,6 +951,351 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
   renderTooltip = renderTooltipTouchBet;
   renderTable = renderTouchBetsTable;
 
+  createEntryPosition(pos) {
+    if (!pos || pos.id === undefined) {
+      return null;
+    }
+    const store = getAppStore();
+    return resolveTouchBetSideItem(pos, store?.touchBetSide || 'yes');
+  }
+
+  prepareUnrealizedOrRollData(currentPos) {
+    const store = getAppStore();
+    const entryPos = store ? store.entryPosition : null;
+    const isTouchMode = (store?.oddsMode || 'touch') === 'touch';
+    const side = store?.touchBetSide === 'no' ? 'no' : 'yes';
+    const currentSidePos = currentPos ? resolveTouchBetSideItem(currentPos, side) : null;
+
+    if (!entryPos && !currentSidePos) return null;
+
+    const hasDiff = Boolean(entryPos && currentSidePos);
+    const activePos = currentSidePos || entryPos;
+    const sameLegs = hasDiff && (
+      (entryPos.longLeg && currentSidePos.longLeg)
+        ? (entryPos.longLeg === currentSidePos.longLeg && entryPos.shortLeg === currentSidePos.shortLeg)
+        : entryPos.id === currentSidePos.id
+    );
+    const isRoll = hasDiff && !sameLegs;
+    const isDirectionFlip = hasDiff && entryPos.spreadType !== currentSidePos.spreadType;
+    const mode = hasDiff ? (isRoll ? 'roll' : 'unrealized') : (entryPos ? 'pinnedOnly' : 'single');
+
+    const prepared = prepareTouchBetData(activePos);
+    const buildSide = (item) => item
+      ? buildTouchBetSideData(item, isTouchMode, item.betType === 'touch')
+      : null;
+
+    const entrySide = buildSide(entryPos);
+    const currentSide = buildSide(currentSidePos);
+    const activeSide = currentSide || entrySide;
+
+    const header = {
+      ...prepared,
+      strategyName: activeSide?.spreadTypeName || 'Vertical Spread',
+      strategyURL: isDirectionFlip ? null : (activeSide?.strategyURL || null),
+      iconClass: isDirectionFlip ? 'fa-exchange-alt' : 'fa-bullseye',
+      instructions: activeSide?.instructions || []
+    };
+
+    if (isDirectionFlip) {
+      const entryDir = entryPos.spreadType === 'over' ? 'Bull (Over)' : 'Bear (Under)';
+      const curDir = currentSidePos.spreadType === 'over' ? 'Bull (Over)' : 'Bear (Under)';
+      header.strategyName = `${entryDir} → ${curDir} Spread`;
+    }
+
+    const formatLegCell = (rawName, url, colorClass, compact) => {
+      if (!rawName) return '—';
+      const formatted = formatOptionName(rawName);
+      const label = compact ? formatted.replace(/^([A-Z0-9.^_-]+-)/, '') : formatted;
+      return url
+        ? `<a href="${url}" class="${colorClass}" target="_blank" title="${escapeTouchBetHtml(formatted)}" style="text-decoration: underline;">${escapeTouchBetHtml(label)}</a>`
+        : `<span class="${colorClass}" title="${escapeTouchBetHtml(formatted)}">${escapeTouchBetHtml(label)}</span>`;
+    };
+
+    const getTargetNum = (pos) => pos
+      ? (isTouchMode ? Number(pos.targetPriceAbsolute) : getExpiryTargetPrice(pos))
+      : null;
+
+    const formatTargetCell = (pos, sideData, compact) => {
+      if (!pos || !sideData) return '—';
+      const sep = compact ? '<br/>' : ' ';
+      return `<span class="text-neutral text-nowrap">${escapeTouchBetHtml(sideData.targetRowAbsolute)}</span>${sep}<small class="strike-relative text-nowrap">(${escapeTouchBetHtml(sideData.targetRowRelative)})</small>`;
+    };
+
+    const formatSpotCell = (pos) => {
+      if (!pos) return '—';
+      return `<span class="text-spot text-nowrap">${dollarFmt.format(Number(pos.spotPrice))}</span>`;
+    };
+
+    const formatExpirationCell = (pos, compact) => {
+      if (!pos) return '—';
+      const sep = compact ? '<br/>' : ' ';
+      return `<span class="text-neutral text-nowrap">${escapeTouchBetHtml(pos.formattedDate)}</span>${sep}<small class="text-bad text-nowrap">(${pos.DTE}d)</small>`;
+    };
+
+    const formatImpliedInterestCell = (pos, compact) => {
+      if (!pos) return '—';
+      const rate = Number(pos.impliedInterestRate ?? 0.0);
+      const apr = Number(pos.impliedApr ?? 0.0);
+      const sep = compact ? '<br/>' : ' ';
+      return `<span class="text-probs text-nowrap">${percentFmt.format(rate)}</span>${sep}<small class="text-muted-alt text-nowrap">(${percentFmt.format(apr)} APR)</small>`;
+    };
+
+    const formatOddsCell = (sideData) => {
+      if (!sideData) return '—';
+      return `<span class="text-probs text-nowrap">${escapeTouchBetHtml(sideData.probPct)}</span>`;
+    };
+
+    const formatPayoffCell = (sideData) => {
+      if (!sideData) return '—';
+      return `<span class="text-good text-nowrap">${escapeTouchBetHtml(sideData.yieldPct)} (${escapeTouchBetHtml(sideData.yieldMultiple)})</span><br/><small class="text-good-alt text-nowrap">${escapeTouchBetHtml(sideData.profitStr)}</small>`;
+    };
+
+    const formatRiskCell = (sideData) => {
+      if (!sideData) return '—';
+      return `<span class="text-bad text-nowrap">${escapeTouchBetHtml(sideData.riskStr)}</span>`;
+    };
+
+    const formatBeCell = (pos, compact) => {
+      if (!pos || pos.breakEvenVsFullMoneyAbsolute == null || pos.breakEvenVsFullMoneyRelative == null) {
+        return '—';
+      }
+      const abs = Number(pos.breakEvenVsFullMoneyAbsolute);
+      const rel = Number(pos.breakEvenVsFullMoneyRelative);
+      const sep = compact ? '<br/>' : ' ';
+      return `<span class="text-neutral text-nowrap">${dollarFmt.format(abs)}</span>${sep}<small class="strike-relative text-nowrap">(${percentFmt.format(rel - 1.0)})</small>`;
+    };
+
+    const computePriceDiff = (entryVal, curVal, higherIsGood) => {
+      if (entryVal == null || curVal == null) {
+        return { text: '—', className: 'text-muted-alt' };
+      }
+      const e = Number(entryVal);
+      const c = Number(curVal);
+      const diff = c - e;
+      const pct = e > 0 ? (diff / e) * 100 : 0;
+      const text = `${formatSignedDollar(diff)}<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`;
+      if (diff === 0 || higherIsGood == null) {
+        return { text, className: 'text-neutral-alt' };
+      }
+      const isGood = higherIsGood ? diff > 0 : diff < 0;
+      return { text, className: isGood ? 'text-good' : 'text-bad' };
+    };
+
+    let targetDiffText = '', targetDiffClass = 'text-neutral-alt';
+    let spotDiffText = '', spotDiffClass = 'text-neutral-alt';
+    let dteDiffText = '', dteDiffClass = 'text-neutral-alt';
+    let interestDiffText = '', interestDiffClass = 'text-neutral-alt';
+    let buyDiffText = '', buyDiffClass = 'text-muted-alt';
+    let sellDiffText = '', sellDiffClass = 'text-muted-alt';
+    let oddsDiffText = '', oddsDiffClass = 'text-neutral-alt';
+    let payoffDiffText = '', payoffDiffClass = 'text-neutral-alt';
+    let riskDiffText = '', riskDiffClass = 'text-neutral-alt';
+    let beDiffText = '', beDiffClass = 'text-neutral-alt';
+
+    if (hasDiff) {
+      // 1. Target / Max Payoff Price
+      const targetHigherGood = isDirectionFlip ? null : (activePos.spreadType === 'under');
+      const targetRes = computePriceDiff(getTargetNum(entryPos), getTargetNum(currentSidePos), targetHigherGood);
+      targetDiffText = targetRes.text;
+      targetDiffClass = targetRes.className;
+
+      // 2. Spot Price
+      const entrySpot = Number(entryPos.spotPrice);
+      const curSpot = Number(currentSidePos.spotPrice);
+      const spotDiff = curSpot - entrySpot;
+      const spotPct = entrySpot > 0 ? (spotDiff / entrySpot) * 100 : 0;
+      spotDiffText = `${formatSignedDollar(spotDiff)}<br/><small>(${spotDiff >= 0 ? '+' : ''}${spotPct.toFixed(1)}%)</small>`;
+      spotDiffClass = spotDiff >= 0 ? 'text-good' : 'text-bad';
+
+      // 3. Expiration
+      const dteDiff = currentSidePos.DTE - entryPos.DTE;
+      const dtePct = entryPos.DTE > 0 ? (dteDiff / entryPos.DTE) * 100 : 0;
+      dteDiffText = `${dteDiff >= 0 ? '+' : ''}${dteDiff}d<br/><small>(${dteDiff >= 0 ? '+' : ''}${dtePct.toFixed(1)}%)</small>`;
+      dteDiffClass = dteDiff > 0 ? 'text-bad' : (dteDiff < 0 ? 'text-good' : 'text-neutral-alt');
+
+      // 4. Implied Interest
+      const rateDiff = Number(currentSidePos.impliedInterestRate ?? 0) - Number(entryPos.impliedInterestRate ?? 0);
+      const aprDiff = Number(currentSidePos.impliedApr ?? 0) - Number(entryPos.impliedApr ?? 0);
+      interestDiffText = `${percentFmt.format(rateDiff)}<br/><small>(${percentFmt.format(aprDiff)} APR)</small>`;
+      interestDiffClass = 'text-neutral-alt';
+
+      // 5 & 6. Buy / Sell Legs
+      const rollLabel = isDirectionFlip
+        ? (entryPos.spreadType === 'over' ? 'Roll (Over→Under)' : 'Roll (Under→Over)')
+        : 'Roll';
+      if (sameLegs) {
+        buyDiffText = 'Same';
+        buyDiffClass = 'text-muted-alt';
+        sellDiffText = 'Same';
+        sellDiffClass = 'text-muted-alt';
+      } else {
+        if (entryPos.longLeg === currentSidePos.longLeg) {
+          buyDiffText = 'Same';
+          buyDiffClass = 'text-muted-alt';
+        } else {
+          buyDiffText = rollLabel;
+          buyDiffClass = 'text-warning-icon';
+        }
+        if (entryPos.shortLeg === currentSidePos.shortLeg) {
+          sellDiffText = 'Same';
+          sellDiffClass = 'text-muted-alt';
+        } else {
+          sellDiffText = rollLabel;
+          sellDiffClass = 'text-warning-icon';
+        }
+      }
+
+      // 7. Implied Odds
+      const probDiff = currentSide.probRaw - entrySide.probRaw;
+      oddsDiffText = percentFmt.format(probDiff);
+      oddsDiffClass = probDiff > 0 ? 'text-good' : (probDiff < 0 ? 'text-bad' : 'text-neutral-alt');
+
+      // 8. Payoff
+      const yieldDiff = currentSide.yieldRaw - entrySide.yieldRaw;
+      const profitDiff = currentSide.profitRaw - entrySide.profitRaw;
+      payoffDiffText = `${percentFmt.format(yieldDiff)} (${yieldDiff >= 0 ? '+' : ''}${yieldDiff.toFixed(2)}x)<br/><small>(${formatSignedDollar(profitDiff)})</small>`;
+      payoffDiffClass = yieldDiff >= 0 ? 'text-good' : 'text-bad';
+
+      // 9. Minimum Capital
+      const riskDiff = currentSide.riskRaw - entrySide.riskRaw;
+      const riskPct = entrySide.riskRaw > 0 ? (riskDiff / entrySide.riskRaw) * 100 : 0;
+      riskDiffText = `${formatSignedDollar(riskDiff)}<br/><small>(${riskDiff >= 0 ? '+' : ''}${riskPct.toFixed(1)}%)</small>`;
+      riskDiffClass = isRoll
+        ? (riskDiff <= 0 ? 'text-good' : 'text-bad')
+        : (riskDiff >= 0 ? 'text-good' : 'text-bad');
+
+      // 10. Expiry Breakeven
+      const beDirectionGood = isDirectionFlip ? null : (activePos.spreadType === 'under');
+      const beRes = computePriceDiff(
+        entryPos.breakEvenVsFullMoneyAbsolute,
+        currentSidePos.breakEvenVsFullMoneyAbsolute,
+        beDirectionGood
+      );
+      beDiffText = beRes.text;
+      beDiffClass = beRes.className;
+    }
+
+    const sameBrackets = !hasDiff || (
+      Number(entryPos.lowStrike) === Number(currentSidePos.lowStrike) &&
+      Number(entryPos.highStrike) === Number(currentSidePos.highStrike)
+    );
+    const targetSubtitle = (!isRoll || sameBrackets)
+      ? activeSide?.targetRowSubtitle
+      : (isTouchMode ? 'Midpoint of spread strikes' : 'Max payoff strike');
+
+    const sections = [
+      {
+        title: 'Market & Implied Interest',
+        rows: [
+          {
+            key: 'targetPrice',
+            label: activeSide?.targetRowLabel || (isTouchMode ? 'Target Price' : 'Max Payoff Price'),
+            subtitle: targetSubtitle,
+            before: formatTargetCell(entryPos, entrySide, true),
+            after: formatTargetCell(currentSidePos, currentSide, true),
+            single: formatTargetCell(activePos, activeSide, false),
+            diff: targetDiffText,
+            diffClass: targetDiffClass
+          },
+          {
+            key: 'spotPrice',
+            label: 'Spot Price',
+            before: formatSpotCell(entryPos),
+            after: formatSpotCell(currentSidePos),
+            single: formatSpotCell(activePos),
+            diff: spotDiffText,
+            diffClass: spotDiffClass
+          },
+          {
+            key: 'expiration',
+            label: 'Expiration',
+            before: formatExpirationCell(entryPos, true),
+            after: formatExpirationCell(currentSidePos, true),
+            single: formatExpirationCell(activePos, false),
+            diff: dteDiffText,
+            diffClass: dteDiffClass
+          },
+          {
+            key: 'impliedInterest',
+            label: 'Implied Interest',
+            before: formatImpliedInterestCell(entryPos, true),
+            after: formatImpliedInterestCell(currentSidePos, true),
+            single: formatImpliedInterestCell(activePos, false),
+            diff: interestDiffText,
+            diffClass: interestDiffClass
+          }
+        ]
+      },
+      {
+        title: 'Position & Payoff',
+        rows: [
+          {
+            key: 'buyLeg',
+            label: 'Buy',
+            before: formatLegCell(entryPos?.longLeg, entryPos?.longLegURL, 'text-good', true),
+            after: formatLegCell(currentSidePos?.longLeg, currentSidePos?.longLegURL, 'text-good', true),
+            single: formatLegCell(activePos?.longLeg, activePos?.longLegURL, 'text-good', false),
+            diff: buyDiffText,
+            diffClass: buyDiffClass
+          },
+          {
+            key: 'sellLeg',
+            label: 'Sell',
+            before: formatLegCell(entryPos?.shortLeg, entryPos?.shortLegURL, 'text-bad', true),
+            after: formatLegCell(currentSidePos?.shortLeg, currentSidePos?.shortLegURL, 'text-bad', true),
+            single: formatLegCell(activePos?.shortLeg, activePos?.shortLegURL, 'text-bad', false),
+            diff: sellDiffText,
+            diffClass: sellDiffClass
+          },
+          {
+            key: 'impliedOdds',
+            label: 'Implied Odds',
+            before: formatOddsCell(entrySide),
+            after: formatOddsCell(currentSide),
+            single: formatOddsCell(activeSide),
+            diff: oddsDiffText,
+            diffClass: oddsDiffClass
+          },
+          {
+            key: 'payoff',
+            label: 'Payoff',
+            before: formatPayoffCell(entrySide),
+            after: formatPayoffCell(currentSide),
+            single: formatPayoffCell(activeSide),
+            diff: payoffDiffText,
+            diffClass: payoffDiffClass
+          },
+          {
+            key: 'minCapital',
+            label: `Minimum Capital (${activePos.money})`,
+            before: formatRiskCell(entrySide),
+            after: formatRiskCell(currentSide),
+            single: formatRiskCell(activeSide),
+            diff: riskDiffText,
+            diffClass: riskDiffClass
+          },
+          {
+            key: 'breakeven',
+            label: 'Expiry Breakeven',
+            before: formatBeCell(entryPos, true),
+            after: formatBeCell(currentSidePos, true),
+            single: formatBeCell(activePos, false),
+            diff: beDiffText,
+            diffClass: beDiffClass
+          }
+        ]
+      }
+    ];
+
+    return {
+      mode,
+      hasDiff,
+      isRoll,
+      header,
+      sections
+    };
+  }
+
   updateSelection(idToSelect) {
     const store = getAppStore();
     const normalizedId = normalizeTouchBetSelectedId(idToSelect, store?.chartData);
@@ -890,12 +1306,27 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
     const chart = echarts.getInstanceByDom(chartDom);
     if (!chart) return;
 
+    const isTouchMode = (store?.oddsMode || 'touch') === 'touch';
+    const targetNode = _touchBetNodesCache.find(n => n.id === normalizedId);
+    const overlay = calculateTouchBetOverlay(targetNode, isTouchMode);
+
     chart.setOption({
       dataset: [{
         id: 'highlightDataset',
         transform: { type: 'filter', config: { dimension: 'id', '=': normalizedId } }
       }],
-      series: buildTouchBetDteSeries(_touchBetUniqueDTEsCache, normalizedId)
+      series: [
+        ...buildTouchBetDteSeries(_touchBetUniqueDTEsCache, normalizedId),
+        {
+          id: 'entryOverlay',
+          markPoint: {
+            data: overlay?.entry ? [{ coord: overlay.entry }] : []
+          },
+          markLine: {
+            data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
+          }
+        }
+      ]
     });
   }
 
@@ -918,6 +1349,9 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
     const chart = echarts.getInstanceByDom(chartDom);
     if (!chart) return;
 
+    const targetNode = _touchBetNodesCache.find(n => n.id === normalizedId);
+    const overlay = calculateTouchBetOverlay(targetNode, isTouchMode);
+
     chart.setOption({
       dataset: [
         {
@@ -933,7 +1367,16 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
       ],
       series: [
         buildTouchBetThresholdSeries(_touchBetAxisRangeCache.minX, _touchBetAxisRangeCache.maxX, minProbPct),
-        ...buildTouchBetDteSeries(_touchBetUniqueDTEsCache, normalizedId)
+        ...buildTouchBetDteSeries(_touchBetUniqueDTEsCache, normalizedId),
+        {
+          id: 'entryOverlay',
+          markPoint: {
+            data: overlay?.entry ? [{ coord: overlay.entry }] : []
+          },
+          markLine: {
+            data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
+          }
+        }
       ]
     });
   }
@@ -950,8 +1393,13 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
   updateTouchBetNodesActiveProb(nodes, isTouchMode);
 
   const normalizedSelectedId = normalizeTouchBetSelectedId(idToSelect, data);
+  const targetItem = nodes.find(n => n.id === normalizedSelectedId);
+  const overlay = calculateTouchBetOverlay(targetItem, isTouchMode);
 
   const allTargets = nodes.flatMap(n => [Number(n.lowStrike), Number(n.highStrike), Number(n.targetPriceAbsolute)]).filter(Number.isFinite);
+  if (overlay?.entry && Number.isFinite(overlay.entry[0])) {
+    allTargets.push(overlay.entry[0]);
+  }
   const minTarget = allTargets.length ? Math.min(...allTargets) : spotPrice * 0.7;
   const maxTarget = allTargets.length ? Math.max(...allTargets) : spotPrice * 1.3;
 
@@ -970,13 +1418,17 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
     xEnd = axisMaxX;
   }
 
-  const targetItem = nodes.find(n => n.id === normalizedSelectedId);
   if (targetItem) {
     const tx = Number(targetItem.activeTargetPrice);
     if (Number.isFinite(tx)) {
       xStart = Math.min(xStart, Math.max(axisMinX, tx - xPad));
       xEnd = Math.max(xEnd, Math.min(axisMaxX, tx + xPad));
     }
+  }
+  if (overlay?.entry && Number.isFinite(overlay.entry[0])) {
+    const ex = overlay.entry[0];
+    xStart = Math.min(xStart, Math.max(axisMinX, ex - xPad));
+    xEnd = Math.max(xEnd, Math.min(axisMaxX, ex + xPad));
   }
 
   let yStart = 0;
@@ -1117,6 +1569,33 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
       {
         ...selectionHighlightSeries,
         encode: { x: 'activeTargetPrice', y: 'activeWinProb' }
+      },
+      {
+        id: 'entryOverlay',
+        type: 'scatter',
+        silent: true,
+        data: [],
+        markPoint: {
+          symbol: 'circle',
+          symbolSize: 80,
+          itemStyle: {
+            color: 'transparent',
+            borderColor: '#ff5c5c',
+            borderWidth: 4,
+            borderType: 'dashed'
+          },
+          data: overlay?.entry ? [{ coord: overlay.entry }] : []
+        },
+        markLine: {
+          symbol: ['none', 'arrow'],
+          symbolSize: 18,
+          lineStyle: {
+            color: '#e1e355ff',
+            width: 3,
+            type: 'solid'
+          },
+          data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
+        }
       },
       ...(spotPrice > 0 ? [{
         id: 'spotReferenceSeries',
