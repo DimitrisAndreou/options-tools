@@ -459,11 +459,11 @@
               </div>
 
               <div x-show="$store.app.details">
-                <!-- Covered Call & Long Option Unified Details & Diff Panel -->
-                <div x-show="$store.app.strategy === 'coveredCall' || $store.app.strategy === 'longOption'">
-                  <template x-if="$store.app.unrealized">
-                    <div>
-                      <div class="strategy-header">
+                <!-- Unified Strategy Details & Diff Panel -->
+                <template x-if="$store.app.unrealized">
+                  <div>
+                    <div class="strategy-header d-flex justify-content-between align-items-center flex-wrap">
+                      <div>
                         <i class="fas me-2" :class="$store.app.unrealized.header?.iconClass || 'fa-cube'"></i>
                         <template x-if="$store.app.unrealized.header?.strategyURL">
                           <a :href="$store.app.unrealized.header.strategyURL" target="_blank"
@@ -471,7 +471,7 @@
                             x-text="$store.app.unrealized.header.strategyName"></a>
                         </template>
                         <template x-if="!$store.app.unrealized.header?.strategyURL">
-                          <span x-text="$store.app.unrealized.header?.strategyName"></span>
+                          <span x-text="$store.app.unrealized.header?.strategyName || 'Vertical Spread'"></span>
                         </template>
                         <span> on </span>
                         <template x-if="$store.app.unrealized.header?.underlyingURL">
@@ -483,105 +483,7 @@
                           <span class="text-neutral" x-text="$store.app.unrealized.header?.underlyingName"></span>
                         </template>
                       </div>
-
-                      <div tabindex="0" role="region"
-                        :aria-label="$store.app.strategy === 'longOption' ? 'Long Option Strategy Details' : 'Covered Call Strategy Details'"
-                        class="table-wrapper unified-table-wrapper">
-                        <table class="unified-strategy-table">
-                          <thead x-show="$store.app.unrealized.hasDiff">
-                            <tr>
-                              <th scope="col" class="col-metric">Metric</th>
-                              <th scope="col" class="col-val">
-                                <template x-if="$store.app.unrealized.isRoll">
-                                  <a href="#" @click.prevent="$store.app.selectEntryPosition()"
-                                    title="Select pinned entry strategy on chart"
-                                    style="color: inherit; text-decoration: underline dotted;">Entry</a>
-                                </template>
-                                <template x-if="!$store.app.unrealized.isRoll">
-                                  <span>Entry</span>
-                                </template>
-                              </th>
-                              <th scope="col" class="col-val"
-                                x-text="$store.app.unrealized.isRoll ? 'New' : 'Current'">Current</th>
-                              <th scope="col" class="col-diff">Change</th>
-                            </tr>
-                          </thead>
-                          <template x-for="section in $store.app.unrealized.sections" :key="section.title">
-                            <tbody class="strategy-section-body">
-                              <tr class="section-header-row">
-                                <th scope="colgroup" :colspan="$store.app.unrealized.hasDiff ? 4 : 2"
-                                  x-text="section.title"></th>
-                              </tr>
-                              <template x-for="row in section.rows" :key="row.key || row.label">
-                                <tr class="strategy-metric-row"
-                                  :class="{ 'strategy-subrow': row.isSubrow, 'has-subrow': row.hasSubrow }">
-                                  <th scope="row" class="metric-label-cell">
-                                    <div class="metric-label" x-text="row.label"></div>
-                                    <template x-if="row.subtitle">
-                                      <div class="metric-subtitle" x-html="row.subtitle"></div>
-                                    </template>
-                                  </th>
-                                  <template x-if="!$store.app.unrealized.hasDiff">
-                                    <td class="metric-val-single" x-html="row.single"></td>
-                                  </template>
-                                  <template x-if="$store.app.unrealized.hasDiff">
-                                    <td class="metric-val-col" x-html="row.before"></td>
-                                  </template>
-                                  <template x-if="$store.app.unrealized.hasDiff">
-                                    <td class="metric-val-col" x-html="row.after"></td>
-                                  </template>
-                                  <template x-if="$store.app.unrealized.hasDiff">
-                                    <td class="metric-diff-col" :class="row.diffClass" x-html="row.diff"></td>
-                                  </template>
-                                </tr>
-                              </template>
-                            </tbody>
-                          </template>
-                        </table>
-                      </div>
-
-                      <div class="instructions-panel mt-3"
-                        x-show="!$store.app.entryPosition && $store.app.unrealized.header?.instructions?.length">
-                        <div class="instructions-header">Execution Instructions</div>
-                        <div class="instructions-content">
-                          <template x-for="(inst, idx) in $store.app.unrealized.header?.instructions" :key="idx">
-                            <div>
-                              &bull; <b x-text="inst.action"></b>
-                              <span :class="inst.targetClass" x-text="inst.target"></span>
-                              for
-                              <span :class="inst.considerationClass" x-text="inst.consideration"></span>
-                            </div>
-                          </template>
-                        </div>
-                      </div>
-                    </div>
-                  </template>
-                </div>
-
-                <!-- Over / Under (Touch & Expiration Odds) Unified Details & Diff Panel -->
-                <div x-show="$store.app.strategy === 'touchBet'">
-                  <template x-if="$store.app.unrealized">
-                    <div>
-                      <div class="strategy-header d-flex justify-content-between align-items-center flex-wrap">
-                        <div>
-                          <i class="fas me-2" :class="$store.app.unrealized.header?.iconClass || 'fa-bullseye'"></i>
-                          <template x-if="$store.app.unrealized.header?.strategyURL">
-                            <a :href="$store.app.unrealized.header.strategyURL" target="_blank"
-                              style="color: inherit; text-decoration: underline;"
-                              x-text="$store.app.unrealized.header.strategyName"></a>
-                          </template>
-                          <template x-if="!$store.app.unrealized.header?.strategyURL">
-                            <span x-text="$store.app.unrealized.header?.strategyName || 'Vertical Spread'"></span>
-                          </template>
-                          <span> on </span>
-                          <template x-if="$store.app.unrealized.header?.underlyingURL">
-                            <a :href="$store.app.unrealized.header.underlyingURL" class="text-neutral" target="_blank"
-                              style="text-decoration: underline;" x-text="$store.app.unrealized.header.underlyingName"></a>
-                          </template>
-                          <template x-if="!$store.app.unrealized.header?.underlyingURL">
-                            <span class="text-neutral" x-text="$store.app.unrealized.header?.underlyingName"></span>
-                          </template>
-                        </div>
+                      <template x-if="$store.app.strategy === 'touchBet'">
                         <div class="odds-mode-toggle" role="group" aria-label="Probability Mode">
                           <button type="button" class="odds-mode-btn"
                             :class="{ 'active': $store.app.oddsMode === 'touch' }"
@@ -594,132 +496,139 @@
                             Expiry
                           </button>
                         </div>
-                      </div>
+                      </template>
+                    </div>
 
-                      <!-- Event & Market-Implied Odds Bar -->
-                      <div class="outcomes-panel mb-3">
-                        <div class="outcomes-header d-flex justify-content-between align-items-center flex-wrap gap-1">
-                          <span>Event: <span class="text-white" x-text="$store.app.activeTouchBetSide?.eventSummary || $store.app.unrealized.header?.eventSummary"></span></span>
+                    <!-- Over / Under Event & Side Controls -->
+                    <template x-if="$store.app.strategy === 'touchBet'">
+                      <div>
+                        <!-- Event & Market-Implied Odds Bar -->
+                        <div class="outcomes-panel mb-3">
+                          <div class="outcomes-header d-flex justify-content-between align-items-center flex-wrap gap-1">
+                            <span>Event: <span class="text-white" x-text="$store.app.activeTouchBetSide?.eventSummary || $store.app.unrealized.header?.eventSummary"></span></span>
+                          </div>
+                          <div class="odds-bar-track">
+                            <div class="odds-bar-yes" :style="{ width: $store.app.unrealized.header?.yesBarWidth }"></div>
+                          </div>
+                          <div class="d-flex justify-content-between small">
+                            <span>
+                              <span class="text-good" x-text="$store.app.unrealized.header?.shortYesLabel"></span>:
+                              <b class="text-probs" x-text="$store.app.unrealized.header?.yesProbPct"></b>
+                            </span>
+                            <span>
+                              <span class="text-neutral" x-text="$store.app.unrealized.header?.shortNoLabel"></span>:
+                              <b class="text-probs" x-text="$store.app.unrealized.header?.noProbPct"></b>
+                            </span>
+                          </div>
                         </div>
-                        <div class="odds-bar-track">
-                          <div class="odds-bar-yes" :style="{ width: $store.app.unrealized.header?.yesBarWidth }"></div>
-                        </div>
-                        <div class="d-flex justify-content-between small">
-                          <span>
-                            <span class="text-good" x-text="$store.app.unrealized.header?.shortYesLabel"></span>:
-                            <b class="text-probs" x-text="$store.app.unrealized.header?.yesProbPct"></b>
-                          </span>
-                          <span>
-                            <span class="text-neutral" x-text="$store.app.unrealized.header?.shortNoLabel"></span>:
-                            <b class="text-probs" x-text="$store.app.unrealized.header?.noProbPct"></b>
-                          </span>
-                        </div>
-                      </div>
 
-                      <!-- Mobile-Friendly Segmented Side Selector (Believer vs. Skeptic) -->
-                      <div class="odds-side-tabs" role="tablist"
-                        x-show="$store.app.selectedItem || !$store.app.entryPosition">
-                        <button type="button" class="odds-side-tab"
-                          :class="{ 'active-yes': $store.app.touchBetSide !== 'no' }"
-                          @click="$store.app.setTouchBetSide('yes')">
-                          <div class="odds-side-tab-title text-good">
-                            <span x-text="$store.app.unrealized.header?.yesTabLabel"></span>
-                          </div>
-                          <div class="odds-side-tab-sub">
-                            Odds: <span class="text-probs" x-text="$store.app.unrealized.header?.yesProbPct"></span>
-                            &bull; Yield:
-                            <span class="text-good"
-                              x-text="$store.app.unrealized.header?.yesSide ? `${$store.app.unrealized.header.yesSide.yieldPct} (${$store.app.unrealized.header.yesSide.yieldMultiple})` : 'N/A'"></span>
-                          </div>
-                        </button>
-
-                        <button type="button" class="odds-side-tab"
-                          :class="{ 'active-no': $store.app.touchBetSide === 'no' }"
-                          @click="$store.app.setTouchBetSide('no')">
-                          <div class="odds-side-tab-title text-neutral">
-                            <span x-text="$store.app.unrealized.header?.noTabLabel"></span>
-                          </div>
-                          <div class="odds-side-tab-sub">
-                            Odds: <span class="text-probs" x-text="$store.app.unrealized.header?.noProbPct"></span>
-                            &bull; Yield:
-                            <span class="text-neutral"
-                              x-text="$store.app.unrealized.header?.noSide ? `${$store.app.unrealized.header.noSide.yieldPct} (${$store.app.unrealized.header.noSide.yieldMultiple})` : 'N/A'"></span>
-                          </div>
-                        </button>
-                      </div>
-
-                      <div tabindex="0" role="region" aria-label="Over/Under Strategy Details"
-                        class="table-wrapper unified-table-wrapper">
-                        <table class="unified-strategy-table">
-                          <thead x-show="$store.app.unrealized.hasDiff">
-                            <tr>
-                              <th scope="col" class="col-metric">Metric</th>
-                              <th scope="col" class="col-val">
-                                <template x-if="$store.app.unrealized.isRoll">
-                                  <a href="#" @click.prevent="$store.app.selectEntryPosition()"
-                                    title="Select pinned entry strategy on chart"
-                                    style="color: inherit; text-decoration: underline dotted;">Entry</a>
-                                </template>
-                                <template x-if="!$store.app.unrealized.isRoll">
-                                  <span>Entry</span>
-                                </template>
-                              </th>
-                              <th scope="col" class="col-val"
-                                x-text="$store.app.unrealized.isRoll ? 'New' : 'Current'">Current</th>
-                              <th scope="col" class="col-diff">Change</th>
-                            </tr>
-                          </thead>
-                          <template x-for="section in $store.app.unrealized.sections" :key="section.title">
-                            <tbody class="strategy-section-body">
-                              <tr class="section-header-row">
-                                <th scope="colgroup" :colspan="$store.app.unrealized.hasDiff ? 4 : 2"
-                                  x-text="section.title"></th>
-                              </tr>
-                              <template x-for="row in section.rows" :key="row.key || row.label">
-                                <tr class="strategy-metric-row"
-                                  :class="{ 'strategy-subrow': row.isSubrow, 'has-subrow': row.hasSubrow }">
-                                  <th scope="row" class="metric-label-cell">
-                                    <div class="metric-label" x-text="row.label"></div>
-                                    <template x-if="row.subtitle">
-                                      <div class="metric-subtitle" x-html="row.subtitle"></div>
-                                    </template>
-                                  </th>
-                                  <template x-if="!$store.app.unrealized.hasDiff">
-                                    <td class="metric-val-single" x-html="row.single"></td>
-                                  </template>
-                                  <template x-if="$store.app.unrealized.hasDiff">
-                                    <td class="metric-val-col" x-html="row.before"></td>
-                                  </template>
-                                  <template x-if="$store.app.unrealized.hasDiff">
-                                    <td class="metric-val-col" x-html="row.after"></td>
-                                  </template>
-                                  <template x-if="$store.app.unrealized.hasDiff">
-                                    <td class="metric-diff-col" :class="row.diffClass" x-html="row.diff"></td>
-                                  </template>
-                                </tr>
-                              </template>
-                            </tbody>
-                          </template>
-                        </table>
-                      </div>
-
-                      <div class="instructions-panel mt-2"
-                        x-show="!$store.app.entryPosition && $store.app.unrealized.header?.instructions?.length">
-                        <div class="instructions-header">Execution Instructions</div>
-                        <div class="instructions-content">
-                          <template x-for="(inst, idx) in $store.app.unrealized.header?.instructions" :key="idx">
-                            <div>
-                              &bull; <b x-text="inst.action"></b>
-                              <span :class="inst.targetClass" x-text="inst.target"></span>
-                              for
-                              <span :class="inst.considerationClass" x-text="inst.consideration"></span>
+                        <!-- Mobile-Friendly Segmented Side Selector (Believer vs. Skeptic) -->
+                        <div class="odds-side-tabs" role="tablist"
+                          x-show="$store.app.selectedItem || !$store.app.entryPosition">
+                          <button type="button" class="odds-side-tab"
+                            :class="{ 'active-yes': $store.app.touchBetSide !== 'no' }"
+                            @click="$store.app.setTouchBetSide('yes')">
+                            <div class="odds-side-tab-title text-good">
+                              <span x-text="$store.app.unrealized.header?.yesTabLabel"></span>
                             </div>
-                          </template>
+                            <div class="odds-side-tab-sub">
+                              Odds: <span class="text-probs" x-text="$store.app.unrealized.header?.yesProbPct"></span>
+                              &bull; Yield:
+                              <span class="text-good"
+                                x-text="$store.app.unrealized.header?.yesSide ? `${$store.app.unrealized.header.yesSide.yieldPct} (${$store.app.unrealized.header.yesSide.yieldMultiple})` : 'N/A'"></span>
+                            </div>
+                          </button>
+
+                          <button type="button" class="odds-side-tab"
+                            :class="{ 'active-no': $store.app.touchBetSide === 'no' }"
+                            @click="$store.app.setTouchBetSide('no')">
+                            <div class="odds-side-tab-title text-neutral">
+                              <span x-text="$store.app.unrealized.header?.noTabLabel"></span>
+                            </div>
+                            <div class="odds-side-tab-sub">
+                              Odds: <span class="text-probs" x-text="$store.app.unrealized.header?.noProbPct"></span>
+                              &bull; Yield:
+                              <span class="text-neutral"
+                                x-text="$store.app.unrealized.header?.noSide ? `${$store.app.unrealized.header.noSide.yieldPct} (${$store.app.unrealized.header.noSide.yieldMultiple})` : 'N/A'"></span>
+                            </div>
+                          </button>
                         </div>
+                      </div>
+                    </template>
+
+                    <div tabindex="0" role="region"
+                      :aria-label="$store.app.strategy === 'touchBet' ? 'Over/Under Strategy Details' : ($store.app.strategy === 'longOption' ? 'Long Option Strategy Details' : 'Covered Call Strategy Details')"
+                      class="table-wrapper unified-table-wrapper">
+                      <table class="unified-strategy-table">
+                        <thead x-show="$store.app.unrealized.hasDiff">
+                          <tr>
+                            <th scope="col" class="col-metric">Metric</th>
+                            <th scope="col" class="col-val">
+                              <template x-if="$store.app.unrealized.isRoll">
+                                <a href="#" @click.prevent="$store.app.selectEntryPosition()"
+                                  title="Select pinned entry strategy on chart"
+                                  style="color: inherit; text-decoration: underline dotted;">Entry</a>
+                              </template>
+                              <template x-if="!$store.app.unrealized.isRoll">
+                                <span>Entry</span>
+                              </template>
+                            </th>
+                            <th scope="col" class="col-val"
+                              x-text="$store.app.unrealized.isRoll ? 'New' : 'Current'">Current</th>
+                            <th scope="col" class="col-diff">Change</th>
+                          </tr>
+                        </thead>
+                        <template x-for="section in $store.app.unrealized.sections" :key="section.title">
+                          <tbody class="strategy-section-body">
+                            <tr class="section-header-row">
+                              <th scope="colgroup" :colspan="$store.app.unrealized.hasDiff ? 4 : 2"
+                                x-text="section.title"></th>
+                            </tr>
+                            <template x-for="row in section.rows" :key="row.key || row.label">
+                              <tr class="strategy-metric-row"
+                                :class="{ 'strategy-subrow': row.isSubrow, 'has-subrow': row.hasSubrow }">
+                                <th scope="row" class="metric-label-cell">
+                                  <div class="metric-label" x-text="row.label"></div>
+                                  <template x-if="row.subtitle">
+                                    <div class="metric-subtitle" x-html="row.subtitle"></div>
+                                  </template>
+                                </th>
+                                <template x-if="!$store.app.unrealized.hasDiff">
+                                  <td class="metric-val-single" x-html="row.single"></td>
+                                </template>
+                                <template x-if="$store.app.unrealized.hasDiff">
+                                  <td class="metric-val-col" x-html="row.before"></td>
+                                </template>
+                                <template x-if="$store.app.unrealized.hasDiff">
+                                  <td class="metric-val-col" x-html="row.after"></td>
+                                </template>
+                                <template x-if="$store.app.unrealized.hasDiff">
+                                  <td class="metric-diff-col" :class="row.diffClass" x-html="row.diff"></td>
+                                </template>
+                              </tr>
+                            </template>
+                          </tbody>
+                        </template>
+                      </table>
+                    </div>
+
+                    <div class="instructions-panel"
+                      :class="$store.app.strategy === 'touchBet' ? 'mt-2' : 'mt-3'"
+                      x-show="!$store.app.entryPosition && $store.app.unrealized.header?.instructions?.length">
+                      <div class="instructions-header">Execution Instructions</div>
+                      <div class="instructions-content">
+                        <template x-for="(inst, idx) in $store.app.unrealized.header?.instructions" :key="idx">
+                          <div>
+                            &bull; <b x-text="inst.action"></b>
+                            <span :class="inst.targetClass" x-text="inst.target"></span>
+                            for
+                            <span :class="inst.considerationClass" x-text="inst.consideration"></span>
+                          </div>
+                        </template>
                       </div>
                     </div>
-                  </template>
-                </div>
+                  </div>
+                </template>
               </div>
             </div>
           </div>

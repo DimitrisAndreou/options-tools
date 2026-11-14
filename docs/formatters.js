@@ -60,6 +60,48 @@ const selectionHighlightSeries = {
   z: 10
 };
 
+function buildEntryOverlayUpdate(overlay) {
+  return {
+    id: 'entryOverlay',
+    markPoint: {
+      data: overlay?.entry ? [{ coord: overlay.entry }] : []
+    },
+    markLine: {
+      data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
+    }
+  };
+}
+
+function buildEntryOverlaySeries(overlay) {
+  return {
+    id: 'entryOverlay',
+    type: 'scatter',
+    silent: true,
+    data: [],
+    markPoint: {
+      symbol: 'circle',
+      symbolSize: 80,
+      itemStyle: {
+        color: 'transparent',
+        borderColor: '#ff5c5c',
+        borderWidth: 4,
+        borderType: 'dashed'
+      },
+      data: overlay?.entry ? [{ coord: overlay.entry }] : []
+    },
+    markLine: {
+      symbol: ['none', 'arrow'],
+      symbolSize: 18,
+      lineStyle: {
+        color: '#e1e355ff',
+        width: 3,
+        type: 'solid'
+      },
+      data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
+    }
+  };
+}
+
 const axisTitleNameTextStyle = {
   color: '#fcd34d',
   fontFamily: 'Inter',
@@ -115,33 +157,137 @@ const legend = {
   width: '75%',
 };
 
-function formatYieldAsPercent(theYield) {
-  const val = (theYield - 1.0) * 100;
-  return (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
-}
-function formatYieldAsClass(theYield) {
-  return theYield >= 1.0 ? 'text-good' : 'text-bad';
+function escapeHtml(text) {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-function formatPnL(current, entry, formatter, pctSuffix = '', absSuffix = '') {
-  const diff = current - entry;
-  const pct = entry > 0 ? (diff / entry) * 100 : 0;
-  const sign = diff >= 0 ? '+' : '';
-  const pctSuffixStr = pctSuffix ? ' ' + pctSuffix : '';
-  const absSuffixStr = absSuffix ? ' ' + absSuffix : '';
+function formatContractLink(rawName, url, compact = false, colorClass = 'text-neutral') {
+  if (!rawName) return '—';
+  const formatted = formatOptionName(rawName);
+  const label = compact ? formatted.replace(/^([A-Z0-9.^_-]+-)/, '') : formatted;
+  const safeTitle = escapeHtml(formatted);
+  const safeLabel = escapeHtml(label);
+  return url
+    ? `<a href="${escapeHtml(url)}" class="${colorClass}" target="_blank" title="${safeTitle}" style="text-decoration: underline;">${safeLabel}</a>`
+    : `<span class="${colorClass}" title="${safeTitle}">${safeLabel}</span>`;
+}
+
+function formatExpirationCell(pos, compact = false) {
+  if (!pos) return '—';
+  const sep = compact ? '<br/>' : ' ';
+  return `<span class="text-neutral text-nowrap">${escapeHtml(pos.formattedDate)}</span>${sep}<small class="text-bad text-nowrap">(${pos.DTE}d)</small>`;
+}
+
+function formatSpotCell(pos) {
+  if (!pos) return '—';
+  return `<span class="text-spot text-nowrap">${dollarFmt.format(Number(pos.spotPrice))}</span>`;
+}
+
+function formatStrikeCell(pos, compact = false) {
+  if (!pos) return '—';
+  const strike = Number(pos.strikeAbsolute);
+  const spot = Number(pos.spotPrice);
+  const rel = spot > 0
+    ? percentFmt.format(strike / spot - 1.0)
+    : percentFmt.format(Number(pos.strikeRelative) - 1.0);
+  const sep = compact ? '<br/>' : ' ';
+  return `<span class="text-neutral text-nowrap">${dollarFmt.format(strike)}</span>${sep}<small class="strike-relative text-nowrap">(${rel})</small>`;
+}
+
+function formatCapitalMoneyCell(pos) {
+  if (!pos) return '—';
+  return `<span class="text-neutral text-nowrap">${dollarFmt.format(-pos.moneySize)}</span>`;
+}
+
+function formatCapitalUnderlyingCell(pos, amountKey, compact = false) {
+  if (!pos) return '—';
+  const suffix = compact ? '' : ` ${escapeHtml(pos.underlying)}`;
+  return `<span class="text-neutral text-nowrap">${underlyingFmt.format(pos[amountKey])}${suffix}</span>`;
+}
+
+function formatBreakevenCell(absVal, relVal, spotVal = null, compact = false, relCls = 'strike-relative') {
+  if (absVal == null || !Number.isFinite(Number(absVal))) return '—';
+  const spot = Number(spotVal);
+  const hasSpot = spotVal != null && Number.isFinite(spot) && spot > 0;
+  if (relVal == null && !hasSpot) return '—';
+  const absNum = Number(absVal);
+  const rel = hasSpot
+    ? percentFmt.format(absNum / spot - 1.0)
+    : percentFmt.format(Number(relVal) - 1.0);
+  const sep = compact ? '<br/>' : ' ';
+  return `<span class="text-neutral text-nowrap">${dollarFmt.format(absNum)}</span>${sep}<small class="${relCls} text-nowrap">(${rel})</small>`;
+}
+
+function computeDteDiff(entryDte, currentDte) {
+  const e = Number(entryDte);
+  const c = Number(currentDte);
+  const diff = c - e;
+  const pct = e > 0 ? (diff / e) * 100 : 0;
   return {
-    pct: sign + pct.toFixed(1) + '%' + pctSuffixStr,
-    abs: sign + formatter(diff) + absSuffixStr,
+    text: `${diff >= 0 ? '+' : ''}${diff}d<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`,
+    className: diff > 0 ? 'text-bad' : (diff < 0 ? 'text-good' : 'text-neutral-alt')
+  };
+}
+
+function computeSpotDiff(entrySpot, currentSpot) {
+  const e = Number(entrySpot);
+  const c = Number(currentSpot);
+  const diff = c - e;
+  const pct = e > 0 ? (diff / e) * 100 : 0;
+  return {
+    text: `${formatSignedDollar(diff)}<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`,
     className: diff >= 0 ? 'text-good' : 'text-bad'
   };
 }
 
-function formatDaysDiff(entryDTE, currentDTE) {
-  const diffDte = entryDTE - currentDTE;
-  const pctDte = entryDTE > 0 ? (diffDte / entryDTE) * 100 : 0;
-  const sign = diffDte >= 0 ? '+' : '';
-  const pctSign = pctDte >= 0 ? '+' : '';
-  return `${sign}${diffDte} days (${pctSign}${pctDte.toFixed(2)}%)`;
+function computePriceDiff(entryVal, curVal, higherIsGood) {
+  if (entryVal == null || curVal == null) {
+    return { text: '—', className: 'text-muted-alt' };
+  }
+  const e = Number(entryVal);
+  const c = Number(curVal);
+  const diff = c - e;
+  const pct = e > 0 ? (diff / e) * 100 : 0;
+  const text = `${formatSignedDollar(diff)}<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`;
+  if (diff === 0 || higherIsGood == null) {
+    return { text, className: 'text-neutral-alt' };
+  }
+  const isGood = higherIsGood ? diff > 0 : diff < 0;
+  return { text, className: isGood ? 'text-good' : 'text-bad' };
+}
+
+function computeCapitalDiff(entryVal, curVal, isRoll, formatAbs = formatSignedDollar) {
+  const e = Number(entryVal);
+  const c = Number(curVal);
+  const rawDiff = c - e;
+  const diff = rawDiff === 0 ? 0 : rawDiff;
+  const pct = e > 0 ? (diff / e) * 100 : 0;
+  return {
+    text: `${formatAbs(diff)}<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`,
+    className: isRoll
+      ? (diff <= 0 ? 'text-good' : 'text-bad')
+      : (diff >= 0 ? 'text-good' : 'text-bad')
+  };
+}
+
+function computeYieldRatioDiff(entryYield, curYield, subText = null, showMultiple = false) {
+  const e = Number(entryYield);
+  const c = Number(curYield);
+  const ratio = e > 0 ? (c / e) : 1.0;
+  const ratioChange = ratio - 1.0;
+  const mainText = showMultiple
+    ? `${percentFmt.format(ratioChange)} (${ratio.toFixed(2)}x)`
+    : percentFmt.format(ratioChange);
+  const text = subText != null ? `${mainText}<br/><small>(${subText})</small>` : mainText;
+  return {
+    text,
+    className: ratioChange >= 0 ? 'text-good' : 'text-bad'
+  };
 }
 
 function formatSignedDollar(val) {

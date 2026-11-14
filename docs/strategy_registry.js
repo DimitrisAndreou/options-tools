@@ -33,13 +33,41 @@ class BaseStrategyConfig {
   }
 
   /**
+   * Optional hook returning `{ entry: [x, y], current: [x, y] | null }` for chart entry/roll overlays.
+   * @param {object|null} targetItem
+   * @returns {object|null}
+   */
+  getChartOverlay(targetItem) {
+    return null;
+  }
+
+  /**
    * Optional callback called when selection changes on the chart.
    * @param {string|null} idToSelect - The strategy item ID selected, or null to clear selection.
    */
-  updateSelection(idToSelect) { }
+  updateSelection(idToSelect) {
+    const store = getAppStore();
+    const chartDom = document.getElementById("strategyChartContainer");
+    const chart = typeof echarts !== 'undefined' && chartDom ? echarts.getInstanceByDom(chartDom) : null;
+    if (!chart) return;
+
+    const targetItem = store?.chartData?.find(item => item.id === idToSelect);
+    const overlay = this.getChartOverlay(targetItem);
+
+    chart.setOption({
+      dataset: [{
+        id: 'highlightDataset',
+        transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
+      }],
+      series: [buildEntryOverlayUpdate(overlay)]
+    });
+  }
 
   createEntryPosition(dataObj) {
-    return null;
+    if (!dataObj || dataObj.id === undefined) {
+      return null;
+    }
+    return dataObj;
   }
 
   encodeEntryPosition(entryPosition) {
@@ -51,6 +79,31 @@ class BaseStrategyConfig {
     if (!encoded) return null;
     return UrlManager.decodeState(encoded);
   }
+}
+
+function computeChartOverlay(entryCoord, targetCoord, isRelativeRatio = false) {
+  if (!Array.isArray(entryCoord) || entryCoord.length < 2) return null;
+  const ex = Number(entryCoord[0]);
+  const ey = Number(entryCoord[1]);
+  if (!Number.isFinite(ex) || !Number.isFinite(ey)) return null;
+
+  if (!Array.isArray(targetCoord) || targetCoord.length < 2) {
+    return { entry: [ex, ey], current: null };
+  }
+  const tx = Number(targetCoord[0]);
+  const ty = Number(targetCoord[1]);
+  if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
+    return { entry: [ex, ey], current: null };
+  }
+
+  const differs = (a, b) => isRelativeRatio
+    ? (Boolean(b) && Math.abs(a / b - 1.0) > 1e-4)
+    : (Math.abs(a - b) > 1e-4);
+
+  return {
+    entry: [ex, ey],
+    current: (differs(ex, tx) || differs(ey, ty)) ? [tx, ty] : null
+  };
 }
 
 function getAppStore() {

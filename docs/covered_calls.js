@@ -135,6 +135,7 @@ function renderTooltipCC(d) {
 StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
   prepareData = prepareCCData;
   renderTooltip = renderTooltipCC;
+  getChartOverlay = calculateOverlay;
   decodeEntryPosition(encoded) {
     const pos = super.decodeEntryPosition(encoded);
     if (pos && !pos.preTax && pos.moneyYield != null) {
@@ -166,13 +167,6 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     }
     return pos;
   }
-  createEntryPosition(pos) {
-    if (!pos || pos.id === undefined) {
-      console.log("Not creating an entry position from", pos);
-      return null;
-    }
-    return pos;
-  }
   prepareUnrealizedOrRollData(currentPos) {
     const store = getAppStore();
     const entryPos = store ? store.entryPosition : null;
@@ -198,11 +192,7 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
 
     const formatContractCell = (pos, compact) => {
       if (!pos) return '—';
-      const formattedCall = formatOptionName(pos.call);
-      const label = compact ? formattedCall.replace(/^([A-Z0-9.^_-]+-)/, '') : formattedCall;
-      const contractHtml = pos.callURL
-        ? `<a href="${pos.callURL}" class="text-neutral" target="_blank" title="${formattedCall}" style="text-decoration: underline;">${label}</a>`
-        : `<span class="text-neutral" title="${formattedCall}">${label}</span>`;
+      const contractHtml = formatContractLink(pos.call, pos.callURL, compact);
       let callPriceLine = '';
       if (pos.callPrice != null) {
         const cp = Number(pos.callPrice);
@@ -217,37 +207,6 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
         callPriceLine = `<br/><small class="text-probs"><span class="text-nowrap">${dollarFmt.format(cp)}</span><br/><span class="text-nowrap">(${formatContractPrice(contractPrice)} per ${contractSizeStr} contract)</span></small>`;
       }
       return `${contractHtml}${callPriceLine}`;
-    };
-
-    const formatExpirationCell = (pos, compact) => {
-      if (!pos) return '—';
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral text-nowrap">${pos.formattedDate}</span>${sep}<small class="text-bad text-nowrap">(${pos.DTE}d)</small>`;
-    };
-
-    const formatSpotCell = (pos) => {
-      if (!pos) return '—';
-      return `<span class="text-spot text-nowrap">${dollarFmt.format(Number(pos.spotPrice))}</span>`;
-    };
-
-    const formatStrikeCell = (pos, compact) => {
-      if (!pos) return '—';
-      const strike = Number(pos.strikeAbsolute);
-      const spot = Number(pos.spotPrice);
-      const rel = percentFmt.format(strike / spot - 1.0);
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral text-nowrap">${dollarFmt.format(strike)}</span>${sep}<small class="strike-relative text-nowrap">(${rel})</small>`;
-    };
-
-    const formatCapitalMoneyCell = (pos) => {
-      if (!pos) return '—';
-      return `<span class="text-neutral text-nowrap">${dollarFmt.format(-pos.moneySize)}</span>`;
-    };
-
-    const formatCapitalUnderlyingCell = (pos, compact) => {
-      if (!pos) return '—';
-      const suffix = compact ? '' : ` ${pos.underlying}`;
-      return `<span class="text-neutral text-nowrap">${underlyingFmt.format(pos.underlyingToBuy)}${suffix}</span>`;
     };
 
     const formatMoneyYieldCell = (pos, compact) => {
@@ -318,41 +277,28 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       return formatDollarImpactCell(-(pos.postTax.unassignedTax ?? 0), pos.money, compact);
     };
 
-    const formatBeCell = (be, compact, relCls) => {
-      if (!be) return '—';
-      const absStr = dollarFmt.format(be.absolute);
-      const relStr = percentFmt.format(be.relative - 1.0);
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral text-nowrap">${absStr}</span>${sep}<small class="${relCls} text-nowrap">(${relStr})</small>`;
+    const formatBeMoneyCell = (pos, compact) => {
+      const be = pos?.preTax?.breakEvenVsFullMoney;
+      return formatBreakevenCell(be?.absolute, be?.relative, null, compact, 'text-bad');
     };
 
-    const formatBeTaxImpactCell = (pos, compact, metricKey, higherIsGood) => {
-      const preBe = pos?.preTax?.[metricKey];
-      const postBe = pos?.postTax?.[metricKey];
-      if (!preBe || !postBe) return '—';
-      const absDiff = postBe.absolute - preBe.absolute;
-      const relDiff = preBe.absolute > 0 ? (postBe.absolute / preBe.absolute - 1.0) : 0;
-      const isGood = higherIsGood ? absDiff > 0 : absDiff < 0;
-      const isBad = higherIsGood ? absDiff < 0 : absDiff > 0;
-      const impactCls = isGood ? 'text-good' : (isBad ? 'text-bad' : 'text-muted-alt');
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="${impactCls} text-nowrap">${formatSignedDollar(absDiff)}</span>${sep}<small class="${impactCls} text-nowrap">(${percentFmt.format(relDiff)})</small>`;
+    const formatPostTaxBeMoneyCell = (pos, compact) => {
+      const be = pos?.postTax?.breakEvenVsFullMoney;
+      return formatBreakevenCell(be?.absolute, be?.relative, null, compact, 'text-bad');
     };
-
-    const formatBeMoneyCell = (pos, compact) =>
-      formatBeCell(pos?.preTax?.breakEvenVsFullMoney, compact, 'text-bad');
-
-    const formatPostTaxBeMoneyCell = (pos, compact) =>
-      formatBeCell(pos?.postTax?.breakEvenVsFullMoney, compact, 'text-bad');
 
     const formatBeMoneyTaxImpactCell = (pos, compact) =>
       formatBeTaxImpactCell(pos, compact, 'breakEvenVsFullMoney', false);
 
-    const formatBeUndCell = (pos, compact) =>
-      formatBeCell(pos?.preTax?.breakEvenVsFullUnderlying, compact, 'text-good');
+    const formatBeUndCell = (pos, compact) => {
+      const be = pos?.preTax?.breakEvenVsFullUnderlying;
+      return formatBreakevenCell(be?.absolute, be?.relative, null, compact, 'text-good');
+    };
 
-    const formatPostTaxBeUndCell = (pos, compact) =>
-      formatBeCell(pos?.postTax?.breakEvenVsFullUnderlying, compact, 'text-good');
+    const formatPostTaxBeUndCell = (pos, compact) => {
+      const be = pos?.postTax?.breakEvenVsFullUnderlying;
+      return formatBreakevenCell(be?.absolute, be?.relative, null, compact, 'text-good');
+    };
 
     const formatBeUndTaxImpactCell = (pos, compact) =>
       formatBeTaxImpactCell(pos, compact, 'breakEvenVsFullUnderlying', true);
@@ -384,56 +330,52 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       contractDiffClass = sameContract ? 'text-muted-alt' : 'text-warning-icon';
 
       // 2. Expiration
-      const dteDiff = currentPos.DTE - entryPos.DTE;
-      const dtePct = entryPos.DTE > 0 ? (dteDiff / entryPos.DTE) * 100 : 0;
-      dteDiffText = `${dteDiff >= 0 ? '+' : ''}${dteDiff}d<br/><small>(${dteDiff >= 0 ? '+' : ''}${dtePct.toFixed(1)}%)</small>`;
-      dteDiffClass = dteDiff > 0 ? 'text-bad' : (dteDiff < 0 ? 'text-good' : 'text-neutral-alt');
+      const dteRes = computeDteDiff(entryPos.DTE, currentPos.DTE);
+      dteDiffText = dteRes.text;
+      dteDiffClass = dteRes.className;
 
       // 3. Spot Price
-      const entrySpot = Number(entryPos.spotPrice);
-      const currentSpot = Number(currentPos.spotPrice);
-      const spotDiff = currentSpot - entrySpot;
-      const spotPct = entrySpot > 0 ? (spotDiff / entrySpot) * 100 : 0;
-      spotDiffText = `${spotDiff >= 0 ? '+' : ''}${dollarFmt.format(spotDiff)}<br/><small>(${spotDiff >= 0 ? '+' : ''}${spotPct.toFixed(1)}%)</small>`;
-      spotDiffClass = spotDiff >= 0 ? 'text-good' : 'text-bad';
+      const spotRes = computeSpotDiff(entryPos.spotPrice, currentPos.spotPrice);
+      spotDiffText = spotRes.text;
+      spotDiffClass = spotRes.className;
 
       // 4. Strike Price
-      const entryStrike = Number(entryPos.strikeAbsolute);
-      const currentStrike = Number(currentPos.strikeAbsolute);
-      const strikeDiff = currentStrike - entryStrike;
-      const strikeDiffPct = entryStrike > 0 ? (strikeDiff / entryStrike) * 100 : 0;
-      strikeDiffText = `${strikeDiff >= 0 ? '+' : ''}${dollarFmt.format(strikeDiff)}<br/><small>(${strikeDiff >= 0 ? '+' : ''}${strikeDiffPct.toFixed(1)}%)</small>`;
-      strikeDiffClass = strikeDiff > 0 ? 'text-good' : (strikeDiff < 0 ? 'text-bad' : 'text-neutral-alt');
+      const strikeRes = computePriceDiff(entryPos.strikeAbsolute, currentPos.strikeAbsolute, true);
+      strikeDiffText = strikeRes.text;
+      strikeDiffClass = strikeRes.className;
 
       // 5. Capital (Money)
-      const entryMoney = -entryPos.moneySize;
-      const currentMoney = -currentPos.moneySize;
-      const moneyDiff = currentMoney - entryMoney;
-      const moneyPct = entryMoney > 0 ? (moneyDiff / entryMoney) * 100 : 0;
-      moneyDiffText = `${moneyDiff >= 0 ? '+' : ''}${dollarFmt.format(moneyDiff)}<br/><small>(${moneyDiff >= 0 ? '+' : ''}${moneyPct.toFixed(1)}%)</small>`;
-      moneyDiffClass = isRoll
-        ? (moneyDiff <= 0 ? 'text-good' : 'text-bad')
-        : (moneyDiff >= 0 ? 'text-good' : 'text-bad');
+      const moneyRes = computeCapitalDiff(-entryPos.moneySize, -currentPos.moneySize, isRoll);
+      moneyDiffText = moneyRes.text;
+      moneyDiffClass = moneyRes.className;
 
       // 6. Capital (Underlying)
-      const undDiff = currentPos.underlyingToBuy - entryPos.underlyingToBuy;
-      const undPct = entryPos.underlyingToBuy > 0 ? (undDiff / entryPos.underlyingToBuy) * 100 : 0;
-      undDiffText = `${undDiff >= 0 ? '+' : ''}${underlyingFmt.format(undDiff)}<br/><small>(${undDiff >= 0 ? '+' : ''}${undPct.toFixed(1)}%)</small>`;
-      undDiffClass = isRoll
-        ? (undDiff <= 0 ? 'text-good' : 'text-bad')
-        : (undDiff >= 0 ? 'text-good' : 'text-bad');
+      const undRes = computeCapitalDiff(
+        entryPos.underlyingToBuy,
+        currentPos.underlyingToBuy,
+        isRoll,
+        v => `${v >= 0 ? '+' : ''}${underlyingFmt.format(v)}`
+      );
+      undDiffText = undRes.text;
+      undDiffClass = undRes.className;
 
       // 7. Money Yield
-      const moneyYieldRatioChange = currentPos.preTax.moneyYield / entryPos.preTax.moneyYield - 1.0;
-      const profitDiff = currentPos.preTax.moneyProfit - entryPos.preTax.moneyProfit;
-      moneyYieldDiffText = `${percentFmt.format(moneyYieldRatioChange)}<br/><small>(${formatSignedDollar(profitDiff)})</small>`;
-      moneyYieldDiffClass = moneyYieldRatioChange >= 0 ? 'text-good' : 'text-bad';
+      const moneyYieldRes = computeYieldRatioDiff(
+        entryPos.preTax.moneyYield,
+        currentPos.preTax.moneyYield,
+        formatSignedDollar(currentPos.preTax.moneyProfit - entryPos.preTax.moneyProfit)
+      );
+      moneyYieldDiffText = moneyYieldRes.text;
+      moneyYieldDiffClass = moneyYieldRes.className;
 
       if (hasTaxes && entryPos.postTax && currentPos.postTax) {
-        const ptRatioChange = currentPos.postTax.moneyYield / entryPos.postTax.moneyYield - 1.0;
-        const ptProfitDiff = currentPos.postTax.moneyProfit - entryPos.postTax.moneyProfit;
-        postTaxMoneyYieldDiffText = `${percentFmt.format(ptRatioChange)}<br/><small>(${formatSignedDollar(ptProfitDiff)})</small>`;
-        postTaxMoneyYieldDiffClass = ptRatioChange >= 0 ? 'text-good' : 'text-bad';
+        const ptMoneyYieldRes = computeYieldRatioDiff(
+          entryPos.postTax.moneyYield,
+          currentPos.postTax.moneyYield,
+          formatSignedDollar(currentPos.postTax.moneyProfit - entryPos.postTax.moneyProfit)
+        );
+        postTaxMoneyYieldDiffText = ptMoneyYieldRes.text;
+        postTaxMoneyYieldDiffClass = ptMoneyYieldRes.className;
 
         const entryAbsImpact = entryPos.postTax.moneyProfit - entryPos.preTax.moneyProfit;
         const curAbsImpact = currentPos.postTax.moneyProfit - currentPos.preTax.moneyProfit;
@@ -443,16 +385,24 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       }
 
       // 8. Underlying Yield
-      const undYieldRatioChange = currentPos.preTax.underlyingYield / entryPos.preTax.underlyingYield - 1.0;
       const premDiff = currentPos.preTax.premiumToReceive - entryPos.preTax.premiumToReceive;
-      undYieldDiffText = `${percentFmt.format(undYieldRatioChange)}<br/><small>(${premDiff >= 0 ? '+' : ''}${underlyingFmt.format(premDiff)})</small>`;
-      undYieldDiffClass = undYieldRatioChange >= 0 ? 'text-good' : 'text-bad';
+      const undYieldRes = computeYieldRatioDiff(
+        entryPos.preTax.underlyingYield,
+        currentPos.preTax.underlyingYield,
+        `${premDiff >= 0 ? '+' : ''}${underlyingFmt.format(premDiff)}`
+      );
+      undYieldDiffText = undYieldRes.text;
+      undYieldDiffClass = undYieldRes.className;
 
       if (hasTaxes && entryPos.postTax && currentPos.postTax) {
-        const ptUndRatioChange = currentPos.postTax.underlyingYield / entryPos.postTax.underlyingYield - 1.0;
         const ptPremDiff = currentPos.postTax.premiumToReceive - entryPos.postTax.premiumToReceive;
-        postTaxUndYieldDiffText = `${percentFmt.format(ptUndRatioChange)}<br/><small>(${ptPremDiff >= 0 ? '+' : ''}${underlyingFmt.format(ptPremDiff)})</small>`;
-        postTaxUndYieldDiffClass = ptUndRatioChange >= 0 ? 'text-good' : 'text-bad';
+        const ptUndYieldRes = computeYieldRatioDiff(
+          entryPos.postTax.underlyingYield,
+          currentPos.postTax.underlyingYield,
+          `${ptPremDiff >= 0 ? '+' : ''}${underlyingFmt.format(ptPremDiff)}`
+        );
+        postTaxUndYieldDiffText = ptUndYieldRes.text;
+        postTaxUndYieldDiffClass = ptUndYieldRes.className;
 
         const entryTaxImpact = -(entryPos.postTax.unassignedTax ?? 0);
         const curTaxImpact = -(currentPos.postTax.unassignedTax ?? 0);
@@ -480,60 +430,46 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       };
 
       // 9. Breakeven (vs full money)
-      const entryBeMoney = entryPos.preTax.breakEvenVsFullMoney?.absolute;
-      const curBeMoney = currentPos.preTax.breakEvenVsFullMoney?.absolute;
-      if (entryBeMoney != null && curBeMoney != null) {
-        const beMoneyDiff = curBeMoney - entryBeMoney;
-        const beMoneyDiffPct = entryBeMoney > 0 ? (beMoneyDiff / entryBeMoney) * 100 : 0;
-        beMoneyDiffText = `${beMoneyDiff >= 0 ? '+' : ''}${dollarFmt.format(beMoneyDiff)}<br/><small>(${beMoneyDiff >= 0 ? '+' : ''}${beMoneyDiffPct.toFixed(1)}%)</small>`;
-        beMoneyDiffClass = beMoneyDiff <= 0 ? 'text-good' : 'text-bad';
-      } else {
-        beMoneyDiffText = '—';
-        beMoneyDiffClass = 'text-muted-alt';
-      }
+      const beMoneyRes = computePriceDiff(
+        entryPos.preTax.breakEvenVsFullMoney?.absolute,
+        currentPos.preTax.breakEvenVsFullMoney?.absolute,
+        false
+      );
+      beMoneyDiffText = beMoneyRes.text;
+      beMoneyDiffClass = beMoneyRes.className;
 
       if (hasTaxes && entryPos.postTax && currentPos.postTax) {
-        const ptEntryBeMoney = entryPos.postTax.breakEvenVsFullMoney?.absolute;
-        const ptCurBeMoney = currentPos.postTax.breakEvenVsFullMoney?.absolute;
-        if (ptEntryBeMoney != null && ptCurBeMoney != null) {
-          const ptBeMoneyDiff = ptCurBeMoney - ptEntryBeMoney;
-          const ptBeMoneyDiffPct = ptEntryBeMoney > 0 ? (ptBeMoneyDiff / ptEntryBeMoney) * 100 : 0;
-          postTaxBeMoneyDiffText = `${ptBeMoneyDiff >= 0 ? '+' : ''}${dollarFmt.format(ptBeMoneyDiff)}<br/><small>(${ptBeMoneyDiff >= 0 ? '+' : ''}${ptBeMoneyDiffPct.toFixed(1)}%)</small>`;
-          postTaxBeMoneyDiffClass = ptBeMoneyDiff <= 0 ? 'text-good' : 'text-bad';
-        } else {
-          postTaxBeMoneyDiffText = '—';
-          postTaxBeMoneyDiffClass = 'text-muted-alt';
-        }
+        const ptBeMoneyRes = computePriceDiff(
+          entryPos.postTax.breakEvenVsFullMoney?.absolute,
+          currentPos.postTax.breakEvenVsFullMoney?.absolute,
+          false
+        );
+        postTaxBeMoneyDiffText = ptBeMoneyRes.text;
+        postTaxBeMoneyDiffClass = ptBeMoneyRes.className;
+
         const beMoneyImpact = computeBeTaxImpactDiff('breakEvenVsFullMoney', false);
         beMoneyTaxImpactDiffText = beMoneyImpact.text;
         beMoneyTaxImpactDiffClass = beMoneyImpact.className;
       }
 
       // 10. Breakeven (vs full underlying)
-      const entryBeUnd = entryPos.preTax.breakEvenVsFullUnderlying?.absolute;
-      const curBeUnd = currentPos.preTax.breakEvenVsFullUnderlying?.absolute;
-      if (entryBeUnd != null && curBeUnd != null) {
-        const beUndDiff = curBeUnd - entryBeUnd;
-        const beUndDiffPct = entryBeUnd > 0 ? (beUndDiff / entryBeUnd) * 100 : 0;
-        beUndDiffText = `${beUndDiff >= 0 ? '+' : ''}${dollarFmt.format(beUndDiff)}<br/><small>(${beUndDiff >= 0 ? '+' : ''}${beUndDiffPct.toFixed(1)}%)</small>`;
-        beUndDiffClass = beUndDiff >= 0 ? 'text-good' : 'text-bad';
-      } else {
-        beUndDiffText = '—';
-        beUndDiffClass = 'text-muted-alt';
-      }
+      const beUndRes = computePriceDiff(
+        entryPos.preTax.breakEvenVsFullUnderlying?.absolute,
+        currentPos.preTax.breakEvenVsFullUnderlying?.absolute,
+        true
+      );
+      beUndDiffText = beUndRes.text;
+      beUndDiffClass = beUndRes.className;
 
       if (hasTaxes && entryPos.postTax && currentPos.postTax) {
-        const ptEntryBeUnd = entryPos.postTax.breakEvenVsFullUnderlying?.absolute;
-        const ptCurBeUnd = currentPos.postTax.breakEvenVsFullUnderlying?.absolute;
-        if (ptEntryBeUnd != null && ptCurBeUnd != null) {
-          const ptBeUndDiff = ptCurBeUnd - ptEntryBeUnd;
-          const ptBeUndDiffPct = ptEntryBeUnd > 0 ? (ptBeUndDiff / ptEntryBeUnd) * 100 : 0;
-          postTaxBeUndDiffText = `${ptBeUndDiff >= 0 ? '+' : ''}${dollarFmt.format(ptBeUndDiff)}<br/><small>(${ptBeUndDiff >= 0 ? '+' : ''}${ptBeUndDiffPct.toFixed(1)}%)</small>`;
-          postTaxBeUndDiffClass = ptBeUndDiff >= 0 ? 'text-good' : 'text-bad';
-        } else {
-          postTaxBeUndDiffText = '—';
-          postTaxBeUndDiffClass = 'text-muted-alt';
-        }
+        const ptBeUndRes = computePriceDiff(
+          entryPos.postTax.breakEvenVsFullUnderlying?.absolute,
+          currentPos.postTax.breakEvenVsFullUnderlying?.absolute,
+          true
+        );
+        postTaxBeUndDiffText = ptBeUndRes.text;
+        postTaxBeUndDiffClass = ptBeUndRes.className;
+
         const beUndImpact = computeBeTaxImpactDiff('breakEvenVsFullUnderlying', true);
         beUndTaxImpactDiffText = beUndImpact.text;
         beUndTaxImpactDiffClass = beUndImpact.className;
@@ -597,9 +533,9 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
           {
             label: `Capital (${activePos.underlying})`,
             subtitle: null,
-            before: formatCapitalUnderlyingCell(entryPos, true),
-            after: formatCapitalUnderlyingCell(currentPos, true),
-            single: formatCapitalUnderlyingCell(activePos, false),
+            before: formatCapitalUnderlyingCell(entryPos, 'underlyingToBuy', true),
+            after: formatCapitalUnderlyingCell(currentPos, 'underlyingToBuy', true),
+            single: formatCapitalUnderlyingCell(activePos, 'underlyingToBuy', false),
             diff: undDiffText,
             diffClass: undDiffClass
           }
@@ -758,32 +694,6 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     };
   }
 
-  updateSelection(idToSelect) {
-    const store = getAppStore();
-    const chartDom = document.getElementById("strategyChartContainer");
-    const chart = echarts.getInstanceByDom(chartDom);
-    if (!chart || !store || !store.chartData) return;
-
-    const targetItem = store.chartData.find(item => item.id === idToSelect);
-    const overlay = calculateOverlay(targetItem);
-
-    chart.setOption({
-      dataset: [{
-        id: 'highlightDataset',
-        transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
-      }],
-      series: [{
-        id: 'entryOverlay',
-        markPoint: {
-          data: overlay?.entry ? [{ coord: overlay.entry }] : []
-        },
-        markLine: {
-          data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
-        }
-      }]
-    });
-  }
-
   updateYieldBand() {
     const store = getAppStore();
     const chartDom = document.getElementById("strategyChartContainer");
@@ -909,26 +819,12 @@ function calculateOverlay(target) {
   const entryMetrics = entryPosition?.postTax ?? entryPosition?.preTax;
   if (!entryMetrics) return null;
 
-  const { moneyYield, underlyingYield } = entryMetrics;
   const targetMetrics = target?.postTax ?? target?.preTax;
-  if (!targetMetrics) {
-    return {
-      entry: [moneyYield, underlyingYield],
-      current: null
-    };
-  }
-
-  const targetMoneyYield = targetMetrics.moneyYield;
-  const targetUndYield = targetMetrics.underlyingYield;
-  const moneyRatio = targetMoneyYield ? moneyYield / targetMoneyYield : null;
-  const underlyingRatio = targetUndYield ? underlyingYield / targetUndYield : null;
-  const moneyDiffers = moneyRatio !== null && Math.abs(moneyRatio - 1.0) > 0.0001;
-  const underlyingDiffers = underlyingRatio !== null && Math.abs(underlyingRatio - 1.0) > 0.0001;
-
-  return {
-    entry: [moneyYield, underlyingYield],
-    current: (moneyDiffers || underlyingDiffers) ? [targetMoneyYield, targetUndYield] : null
-  };
+  return computeChartOverlay(
+    [entryMetrics.moneyYield, entryMetrics.underlyingYield],
+    targetMetrics ? [targetMetrics.moneyYield, targetMetrics.underlyingYield] : null,
+    true
+  );
 }
 
 
@@ -1129,33 +1025,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
         ...selectionHighlightSeries,
         encode: { x: 'moneyYield', y: 'underlyingYield' }
       },
-      {
-        id: 'entryOverlay',
-        type: 'scatter',
-        silent: true,
-        data: [],
-        markPoint: {
-          symbol: 'circle',
-          symbolSize: 80,
-          itemStyle: {
-            color: 'transparent',
-            borderColor: '#ff5c5c',
-            borderWidth: 4,
-            borderType: 'dashed'
-          },
-          data: overlay?.entry ? [{ coord: overlay.entry }] : []
-        },
-        markLine: {
-          symbol: ['none', 'arrow'],
-          symbolSize: 18,
-          lineStyle: {
-            color: '#e1e355ff',
-            width: 3,
-            type: 'solid'
-          },
-          data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
-        }
-      },
+      buildEntryOverlaySeries(overlay),
       buildCoveredCallBandSeries(
         _ccBandCache,
         store?.ccBiasFactor ?? 1.0,

@@ -180,45 +180,16 @@ function calculateLongOptionsOverlay(target) {
     return null;
   }
 
-  const entryX = Number(entryPosition.maxLeverage);
-  const entryY = Number(entryPosition.breakEvenVsFullUnderlyingRelative);
-  if (!Number.isFinite(entryX) || !Number.isFinite(entryY)) return null;
-
-  if (!target) {
-    return {
-      entry: [entryX, entryY],
-      current: null
-    };
-  }
-
-  const targetX = Number(target.maxLeverage);
-  const targetY = Number(target.breakEvenVsFullUnderlyingRelative);
-  if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
-    return {
-      entry: [entryX, entryY],
-      current: null
-    };
-  }
-
-  const xDiffers = Math.abs(entryX - targetX) > 1e-4;
-  const yDiffers = Math.abs(entryY - targetY) > 1e-4;
-
-  return {
-    entry: [entryX, entryY],
-    current: (xDiffers || yDiffers) ? [targetX, targetY] : null
-  };
+  return computeChartOverlay(
+    [entryPosition.maxLeverage, entryPosition.breakEvenVsFullUnderlyingRelative],
+    target ? [target.maxLeverage, target.breakEvenVsFullUnderlyingRelative] : null
+  );
 }
 
 class LongOptionStrategyConfig extends BaseStrategyConfig {
   prepareData = prepareLongOptionData;
   renderTooltip = renderTooltipLongOption;
-
-  createEntryPosition(pos) {
-    if (!pos || pos.id === undefined) {
-      return null;
-    }
-    return pos;
-  }
+  getChartOverlay = calculateLongOptionsOverlay;
 
   prepareUnrealizedOrRollData(currentPos) {
     const store = getAppStore();
@@ -239,64 +210,12 @@ class LongOptionStrategyConfig extends BaseStrategyConfig {
       header.iconClass = 'fa-exchange-alt';
     }
 
-    const formatContractCell = (pos, compact) => {
-      if (!pos) return '—';
-      const rawName = pos.call || pos.put;
-      const url = pos.callURL || pos.putURL;
-      const formatted = formatOptionName(rawName);
-      const label = compact ? formatted.replace(/^([A-Z0-9.^_-]+-)/, '') : formatted;
-      return url
-        ? `<a href="${url}" class="text-neutral" target="_blank" title="${formatted}" style="text-decoration: underline;">${label}</a>`
-        : `<span class="text-neutral" title="${formatted}">${label}</span>`;
-    };
-
-    const formatExpirationCell = (pos, compact) => {
-      if (!pos) return '—';
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral text-nowrap">${pos.formattedDate}</span>${sep}<small class="text-bad text-nowrap">(${pos.DTE}d)</small>`;
-    };
-
-    const formatSpotCell = (pos) => {
-      if (!pos) return '—';
-      return `<span class="text-spot text-nowrap">${dollarFmt.format(Number(pos.spotPrice))}</span>`;
-    };
-
-    const formatStrikeCell = (pos, compact) => {
-      if (!pos) return '—';
-      const strike = Number(pos.strikeAbsolute);
-      const spot = Number(pos.spotPrice);
-      const rel = spot > 0
-        ? percentFmt.format(strike / spot - 1.0)
-        : percentFmt.format(Number(pos.strikeRelative) - 1.0);
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral text-nowrap">${dollarFmt.format(strike)}</span>${sep}<small class="strike-relative text-nowrap">(${rel})</small>`;
-    };
-
-    const formatCapitalMoneyCell = (pos) => {
-      if (!pos) return '—';
-      return `<span class="text-neutral text-nowrap">${dollarFmt.format(-pos.moneySize)}</span>`;
-    };
-
-    const formatCapitalUnderlyingCell = (pos, compact) => {
-      if (!pos) return '—';
-      const suffix = compact ? '' : ` ${pos.underlying}`;
-      return `<span class="text-neutral text-nowrap">${underlyingFmt.format(pos.costInUnderlying)}${suffix}</span>`;
-    };
+    const formatContractCell = (pos, compact) =>
+      pos ? formatContractLink(pos.call || pos.put, pos.callURL || pos.putURL, compact) : '—';
 
     const formatLeverageCell = (pos) => {
       if (!pos || pos.maxLeverage == null) return '—';
       return `<span class="text-good text-nowrap">${Number(pos.maxLeverage).toFixed(2)}x</span>`;
-    };
-
-    const formatBeCell = (absVal, relVal, spotVal, compact, relCls) => {
-      if (absVal == null || !Number.isFinite(Number(absVal))) return '—';
-      const absNum = Number(absVal);
-      const spot = Number(spotVal);
-      const rel = spot > 0
-        ? percentFmt.format(absNum / spot - 1.0)
-        : percentFmt.format(Number(relVal) - 1.0);
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral text-nowrap">${dollarFmt.format(absNum)}</span>${sep}<small class="${relCls} text-nowrap">(${rel})</small>`;
     };
 
     let contractDiff = '', contractDiffClass = 'text-neutral-alt';
@@ -308,22 +227,6 @@ class LongOptionStrategyConfig extends BaseStrategyConfig {
     let levDiffText = '', levDiffClass = 'text-neutral-alt';
     let beMoneyDiffText = '', beMoneyDiffClass = 'text-neutral-alt';
     let beUndDiffText = '', beUndDiffClass = 'text-neutral-alt';
-
-    const computePriceDiff = (entryVal, curVal, higherIsGood) => {
-      if (entryVal == null || curVal == null) {
-        return { text: '—', className: 'text-muted-alt' };
-      }
-      const e = Number(entryVal);
-      const c = Number(curVal);
-      const diff = c - e;
-      const pct = e > 0 ? (diff / e) * 100 : 0;
-      const text = `${formatSignedDollar(diff)}<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`;
-      if (diff === 0 || higherIsGood == null) {
-        return { text, className: 'text-neutral-alt' };
-      }
-      const isGood = higherIsGood ? diff > 0 : diff < 0;
-      return { text, className: isGood ? 'text-good' : 'text-bad' };
-    };
 
     if (hasDiff) {
       // 1. Contract
@@ -342,18 +245,14 @@ class LongOptionStrategyConfig extends BaseStrategyConfig {
       }
 
       // 2. Expiration
-      const dteDiff = currentPos.DTE - entryPos.DTE;
-      const dtePct = entryPos.DTE > 0 ? (dteDiff / entryPos.DTE) * 100 : 0;
-      dteDiffText = `${dteDiff >= 0 ? '+' : ''}${dteDiff}d<br/><small>(${dteDiff >= 0 ? '+' : ''}${dtePct.toFixed(1)}%)</small>`;
-      dteDiffClass = dteDiff > 0 ? 'text-bad' : (dteDiff < 0 ? 'text-good' : 'text-neutral-alt');
+      const dteRes = computeDteDiff(entryPos.DTE, currentPos.DTE);
+      dteDiffText = dteRes.text;
+      dteDiffClass = dteRes.className;
 
       // 3. Spot Price
-      const entrySpot = Number(entryPos.spotPrice);
-      const currentSpot = Number(currentPos.spotPrice);
-      const spotDiff = currentSpot - entrySpot;
-      const spotPct = entrySpot > 0 ? (spotDiff / entrySpot) * 100 : 0;
-      spotDiffText = `${formatSignedDollar(spotDiff)}<br/><small>(${spotDiff >= 0 ? '+' : ''}${spotPct.toFixed(1)}%)</small>`;
-      spotDiffClass = spotDiff >= 0 ? 'text-good' : 'text-bad';
+      const spotRes = computeSpotDiff(entryPos.spotPrice, currentPos.spotPrice);
+      spotDiffText = spotRes.text;
+      spotDiffClass = spotRes.className;
 
       // 4. Strike Price
       const strikeDirectionGood = isDirectionFlip ? null : (activePos.strategyType === 'longPut');
@@ -362,24 +261,19 @@ class LongOptionStrategyConfig extends BaseStrategyConfig {
       strikeDiffClass = strikeRes.className;
 
       // 5. Capital (Money)
-      const entryMoney = -Number(entryPos.moneySize);
-      const currentMoney = -Number(currentPos.moneySize);
-      const moneyDiff = currentMoney - entryMoney;
-      const moneyPct = entryMoney > 0 ? (moneyDiff / entryMoney) * 100 : 0;
-      moneyDiffText = `${formatSignedDollar(moneyDiff)}<br/><small>(${moneyDiff >= 0 ? '+' : ''}${moneyPct.toFixed(1)}%)</small>`;
-      moneyDiffClass = isRoll
-        ? (moneyDiff <= 0 ? 'text-good' : 'text-bad')
-        : (moneyDiff >= 0 ? 'text-good' : 'text-bad');
+      const moneyRes = computeCapitalDiff(-entryPos.moneySize, -currentPos.moneySize, isRoll);
+      moneyDiffText = moneyRes.text;
+      moneyDiffClass = moneyRes.className;
 
       // 6. Capital (Underlying)
-      const entryUnd = Number(entryPos.costInUnderlying);
-      const currentUnd = Number(currentPos.costInUnderlying);
-      const undDiff = currentUnd - entryUnd;
-      const undPct = entryUnd > 0 ? (undDiff / entryUnd) * 100 : 0;
-      undDiffText = `${undDiff >= 0 ? '+' : ''}${underlyingFmt.format(undDiff)}<br/><small>(${undDiff >= 0 ? '+' : ''}${undPct.toFixed(1)}%)</small>`;
-      undDiffClass = isRoll
-        ? (undDiff <= 0 ? 'text-good' : 'text-bad')
-        : (undDiff >= 0 ? 'text-good' : 'text-bad');
+      const undRes = computeCapitalDiff(
+        entryPos.costInUnderlying,
+        currentPos.costInUnderlying,
+        isRoll,
+        v => `${v >= 0 ? '+' : ''}${underlyingFmt.format(v)}`
+      );
+      undDiffText = undRes.text;
+      undDiffClass = undRes.className;
 
       // 7. Leverage
       const entryLev = Number(entryPos.maxLeverage);
@@ -486,9 +380,9 @@ class LongOptionStrategyConfig extends BaseStrategyConfig {
             key: 'capitalUnderlying',
             label: `Capital (${activePos.underlying})`,
             subtitle: null,
-            before: formatCapitalUnderlyingCell(entryPos, true),
-            after: formatCapitalUnderlyingCell(currentPos, true),
-            single: formatCapitalUnderlyingCell(activePos, false),
+            before: formatCapitalUnderlyingCell(entryPos, 'costInUnderlying', true),
+            after: formatCapitalUnderlyingCell(currentPos, 'costInUnderlying', true),
+            single: formatCapitalUnderlyingCell(activePos, 'costInUnderlying', false),
             diff: undDiffText,
             diffClass: undDiffClass
           }
@@ -516,9 +410,9 @@ class LongOptionStrategyConfig extends BaseStrategyConfig {
             key: 'beMoney',
             label: `vs 100% ${activePos.money}`,
             subtitle: beMoneySubtitle,
-            before: formatBeCell(entryPos?.breakEvenVsFullMoneyAbsolute, entryPos?.breakEvenVsFullMoneyRelative, entryPos?.spotPrice, true, 'text-bad'),
-            after: formatBeCell(currentPos?.breakEvenVsFullMoneyAbsolute, currentPos?.breakEvenVsFullMoneyRelative, currentPos?.spotPrice, true, 'text-bad'),
-            single: formatBeCell(activePos?.breakEvenVsFullMoneyAbsolute, activePos?.breakEvenVsFullMoneyRelative, activePos?.spotPrice, false, 'text-bad'),
+            before: formatBreakevenCell(entryPos?.breakEvenVsFullMoneyAbsolute, entryPos?.breakEvenVsFullMoneyRelative, entryPos?.spotPrice, true, 'text-bad'),
+            after: formatBreakevenCell(currentPos?.breakEvenVsFullMoneyAbsolute, currentPos?.breakEvenVsFullMoneyRelative, currentPos?.spotPrice, true, 'text-bad'),
+            single: formatBreakevenCell(activePos?.breakEvenVsFullMoneyAbsolute, activePos?.breakEvenVsFullMoneyRelative, activePos?.spotPrice, false, 'text-bad'),
             diff: beMoneyDiffText,
             diffClass: beMoneyDiffClass
           },
@@ -526,9 +420,9 @@ class LongOptionStrategyConfig extends BaseStrategyConfig {
             key: 'beUnderlying',
             label: `vs 100% ${activePos.underlying}`,
             subtitle: beUndSubtitle,
-            before: formatBeCell(entryPos?.breakEvenVsFullUnderlyingAbsolute, entryPos?.breakEvenVsFullUnderlyingRelative, entryPos?.spotPrice, true, 'text-good'),
-            after: formatBeCell(currentPos?.breakEvenVsFullUnderlyingAbsolute, currentPos?.breakEvenVsFullUnderlyingRelative, currentPos?.spotPrice, true, 'text-good'),
-            single: formatBeCell(activePos?.breakEvenVsFullUnderlyingAbsolute, activePos?.breakEvenVsFullUnderlyingRelative, activePos?.spotPrice, false, 'text-good'),
+            before: formatBreakevenCell(entryPos?.breakEvenVsFullUnderlyingAbsolute, entryPos?.breakEvenVsFullUnderlyingRelative, entryPos?.spotPrice, true, 'text-good'),
+            after: formatBreakevenCell(currentPos?.breakEvenVsFullUnderlyingAbsolute, currentPos?.breakEvenVsFullUnderlyingRelative, currentPos?.spotPrice, true, 'text-good'),
+            single: formatBreakevenCell(activePos?.breakEvenVsFullUnderlyingAbsolute, activePos?.breakEvenVsFullUnderlyingRelative, activePos?.spotPrice, false, 'text-good'),
             diff: beUndDiffText,
             diffClass: beUndDiffClass
           }
@@ -543,32 +437,6 @@ class LongOptionStrategyConfig extends BaseStrategyConfig {
       header,
       sections
     };
-  }
-
-  updateSelection(idToSelect) {
-    const store = getAppStore();
-    const chartDom = document.getElementById("strategyChartContainer");
-    const chart = echarts.getInstanceByDom(chartDom);
-    if (!chart) return;
-
-    const targetItem = store?.chartData?.find(item => item.id === idToSelect);
-    const overlay = calculateLongOptionsOverlay(targetItem);
-
-    chart.setOption({
-      dataset: [{
-        id: 'highlightDataset',
-        transform: { type: 'filter', config: { dimension: 'id', '=': idToSelect || '' } }
-      }],
-      series: [{
-        id: 'entryOverlay',
-        markPoint: {
-          data: overlay?.entry ? [{ coord: overlay.entry }] : []
-        },
-        markLine: {
-          data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
-        }
-      }]
-    });
   }
 }
 
@@ -725,33 +593,7 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
         ...selectionHighlightSeries,
         encode: { x: 'maxLeverage', y: 'breakEvenVsFullUnderlyingRelative' }
       },
-      {
-        id: 'entryOverlay',
-        type: 'scatter',
-        silent: true,
-        data: [],
-        markPoint: {
-          symbol: 'circle',
-          symbolSize: 80,
-          itemStyle: {
-            color: 'transparent',
-            borderColor: '#ff5c5c',
-            borderWidth: 4,
-            borderType: 'dashed'
-          },
-          data: overlay?.entry ? [{ coord: overlay.entry }] : []
-        },
-        markLine: {
-          symbol: ['none', 'arrow'],
-          symbolSize: 18,
-          lineStyle: {
-            color: '#e1e355ff',
-            width: 3,
-            type: 'solid'
-          },
-          data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
-        }
-      }
+      buildEntryOverlaySeries(overlay)
     ],
     legend: legend,
     animationDurationUpdate: 800,

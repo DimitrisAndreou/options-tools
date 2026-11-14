@@ -389,31 +389,10 @@ function calculateTouchBetOverlay(targetNode, isTouchMode) {
     ? (entryPos.betType === 'touch' ? Number(entryPos.winProbability) : 1.0 - Number(entryPos.winProbability))
     : (entryPos.betType === 'touch' ? Number(entryPos.expirationWinProbability) : 1.0 - Number(entryPos.expirationWinProbability));
 
-  if (!Number.isFinite(entryX) || !Number.isFinite(entryY)) return null;
-
-  if (!targetNode) {
-    return {
-      entry: [entryX, entryY],
-      current: null
-    };
-  }
-
-  const targetX = Number(targetNode.activeTargetPrice);
-  const targetY = Number(targetNode.activeWinProb);
-  if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
-    return {
-      entry: [entryX, entryY],
-      current: null
-    };
-  }
-
-  const xDiffers = Math.abs(entryX - targetX) > 1e-4;
-  const yDiffers = Math.abs(entryY - targetY) > 1e-4;
-
-  return {
-    entry: [entryX, entryY],
-    current: (xDiffers || yDiffers) ? [targetX, targetY] : null
-  };
+  return computeChartOverlay(
+    [entryX, entryY],
+    targetNode ? [targetNode.activeTargetPrice, targetNode.activeWinProb] : null
+  );
 }
 
 function updateTouchBetNodesActiveProb(nodes, isTouchMode) {
@@ -1002,15 +981,6 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
       header.strategyName = `${entryDir} → ${curDir} Spread`;
     }
 
-    const formatLegCell = (rawName, url, colorClass, compact) => {
-      if (!rawName) return '—';
-      const formatted = formatOptionName(rawName);
-      const label = compact ? formatted.replace(/^([A-Z0-9.^_-]+-)/, '') : formatted;
-      return url
-        ? `<a href="${url}" class="${colorClass}" target="_blank" title="${escapeTouchBetHtml(formatted)}" style="text-decoration: underline;">${escapeTouchBetHtml(label)}</a>`
-        : `<span class="${colorClass}" title="${escapeTouchBetHtml(formatted)}">${escapeTouchBetHtml(label)}</span>`;
-    };
-
     const getTargetNum = (pos) => pos
       ? (isTouchMode ? Number(pos.targetPriceAbsolute) : getExpiryTargetPrice(pos))
       : null;
@@ -1019,17 +989,6 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
       if (!pos || !sideData) return '—';
       const sep = compact ? '<br/>' : ' ';
       return `<span class="text-neutral text-nowrap">${escapeTouchBetHtml(sideData.targetRowAbsolute)}</span>${sep}<small class="strike-relative text-nowrap">(${escapeTouchBetHtml(sideData.targetRowRelative)})</small>`;
-    };
-
-    const formatSpotCell = (pos) => {
-      if (!pos) return '—';
-      return `<span class="text-spot text-nowrap">${dollarFmt.format(Number(pos.spotPrice))}</span>`;
-    };
-
-    const formatExpirationCell = (pos, compact) => {
-      if (!pos) return '—';
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral text-nowrap">${escapeTouchBetHtml(pos.formattedDate)}</span>${sep}<small class="text-bad text-nowrap">(${pos.DTE}d)</small>`;
     };
 
     const formatImpliedInterestCell = (pos, compact) => {
@@ -1052,33 +1011,7 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
 
     const formatRiskCell = (sideData) => {
       if (!sideData) return '—';
-      return `<span class="text-bad text-nowrap">${escapeTouchBetHtml(sideData.riskStr)}</span>`;
-    };
-
-    const formatBeCell = (pos, compact) => {
-      if (!pos || pos.breakEvenVsFullMoneyAbsolute == null || pos.breakEvenVsFullMoneyRelative == null) {
-        return '—';
-      }
-      const abs = Number(pos.breakEvenVsFullMoneyAbsolute);
-      const rel = Number(pos.breakEvenVsFullMoneyRelative);
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral text-nowrap">${dollarFmt.format(abs)}</span>${sep}<small class="strike-relative text-nowrap">(${percentFmt.format(rel - 1.0)})</small>`;
-    };
-
-    const computePriceDiff = (entryVal, curVal, higherIsGood) => {
-      if (entryVal == null || curVal == null) {
-        return { text: '—', className: 'text-muted-alt' };
-      }
-      const e = Number(entryVal);
-      const c = Number(curVal);
-      const diff = c - e;
-      const pct = e > 0 ? (diff / e) * 100 : 0;
-      const text = `${formatSignedDollar(diff)}<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`;
-      if (diff === 0 || higherIsGood == null) {
-        return { text, className: 'text-neutral-alt' };
-      }
-      const isGood = higherIsGood ? diff > 0 : diff < 0;
-      return { text, className: isGood ? 'text-good' : 'text-bad' };
+      return `<span class="text-neutral text-nowrap">${escapeTouchBetHtml(sideData.riskStr)}</span>`;
     };
 
     let targetDiffText = '', targetDiffClass = 'text-neutral-alt';
@@ -1100,18 +1033,14 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
       targetDiffClass = targetRes.className;
 
       // 2. Spot Price
-      const entrySpot = Number(entryPos.spotPrice);
-      const curSpot = Number(currentSidePos.spotPrice);
-      const spotDiff = curSpot - entrySpot;
-      const spotPct = entrySpot > 0 ? (spotDiff / entrySpot) * 100 : 0;
-      spotDiffText = `${formatSignedDollar(spotDiff)}<br/><small>(${spotDiff >= 0 ? '+' : ''}${spotPct.toFixed(1)}%)</small>`;
-      spotDiffClass = spotDiff >= 0 ? 'text-good' : 'text-bad';
+      const spotRes = computeSpotDiff(entryPos.spotPrice, currentSidePos.spotPrice);
+      spotDiffText = spotRes.text;
+      spotDiffClass = spotRes.className;
 
       // 3. Expiration
-      const dteDiff = currentSidePos.DTE - entryPos.DTE;
-      const dtePct = entryPos.DTE > 0 ? (dteDiff / entryPos.DTE) * 100 : 0;
-      dteDiffText = `${dteDiff >= 0 ? '+' : ''}${dteDiff}d<br/><small>(${dteDiff >= 0 ? '+' : ''}${dtePct.toFixed(1)}%)</small>`;
-      dteDiffClass = dteDiff > 0 ? 'text-bad' : (dteDiff < 0 ? 'text-good' : 'text-neutral-alt');
+      const dteRes = computeDteDiff(entryPos.DTE, currentSidePos.DTE);
+      dteDiffText = dteRes.text;
+      dteDiffClass = dteRes.className;
 
       // 4. Implied Interest
       const rateDiff = Number(currentSidePos.impliedInterestRate ?? 0) - Number(entryPos.impliedInterestRate ?? 0);
@@ -1151,18 +1080,19 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
       oddsDiffClass = probDiff > 0 ? 'text-good' : (probDiff < 0 ? 'text-bad' : 'text-neutral-alt');
 
       // 8. Payoff
-      const yieldDiff = currentSide.yieldRaw - entrySide.yieldRaw;
-      const profitDiff = currentSide.profitRaw - entrySide.profitRaw;
-      payoffDiffText = `${percentFmt.format(yieldDiff)} (${yieldDiff >= 0 ? '+' : ''}${yieldDiff.toFixed(2)}x)<br/><small>(${formatSignedDollar(profitDiff)})</small>`;
-      payoffDiffClass = yieldDiff >= 0 ? 'text-good' : 'text-bad';
+      const payoffRes = computeYieldRatioDiff(
+        entrySide.yieldRaw,
+        currentSide.yieldRaw,
+        formatSignedDollar(currentSide.profitRaw - entrySide.profitRaw),
+        true
+      );
+      payoffDiffText = payoffRes.text;
+      payoffDiffClass = payoffRes.className;
 
-      // 9. Minimum Capital
-      const riskDiff = currentSide.riskRaw - entrySide.riskRaw;
-      const riskPct = entrySide.riskRaw > 0 ? (riskDiff / entrySide.riskRaw) * 100 : 0;
-      riskDiffText = `${formatSignedDollar(riskDiff)}<br/><small>(${riskDiff >= 0 ? '+' : ''}${riskPct.toFixed(1)}%)</small>`;
-      riskDiffClass = isRoll
-        ? (riskDiff <= 0 ? 'text-good' : 'text-bad')
-        : (riskDiff >= 0 ? 'text-good' : 'text-bad');
+      // 9. Capital
+      const riskRes = computeCapitalDiff(entrySide.riskRaw, currentSide.riskRaw, isRoll);
+      riskDiffText = riskRes.text;
+      riskDiffClass = riskRes.className;
 
       // 10. Expiry Breakeven
       const beDirectionGood = isDirectionFlip ? null : (activePos.spreadType === 'under');
@@ -1232,18 +1162,18 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
           {
             key: 'buyLeg',
             label: 'Buy',
-            before: formatLegCell(entryPos?.longLeg, entryPos?.longLegURL, 'text-good', true),
-            after: formatLegCell(currentSidePos?.longLeg, currentSidePos?.longLegURL, 'text-good', true),
-            single: formatLegCell(activePos?.longLeg, activePos?.longLegURL, 'text-good', false),
+            before: formatContractLink(entryPos?.longLeg, entryPos?.longLegURL, true, 'text-good'),
+            after: formatContractLink(currentSidePos?.longLeg, currentSidePos?.longLegURL, true, 'text-good'),
+            single: formatContractLink(activePos?.longLeg, activePos?.longLegURL, false, 'text-good'),
             diff: buyDiffText,
             diffClass: buyDiffClass
           },
           {
             key: 'sellLeg',
             label: 'Sell',
-            before: formatLegCell(entryPos?.shortLeg, entryPos?.shortLegURL, 'text-bad', true),
-            after: formatLegCell(currentSidePos?.shortLeg, currentSidePos?.shortLegURL, 'text-bad', true),
-            single: formatLegCell(activePos?.shortLeg, activePos?.shortLegURL, 'text-bad', false),
+            before: formatContractLink(entryPos?.shortLeg, entryPos?.shortLegURL, true, 'text-bad'),
+            after: formatContractLink(currentSidePos?.shortLeg, currentSidePos?.shortLegURL, true, 'text-bad'),
+            single: formatContractLink(activePos?.shortLeg, activePos?.shortLegURL, false, 'text-bad'),
             diff: sellDiffText,
             diffClass: sellDiffClass
           },
@@ -1267,7 +1197,7 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
           },
           {
             key: 'minCapital',
-            label: `Minimum Capital (${activePos.money})`,
+            label: `Capital (${activePos.money})`,
             before: formatRiskCell(entrySide),
             after: formatRiskCell(currentSide),
             single: formatRiskCell(activeSide),
@@ -1277,9 +1207,9 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
           {
             key: 'breakeven',
             label: 'Expiry Breakeven',
-            before: formatBeCell(entryPos, true),
-            after: formatBeCell(currentSidePos, true),
-            single: formatBeCell(activePos, false),
+            before: formatBreakevenCell(entryPos?.breakEvenVsFullMoneyAbsolute, entryPos?.breakEvenVsFullMoneyRelative, null, true),
+            after: formatBreakevenCell(currentSidePos?.breakEvenVsFullMoneyAbsolute, currentSidePos?.breakEvenVsFullMoneyRelative, null, true),
+            single: formatBreakevenCell(activePos?.breakEvenVsFullMoneyAbsolute, activePos?.breakEvenVsFullMoneyRelative, null, false),
             diff: beDiffText,
             diffClass: beDiffClass
           }
@@ -1317,15 +1247,7 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
       }],
       series: [
         ...buildTouchBetDteSeries(_touchBetUniqueDTEsCache, normalizedId),
-        {
-          id: 'entryOverlay',
-          markPoint: {
-            data: overlay?.entry ? [{ coord: overlay.entry }] : []
-          },
-          markLine: {
-            data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
-          }
-        }
+        buildEntryOverlayUpdate(overlay)
       ]
     });
   }
@@ -1368,15 +1290,7 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
       series: [
         buildTouchBetThresholdSeries(_touchBetAxisRangeCache.minX, _touchBetAxisRangeCache.maxX, minProbPct),
         ...buildTouchBetDteSeries(_touchBetUniqueDTEsCache, normalizedId),
-        {
-          id: 'entryOverlay',
-          markPoint: {
-            data: overlay?.entry ? [{ coord: overlay.entry }] : []
-          },
-          markLine: {
-            data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
-          }
-        }
+        buildEntryOverlayUpdate(overlay)
       ]
     });
   }
@@ -1570,33 +1484,7 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
         ...selectionHighlightSeries,
         encode: { x: 'activeTargetPrice', y: 'activeWinProb' }
       },
-      {
-        id: 'entryOverlay',
-        type: 'scatter',
-        silent: true,
-        data: [],
-        markPoint: {
-          symbol: 'circle',
-          symbolSize: 80,
-          itemStyle: {
-            color: 'transparent',
-            borderColor: '#ff5c5c',
-            borderWidth: 4,
-            borderType: 'dashed'
-          },
-          data: overlay?.entry ? [{ coord: overlay.entry }] : []
-        },
-        markLine: {
-          symbol: ['none', 'arrow'],
-          symbolSize: 18,
-          lineStyle: {
-            color: '#e1e355ff',
-            width: 3,
-            type: 'solid'
-          },
-          data: (overlay?.entry && overlay?.current) ? [[{ coord: overlay.entry }, { coord: overlay.current }]] : []
-        }
-      },
+      buildEntryOverlaySeries(overlay),
       ...(spotPrice > 0 ? [{
         id: 'spotReferenceSeries',
         type: 'line',
