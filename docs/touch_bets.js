@@ -850,8 +850,10 @@ function renderTouchBetsTable(rawData, idToSelect, options = {}) {
     <tr class="touch-bet-spot-row">
       <th class="touch-bet-spot-label">
         <span class="touch-bet-spot-badge">SPOT</span>
-        <span class="touch-bet-spot-val">${escapeTouchBetHtml(dollarFmt.format(spotPrice))}</span>
       </th>
+      <td class="touch-bet-spot-price-cell">
+        <span class="touch-bet-spot-val">${escapeTouchBetHtml(dollarFmt.format(spotPrice))}</span>
+      </td>
       <td class="touch-bet-spot-line" colspan="${cols.length}"></td>
     </tr>
   ` : '';
@@ -888,8 +890,10 @@ function renderTouchBetsTable(rawData, idToSelect, options = {}) {
       <tr>
         <th class="touch-bet-price-th">
           <span class="touch-bet-price-abs">${escapeTouchBetHtml(formatRangeCapPrice(price))}</span>
-          ${relStr ? `<span class="touch-bet-price-rel ${relCls}">${escapeTouchBetHtml(relStr)}</span>` : ''}
         </th>
+        <td class="touch-bet-move-td">
+          ${relStr ? `<span class="touch-bet-price-rel ${relCls}">${escapeTouchBetHtml(relStr)}</span>` : ''}
+        </td>
         ${cellsHtml}
       </tr>
     `);
@@ -906,7 +910,11 @@ function renderTouchBetsTable(rawData, idToSelect, options = {}) {
           <tr>
             <th class="touch-bet-corner-th">
               <div>Target</div>
-              <div class="touch-bet-th-sub">Price / Move</div>
+              <div class="touch-bet-th-sub">Price</div>
+            </th>
+            <th class="touch-bet-move-th">
+              <div>Move</div>
+              <div class="touch-bet-th-sub">vs Spot</div>
             </th>
             ${theadColsHtml}
           </tr>

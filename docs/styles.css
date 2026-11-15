@@ -1031,11 +1031,26 @@ footer {
   z-index: 5;
   background: #e2e8f0;
   color: #0f172a;
-  text-align: left;
-  padding: 6px 10px;
+  text-align: right;
+  padding: 6px 8px;
   border-bottom: 1px solid #cbd5e1;
   border-right: 1px solid #cbd5e1;
-  min-width: 132px;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.touch-bet-move-th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: #e2e8f0;
+  color: #0f172a;
+  text-align: right;
+  padding: 6px 8px;
+  border-bottom: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+  white-space: nowrap;
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -1072,7 +1087,16 @@ footer {
   z-index: 2;
   background: #f8fafc;
   border-right: 1px solid #cbd5e1;
-  padding: 4px 10px;
+  padding: 4px 8px;
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.touch-bet-move-td {
+  background: #f8fafc;
+  border-right: 1px solid #cbd5e1;
+  padding: 4px 8px;
   text-align: right;
   white-space: nowrap;
   font-weight: 600;
@@ -1085,21 +1109,22 @@ footer {
 
 .touch-bet-price-rel {
   display: inline-block;
-  margin-left: 6px;
   font-size: 0.69rem;
-  min-width: 48px;
   text-align: right;
 }
 
-.touch-bet-price-th .text-good {
+.touch-bet-price-th .text-good,
+.touch-bet-move-td .text-good {
   color: #059669 !important;
 }
 
-.touch-bet-price-th .text-bad {
+.touch-bet-price-th .text-bad,
+.touch-bet-move-td .text-bad {
   color: #dc2626 !important;
 }
 
-.touch-bet-price-th .text-neutral {
+.touch-bet-price-th .text-neutral,
+.touch-bet-move-td .text-neutral {
   color: #0284c7 !important;
 }
 
@@ -1162,7 +1187,7 @@ footer {
   border-top: 1px dashed #16a34a;
   border-bottom: 1px dashed #16a34a;
   border-right: 1px solid #cbd5e1;
-  padding: 2px 10px !important;
+  padding: 2px 8px !important;
   text-align: right;
   white-space: nowrap;
 }
@@ -1174,7 +1199,16 @@ footer {
   background: #16a34a;
   border-radius: 3px;
   padding: 1px 4px;
-  margin-right: 5px;
+}
+
+.touch-bet-spot-price-cell {
+  background: #dcfce7;
+  border-top: 1px dashed #16a34a;
+  border-bottom: 1px dashed #16a34a;
+  border-right: 1px solid #cbd5e1;
+  padding: 2px 8px !important;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .touch-bet-spot-val {
