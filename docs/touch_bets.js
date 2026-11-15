@@ -660,7 +660,65 @@ function bindTouchBetTableEvents(container) {
   if (!container || container._touchBetListenersBound) return;
   container._touchBetListenersBound = true;
 
+  let panState = null;
+
+  container.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    const scrollEl = container.querySelector('.touch-bet-table-scroll');
+    if (!scrollEl || !scrollEl.contains(e.target)) return;
+
+    // Ignore clicks on native scrollbar tracks/thumbs
+    const rect = scrollEl.getBoundingClientRect();
+    if (e.clientX > rect.left + scrollEl.clientWidth || e.clientY > rect.top + scrollEl.clientHeight) {
+      return;
+    }
+
+    panState = {
+      scrollEl,
+      startX: e.clientX,
+      startY: e.clientY,
+      startScrollLeft: scrollEl.scrollLeft,
+      startScrollTop: scrollEl.scrollTop,
+      dragged: false
+    };
+  });
+
+  window.addEventListener('mousemove', function (e) {
+    if (!panState) return;
+    const dx = e.clientX - panState.startX;
+    const dy = e.clientY - panState.startY;
+    if (!panState.dragged && Math.hypot(dx, dy) >= 5) {
+      panState.dragged = true;
+      panState.scrollEl.classList.add('is-panning');
+      hideTouchBetTableTooltip();
+    }
+    if (panState.dragged) {
+      e.preventDefault();
+      panState.scrollEl.scrollLeft = panState.startScrollLeft - dx;
+      panState.scrollEl.scrollTop = panState.startScrollTop - dy;
+    }
+  });
+
+  const endPan = () => {
+    if (!panState) return;
+    if (panState.dragged) {
+      container._suppressNextClick = true;
+      setTimeout(() => {
+        container._suppressNextClick = false;
+      }, 0);
+    }
+    panState.scrollEl.classList.remove('is-panning');
+    panState = null;
+  };
+
+  window.addEventListener('mouseup', endPan);
+  window.addEventListener('blur', endPan);
+
   container.addEventListener('click', function (e) {
+    if (container._suppressNextClick) {
+      container._suppressNextClick = false;
+      return;
+    }
     const cell = e.target.closest('td.touch-bet-cell[data-bet-id]');
     if (!cell || !container.contains(cell)) return;
     const betId = cell.getAttribute('data-bet-id');
@@ -670,6 +728,7 @@ function bindTouchBetTableEvents(container) {
   });
 
   container.addEventListener('mouseover', function (e) {
+    if (panState && panState.dragged) return;
     const cell = e.target.closest('td.touch-bet-cell[data-bet-id]');
     if (!cell || !container.contains(cell)) return;
     const betId = cell.getAttribute('data-bet-id');
