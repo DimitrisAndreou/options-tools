@@ -1029,6 +1029,7 @@ footer {
   top: 0;
   left: 0;
   z-index: 5;
+  width: 1%;
   background: #e2e8f0;
   color: #0f172a;
   text-align: right;
@@ -1044,6 +1045,7 @@ footer {
   position: sticky;
   top: 0;
   z-index: 4;
+  width: 1%;
   background: #e2e8f0;
   color: #0f172a;
   text-align: right;
@@ -1064,8 +1066,14 @@ footer {
   text-align: center;
   padding: 6px 8px;
   border-bottom: 1px solid #cbd5e1;
-  min-width: 64px;
+  min-width: 96px;
   white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+  .touch-bet-dte-th {
+    min-width: 78px;
+  }
 }
 
 .touch-bet-th-dte {
@@ -1085,6 +1093,7 @@ footer {
   position: sticky;
   left: 0;
   z-index: 2;
+  width: 1%;
   background: #f8fafc;
   border-right: 1px solid #cbd5e1;
   padding: 4px 8px;
@@ -1094,6 +1103,7 @@ footer {
 }
 
 .touch-bet-move-td {
+  width: 1%;
   background: #f8fafc;
   border-right: 1px solid #cbd5e1;
   padding: 4px 8px;
@@ -1183,6 +1193,7 @@ footer {
   position: sticky;
   left: 0;
   z-index: 3;
+  width: 1%;
   background: #dcfce7;
   border-top: 1px dashed #16a34a;
   border-bottom: 1px dashed #16a34a;
@@ -1202,6 +1213,7 @@ footer {
 }
 
 .touch-bet-spot-price-cell {
+  width: 1%;
   background: #dcfce7;
   border-top: 1px dashed #16a34a;
   border-bottom: 1px dashed #16a34a;

@@ -839,8 +839,9 @@ function renderTouchBetsTable(rawData, idToSelect, options = {}) {
   }
   const sortedPrices = [...rowCells.keys()].sort((a, b) => b - a);
 
+  const dteColWidthPct = cols.length > 0 ? `${(98 / cols.length).toFixed(2)}%` : 'auto';
   const theadColsHtml = cols.map(col => `
-    <th class="touch-bet-dte-th" title="${escapeTouchBetHtml(col.formattedDate)} (${col.dte}d)">
+    <th class="touch-bet-dte-th" style="width: ${dteColWidthPct};" title="${escapeTouchBetHtml(col.formattedDate)} (${col.dte}d)">
       <div class="touch-bet-th-dte">${col.dte}d</div>
       <div class="touch-bet-th-sub">${escapeTouchBetHtml(col.shortDate)}</div>
     </th>
