@@ -904,17 +904,44 @@ class VerticalSpread {
     }
   }
 
+  static double _spreadBidAskWidth(VerticalSpread vs) =>
+      (vs.shortMarket.askPrice - vs.shortMarket.bidPrice) *
+          vs.shortLeg.size.abs() +
+      (vs.longMarket.askPrice - vs.longMarket.bidPrice) *
+          vs.longLeg.size.abs();
+
+  static double _spreadRelativeBidAsk(VerticalSpread vs) =>
+      vs.shortMarket.relativeSpread + vs.longMarket.relativeSpread;
+
+  static bool _isTighterOrEqualSpread(VerticalSpread vs1, VerticalSpread vs2) {
+    final w1 = _spreadBidAskWidth(vs1);
+    final w2 = _spreadBidAskWidth(vs2);
+    if ((w1 - w2).abs() > 1e-12) {
+      return w1 < w2;
+    }
+    final r1 = _spreadRelativeBidAsk(vs1);
+    final r2 = _spreadRelativeBidAsk(vs2);
+    if ((r1 - r2).abs() > 1e-12) {
+      return r1 < r2;
+    }
+    return true;
+  }
+
   static VerticalSpread? keepBestValidSpread(
           Iterable<VerticalSpread> spreads) =>
       spreads
-          // Remove riskless or profitless spreads (these can arise due to
-          // wide bid/ask spreads)
+          // Exclude spreads with missing/zero quotes or non-positive risk/profit
+          .where((vs) =>
+              vs.shortMarket.bidPrice > 0.0 &&
+              vs.shortMarket.askPrice > 0.0 &&
+              vs.longMarket.bidPrice > 0.0 &&
+              vs.longMarket.askPrice > 0.0)
           .where((vs) => vs.maxRisk > 0.0)
           .where((vs) => vs.maxYield > 1.0)
           .fold<VerticalSpread?>(
               null,
               (vs1, vs2) =>
-                  vs1 != null && vs1.maxYield >= vs2.maxYield ? vs1 : vs2);
+                  vs1 != null && _isTighterOrEqualSpread(vs1, vs2) ? vs1 : vs2);
 
   static Iterable<(T, T)> _pairUp<T>(Iterable<T> iterable) sync* {
     final it = iterable.iterator;
@@ -1128,6 +1155,11 @@ class Probabilities {
 
         for (final vs in intervalSpreads) {
           final isCall = vs.shortOption.isCall;
+          if (callMarkets.isNotEmpty && putMarkets.isNotEmpty) {
+            final refStrike = atmStrike ?? vs.spotPrice;
+            if (midpoint > refStrike && !isCall) continue;
+            if (midpoint < refStrike && isCall) continue;
+          }
           final lowMarket =
               vs.shortOption.strike < vs.longOption.strike ? vs.shortMarket : vs.longMarket;
           final highMarket =
@@ -1499,6 +1531,14 @@ class TouchBet {
             slippage: slippage,
           ).toList();
 
+    final Set<DateTime> expsWithCalls = {};
+    final Set<DateTime> expsWithPuts = {};
+    for (final m in allMarkets.whereUnderlyingIs(underlying).options) {
+      final opt = m.asset.toOption;
+      if (opt.isCall) expsWithCalls.add(opt.expiration);
+      if (opt.isPut) expsWithPuts.add(opt.expiration);
+    }
+
     for (final vs in execSpreads) {
       final expiration = vs.expiration;
       final k1 = vs.shortOption.strike;
@@ -1523,6 +1563,18 @@ class TouchBet {
       //   - `under` is the OTM "Touch" bet
       //   - `over` is the ITM "No-Touch" bet
       final bool isUpsideTarget = pAbove <= 0.5;
+
+      // When both Calls and Puts exist for this expiration, never use deep-ITM
+      // Puts for upside targets or deep-ITM Calls for downside targets (which
+      // can happen when far-OTM options hit the minimum tick or have no bid,
+      // leaving only the deep-ITM counterpart whose price is distorted by carry
+      // and wide dollar bid-ask spreads).
+      final bool hasBothSides =
+          expsWithCalls.contains(expiration) && expsWithPuts.contains(expiration);
+      if (hasBothSides) {
+        if (isUpsideTarget && !vs.shortOption.isCall) continue;
+        if (!isUpsideTarget && !vs.shortOption.isPut) continue;
+      }
       final TouchBetType betType;
       if (isUpsideTarget) {
         betType = vs.type == VerticalSpreadType.over

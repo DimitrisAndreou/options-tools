@@ -73,7 +73,10 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
       int? maxDTE}) {
     final errorsSink = errorListener ?? (instr, error) {};
     // TODO: produced assets might want a reference to this DeribitInstrument
-    if (bid_price == null || ask_price == null) {
+    if (bid_price == null ||
+        ask_price == null ||
+        bid_price! <= 0.0 ||
+        ask_price! <= 0.0) {
       errorsSink(this, "No bid or no ask");
       // TODO: can use markPrice +- defaultSlippage
       return null;

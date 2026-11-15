@@ -1325,4 +1325,85 @@ void main() {
         equals('payout if SNDK <= 1180'));
     expect(noTouchBet.toJson()['maxYieldAtAbsolute'], closeTo(1180.0, 1e-9));
   });
+
+  test('keepBestValidSpread selects tightest spread instead of widest-spread maxYield at slippage=0', () {
+    final btc = Commodity.fromName('BTC', source: DataSource.deribit);
+    final usd = Commodity.fromName('USD');
+    final expiration = DateTime.now().add(Duration(days: 60));
+
+    Market makeOptMarket(double strike, bool isCall, double bid, double ask) {
+      final opt = Option(
+        'BTC-30JUN27-${strike.toStringAsFixed(0)}-${isCall ? "C" : "P"}',
+        underlying: btc,
+        money: usd,
+        strike: strike,
+        isCall: isCall,
+        isPut: !isCall,
+        expiration: expiration,
+        minSize: 0.1,
+        source: DataSource.deribit,
+      );
+      return Market.create(asset: opt, money: usd, bidPrice: bid, askPrice: ask);
+    }
+
+    // Spot = $65,000. Consider downside interval [58000, 60000] (width = $2,000, 0.1x width = $200).
+    // OTM Puts have tight $2 bid-ask spreads (mid values $200 and $600 -> mid spread = $400, 0.1x = $40):
+    //   58000-P: bid 199, ask 201 (mid 200)
+    //   60000-P: bid 599, ask 601 (mid 600)
+    // Deep ITM Calls have wide $200 bid-ask spreads (mid values $9,100 and $7,500 -> mid spread = $1,600, 0.1x = $160):
+    //   58000-C: bid 8900, ask 9300 (mid 9100)
+    //   60000-C: bid 7310, ask 7690 (mid 7500)
+    // Notice at slippage=0:
+    //   Call under spread sells 58000-C @ ask (9300) and buys 60000-C @ bid (7310) -> credit = 1990 (0.1x = $199.00),
+    //   leaving a phantom maxRisk of $1.00 and a distorted 100x+ yield!
+    //   Put under spread buys 60000-P @ bid (599) and sells 58000-P @ ask (201) -> debit = 398 (0.1x = $39.80),
+    //   giving a realistic 2.51x touch yield.
+    final markets = <Market>[
+      Market.create(asset: btc, money: usd, bidPrice: 65000.0, askPrice: 65000.0),
+      makeOptMarket(58000.0, false, 199.0, 201.0),
+      makeOptMarket(60000.0, false, 599.0, 601.0),
+      makeOptMarket(58000.0, true, 8900.0, 9300.0),
+      makeOptMarket(60000.0, true, 7310.0, 7690.0),
+    ];
+
+    final touchBets = TouchBet.generateAll(
+      markets,
+      underlying: btc,
+      money: usd,
+      slippage: 0.0,
+    ).toList();
+
+    final touch59k = touchBets.firstWhere(
+        (b) => b.targetPrice.absolute == 59000.0 && b.betType == TouchBetType.touch);
+
+    // Must pick the tight OTM Put spread, not the distorted ITM Call spread!
+    expect(touch59k.spread.longOption.isPut, isTrue);
+    expect(touch59k.spread.shortOption.isPut, isTrue);
+    expect(touch59k.maxRisk, closeTo(39.8, 1e-9));
+    expect(touch59k.maxYield, closeTo(100.0 / 39.8, 1e-9));
+
+    // Also verify far-upside interval [140000, 150000] (midpoint 145000 > spot 65000)
+    // where 150000-C has no bid (missing), while deep-ITM 140000-P and 150000-P exist:
+    // VerticalSpread.generateAll must NOT fall back to deep-ITM Puts above spot!
+    final marketsWithFarUpsideItmPuts = <Market>[
+      ...markets,
+      makeOptMarket(135000.0, true, 50.0, 52.0),
+      makeOptMarket(140000.0, true, 6.0, 7.0),
+      // 150000-C is missing (no bid on Deribit), while deep-ITM puts exist:
+      makeOptMarket(140000.0, false, 74500.0, 74900.0),
+      makeOptMarket(150000.0, false, 83700.0, 84100.0),
+    ];
+
+    final bets2 = TouchBet.generateAll(
+      marketsWithFarUpsideItmPuts,
+      underlying: btc,
+      money: usd,
+      slippage: 0.5,
+    ).toList();
+
+    // 137,500 (from [135000, 140000] OTM calls) is generated:
+    expect(bets2.any((b) => b.targetPrice.absolute == 137500.0), isTrue);
+    // 145,000 (where only deep-ITM puts exist) must NOT be generated:
+    expect(bets2.any((b) => b.targetPrice.absolute == 145000.0), isFalse);
+  });
 }
