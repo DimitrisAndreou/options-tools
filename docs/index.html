@@ -28,7 +28,7 @@
   <!-- Header -->
   <header class="header" x-data>
     <div class="container">
-      <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h2 class="mb-0">
           <img src="favicon.jpg" alt="icon" style="height: 1.5em; margin-right: 0.5em; vertical-align: middle;">
           Options Lab
@@ -210,12 +210,12 @@
     </div>
   </div>
 
-  <div class="container-fluid" x-data>
-    <div class="row justify-content-center">
+  <div class="container-fluid px-2 px-sm-3 px-lg-4" x-data>
+    <div class="workspace-layout" :class="{ 'has-diff': $store.app.unrealized?.hasDiff }">
       <!-- Chart -->
-      <div class="col-lg-6 col-12">
+      <div class="workspace-viz-col">
         <div class="card mb-4 mb-lg-0 h-100">
-          <div class="card-header d-flex align-items-center">
+          <div class="card-header d-flex align-items-center flex-wrap gap-2">
             <h4 class="mb-0 text-white" x-show="$store.app.spotPrice !== null"
               style="font-size: 1.35rem; font-weight: 600;">
               <span x-text="$store.app.ticker || 'Spot'"></span> Price: <span class="text-spot"
@@ -365,7 +365,7 @@
         </div>
       </div>
       <!-- Strategy Details Panel -->
-      <div class="col-lg-6 col-12 d-flex flex-column">
+      <div class="workspace-details-col d-flex flex-column">
         <!-- Existing Position Panel -->
         <div class="card mb-3" x-show="$store.app.existingHolding" style="font-family: monospace;">
           <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -532,10 +532,12 @@
                               <span x-text="$store.app.unrealized.header?.yesTabLabel"></span>
                             </div>
                             <div class="odds-side-tab-sub">
-                              Odds: <span class="text-probs" x-text="$store.app.unrealized.header?.yesProbPct"></span>
-                              &bull; Yield:
-                              <span class="text-good"
-                                x-text="$store.app.unrealized.header?.yesSide ? `${$store.app.unrealized.header.yesSide.yieldPct} (${$store.app.unrealized.header.yesSide.yieldMultiple})` : 'N/A'"></span>
+                              <span class="text-nowrap">Odds: <span class="text-probs" x-text="$store.app.unrealized.header?.yesProbPct"></span></span>
+                              &bull;
+                              <span class="text-nowrap">Yield:
+                                <span class="text-good"
+                                  x-text="$store.app.unrealized.header?.yesSide ? `${$store.app.unrealized.header.yesSide.yieldPct} (${$store.app.unrealized.header.yesSide.yieldMultiple})` : 'N/A'"></span>
+                              </span>
                             </div>
                           </button>
 
@@ -546,10 +548,12 @@
                               <span x-text="$store.app.unrealized.header?.noTabLabel"></span>
                             </div>
                             <div class="odds-side-tab-sub">
-                              Odds: <span class="text-probs" x-text="$store.app.unrealized.header?.noProbPct"></span>
-                              &bull; Yield:
-                              <span class="text-neutral"
-                                x-text="$store.app.unrealized.header?.noSide ? `${$store.app.unrealized.header.noSide.yieldPct} (${$store.app.unrealized.header.noSide.yieldMultiple})` : 'N/A'"></span>
+                              <span class="text-nowrap">Odds: <span class="text-probs" x-text="$store.app.unrealized.header?.noProbPct"></span></span>
+                              &bull;
+                              <span class="text-nowrap">Yield:
+                                <span class="text-neutral"
+                                  x-text="$store.app.unrealized.header?.noSide ? `${$store.app.unrealized.header.noSide.yieldPct} (${$store.app.unrealized.header.noSide.yieldMultiple})` : 'N/A'"></span>
+                              </span>
                             </div>
                           </button>
                         </div>

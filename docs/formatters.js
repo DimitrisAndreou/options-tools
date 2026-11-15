@@ -157,6 +157,34 @@ const legend = {
   width: '75%',
 };
 
+function bindChartResize(chartDom) {
+  if (!chartDom || chartDom._chartResizeBound) return;
+  chartDom._chartResizeBound = true;
+  const resizeChartIfVisible = () => {
+    const inst = typeof echarts !== 'undefined' ? echarts.getInstanceByDom(chartDom) : null;
+    if (inst && chartDom.clientWidth > 0 && chartDom.clientHeight > 0) {
+      inst.resize({ width: chartDom.clientWidth, height: chartDom.clientHeight });
+    }
+  };
+  window.addEventListener('resize', resizeChartIfVisible);
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(resizeChartIfVisible);
+    ro.observe(chartDom);
+  }
+}
+
+function formatFlowCell(...parts) {
+  const validParts = parts.filter(p => p !== null && p !== undefined && p !== '');
+  if (validParts.length === 0) return '';
+  return `<div class="metric-cell-flow">${validParts.join(' ')}</div>`;
+}
+
+function formatFlowGroup(...parts) {
+  const validParts = parts.filter(p => p !== null && p !== undefined && p !== '');
+  if (validParts.length === 0) return '';
+  return `<span class="metric-group">${validParts.join(' ')}</span>`;
+}
+
 function escapeHtml(text) {
   return String(text ?? '')
     .replace(/&/g, '&amp;')
@@ -173,14 +201,16 @@ function formatContractLink(rawName, url, compact = false, colorClass = 'text-ne
   const safeTitle = escapeHtml(formatted);
   const safeLabel = escapeHtml(label);
   return url
-    ? `<a href="${escapeHtml(url)}" class="${colorClass}" target="_blank" title="${safeTitle}" style="text-decoration: underline;">${safeLabel}</a>`
-    : `<span class="${colorClass}" title="${safeTitle}">${safeLabel}</span>`;
+    ? `<a href="${escapeHtml(url)}" class="${colorClass} text-nowrap" target="_blank" title="${safeTitle}" style="text-decoration: underline;">${safeLabel}</a>`
+    : `<span class="${colorClass} text-nowrap" title="${safeTitle}">${safeLabel}</span>`;
 }
 
 function formatExpirationCell(pos, compact = false) {
   if (!pos) return '—';
-  const sep = compact ? '<br/>' : ' ';
-  return `<span class="text-neutral text-nowrap">${escapeHtml(pos.formattedDate)}</span>${sep}<small class="text-bad text-nowrap">(${pos.DTE}d)</small>`;
+  return formatFlowCell(
+    `<span class="text-neutral text-nowrap">${escapeHtml(pos.formattedDate)}</span>`,
+    `<small class="text-bad text-nowrap">(${pos.DTE}d)</small>`
+  );
 }
 
 function formatSpotCell(pos) {
@@ -195,8 +225,10 @@ function formatStrikeCell(pos, compact = false) {
   const rel = spot > 0
     ? percentFmt.format(strike / spot - 1.0)
     : percentFmt.format(Number(pos.strikeRelative) - 1.0);
-  const sep = compact ? '<br/>' : ' ';
-  return `<span class="text-neutral text-nowrap">${dollarFmt.format(strike)}</span>${sep}<small class="strike-relative text-nowrap">(${rel})</small>`;
+  return formatFlowCell(
+    `<span class="text-neutral text-nowrap">${dollarFmt.format(strike)}</span>`,
+    `<small class="strike-relative text-nowrap">(${rel})</small>`
+  );
 }
 
 function formatCapitalMoneyCell(pos) {
@@ -219,8 +251,10 @@ function formatBreakevenCell(absVal, relVal, spotVal = null, compact = false, re
   const rel = hasSpot
     ? percentFmt.format(absNum / spot - 1.0)
     : percentFmt.format(Number(relVal) - 1.0);
-  const sep = compact ? '<br/>' : ' ';
-  return `<span class="text-neutral text-nowrap">${dollarFmt.format(absNum)}</span>${sep}<small class="${relCls} text-nowrap">(${rel})</small>`;
+  return formatFlowCell(
+    `<span class="text-neutral text-nowrap">${dollarFmt.format(absNum)}</span>`,
+    `<small class="${relCls} text-nowrap">(${rel})</small>`
+  );
 }
 
 function computeDteDiff(entryDte, currentDte) {
@@ -229,7 +263,10 @@ function computeDteDiff(entryDte, currentDte) {
   const diff = c - e;
   const pct = e > 0 ? (diff / e) * 100 : 0;
   return {
-    text: `${diff >= 0 ? '+' : ''}${diff}d<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`,
+    text: formatFlowCell(
+      `<span class="text-nowrap">${diff >= 0 ? '+' : ''}${diff}d</span>`,
+      `<small class="text-nowrap">(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`
+    ),
     className: diff > 0 ? 'text-bad' : (diff < 0 ? 'text-good' : 'text-neutral-alt')
   };
 }
@@ -240,7 +277,10 @@ function computeSpotDiff(entrySpot, currentSpot) {
   const diff = c - e;
   const pct = e > 0 ? (diff / e) * 100 : 0;
   return {
-    text: `${formatSignedDollar(diff)}<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`,
+    text: formatFlowCell(
+      `<span class="text-nowrap">${formatSignedDollar(diff)}</span>`,
+      `<small class="text-nowrap">(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`
+    ),
     className: diff >= 0 ? 'text-good' : 'text-bad'
   };
 }
@@ -253,7 +293,10 @@ function computePriceDiff(entryVal, curVal, higherIsGood) {
   const c = Number(curVal);
   const diff = c - e;
   const pct = e > 0 ? (diff / e) * 100 : 0;
-  const text = `${formatSignedDollar(diff)}<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`;
+  const text = formatFlowCell(
+    `<span class="text-nowrap">${formatSignedDollar(diff)}</span>`,
+    `<small class="text-nowrap">(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`
+  );
   if (diff === 0 || higherIsGood == null) {
     return { text, className: 'text-neutral-alt' };
   }
@@ -268,7 +311,10 @@ function computeCapitalDiff(entryVal, curVal, isRoll, formatAbs = formatSignedDo
   const diff = rawDiff === 0 ? 0 : rawDiff;
   const pct = e > 0 ? (diff / e) * 100 : 0;
   return {
-    text: `${formatAbs(diff)}<br/><small>(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`,
+    text: formatFlowCell(
+      `<span class="text-nowrap">${formatAbs(diff)}</span>`,
+      `<small class="text-nowrap">(${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)</small>`
+    ),
     className: isRoll
       ? (diff <= 0 ? 'text-good' : 'text-bad')
       : (diff >= 0 ? 'text-good' : 'text-bad')
@@ -280,12 +326,15 @@ function computeYieldRatioDiff(entryYield, curYield, subText = null, showMultipl
   const c = Number(curYield);
   const ratio = e > 0 ? (c / e) : 1.0;
   const ratioChange = ratio - 1.0;
-  const mainText = showMultiple
-    ? `${percentFmt.format(ratioChange)} (${ratio.toFixed(2)}x)`
-    : percentFmt.format(ratioChange);
-  const text = subText != null ? `${mainText}<br/><small>(${subText})</small>` : mainText;
+  const mainPart = showMultiple
+    ? formatFlowGroup(
+        `<span class="text-nowrap">${percentFmt.format(ratioChange)}</span>`,
+        `<span class="text-nowrap">(${ratio.toFixed(2)}x)</span>`
+      )
+    : `<span class="text-nowrap">${percentFmt.format(ratioChange)}</span>`;
+  const subPart = subText != null ? `<small class="text-nowrap">(${subText})</small>` : '';
   return {
-    text,
+    text: formatFlowCell(mainPart, subPart),
     className: ratioChange >= 0 ? 'text-good' : 'text-bad'
   };
 }
@@ -305,13 +354,19 @@ function formatExistingUnrealizedPnlHtml(pnl, totalYield) {
   const yieldVal = Number(totalYield);
   if (!Number.isFinite(pnlVal) || !Number.isFinite(yieldVal)) return '—';
   if (pnlVal === 0) {
-    return '<span class="text-neutral-alt text-nowrap">0.0%</span> <small class="text-neutral-alt text-nowrap">($0.00)</small>';
+    return formatFlowCell(
+      '<span class="text-neutral-alt text-nowrap">0.0%</span>',
+      '<small class="text-neutral-alt text-nowrap">($0.00)</small>'
+    );
   }
   const pctStr = percentFmt.format(yieldVal - 1.0);
   const pnlStr = formatSignedDollar(pnlVal);
   const cls = pnlVal > 0 ? 'text-good' : 'text-bad';
   const altCls = pnlVal > 0 ? 'text-good-alt' : 'text-bad';
-  return `<span class="${cls} text-nowrap">${pctStr}</span> <small class="${altCls} text-nowrap">(${pnlStr})</small>`;
+  return formatFlowCell(
+    `<span class="${cls} text-nowrap">${pctStr}</span>`,
+    `<small class="${altCls} text-nowrap">(${pnlStr})</small>`
+  );
 }
 
 function formatExistingTaxImpactHtml(preTax, postTax) {
@@ -330,9 +385,12 @@ function formatExistingTaxImpactHtml(preTax, postTax) {
   const impactCls = absImpact > 0 ? 'text-good' : (absImpact < 0 ? 'text-bad' : 'text-muted-alt');
   if (preYield > 0) {
     const relImpact = postYield / preYield - 1.0;
-    return `<span class="${impactCls} text-nowrap">${percentFmt.format(relImpact)}</span> <small class="${impactCls} text-nowrap">(${formatSignedDollar(absImpact)})</small>`;
+    return formatFlowCell(
+      `<span class="${impactCls} text-nowrap">${percentFmt.format(relImpact)}</span>`,
+      `<small class="${impactCls} text-nowrap">(${formatSignedDollar(absImpact)})</small>`
+    );
   }
-  return `<span class="${impactCls} text-nowrap">${formatSignedDollar(absImpact)}</span>`;
+  return formatFlowCell(`<span class="${impactCls} text-nowrap">${formatSignedDollar(absImpact)}</span>`);
 }
 
 const _OCC_OPTION_REGEX = /^([A-Za-z0-9.^_-]+?)(\d{2})(\d{2})(\d{2})([CP])(\d{8})$/;

@@ -280,7 +280,10 @@ class LongOptionStrategyConfig extends BaseStrategyConfig {
       const currentLev = Number(currentPos.maxLeverage);
       const levDiff = currentLev - entryLev;
       const levPct = entryLev > 0 ? (levDiff / entryLev) * 100 : 0;
-      levDiffText = `${levDiff >= 0 ? '+' : ''}${levDiff.toFixed(2)}x<br/><small>(${levDiff >= 0 ? '+' : ''}${levPct.toFixed(1)}%)</small>`;
+      levDiffText = formatFlowCell(
+        `<span class="text-nowrap">${levDiff >= 0 ? '+' : ''}${levDiff.toFixed(2)}x</span>`,
+        `<small class="text-nowrap">(${levDiff >= 0 ? '+' : ''}${levPct.toFixed(1)}%)</small>`
+      );
       levDiffClass = levDiff >= 0 ? 'text-good' : 'text-bad';
 
       // 8. Breakevens
@@ -495,9 +498,7 @@ function renderLongOptionsChart(data, chartDom, idToSelect) {
   }));
 
   const chart = echarts.init(chartDom);
-  window.addEventListener('resize', function () {
-    chart.resize();
-  });
+  bindChartResize(chartDom);
 
   chart.setOption({
     dataset: [dataset, highlightDataset, ...datasetPerDTE],

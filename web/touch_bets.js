@@ -1044,18 +1044,22 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
       ? (isTouchMode ? Number(pos.targetPriceAbsolute) : getExpiryTargetPrice(pos))
       : null;
 
-    const formatTargetCell = (pos, sideData, compact) => {
+    const formatTargetCell = (pos, sideData) => {
       if (!pos || !sideData) return '—';
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-neutral text-nowrap">${escapeTouchBetHtml(sideData.targetRowAbsolute)}</span>${sep}<small class="strike-relative text-nowrap">(${escapeTouchBetHtml(sideData.targetRowRelative)})</small>`;
+      return formatFlowCell(
+        `<span class="text-neutral text-nowrap">${escapeTouchBetHtml(sideData.targetRowAbsolute)}</span>`,
+        `<small class="strike-relative text-nowrap">(${escapeTouchBetHtml(sideData.targetRowRelative)})</small>`
+      );
     };
 
-    const formatImpliedInterestCell = (pos, compact) => {
+    const formatImpliedInterestCell = (pos) => {
       if (!pos) return '—';
       const rate = Number(pos.impliedInterestRate ?? 0.0);
       const apr = Number(pos.impliedApr ?? 0.0);
-      const sep = compact ? '<br/>' : ' ';
-      return `<span class="text-probs text-nowrap">${percentFmt.format(rate)}</span>${sep}<small class="text-muted-alt text-nowrap">(${percentFmt.format(apr)} APR)</small>`;
+      return formatFlowCell(
+        `<span class="text-probs text-nowrap">${percentFmt.format(rate)}</span>`,
+        `<small class="text-muted-alt text-nowrap">(${percentFmt.format(apr)} APR)</small>`
+      );
     };
 
     const formatOddsCell = (sideData) => {
@@ -1065,7 +1069,14 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
 
     const formatPayoffCell = (sideData) => {
       if (!sideData) return '—';
-      return `<span class="text-good text-nowrap">${escapeTouchBetHtml(sideData.yieldPct)} (${escapeTouchBetHtml(sideData.yieldMultiple)})</span><br/><small class="text-good-alt text-nowrap">${escapeTouchBetHtml(sideData.profitStr)}</small>`;
+      const relGroup = formatFlowGroup(
+        `<span class="text-good text-nowrap">${escapeTouchBetHtml(sideData.yieldPct)}</span>`,
+        `<span class="text-good text-nowrap">(${escapeTouchBetHtml(sideData.yieldMultiple)})</span>`
+      );
+      return formatFlowCell(
+        relGroup,
+        `<small class="text-good-alt text-nowrap">${escapeTouchBetHtml(sideData.profitStr)}</small>`
+      );
     };
 
     const formatRiskCell = (sideData) => {
@@ -1104,7 +1115,10 @@ StrategyRegistry['touchBet'] = new class extends BaseStrategyConfig {
       // 4. Implied Interest
       const rateDiff = Number(currentSidePos.impliedInterestRate ?? 0) - Number(entryPos.impliedInterestRate ?? 0);
       const aprDiff = Number(currentSidePos.impliedApr ?? 0) - Number(entryPos.impliedApr ?? 0);
-      interestDiffText = `${percentFmt.format(rateDiff)}<br/><small>(${percentFmt.format(aprDiff)} APR)</small>`;
+      interestDiffText = formatFlowCell(
+        `<span class="text-nowrap">${percentFmt.format(rateDiff)}</span>`,
+        `<small class="text-nowrap">(${percentFmt.format(aprDiff)} APR)</small>`
+      );
       interestDiffClass = 'text-neutral-alt';
 
       // 5 & 6. Buy / Sell Legs
@@ -1435,20 +1449,7 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
   }));
 
   const chart = echarts.init(chartDom);
-  const resizeChartIfVisible = () => {
-    const inst = echarts.getInstanceByDom(chartDom);
-    if (inst && chartDom.clientWidth > 0 && chartDom.clientHeight > 0) {
-      inst.resize({ width: chartDom.clientWidth, height: chartDom.clientHeight });
-    }
-  };
-  if (!chartDom._touchBetResizeBound) {
-    chartDom._touchBetResizeBound = true;
-    window.addEventListener('resize', resizeChartIfVisible);
-    if (typeof ResizeObserver !== 'undefined') {
-      const ro = new ResizeObserver(resizeChartIfVisible);
-      ro.observe(chartDom);
-    }
-  }
+  bindChartResize(chartDom);
 
   chart.setOption({
     dataset: [dataset, highlightDataset, ...datasetPerDTE],

@@ -30,10 +30,43 @@ body {
 }
 
 .chart-container {
-  height: 500px;
+  height: clamp(380px, 62vh, 680px);
   width: 100%;
   background: rgba(15, 23, 42, 0.2);
   border-radius: 8px;
+}
+
+/* Adaptive Main Workspace Layout */
+.workspace-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.workspace-viz-col,
+.workspace-details-col {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 992px) {
+  .workspace-layout {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .workspace-viz-col {
+    flex: 1 1 50%;
+  }
+
+  .workspace-details-col {
+    flex: 0 1 50%;
+    max-width: 600px;
+  }
+
+  .workspace-layout.has-diff .workspace-details-col {
+    max-width: 760px;
+  }
 }
 
 .card {
@@ -740,6 +773,43 @@ footer {
 .unified-strategy-table .metric-label {
   font-weight: 700;
   color: #e2e8f0;
+  white-space: nowrap;
+}
+
+.metric-cell-flow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  column-gap: 0.4em;
+  row-gap: 2px;
+}
+
+.metric-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  column-gap: 0.35em;
+  row-gap: 1px;
+  max-width: 100%;
+}
+
+@media (max-width: 480px) {
+  .card-header,
+  .card-body {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .unified-strategy-table thead th,
+  .unified-strategy-table .strategy-metric-row th,
+  .unified-strategy-table .strategy-metric-row td {
+    padding: 6px 8px;
+  }
+
+  .unified-strategy-table .metric-label {
+    white-space: normal;
+  }
 }
 
 .unified-strategy-table .metric-subtitle {
@@ -851,7 +921,7 @@ footer {
 
 .odds-side-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -910,7 +980,7 @@ footer {
 /* Over / Under Matrix Table View (soft-light surface for vibrant pastel heatmap) */
 .touch-bet-table-container {
   position: relative;
-  height: 500px;
+  height: clamp(380px, 62vh, 680px);
   width: 100%;
   background: #f1f5f9;
   border: 1px solid #cbd5e1;

@@ -193,7 +193,6 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     const formatContractCell = (pos, compact) => {
       if (!pos) return '—';
       const contractHtml = formatContractLink(pos.call, pos.callURL, compact);
-      let callPriceLine = '';
       if (pos.callPrice != null) {
         const cp = Number(pos.callPrice);
         const minSize = pos.minSize != null
@@ -204,9 +203,13 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
           ? Number(pos.callContractPrice)
           : cp * lot * minSize;
         const contractSizeStr = Number(minSize.toFixed(4));
-        callPriceLine = `<br/><small class="text-probs"><span class="text-nowrap">${dollarFmt.format(cp)}</span><br/><span class="text-nowrap">(${formatContractPrice(contractPrice)} per ${contractSizeStr} contract)</span></small>`;
+        const priceGroup = formatFlowGroup(
+          `<small class="text-probs text-nowrap">${dollarFmt.format(cp)}</small>`,
+          `<small class="text-probs text-nowrap">(${formatContractPrice(contractPrice)} per ${contractSizeStr} contract)</small>`
+        );
+        return formatFlowCell(contractHtml, priceGroup);
       }
-      return `${contractHtml}${callPriceLine}`;
+      return formatFlowCell(contractHtml);
     };
 
     const formatMoneyYieldCell = (pos, compact) => {
@@ -218,10 +221,13 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       const cls = yieldVal >= 0 ? 'text-good' : 'text-bad';
       const altCls = m.moneyProfit >= 0 ? 'text-good-alt' : 'text-bad';
       const probStr = pos.moneyProbability != null ? `${Math.round(pos.moneyProbability * 100)}% prob` : '';
-      if (compact) {
-        return `<span class="${cls} text-nowrap">${yieldStr}</span><br/><small class="${altCls} text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">${probStr}</small>` : ''}`;
-      }
-      return `<span class="${cls} text-nowrap">${yieldStr} ${pos.money}</span> <small class="${altCls} text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">(${probStr})</small>` : ''}`;
+      const suffix = compact ? '' : ` ${pos.money}`;
+      const yieldAndProfit = formatFlowGroup(
+        `<span class="${cls} text-nowrap">${yieldStr}${suffix}</span>`,
+        `<small class="${altCls} text-nowrap">(${profitStr})</small>`
+      );
+      const probPart = probStr ? `<small class="text-probs text-nowrap">(${probStr})</small>` : '';
+      return formatFlowCell(yieldAndProfit, probPart);
     };
 
     const formatPostTaxMoneyYieldCell = (pos, compact) => {
@@ -232,10 +238,11 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       const profitStr = formatSignedDollar(post.moneyProfit);
       const cls = yieldVal >= 0 ? 'text-good' : 'text-bad';
       const altCls = post.moneyProfit >= 0 ? 'text-good-alt' : 'text-bad';
-      if (compact) {
-        return `<span class="${cls} text-nowrap">${yieldStr}</span><br/><small class="${altCls} text-nowrap">(${profitStr})</small>`;
-      }
-      return `<span class="${cls} text-nowrap">${yieldStr} ${pos.money}</span> <small class="${altCls} text-nowrap">(${profitStr})</small>`;
+      const suffix = compact ? '' : ` ${pos.money}`;
+      return formatFlowCell(
+        `<span class="${cls} text-nowrap">${yieldStr}${suffix}</span>`,
+        `<small class="${altCls} text-nowrap">(${profitStr})</small>`
+      );
     };
 
     const formatDollarImpactCell = (absImpact, money, compact) => {
@@ -253,12 +260,17 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
       if (!pos || !pos.preTax) return '—';
       const m = pos.preTax;
       const yieldStr = percentFmt.format(m.underlyingYield - 1.0);
-      const profitStr = `+${underlyingFmt.format(m.premiumToReceive)} ${pos.underlying}`;
+      const profitStr = compact
+        ? `+${underlyingFmt.format(m.premiumToReceive)}`
+        : `+${underlyingFmt.format(m.premiumToReceive)} ${pos.underlying}`;
       const probStr = pos.underlyingProbability != null ? `${Math.round(pos.underlyingProbability * 100)}% prob` : '';
-      if (compact) {
-        return `<span class="text-good text-nowrap">${yieldStr}</span><br/><small class="text-good-alt text-nowrap">(+${underlyingFmt.format(m.premiumToReceive)})</small>${probStr ? `<br/><small class="text-probs text-nowrap">${probStr}</small>` : ''}`;
-      }
-      return `<span class="text-good text-nowrap">${yieldStr} ${pos.underlying}</span> <small class="text-good-alt text-nowrap">(${profitStr})</small>${probStr ? `<br/><small class="text-probs text-nowrap">(${probStr})</small>` : ''}`;
+      const suffix = compact ? '' : ` ${pos.underlying}`;
+      const yieldAndProfit = formatFlowGroup(
+        `<span class="text-good text-nowrap">${yieldStr}${suffix}</span>`,
+        `<small class="text-good-alt text-nowrap">(${profitStr})</small>`
+      );
+      const probPart = probStr ? `<small class="text-probs text-nowrap">(${probStr})</small>` : '';
+      return formatFlowCell(yieldAndProfit, probPart);
     };
 
     const formatPostTaxUndYieldCell = (pos, compact) => {
@@ -275,6 +287,21 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
     const formatUndYieldTaxImpactCell = (pos, compact) => {
       if (!pos || !pos.postTax) return '—';
       return formatDollarImpactCell(-(pos.postTax.unassignedTax ?? 0), pos.money, compact);
+    };
+
+    const formatBeTaxImpactCell = (pos, compact, metricKey, higherIsGood) => {
+      const preBe = pos?.preTax?.[metricKey];
+      const postBe = pos?.postTax?.[metricKey];
+      if (preBe?.absolute == null || postBe?.absolute == null) return '—';
+      const absDiff = postBe.absolute - preBe.absolute;
+      const relDiff = preBe.absolute > 0 ? (postBe.absolute / preBe.absolute - 1.0) : 0;
+      const isGood = higherIsGood ? absDiff > 0 : absDiff < 0;
+      const isBad = higherIsGood ? absDiff < 0 : absDiff > 0;
+      const impactCls = isGood ? 'text-good' : (isBad ? 'text-bad' : 'text-muted-alt');
+      return formatFlowCell(
+        `<span class="${impactCls} text-nowrap">${formatSignedDollar(absDiff)}</span>`,
+        `<small class="${impactCls} text-nowrap">(${percentFmt.format(relDiff)})</small>`
+      );
     };
 
     const formatBeMoneyCell = (pos, compact) => {
@@ -424,7 +451,10 @@ StrategyRegistry['coveredCall'] = new class extends BaseStrategyConfig {
         const isGood = higherIsGood ? diffAbs > 0 : diffAbs < 0;
         const isBad = higherIsGood ? diffAbs < 0 : diffAbs > 0;
         return {
-          text: `${formatSignedDollar(diffAbs)}<br/><small>(${percentFmt.format(diffRel)})</small>`,
+          text: formatFlowCell(
+            `<span class="text-nowrap">${formatSignedDollar(diffAbs)}</span>`,
+            `<small class="text-nowrap">(${percentFmt.format(diffRel)})</small>`
+          ),
           className: isGood ? 'text-good' : (isBad ? 'text-bad' : 'text-muted-alt')
         };
       };
@@ -948,9 +978,7 @@ function renderCoveredCallsChart(data, chartDom, idToSelect) {
   }));
 
   const chart = echarts.init(chartDom);
-  window.addEventListener('resize', function () {
-    chart.resize();
-  });
+  bindChartResize(chartDom);
 
   chart.setOption({
     dataset: [dataset, highlightDataset, ...datasetPerDTE],
