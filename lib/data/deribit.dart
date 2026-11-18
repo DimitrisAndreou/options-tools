@@ -87,11 +87,17 @@ extension ListedInstrumentDeribitUtils on ListedInstrument {
     makeMarket(Asset asset) {
       final contractLot =
           asset.isExpirable ? asset.toExpirable.contractLot : 1.0;
+      var bid = bid_price! * contractLot;
+      var ask = ask_price! * contractLot;
+      if (bid > ask) {
+        print(
+            'WARNING: Bid price ($bid) > ask price ($ask) for $instrument_name; swapping bid and ask.');
+        final tmp = bid;
+        bid = ask;
+        ask = tmp;
+      }
       return Market.create(
-          asset: asset,
-          money: money,
-          bidPrice: bid_price! * contractLot,
-          askPrice: ask_price! * contractLot);
+          asset: asset, money: money, bidPrice: bid, askPrice: ask);
     }
 
     Match? match = _instrumentRegex.firstMatch(instrument_name);
