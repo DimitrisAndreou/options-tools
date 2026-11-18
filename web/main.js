@@ -583,10 +583,16 @@ document.addEventListener('alpine:init', () => {
         UrlManager.setWithDefault(url, URL_PARAMS.SLIPPAGE, slippage, 0.5);
         UrlManager.setWithDefault(url, URL_PARAMS.MIN_DTE, minDte, 7);
         UrlManager.setWithDefault(url, URL_PARAMS.MAX_DTE, maxDte, 1092);
-        UrlManager.set(url, URL_PARAMS.AVG_PRICE, (avgPrice !== '' && avgPrice !== null) ? String(avgPrice) : null);
         UrlManager.setWithDefault(url, URL_PARAMS.SIZE, this.normalizeSize(size), 1);
-        UrlManager.setWithDefault(url, URL_PARAMS.UND_TAX, Number(underlyingTax) || 0, 0);
-        UrlManager.setWithDefault(url, URL_PARAMS.DERIV_TAX, Number(derivativeTax) || 0, 0);
+        if (strategy === 'coveredCall') {
+          UrlManager.set(url, URL_PARAMS.AVG_PRICE, (avgPrice !== '' && avgPrice !== null) ? String(avgPrice) : null);
+          UrlManager.setWithDefault(url, URL_PARAMS.UND_TAX, Number(underlyingTax) || 0, 0);
+          UrlManager.setWithDefault(url, URL_PARAMS.DERIV_TAX, Number(derivativeTax) || 0, 0);
+        } else {
+          UrlManager.set(url, URL_PARAMS.AVG_PRICE, null);
+          UrlManager.set(url, URL_PARAMS.UND_TAX, null);
+          UrlManager.set(url, URL_PARAMS.DERIV_TAX, null);
+        }
         UrlManager.set(url, URL_PARAMS.ID, selectedId || null);
         UrlManager.set(url, URL_PARAMS.UI, this.encodeUiState());
 

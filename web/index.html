@@ -54,8 +54,8 @@
           </div>
           <div class="toolbar-control">
             <div class="toolbar-affix-box">
-              <select id="source-select" name="source" x-model="$store.app.source"
-                @change="$store.app.changeSource()" class="toolbar-input" style="cursor: pointer; background: transparent;">
+              <select id="source-select" name="source" x-model="$store.app.source" @change="$store.app.changeSource()"
+                class="toolbar-input" style="cursor: pointer; background: transparent;">
                 <option value="yfinance" class="bg-dark text-white">YFinance</option>
                 <option value="deribit" class="bg-dark text-white">Deribit</option>
               </select>
@@ -73,7 +73,8 @@
           <div class="toolbar-control">
             <div class="toolbar-joined-group">
               <input type="text" id="ticker-input" name="ticker" x-model="$store.app.tickerInput"
-                class="toolbar-input font-monospace" :placeholder="$store.app.source === 'deribit' ? 'BTC, ETH...' : 'AAPL, GOOG...'"
+                class="toolbar-input font-monospace"
+                :placeholder="$store.app.source === 'deribit' ? 'BTC, ETH...' : 'AAPL, GOOG...'"
                 style="width: 110px; text-transform: uppercase;" required>
               <button type="submit" class="toolbar-load-btn"
                 :class="{ 'toolbar-load-btn-dirty': $store.app.hasPendingChanges }"
@@ -91,8 +92,8 @@
           <div class="toolbar-dte-header">
             <label for="min-dte-input" class="toolbar-label">Expiration Window</label>
             <div class="toolbar-dte-dates font-monospace" x-text="$store.app.dteDateRangeDisplay"></div>
-            <div id="dte-value-display" class="toolbar-value font-monospace"
-              x-text="$store.app.dteDaysRangeDisplay"></div>
+            <div id="dte-value-display" class="toolbar-value font-monospace" x-text="$store.app.dteDaysRangeDisplay">
+            </div>
           </div>
           <div class="toolbar-control toolbar-control-slider">
             <div class="dual-slider-container position-relative w-100">
@@ -159,10 +160,8 @@
               </div>
               <div class="toolbar-control">
                 <div class="toolbar-affix-box">
-                  <input type="number" id="size-input" min="1" step="1"
-                    x-model.number="$store.app.size"
-                    class="toolbar-input font-monospace text-end"
-                    style="width: 56px;">
+                  <input type="number" id="size-input" min="1" step="1" x-model.number="$store.app.size"
+                    class="toolbar-input font-monospace text-end" style="width: 56px;">
                 </div>
               </div>
             </div>
@@ -178,8 +177,7 @@
               <div class="toolbar-control">
                 <div class="toolbar-affix-box">
                   <input type="number" id="underlying-tax-input" min="0" max="100" step="any"
-                    x-model.number="$store.app.underlyingTax"
-                    class="toolbar-input font-monospace text-end"
+                    x-model.number="$store.app.underlyingTax" class="toolbar-input font-monospace text-end"
                     style="width: 60px;">
                   <span class="toolbar-affix">%</span>
                 </div>
@@ -197,8 +195,7 @@
               <div class="toolbar-control">
                 <div class="toolbar-affix-box">
                   <input type="number" id="derivative-tax-input" min="0" max="100" step="any"
-                    x-model.number="$store.app.derivativeTax"
-                    class="toolbar-input font-monospace text-end"
+                    x-model.number="$store.app.derivativeTax" class="toolbar-input font-monospace text-end"
                     style="width: 60px;">
                   <span class="toolbar-affix">%</span>
                 </div>
@@ -241,23 +238,23 @@
                   <span class="cc-info-popover" tabindex="0" aria-label="About Target Bias">
                     <i class="fas fa-info-circle toolbar-info-icon"></i>
                     <span class="cc-info-tooltip">
-                      <b>Target Bias</b> rotates the center ray around your hold benchmark (<code>(Y_hold, 1.0)</code>, where <code>Y_hold</code> is <code>1.00</code> when Avg Price is blank, or your holding yield when Avg Price is set).<br>
-                      &bull; <b>1.00 (Neutral)</b>: Equal relative gain above holding (<code>45&deg;</code> at spot).<br>
-                      &bull; <b>Slide right (&times;M)</b>: Tilts toward money yield per unit of underlying gain (OTM calls).<br>
-                      &bull; <b>Slide left (&times;M)</b>: Tilts toward underlying yield per unit of money gain (ITM calls).<br>
+                      <b>Target Bias</b> rotates the center ray around your hold benchmark (<code>(Y_hold, 1.0)</code>,
+                      where <code>Y_hold</code> is <code>1.00</code> when Avg Price is blank, or your holding yield when
+                      Avg Price is set).<br>
+                      &bull; <b>1.00 (Neutral)</b>: Equal relative gain above holding (<code>45&deg;</code> at
+                      spot).<br>
+                      &bull; <b>Slide right (&times;M)</b>: Tilts toward money yield per unit of underlying gain (OTM
+                      calls).<br>
+                      &bull; <b>Slide left (&times;M)</b>: Tilts toward underlying yield per unit of money gain (ITM
+                      calls).<br>
                       <small class="text-muted">Double-click the value to reset to 1.00.</small>
                     </span>
                   </span>
-                  <span class="odds-prob-badge cc-band-badge font-monospace"
-                    x-text="$store.app.ccBiasDisplay"
-                    @dblclick="$store.app.setCcBiasStep(0)"
-                    title="Double-click to reset to 1.00 (Neutral)"></span>
-                  <input type="range" min="-400" max="400" step="25"
-                    :value="$store.app.ccBiasStep"
-                    @input="$store.app.setCcBiasStep($event.target.value)"
-                    @dblclick="$store.app.setCcBiasStep(0)"
-                    class="odds-prob-slider cc-band-slider"
-                    aria-label="Target Bias">
+                  <span class="odds-prob-badge cc-band-badge font-monospace" x-text="$store.app.ccBiasDisplay"
+                    @dblclick="$store.app.setCcBiasStep(0)" title="Double-click to reset to 1.00 (Neutral)"></span>
+                  <input type="range" min="-400" max="400" step="25" :value="$store.app.ccBiasStep"
+                    @input="$store.app.setCcBiasStep($event.target.value)" @dblclick="$store.app.setCcBiasStep(0)"
+                    class="odds-prob-slider cc-band-slider" aria-label="Target Bias">
                 </div>
                 <div class="odds-prob-filter">
                   <span class="odds-prob-label">Tolerance</span>
@@ -265,16 +262,15 @@
                     <i class="fas fa-info-circle toolbar-info-icon"></i>
                     <span class="cc-info-tooltip cc-info-tooltip-end">
                       <b>Multiplicative Tolerance</b> sets the width of the shaded band around the center line.<br>
-                      &bull; <b>&times;/&divide; M</b> (e.g. <code>&times;/&divide; 1.05</code>) highlights calls whose ratio stays between <code>Center &divide; M</code> and <code>Center &times; M</code>.<br>
+                      &bull; <b>&times;/&divide; M</b> (e.g. <code>&times;/&divide; 1.05</code>) highlights calls whose
+                      ratio stays between <code>Center &divide; M</code> and <code>Center &times; M</code>.<br>
                       &bull; <b>1.00 (Line)</b> collapses the band to just the center line.
                     </span>
                   </span>
                   <span class="odds-prob-badge cc-band-badge font-monospace"
                     x-text="$store.app.ccToleranceDisplay"></span>
-                  <input type="range" min="0" max="30" step="1"
-                    :value="$store.app.ccTolerancePct"
-                    @input="$store.app.setCcTolerancePct($event.target.value)"
-                    class="odds-prob-slider cc-band-slider"
+                  <input type="range" min="0" max="30" step="1" :value="$store.app.ccTolerancePct"
+                    @input="$store.app.setCcTolerancePct($event.target.value)" class="odds-prob-slider cc-band-slider"
                     aria-label="Band Tolerance">
                 </div>
               </div>
@@ -283,8 +279,7 @@
               <div class="d-flex flex-column gap-2 mb-2">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                   <div class="odds-mode-toggle" role="group" aria-label="Probability Mode">
-                    <button type="button" class="odds-mode-btn"
-                      :class="{ 'active': $store.app.oddsMode === 'touch' }"
+                    <button type="button" class="odds-mode-btn" :class="{ 'active': $store.app.oddsMode === 'touch' }"
                       @click="$store.app.setOddsMode('touch')">
                       Touch Anytime (During)
                     </button>
@@ -299,10 +294,8 @@
                       <div class="odds-prob-filter" title="Highlight implied probability threshold on chart">
                         <span class="odds-prob-label">Odds &ge;</span>
                         <span class="odds-prob-badge font-monospace" x-text="`${$store.app.minProb}%`"></span>
-                        <input type="range" min="0" max="100" step="1"
-                          :value="$store.app.minProb"
-                          @input="$store.app.setMinProb($event.target.value)"
-                          class="odds-prob-slider"
+                        <input type="range" min="0" max="100" step="1" :value="$store.app.minProb"
+                          @input="$store.app.setMinProb($event.target.value)" class="odds-prob-slider"
                           aria-label="Minimum probability threshold (%)">
                       </div>
                     </template>
@@ -327,20 +320,17 @@
                       <div class="odds-mode-toggle" role="group" aria-label="Table Cell Metric">
                         <button type="button" class="odds-mode-btn"
                           :class="{ 'active': $store.app.touchBetMetric === 'yield' }"
-                          @click="$store.app.setTouchBetMetric('yield')"
-                          title="Payoff multiple (e.g. 2.50)">
+                          @click="$store.app.setTouchBetMetric('yield')" title="Payoff multiple (e.g. 2.50)">
                           Yield (2.5)
                         </button>
                         <button type="button" class="odds-mode-btn"
                           :class="{ 'active': $store.app.touchBetMetric === 'return' }"
-                          @click="$store.app.setTouchBetMetric('return')"
-                          title="Percentage return (e.g. +150%)">
+                          @click="$store.app.setTouchBetMetric('return')" title="Percentage return (e.g. +150%)">
                           Return (+150%)
                         </button>
                         <button type="button" class="odds-mode-btn"
                           :class="{ 'active': $store.app.touchBetMetric === 'odds' }"
-                          @click="$store.app.setTouchBetMetric('odds')"
-                          title="Implied probability (e.g. 40.0%)">
+                          @click="$store.app.setTouchBetMetric('odds')" title="Implied probability (e.g. 40.0%)">
                           Odds (40%)
                         </button>
                         <button type="button" class="odds-mode-btn"
@@ -359,8 +349,8 @@
             <div id="strategyChartContainer" class="chart-container"
               x-show="$store.app.strategy !== 'touchBet' || $store.app.touchBetView === 'chart'"></div>
             <div id="touchBetTableContainer" class="touch-bet-table-container"
-              x-show="$store.app.strategy === 'touchBet' && $store.app.touchBetView === 'table'"
-              style="display: none;"></div>
+              x-show="$store.app.strategy === 'touchBet' && $store.app.touchBetView === 'table'" style="display: none;">
+            </div>
           </div>
         </div>
       </div>
@@ -380,7 +370,8 @@
                 <tbody class="strategy-section-body">
                   <tr class="strategy-metric-row">
                     <th scope="row" class="metric-label-cell">
-                      <div class="metric-label" x-text="`Units of ${$store.app.existingHolding?.underlying} held`"></div>
+                      <div class="metric-label" x-text="`Units of ${$store.app.existingHolding?.underlying} held`">
+                      </div>
                     </th>
                     <td class="metric-val-single">
                       <span class="text-neutral text-nowrap" x-text="$store.app.existingHolding?.unitsHeld"></span>
@@ -504,11 +495,14 @@
                       <div>
                         <!-- Event & Market-Implied Odds Bar -->
                         <div class="outcomes-panel mb-3">
-                          <div class="outcomes-header d-flex justify-content-between align-items-center flex-wrap gap-1">
-                            <span>Event: <span class="text-white" x-text="$store.app.activeTouchBetSide?.eventSummary || $store.app.unrealized.header?.eventSummary"></span></span>
+                          <div
+                            class="outcomes-header d-flex justify-content-between align-items-center flex-wrap gap-1">
+                            <span>Event: <span class="text-white"
+                                x-text="$store.app.activeTouchBetSide?.eventSummary || $store.app.unrealized.header?.eventSummary"></span></span>
                           </div>
                           <div class="odds-bar-track">
-                            <div class="odds-bar-yes" :style="{ width: $store.app.unrealized.header?.yesBarWidth }"></div>
+                            <div class="odds-bar-yes" :style="{ width: $store.app.unrealized.header?.yesBarWidth }">
+                            </div>
                           </div>
                           <div class="d-flex justify-content-between small">
                             <span>
@@ -532,7 +526,8 @@
                               <span x-text="$store.app.unrealized.header?.yesTabLabel"></span>
                             </div>
                             <div class="odds-side-tab-sub">
-                              <span class="text-nowrap">Odds: <span class="text-probs" x-text="$store.app.unrealized.header?.yesProbPct"></span></span>
+                              <span class="text-nowrap">Odds: <span class="text-probs"
+                                  x-text="$store.app.unrealized.header?.yesProbPct"></span></span>
                               &bull;
                               <span class="text-nowrap">Yield:
                                 <span class="text-good"
@@ -548,7 +543,8 @@
                               <span x-text="$store.app.unrealized.header?.noTabLabel"></span>
                             </div>
                             <div class="odds-side-tab-sub">
-                              <span class="text-nowrap">Odds: <span class="text-probs" x-text="$store.app.unrealized.header?.noProbPct"></span></span>
+                              <span class="text-nowrap">Odds: <span class="text-probs"
+                                  x-text="$store.app.unrealized.header?.noProbPct"></span></span>
                               &bull;
                               <span class="text-nowrap">Yield:
                                 <span class="text-neutral"
@@ -577,8 +573,8 @@
                                 <span>Entry</span>
                               </template>
                             </th>
-                            <th scope="col" class="col-val"
-                              x-text="$store.app.unrealized.isRoll ? 'New' : 'Current'">Current</th>
+                            <th scope="col" class="col-val" x-text="$store.app.unrealized.isRoll ? 'New' : 'Current'">
+                              Current</th>
                             <th scope="col" class="col-diff">Change</th>
                           </tr>
                         </thead>
@@ -616,8 +612,7 @@
                       </table>
                     </div>
 
-                    <div class="instructions-panel"
-                      :class="$store.app.strategy === 'touchBet' ? 'mt-2' : 'mt-3'"
+                    <div class="instructions-panel" :class="$store.app.strategy === 'touchBet' ? 'mt-2' : 'mt-3'"
                       x-show="!$store.app.entryPosition && $store.app.unrealized.header?.instructions?.length">
                       <div class="instructions-header">Execution Instructions</div>
                       <div class="instructions-content">
@@ -650,10 +645,12 @@
         </div>
         <div class="modal-body">
           <p id="error-message"></p>
-          <div id="error-migrate-tip" class="mt-3 pt-3 border-top border-secondary text-light-alt small" style="display: none;">
+          <div id="error-migrate-tip" class="mt-3 pt-3 border-top border-secondary text-light-alt small"
+            style="display: none;">
             <i class="fas fa-magic text-warning me-1"></i>
             Is this an older or broken strategy link? You can fix and upgrade it using the
-            <a href="migrate.html" id="error-migrate-link" class="text-warning text-decoration-underline" target="_blank">URL Migration Tool</a>.
+            <a href="migrate.html" id="error-migrate-link" class="text-warning text-decoration-underline"
+              target="_blank">URL Migration Tool</a>.
           </div>
         </div>
       </div>
