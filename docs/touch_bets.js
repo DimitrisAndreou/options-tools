@@ -1474,19 +1474,21 @@ function renderTouchBetsChart(data, chartDom, idToSelect) {
       name: 'Target Price ➡',
       nameLocation: 'end',
       nameGap: 0,
+      splitNumber: 10,
       nameTextStyle: {
         ...axisTitleNameTextStyle,
         align: 'right',
         verticalAlign: 'top',
-        padding: [30, 0, 0, 0]
+        padding: [42, 0, 0, 0]
       },
       axisLabel: {
         ...axisXValuesNameTextStyle,
+        lineHeight: 15,
         hideOverlap: true,
         formatter: function (value) {
           const priceStr = formatRangeCapPrice(value);
           if (spotPrice > 0) {
-            return `${priceStr} (${percentFmt.format(value / spotPrice - 1.0)})`;
+            return `${priceStr}\n${percentFmt.format(value / spotPrice - 1.0)}`;
           }
           return priceStr;
         }

@@ -30,10 +30,16 @@ body {
 }
 
 .chart-container {
-  height: clamp(380px, 62vh, 680px);
+  min-height: clamp(380px, 62vh, 680px);
+  flex: 1 1 auto;
   width: 100%;
   background: rgba(15, 23, 42, 0.2);
   border-radius: 8px;
+}
+
+.workspace-viz-col .card-body {
+  display: flex;
+  flex-direction: column;
 }
 
 /* Adaptive Main Workspace Layout */
@@ -980,7 +986,8 @@ footer {
 /* Over / Under Matrix Table View (soft-light surface for vibrant pastel heatmap) */
 .touch-bet-table-container {
   position: relative;
-  height: clamp(380px, 62vh, 680px);
+  min-height: clamp(380px, 62vh, 680px);
+  flex: 1 1 0;
   width: 100%;
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
