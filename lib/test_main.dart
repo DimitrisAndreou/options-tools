@@ -2,9 +2,8 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:options_tools/market_analyzer.dart';
-
 import 'assets.dart';
+import 'data/cboe.dart';
 import 'data/deribit.dart';
 import 'data/url_fetcher.dart';
 import 'data/yfinance.dart';
@@ -21,8 +20,9 @@ double asChange(double changedValue, double originalValue) =>
 
 void main() async {
   // testYFinance();
+  await testCboe();
   // await testGoogCoveredCallUnrealizedGains();
-  compareCoveredCallConfigs();
+  // compareCoveredCallConfigs();
 
   // List<Market> markets = await Deribit.fetchMarkets(
   //     [Deribit.BTC], UrlFetcher(Duration(minutes: 15)));
@@ -30,8 +30,6 @@ void main() async {
   //     [Deribit.USDC], UrlFetcher(Duration(minutes: 15)));
   // [Deribit.BTC, Deribit.ETH], UrlFetcher(Duration(minutes: 15)));
   // ArchOracle oracle = Oracle.fromMarkets(markets);
-
-  // testMarketNavigator(oracle);
 
   // browseLinearContracts();
   // browseProbabilities(markets);
@@ -53,6 +51,27 @@ void main() async {
 //         "Asset: [${call.asset}], sell price: ${call.sellPrice()} of ${call.money}");
 //     // Do it in dollars? Underlying?
 //   }
+}
+
+Future<void> testCboe({String ticker = "ANT"}) async {
+  final urlFetcher = UrlFetcher(Duration(minutes: 15));
+  final List<Market> markets = await Cboe.fetchMarkets(ticker, urlFetcher);
+
+  final money = Commodity("USD");
+  final underlying = Commodity(ticker.toUpperCase(), source: DataSource.cboe);
+
+  print(" ============== $ticker CC (CBOE) ==============");
+  print(
+      "Fetched ${markets.length} markets (${markets.calls.length} calls, ${markets.puts.length} puts)");
+  for (final CoveredCall cc in CoveredCall.generateAll(
+    markets,
+    underlying: underlying,
+    money: money,
+  )) {
+    print("Spot: ${cc.spotMarket}");
+    print("Call: ${cc.option.readableName} (${cc.option.name})");
+    print(cc);
+  }
 }
 
 void testYFinance() async {
@@ -190,13 +209,6 @@ Future<void> testGoogCoveredCallUnrealizedGains() async {
     print(
         "${expiration.toIso8601String().substring(0, 10).padRight(12)} | ${dte.toString().padLeft(5)} | ${dollarify(strike).padLeft(8)} | ${dollarify(totalPremium).padLeft(11)} | ${dollarify(valueAtStrike).padLeft(18)} | ${dollarify(unrealizedGain).padLeft(17)} | ${dollarify(netPostTaxValue).padLeft(20)}");
   }
-}
-
-void testMarketNavigator(ArchOracle oracle) {
-  final money = Commodity("USD");
-  final underlying = Commodity("BTC");
-  MarketNavigator nav =
-      MarketNavigator.create(oracle, underlying: underlying, money: money);
 }
 
 void browseLinearContracts() async {
@@ -748,13 +760,17 @@ void compareCoveredCallConfigs() {
 
   const encoder = JsonEncoder.withIndent('  ');
   for (final (label, cc) in configs) {
-    print("----------------------------------------------------------------------------------------------------------");
+    print(
+        "----------------------------------------------------------------------------------------------------------");
     print(label);
-    print("----------------------------------------------------------------------------------------------------------");
+    print(
+        "----------------------------------------------------------------------------------------------------------");
     print("  Position        : ${cc.strategy}");
     print("  moneySize       : \$${cc.moneyLeg.size.toStringAsFixed(2)}");
-    print("  underlyingToBuy : ${cc.underlyingToBuy.size.toStringAsFixed(3)} ABC");
-    print("  costBasis       : \$${cc.costBasis.toStringAsFixed(2)} (@ \$${cc.unitCostBasis.toStringAsFixed(2)}/sh)");
+    print(
+        "  underlyingToBuy : ${cc.underlyingToBuy.size.toStringAsFixed(3)} ABC");
+    print(
+        "  costBasis       : \$${cc.costBasis.toStringAsFixed(2)} (@ \$${cc.unitCostBasis.toStringAsFixed(2)}/sh)");
     print("  preTax          : ${fmtMetrics(cc.preTax)}");
     print("  postTax         : ${fmtMetrics(cc.postTax)}");
     print("\n  JSON:");

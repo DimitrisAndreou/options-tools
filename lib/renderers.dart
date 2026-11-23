@@ -56,7 +56,7 @@ abstract class PositionRenderer {
   factory PositionRenderer.optionStrat() = _OptionStratPositionRenderer;
 
   static PositionRenderer? forSource(DataSource source) {
-    if (source == DataSource.yfinance) {
+    if (source == DataSource.yfinance || source == DataSource.cboe) {
       return PositionRenderer.optionStrat();
     }
     return null;
@@ -103,7 +103,8 @@ class _OptionStratPositionRenderer implements PositionRenderer {
     String? underlyingName;
 
     for (final line in position.decompose()) {
-      if (line.asset.source != DataSource.yfinance) {
+      if (line.asset.source != DataSource.yfinance &&
+          line.asset.source != DataSource.cboe) {
         continue;
       }
 

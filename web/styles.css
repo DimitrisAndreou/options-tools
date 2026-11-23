@@ -802,6 +802,7 @@ footer {
 }
 
 @media (max-width: 480px) {
+
   .card-header,
   .card-body {
     padding: 0.75rem 0.85rem;

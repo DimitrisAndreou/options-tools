@@ -731,7 +731,9 @@ document.addEventListener('alpine:init', () => {
           return;
         }
 
-        const fetcherName = this.source === 'deribit' ? config.deribitFetcherName : config.yfinanceFetcherName;
+        const fetcherName = this.source === 'deribit'
+          ? config.deribitFetcherName
+          : (this.source === 'cboe' ? config.cboeFetcherName : config.yfinanceFetcherName);
         const fetcher = window[fetcherName];
         if (!fetcher) {
           throw new Error(`Fetcher ${fetcherName} is not registered on window by Dart.`);
@@ -903,16 +905,19 @@ const STRATEGY_CONFIGS = {
   coveredCall: {
     deribitFetcherName: 'deribitCoveredCallsDart',
     yfinanceFetcherName: 'yfinanceCoveredCallsDart',
+    cboeFetcherName: 'cboeCoveredCallsDart',
     renderer: renderCoveredCallsChart
   },
   longOption: {
     deribitFetcherName: 'deribitLongOptionsDart',
     yfinanceFetcherName: 'yfinanceLongOptionsDart',
+    cboeFetcherName: 'cboeLongOptionsDart',
     renderer: renderLongOptionsChart
   },
   touchBet: {
     deribitFetcherName: 'deribitTouchBetsDart',
     yfinanceFetcherName: 'yfinanceTouchBetsDart',
+    cboeFetcherName: 'cboeTouchBetsDart',
     renderer: renderTouchBetsChart
   }
 };

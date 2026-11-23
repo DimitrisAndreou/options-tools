@@ -266,11 +266,14 @@ class Option extends Expirable {
     }
   }
 
-  /// Human-readable Deribit-style option code (e.g., `SNDK-16JUL27-1180-C`),
-  /// replacing opaque 21-char OCC symbols from YFinance while preserving
-  /// `name` for exchange URLs.
+  static final RegExp _occRootRegex =
+      RegExp(r'^([A-Z0-9._-]+?)\d{6}[CP]\d{8}$');
+
+  /// Human-readable Deribit-style option code (e.g., `SNDK-16JUL27-1180-C` or
+  /// `SPXW-18DEC26-6000-C`), replacing opaque 21-char OCC symbols from
+  /// YFinance/CBOE while preserving the OCC root and `name` for exchange URLs.
   String get readableName {
-    if (source != DataSource.yfinance) {
+    if (source != DataSource.yfinance && source != DataSource.cboe) {
       return name;
     }
     const monthNames = [
@@ -288,6 +291,8 @@ class Option extends Expirable {
       'NOV',
       'DEC'
     ];
+    final occRoot = _occRootRegex.firstMatch(name.toUpperCase())?.group(1) ??
+        underlying.name;
     final day = expiration.day;
     final month = monthNames[expiration.month];
     final year = (expiration.year % 100).toString().padLeft(2, '0');
@@ -295,7 +300,7 @@ class Option extends Expirable {
         ? strike.toInt().toString()
         : strike.toString().replaceAll(RegExp(r'\.?0+$'), '');
     final typeChar = isCall ? 'C' : 'P';
-    return '${underlying.name}-$day$month$year-$strikeStr-$typeChar';
+    return '$occRoot-$day$month$year-$strikeStr-$typeChar';
   }
 
   @override

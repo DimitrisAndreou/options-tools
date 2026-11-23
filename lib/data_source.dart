@@ -1,4 +1,5 @@
 import 'assets.dart';
+import 'data/cboe.dart';
 import 'data/deribit.dart';
 import 'data/url_fetcher.dart';
 import 'data/yfinance.dart';
@@ -21,10 +22,12 @@ abstract class DataSource {
 
   static final DataSource deribit = DeribitDataSource();
   static final DataSource yfinance = YFinanceDataSource();
+  static final DataSource cboe = CboeDataSource();
 
   static DataSource? fromName(String name) => switch (name.toLowerCase()) {
         'deribit' => deribit,
         'yfinance' => yfinance,
+        'cboe' => cboe,
         _ => null,
       };
 
@@ -125,6 +128,43 @@ class YFinanceDataSource extends DataSource {
   }) async {
     final yf = await YFinance.openConnection(urlFetcher);
     return await yf.fetchMarkets(
+      ticker.toUpperCase(),
+      urlFetcher,
+      minDTE: minDTE,
+      maxDTE: maxDTE,
+    );
+  }
+}
+
+class CboeDataSource extends DataSource {
+  @override
+  String get name => 'CBOE';
+
+  @override
+  String? assetUrl(Asset asset) {
+    if (asset is Commodity || asset is Option) {
+      return 'https://finance.yahoo.com/quote/${asset.name}/';
+    }
+    return null;
+  }
+
+  @override
+  String? strategyUrl(Position position) {
+    try {
+      return PositionRenderer.optionStrat().render(position);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<Market>> fetchMarkets(
+    String ticker,
+    UrlFetcher urlFetcher, {
+    int? minDTE,
+    int? maxDTE,
+  }) async {
+    return await Cboe.fetchMarkets(
       ticker.toUpperCase(),
       urlFetcher,
       minDTE: minDTE,

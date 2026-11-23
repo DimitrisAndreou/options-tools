@@ -59,15 +59,20 @@ export default {
       }
     }
 
-    // 2. Setup Yahoo Headers
-    const yahooHeaders = new Headers();
-    yahooHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    yahooHeaders.set('Accept', '*/*');
+    // 2. Setup Upstream Headers
+    const upstreamHeaders = new Headers();
+    upstreamHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+    if (targetUrl.includes('cboe.com')) {
+      upstreamHeaders.set('Accept', 'application/json, text/plain, */*');
+      upstreamHeaders.set('Referer', 'https://www.cboe.com/');
+    } else {
+      upstreamHeaders.set('Accept', '*/*');
+    }
 
     // 3. Log and Extract the camouflaged cookie
     if (disguisedCookie) {
       console.log(`[Proxy] Found x-proxy-cookie. Length: ${disguisedCookie.length}`);
-      yahooHeaders.set('cookie', disguisedCookie); // Restore to standard 'cookie'
+      upstreamHeaders.set('cookie', disguisedCookie); // Restore to standard 'cookie'
     } else {
       console.log(`[Proxy] No x-proxy-cookie found in request.`);
     }
@@ -76,7 +81,7 @@ export default {
       console.log(`[Proxy] Fetching: ${targetUrl}`);
       const response = await fetch(targetUrl, {
         method: 'GET',
-        headers: yahooHeaders,
+        headers: upstreamHeaders,
         redirect: 'follow',
       });
 

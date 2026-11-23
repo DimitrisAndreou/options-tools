@@ -26,24 +26,29 @@ class UrlFetcher {
     }
 
     try {
-      // 1. Determine if we need to proxy (is it a Yahoo URL?)
+      // 1. Determine if we need to proxy (Yahoo or CBOE URLs)
       bool isYahoo = uri.contains('yahoo.com');
-      Uri finalUri = isYahoo
+      bool isCboe = uri.contains('cboe.com');
+      bool needsProxy = isYahoo || isCboe;
+      Uri finalUri = needsProxy
           ? Uri.parse('$_proxyBase?target=${Uri.encodeComponent(uri)}')
           : Uri.parse(uri);
 
       // 2. Prepare headers for the browser environment
-      // We strip 'User-Agent' and 'Accept' when calling the proxy because
-      // browsers forbid client JS from setting User-Agent, and attempts to do so
-      // trigger CORS preflight blocks. The worker sets these automatically anyway.
+      // We strip 'User-Agent', 'Accept', and 'Referer' when calling the proxy
+      // because browsers forbid client JS from setting User-Agent/Referer, and
+      // attempts to do so trigger CORS preflight blocks. The worker sets these
+      // automatically upstream.
       Map<String, String>? requestHeaders;
       if (headers != null) {
         requestHeaders = Map<String, String>.from(headers);
-        if (isYahoo) {
+        if (needsProxy) {
           requestHeaders.remove('User-Agent');
           requestHeaders.remove('user-agent');
           requestHeaders.remove('Accept');
           requestHeaders.remove('accept');
+          requestHeaders.remove('Referer');
+          requestHeaders.remove('referer');
         }
       }
 

@@ -57,6 +57,7 @@
               <select id="source-select" name="source" x-model="$store.app.source" @change="$store.app.changeSource()"
                 class="toolbar-input" style="cursor: pointer; background: transparent;">
                 <option value="yfinance" class="bg-dark text-white">YFinance</option>
+                <option value="cboe" class="bg-dark text-white">CBOE</option>
                 <option value="deribit" class="bg-dark text-white">Deribit</option>
               </select>
             </div>
@@ -74,7 +75,7 @@
             <div class="toolbar-joined-group">
               <input type="text" id="ticker-input" name="ticker" x-model="$store.app.tickerInput"
                 class="toolbar-input font-monospace"
-                :placeholder="$store.app.source === 'deribit' ? 'BTC, ETH...' : 'AAPL, GOOG...'"
+                :placeholder="$store.app.source === 'deribit' ? 'BTC, ETH...' : ($store.app.source === 'cboe' ? 'SPY, AAPL, ^SPX...' : 'AAPL, GOOG...')"
                 style="width: 110px; text-transform: uppercase;" required>
               <button type="submit" class="toolbar-load-btn"
                 :class="{ 'toolbar-load-btn-dirty': $store.app.hasPendingChanges }"

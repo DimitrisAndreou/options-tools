@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'dart:js_interop';
 
 import 'package:options_tools/assets.dart';
-import 'package:options_tools/data/deribit.dart';
-import 'package:options_tools/data/yfinance.dart';
+import 'package:options_tools/data/cboe.dart';
 import 'package:options_tools/markets.dart';
 import 'package:options_tools/strategies.dart';
 import 'package:options_tools/data/url_fetcher.dart';
@@ -31,6 +30,18 @@ external set deribitLongOptionsDart(JSFunction value);
 
 @JS()
 external set yfinanceLongOptionsDart(JSFunction value);
+
+@JS()
+external set cboeCoveredCallsDart(JSFunction value);
+
+@JS()
+external set cboeVerticalSpreadsDart(JSFunction value);
+
+@JS()
+external set cboeTouchBetsDart(JSFunction value);
+
+@JS()
+external set cboeLongOptionsDart(JSFunction value);
 
 UrlFetcher _urlFetcher = UrlFetcher(Duration(minutes: 5));
 
@@ -152,6 +163,68 @@ Future<String> yfinanceTouchBets(
       .toList());
 }
 
+Future<String> cboeCoveredCalls(
+    String ticker, double slippage, int minDTE, int maxDTE,
+    {double? avgPrice,
+    double underlyingTaxRate = 0.0,
+    double derivativeTaxRate = 0.0,
+    int size = 1}) async {
+  final cleanTicker = Cboe.normalizeTicker(ticker);
+  List<Market> markets = await DataSource.cboe
+      .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
+  return jsonEncode(CoveredCall.generateAll(markets,
+          underlying: Commodity(cleanTicker, source: DataSource.cboe),
+          money: Commodity("USD"),
+          slippage: slippage,
+          avgPrice: avgPrice,
+          size: size,
+          taxes: TaxProfile(
+            underlyingTaxRate: underlyingTaxRate,
+            derivativeTaxRate: derivativeTaxRate,
+          ))
+      .toList());
+}
+
+Future<String> cboeLongOptions(
+    String ticker, double slippage, int minDTE, int maxDTE) async {
+  final cleanTicker = Cboe.normalizeTicker(ticker);
+  List<Market> markets = await DataSource.cboe
+      .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
+  final underlying = Commodity(cleanTicker, source: DataSource.cboe);
+  final money = Commodity("USD");
+  final calls = LongCall.generateAll(markets,
+          underlying: underlying, money: money, slippage: slippage)
+      .map((e) => e.toJson());
+  final puts = LongPut.generateAll(markets,
+          underlying: underlying, money: money, slippage: slippage)
+      .map((e) => e.toJson());
+  return jsonEncode([...calls, ...puts]);
+}
+
+Future<String> cboeVerticalSpreads(
+    String ticker, double slippage, int minDTE, int maxDTE) async {
+  final cleanTicker = Cboe.normalizeTicker(ticker);
+  List<Market> markets = await DataSource.cboe
+      .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
+  return jsonEncode(VerticalSpread.generateAll(markets,
+          underlying: Commodity(cleanTicker, source: DataSource.cboe),
+          money: Commodity("USD"),
+          slippage: slippage)
+      .toList());
+}
+
+Future<String> cboeTouchBets(
+    String ticker, double slippage, int minDTE, int maxDTE) async {
+  final cleanTicker = Cboe.normalizeTicker(ticker);
+  List<Market> markets = await DataSource.cboe
+      .fetchMarkets(ticker, _urlFetcher, minDTE: minDTE, maxDTE: maxDTE);
+  return jsonEncode(TouchBet.generateAll(markets,
+          underlying: Commodity(cleanTicker, source: DataSource.cboe),
+          money: Commodity("USD"),
+          slippage: slippage)
+      .toList());
+}
+
 @JS('Error')
 external JSObject _newJsError(JSString message);
 
@@ -241,5 +314,41 @@ void setupJsInterop() {
       (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
     return _toJsPromise(yfinanceLongOptions(ticker.toDart,
         slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
+  }.toJS;
+
+  cboeCoveredCallsDart = (JSString ticker, JSNumber slippage, JSNumber minDTE,
+      JSNumber maxDTE,
+      [JSNumber? avgPrice,
+      JSNumber? underlyingTaxRate,
+      JSNumber? derivativeTaxRate,
+      JSNumber? size]) {
+    return _toJsPromise(cboeCoveredCalls(
+      ticker.toDart,
+      slippage.toDartDouble,
+      minDTE.toDartInt,
+      maxDTE.toDartInt,
+      avgPrice: avgPrice?.toDartDouble,
+      underlyingTaxRate: underlyingTaxRate?.toDartDouble ?? 0.0,
+      derivativeTaxRate: derivativeTaxRate?.toDartDouble ?? 0.0,
+      size: size?.toDartInt ?? 1,
+    ));
+  }.toJS;
+
+  cboeVerticalSpreadsDart =
+      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return _toJsPromise(cboeVerticalSpreads(ticker.toDart,
+        slippage.toDartDouble, minDTE.toDartInt, maxDTE.toDartInt));
+  }.toJS;
+
+  cboeTouchBetsDart =
+      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return _toJsPromise(cboeTouchBets(ticker.toDart, slippage.toDartDouble,
+        minDTE.toDartInt, maxDTE.toDartInt));
+  }.toJS;
+
+  cboeLongOptionsDart =
+      (JSString ticker, JSNumber slippage, JSNumber minDTE, JSNumber maxDTE) {
+    return _toJsPromise(cboeLongOptions(ticker.toDart, slippage.toDartDouble,
+        minDTE.toDartInt, maxDTE.toDartInt));
   }.toJS;
 }
