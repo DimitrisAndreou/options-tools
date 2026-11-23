@@ -77,7 +77,10 @@ class Cboe {
       try {
         rawJson = await urlFetcher.fetch(url, headers: _headers);
       } catch (e) {
-        if (e.toString().contains('404')) {
+        final msg = e.toString();
+        // CBOE's CDN (CloudFront/S3) returns 403 (as well as 404) for missing
+        // symbols, e.g. SPX.json returns 403 while _SPX.json returns 200.
+        if (msg.contains('403') || msg.contains('404')) {
           continue;
         }
         rethrow;
@@ -91,7 +94,7 @@ class Cboe {
       );
     }
 
-    throw StateError('CBOE 404 for $ticker (tried $candidates)');
+    throw StateError('CBOE symbol not found for $ticker (tried $candidates)');
   }
 
   static List<Market> parseMarketsFromJson(
