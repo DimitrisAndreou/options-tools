@@ -1,0 +1,44 @@
+# Fair Game
+
+Consider two-player games. 
+
+One game might be "you buy a coin toss; heads you win the coin, tails you 
+get nothing".
+
+Another game might be: "if I discover a cure to cancer tomorrow, 
+you win a million".
+
+Another game might be: "I pay you $1000 in a year".
+
+Another game might be: "you get a slice of the assets, 
+cash flows and liabilities of a corporation".
+
+You don't necessarily know the rules of the game, how long it takes, or how the
+payoff works. Some of the gains might contain uncertainty, not just randomness.
+
+But you see that people can freely play against each other, from either side of
+the game, and you observe that a price emerges in each game. 
+
+Some of these games can be priced reliably: the coin flip would be priced $0.5.
+If it was priced $0.4, many people would want to toss, and nobody would want
+to offer a coin. If it was $0.6, many people would offer their coins to be
+tossed. Nobody would toss.
+
+You can assume that they are fair games, meaning they are priced at their
+expected value (Sum of probability * payoff, for all outcomes). After all,
+if one side was advantaged, people who discern this advantage would rush to
+take advantage of the mispricing, reaping the profits, while also correcting
+the mispricing.
+
+Since each game is priced at its expected value, i.e. its average outcome,
+then it means the "upside" (the expected value of the outcomes where the
+first player wins) equals the "downside" (the expected value of the outcomes
+where the second player wins). If they weren't equal, they wouldn't average
+out to the game's price; the price would move.
+
+"Since today's price already bakes in the average future outcome, expected
+upside must equal expected downside—otherwise the average would move."
+
+Upside = downside.
+
+Derive Put-Call parity.
